@@ -497,6 +497,66 @@
             <div class="col"><div class="small text-muted-soft">Balance</div><b id="sumBalance">$0</b></div>
           </div>
 
+<!-- ===== Insights rápidos (modo amigo) ===== -->
+<div class="row g-3 mb-3">
+  <div class="col-md-3">
+    <div class="p-3 rounded-4" style="border:1px solid rgba(255,255,255,.12); background: rgba(255,255,255,.06);">
+      <div class="small text-muted-soft">Producto estrella</div>
+      <div class="fw-bold" id="insStarName">—</div>
+      <div class="small text-muted-soft mono" id="insStarValue">$0</div>
+    </div>
+  </div>
+
+  <div class="col-md-3">
+    <div class="p-3 rounded-4" style="border:1px solid rgba(255,255,255,.12); background: rgba(255,255,255,.06);">
+      <div class="small text-muted-soft">Cartera (plata por cobrar)</div>
+      <div class="fw-bold" id="insRiskLevel">—</div>
+      <div class="small text-muted-soft mono" id="insOutstanding">$0</div>
+    </div>
+  </div>
+
+  <div class="col-md-3">
+    <div class="p-3 rounded-4" style="border:1px solid rgba(255,255,255,.12); background: rgba(255,255,255,.06);">
+      <div class="small text-muted-soft">Proyección 30 días</div>
+      <div class="fw-bold" id="insProjTitle">Si sigues igual…</div>
+      <div class="small text-muted-soft mono" id="insProjValue">$0</div>
+    </div>
+  </div>
+
+  <div class="col-md-3">
+    <div class="p-3 rounded-4" style="border:1px solid rgba(255,255,255,.12); background: rgba(255,255,255,.06);">
+      <div class="small text-muted-soft">Recordatorios</div>
+      <div class="fw-bold" id="insRemCount">0 pendientes</div>
+      <button class="btn btn-sm btn-outline-secondary mt-2" id="btnOpenReminders">Ver</button>
+    </div>
+  </div>
+</div>
+
+<div class="card mb-3" id="remindersCard" style="display:none;">
+  <div class="card-body">
+    <div class="d-flex justify-content-between align-items-center">
+      <h6 class="fw-bold mb-0">A quién cobrar hoy (modo amigo)</h6>
+      <button class="btn btn-sm btn-outline-secondary" id="btnCloseReminders">Cerrar</button>
+    </div>
+    <div class="small text-muted-soft mt-1" id="insRiskMsg"></div>
+
+    <div class="table-responsive rounded-3 mt-2" style="border:1px solid rgba(255,255,255,.12); overflow:hidden;">
+      <table class="table table-sm mb-0">
+        <thead>
+          <tr>
+            <th>Cliente</th>
+            <th class="text-end">Debe</th>
+            <th class="text-end">Desde</th>
+            <th class="text-end">Días</th>
+          </tr>
+        </thead>
+        <tbody id="insRemBody"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+
           <div class="table-responsive rounded-3" style="border:1px solid rgba(255,255,255,.12); overflow:hidden;">
             <table class="table table-sm mb-0">
               <thead>
@@ -777,6 +837,53 @@ async function loadSummary(){
   upsertSalesChart(d.sales_by_month || []);
 }
 
+
+
+async function loadInsights(){
+  const f=$("sumFrom").value;
+  const t=$("sumTo").value;
+
+  const d=await apiGet(`/api/insights?from=${f}&to=${t}`);
+
+  // Producto estrella
+  if(d.product_star){
+    $("insStarName").textContent = d.product_star.name;
+    $("insStarValue").textContent = money(d.product_star.revenue);
+  }else{
+    $("insStarName").textContent = "Aún no hay ventas";
+    $("insStarValue").textContent = money(0);
+  }
+
+  // Riesgo / cartera
+  const r=d.risk||{};
+  const lvl=(r.level||"—");
+  const lvlText = (lvl==="tranqui") ? "Tranqui ✅" : (lvl==="ojo") ? "Ojo 👀" : (lvl==="alerta") ? "Alerta ⚠️" : "—";
+  $("insRiskLevel").textContent = lvlText;
+  $("insOutstanding").textContent = money(Number(r.outstanding||0));
+  $("insRiskMsg").textContent = r.message || "";
+
+  // Proyección
+  const p=d.projection_30d||{};
+  $("insProjValue").textContent = money(Number(p.projected_30||0));
+
+  // Recordatorios
+  const list=d.reminders||[];
+  $("insRemCount").textContent = `${list.length} pendientes`;
+
+  $("insRemBody").innerHTML = list.map(x=>`
+    <tr>
+      <td>${x.name}</td>
+      <td class="text-end mono">${money(x.balance)}</td>
+      <td class="text-end">${x.oldest_due_date || "—"}</td>
+      <td class="text-end">${(x.days_overdue==null) ? "—" : x.days_overdue}</td>
+    </tr>
+  `).join("");
+
+  // Mostrar card solo si hay data y el usuario la abre
+  if(list.length===0){
+    $("remindersCard").style.display="none";
+  }
+}
 document.addEventListener("DOMContentLoaded",()=>{
   ["saleDate","date","payDate","sumTo","exTo"].forEach(x=>$(x).value=today());
   $("sumFrom").value=today().slice(0,7)+"-01";
@@ -784,8 +891,9 @@ document.addEventListener("DOMContentLoaded",()=>{
 
   loadAll();
   loadSummary();
+  loadInsights();
 
-  $("btnReloadAll").onclick=async()=>{ await loadAll(); await loadSummary(); };
+  $("btnReloadAll").onclick=async()=>{ await loadAll(); await loadSummary(); await loadInsights(); };
 
   $("saleProduct").onchange=updateEstimate;
   $("saleQty").oninput=updateEstimate;
@@ -866,6 +974,7 @@ document.addEventListener("DOMContentLoaded",()=>{
   $("summaryForm").onsubmit=async e=>{
     e.preventDefault();
     await loadSummary();
+    await loadInsights();
   };
 
   // EXPORT
