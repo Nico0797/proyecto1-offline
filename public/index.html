@@ -1,0 +1,947 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Cuaderno · Yogurt Griego</title>
+
+<link rel="icon" href="/favicon.ico?v=2">
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+
+<style>
+  :root{
+    --bg0:#0b1220;
+    --card: rgba(255,255,255,.08);
+    --card2: rgba(255,255,255,.06);
+    --border: rgba(255,255,255,.14);
+    --text: rgba(255,255,255,.92);
+    --muted: rgba(255,255,255,.70);
+    --shadow: 0 18px 50px rgba(0,0,0,.25);
+  }
+
+  body{
+    color: var(--text);
+    min-height: 100vh;
+    background:
+      radial-gradient(1200px 650px at 12% -10%, rgba(42,109,253,.28), transparent 60%),
+      radial-gradient(900px 520px at 90% 0%, rgba(34,197,94,.20), transparent 55%),
+      radial-gradient(900px 600px at 45% 110%, rgba(245,158,11,.18), transparent 55%),
+      var(--bg0);
+  }
+
+  .mono{ font-variant-numeric: tabular-nums; }
+  .text-muted-soft{ color: var(--muted) !important; }
+
+  .navbar{
+    background: rgba(11,18,32,.72) !important;
+    border-bottom: 1px solid rgba(255,255,255,.16) !important;
+    backdrop-filter: blur(10px);
+  }
+  .navbar-brand{ color:#fff !important; letter-spacing:.2px; }
+
+  .badge-soft{
+    background: rgba(255,255,255,.10);
+    border: 1px solid rgba(255,255,255,.14);
+    color: rgba(255,255,255,.86);
+    padding: .42rem .65rem;
+    border-radius: 999px;
+    font-weight: 600;
+  }
+
+  .nav-tabs{ border-bottom-color: rgba(255,255,255,.14); }
+  .nav-tabs .nav-link{
+    color: rgba(255,255,255,.70);
+    border: 1px solid transparent;
+    border-top-left-radius: 14px;
+    border-top-right-radius: 14px;
+  }
+  .nav-tabs .nav-link:hover{ color: rgba(255,255,255,.92); border-color: rgba(255,255,255,.10); }
+  .nav-tabs .nav-link.active{
+    color:#fff;
+    background: rgba(255,255,255,.08);
+    border-color: rgba(255,255,255,.16) rgba(255,255,255,.16) transparent;
+  }
+
+  .card{
+    background: rgba(255,255,255,.06);
+    border: 1px solid rgba(255,255,255,.12);
+    border-radius: 18px;
+    color: var(--text);
+    box-shadow: 0 14px 40px rgba(0,0,0,.22);
+  }
+  .card .card-body{ padding: 18px; }
+
+  .form-control, .form-select{
+    background: rgba(255,255,255,.06);
+    border: 1px solid rgba(255,255,255,.14);
+    color: #fff;
+    border-radius: 14px;
+  }
+  .form-control::placeholder{ color: rgba(255,255,255,.50); }
+  .form-control:focus, .form-select:focus{
+    border-color: rgba(42,109,253,.65);
+    box-shadow: 0 0 0 .25rem rgba(42,109,253,.16);
+    background: rgba(255,255,255,.08);
+    color: #fff;
+  }
+
+  .btn{ border-radius: 14px; padding: .58rem .9rem; }
+  .btn-primary{
+    background: linear-gradient(135deg, #2a6dfd, #1d4ed8);
+    border: none;
+    box-shadow: 0 12px 26px rgba(42,109,253,.22);
+  }
+  .btn-success{
+    background: linear-gradient(135deg, #22c55e, #16a34a);
+    border: none;
+    box-shadow: 0 12px 26px rgba(34,197,94,.18);
+  }
+  .btn-outline-secondary{
+    border-color: rgba(255,255,255,.20);
+    color: rgba(255,255,255,.86);
+  }
+  .btn-outline-secondary:hover{
+    background: rgba(255,255,255,.10);
+    border-color: rgba(255,255,255,.24);
+    color: #fff;
+  }
+
+  /* ✅ Contraste real tablas (Bootstrap-safe) */
+.table{
+  margin-bottom: 0;
+  --bs-table-color: rgba(255,255,255,.92);
+  --bs-table-bg: transparent;
+  --bs-table-border-color: rgba(255,255,255,.12);
+  --bs-table-striped-color: rgba(255,255,255,.92);
+  --bs-table-striped-bg: rgba(255,255,255,.04);
+  --bs-table-hover-color: rgba(255,255,255,.95);
+  --bs-table-hover-bg: rgba(255,255,255,.10);
+}
+/* Fuerza colores aunque Bootstrap intente pintar blanco */
+.table>:not(caption)>*>*{
+  background-color: transparent !important;
+  color: rgba(255,255,255,.92) !important;
+  border-color: rgba(255,255,255,.12) !important;
+  vertical-align: middle;
+}
+.table thead th{
+  color: rgba(255,255,255,.95) !important;
+  background-color: rgba(255,255,255,.12) !important;
+  border-bottom: 1px solid rgba(255,255,255,.18) !important;
+  position: sticky; top: 0; z-index: 1;
+  text-shadow: 0 1px 0 rgba(0,0,0,.25);
+}
+.table tbody tr:nth-child(odd) > *{ background-color: rgba(255,255,255,.03) !important; }
+.table tbody tr:nth-child(even) > *{ background-color: rgba(255,255,255,.06) !important; }
+.table-hover tbody tr:hover > *{ background-color: rgba(255,255,255,.10) !important; }
+.table td.text-end, .table th.text-end{ color: rgba(255,255,255,.98) !important; font-weight: 800; }
+
+
+  .chip{
+    padding: .2rem .55rem;
+    border-radius: 999px;
+    font-weight: 800;
+    font-size: .78rem;
+    border: 1px solid rgba(255,255,255,.14);
+    background: rgba(255,255,255,.08);
+    color: rgba(255,255,255,.92);
+    display: inline-flex;
+    align-items: center;
+    gap: .35rem;
+  }
+  .chip.ok{ background: rgba(34,197,94,.18); border-color: rgba(34,197,94,.32); }
+  .chip.debe{ background: rgba(245,158,11,.22); border-color: rgba(245,158,11,.36); color: rgba(17,24,39,.92); }
+  .chip.ps{ background: rgba(59,130,246,.18); border-color: rgba(59,130,246,.34); }
+
+  .modal-content{
+    background: rgba(15,23,42,.96);
+    border: 1px solid rgba(255,255,255,.14);
+    border-radius: 18px;
+    color: #fff;
+  }
+  .modal-header{ border-bottom-color: rgba(255,255,255,.10); }
+  .modal-footer{ border-top-color: rgba(255,255,255,.10); }
+  .btn-close{ filter: invert(1) grayscale(100%); opacity: .9; }
+</style>
+</head>
+
+<body>
+
+<nav class="navbar sticky-top">
+  <div class="container d-flex justify-content-between align-items-center">
+    <div class="d-flex align-items-center gap-2">
+      <img src="/assets/logo.png" alt="Logo" style="height:32px;width:auto;" onerror="this.style.display='none'">
+      <span class="navbar-brand fw-semibold">Cuaderno Yogurt</span>
+      <span class="badge-soft">SQLite Local</span>
+    </div>
+    <span class="small text-muted-soft">Flask</span>
+  </div>
+</nav>
+
+<div class="container my-4">
+
+  <div class="alert alert-dark border-0" style="background: rgba(255,255,255,.06); border:1px solid rgba(255,255,255,.12)!important;">
+    <b>Estado:</b> <span id="statusText">Conectando…</span>
+    <button class="btn btn-sm btn-outline-secondary float-end" id="btnReloadAll">Actualizar</button>
+  </div>
+
+  <ul class="nav nav-tabs">
+    <li class="nav-item"><button class="nav-link active" data-bs-toggle="tab" data-bs-target="#ventas">Ventas</button></li>
+    <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#clientes">Clientes</button></li>
+    <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#productos">Productos</button></li>
+    <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#movs">Movimientos</button></li>
+    <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#resumen">Resumen</button></li>
+  </ul>
+
+  <div class="tab-content pt-3">
+
+    <!-- ================= VENTAS ================= -->
+    <div class="tab-pane fade show active" id="ventas">
+      <div class="row g-3">
+
+        <div class="col-lg-5">
+          <div class="card">
+            <div class="card-body">
+              <h5 class="fw-bold">Nueva venta</h5>
+
+              <form id="saleForm" class="row g-2">
+                <div class="col-6">
+                  <label class="small text-muted-soft">Fecha</label>
+                  <input id="saleDate" type="date" class="form-control" required>
+                </div>
+                <div class="col-6">
+                  <label class="small text-muted-soft">Cantidad</label>
+                  <input id="saleQty" type="number" min="1" value="1" class="form-control">
+                </div>
+
+                <div class="col-12">
+                  <label class="small text-muted-soft">Producto</label>
+                  <select id="saleProduct" class="form-select"></select>
+                </div>
+
+                <div class="col-12">
+                  <label class="small text-muted-soft">Cliente</label>
+                  <select id="saleCustomer" class="form-select">
+                    <option value="">— Sin cliente —</option>
+                  </select>
+                </div>
+
+                <div class="col-12">
+                  <input type="checkbox" id="salePaid" checked>
+                  <label class="ms-1">Pagó completo</label>
+                </div>
+
+                <div class="col-12">
+                  <label class="small text-muted-soft">Nota</label>
+                  <input id="saleNote" class="form-control">
+                </div>
+
+                <div class="col-12 d-flex justify-content-between align-items-center mt-2">
+                  <div>Total: <b id="saleEstimate">$0</b></div>
+                  <button class="btn btn-primary">Guardar</button>
+                </div>
+              </form>
+
+              <hr class="my-3" style="border-color: rgba(255,255,255,.12);">
+
+              <div class="row g-2 text-center">
+                <div class="col-4"><div class="p-2 rounded" style="border:1px solid rgba(255,255,255,.12); background: rgba(255,255,255,.06);"><div class="small text-muted-soft">Ingresos</div><b id="tIncome">$0</b></div></div>
+                <div class="col-4"><div class="p-2 rounded" style="border:1px solid rgba(255,255,255,.12); background: rgba(255,255,255,.06);"><div class="small text-muted-soft">Gastos</div><b id="tExpense">$0</b></div></div>
+                <div class="col-4"><div class="p-2 rounded" style="border:1px solid rgba(255,255,255,.12); background: rgba(255,255,255,.06);"><div class="small text-muted-soft">Balance</div><b id="tBalance">$0</b></div></div>
+              </div>
+
+              <div class="small text-muted-soft mt-2">Tip: <b>“Debe”</b> significa venta fiada (queda en cartera).</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="col-lg-7">
+          <div class="card">
+            <div class="card-body">
+              <h5 class="fw-bold">Ventas</h5>
+
+              <div class="table-responsive rounded-3" style="border:1px solid rgba(255,255,255,.12); overflow:hidden;">
+                <table class="table table-sm table-hover mb-0">
+                  <thead>
+                    <tr>
+                      <th>Fecha</th>
+                      <th>Producto</th>
+                      <th>Cliente</th>
+                      <th class="text-end">Total</th>
+                      <th class="text-end">Estado</th>
+                      <th class="text-end">Acciones</th>
+                    </tr>
+                  </thead>
+                  <tbody id="salesBody"></tbody>
+                </table>
+              </div>
+
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- ================= CLIENTES ================= -->
+    <div class="tab-pane fade" id="clientes">
+      <div class="row g-3">
+
+        <div class="col-lg-5">
+          <div class="card">
+            <div class="card-body">
+              <h5 class="fw-bold">Nuevo cliente</h5>
+
+              <form id="customerForm" class="row g-2">
+                <input id="cName" class="form-control" placeholder="Nombre" required>
+                <input id="cPhone" class="form-control" placeholder="Teléfono">
+                <input id="cAddress" class="form-control" placeholder="Dirección">
+                <button class="btn btn-primary mt-2">Guardar</button>
+              </form>
+
+              <hr class="my-3" style="border-color: rgba(255,255,255,.12);">
+
+              <h6 class="fw-bold">Registrar pago (abono)</h6>
+
+              <form id="paymentForm" class="row g-2">
+                <select id="payCustomer" class="form-select"></select>
+                <input id="payDate" type="date" class="form-control">
+                <input id="payAmount" type="number" min="1" class="form-control" placeholder="Monto">
+                <input id="payNote" class="form-control" placeholder="Nota">
+                <button class="btn btn-success mt-2">Guardar pago</button>
+                <div class="small text-muted-soft">
+                  Este abono se asigna automáticamente a las <b>ventas fiadas más antiguas</b>.
+                </div>
+              </form>
+
+              <hr class="my-3" style="border-color: rgba(255,255,255,.12);">
+
+              <h6 class="fw-bold">Exportar Excel</h6>
+              <form id="exportForm" class="row g-2">
+                <input id="exFrom" type="date" class="form-control">
+                <input id="exTo" type="date" class="form-control">
+                <button class="btn btn-outline-secondary mt-2">Descargar</button>
+              </form>
+            </div>
+          </div>
+        </div>
+
+        <div class="col-lg-7">
+          <div class="card mb-3">
+            <div class="card-body">
+              <h5 class="fw-bold">Cartera</h5>
+
+              <div class="table-responsive rounded-3" style="border:1px solid rgba(255,255,255,.12); overflow:hidden;">
+                <table class="table table-sm table-hover mb-0">
+                  <thead>
+                    <tr>
+                      <th>Cliente</th>
+                      <th class="text-end">Debe</th>
+                      <th class="text-end">Estado</th>
+                      <th class="text-end">Acciones</th>
+                    </tr>
+                  </thead>
+                  <tbody id="customersBody"></tbody>
+                </table>
+              </div>
+
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="card-body">
+              <h5 class="fw-bold">Historial (Ledger)</h5>
+
+              <div class="d-flex gap-2">
+                <select id="ledgerCustomer" class="form-select"></select>
+                <button id="btnLoadLedger" class="btn btn-outline-secondary btn-sm">Cargar</button>
+              </div>
+
+              <div class="table-responsive rounded-3 mt-2" style="border:1px solid rgba(255,255,255,.12); overflow:hidden;">
+                <table class="table table-sm mb-0">
+                  <thead>
+                    <tr>
+                      <th>Fecha</th>
+                      <th>Tipo</th>
+                      <th>Monto</th>
+                      <th>Nota</th>
+                      <th class="text-end">Acciones</th>
+                    </tr>
+                  </thead>
+                  <tbody id="ledgerBody"></tbody>
+                </table>
+              </div>
+
+              <div class="small text-muted-soft mt-2">
+                Puedes borrar abonos/cargos desde aquí.
+              </div>
+
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- ================= PRODUCTOS ================= -->
+    <div class="tab-pane fade" id="productos">
+      <div class="row g-3">
+        <div class="col-lg-5">
+          <div class="card">
+            <div class="card-body">
+              <h5 class="fw-bold">Nuevo producto</h5>
+              <form id="productForm" class="row g-2">
+                <input id="pName" class="form-control" placeholder="Nombre" required>
+                <input id="pSku" class="form-control" placeholder="SKU">
+                <input id="pPrice" type="number" min="1" class="form-control" placeholder="Precio">
+                <button class="btn btn-primary mt-2">Guardar</button>
+              </form>
+            </div>
+          </div>
+        </div>
+
+        <div class="col-lg-7">
+          <div class="card">
+            <div class="card-body">
+              <h5 class="fw-bold">Productos</h5>
+
+              <div class="table-responsive rounded-3" style="border:1px solid rgba(255,255,255,.12); overflow:hidden;">
+                <table class="table table-sm table-hover mb-0">
+                  <thead>
+                    <tr>
+                      <th>Nombre</th>
+                      <th>SKU</th>
+                      <th class="text-end">Precio</th>
+                    </tr>
+                  </thead>
+                  <tbody id="productsBody"></tbody>
+                </table>
+              </div>
+
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- ================= MOVIMIENTOS ================= -->
+    <div class="tab-pane fade" id="movs">
+      <div class="row g-3">
+
+        <div class="col-lg-5">
+          <div class="card">
+            <div class="card-body">
+              <h5 class="fw-bold">Nuevo movimiento</h5>
+
+              <form id="txForm" class="row g-2">
+                <select id="kind" class="form-select">
+                  <option value="expense">Gasto</option>
+                  <option value="income">Ingreso</option>
+                </select>
+
+                <input id="amount" type="number" min="1" class="form-control" placeholder="Monto">
+                <input id="date" type="date" class="form-control">
+                <input id="category" class="form-control" placeholder="Categoría">
+                <input id="note" class="form-control" placeholder="Nota">
+
+                <button class="btn btn-primary mt-2">Guardar</button>
+              </form>
+
+            </div>
+          </div>
+        </div>
+
+        <div class="col-lg-7">
+          <div class="card">
+            <div class="card-body">
+              <h5 class="fw-bold">Movimientos</h5>
+
+              <div class="table-responsive rounded-3" style="border:1px solid rgba(255,255,255,.12); overflow:hidden;">
+                <table class="table table-sm table-hover mb-0">
+                  <thead>
+                    <tr>
+                      <th>Fecha</th>
+                      <th>Tipo</th>
+                      <th>Monto</th>
+                      <th>Nota</th>
+                      <th class="text-end">Acciones</th>
+                    </tr>
+                  </thead>
+                  <tbody id="txBody"></tbody>
+                </table>
+              </div>
+
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- ================= RESUMEN ================= -->
+    <div class="tab-pane fade" id="resumen">
+      <div class="card">
+        <div class="card-body">
+          <h5 class="fw-bold">Resumen</h5>
+
+          <form id="summaryForm" class="row g-2 mb-3">
+            <input id="sumFrom" type="date" class="form-control">
+            <input id="sumTo" type="date" class="form-control">
+            <button class="btn btn-outline-secondary">Aplicar</button>
+          </form>
+
+          <div class="row text-center mb-3">
+            <div class="col"><div class="small text-muted-soft">Ingresos</div><b id="sumIncome">$0</b></div>
+            <div class="col"><div class="small text-muted-soft">Gastos</div><b id="sumExpense">$0</b></div>
+            <div class="col"><div class="small text-muted-soft">Balance</div><b id="sumBalance">$0</b></div>
+          </div>
+
+          <div class="table-responsive rounded-3" style="border:1px solid rgba(255,255,255,.12); overflow:hidden;">
+            <table class="table table-sm mb-0">
+              <thead>
+                <tr>
+                  <th>Mes</th>
+                  <th class="text-end">Ventas</th>
+                </tr>
+              </thead>
+              <tbody id="sumSalesByMonth"></tbody>
+            </table>
+          </div>
+
+          <div class="mt-3" style="border:1px solid rgba(255,255,255,.12); background: rgba(255,255,255,.04); border-radius: 18px; padding: 14px;">
+            <h6 class="fw-bold mb-2">Ventas por mes</h6>
+            <canvas id="salesChart" height="120"></canvas>
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ================= MODAL EDITAR CLIENTE ================= -->
+<div class="modal fade" id="editCustomerModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title fw-bold">Editar cliente</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+      </div>
+      <div class="modal-body">
+        <input type="hidden" id="ecId">
+        <div class="mb-2">
+          <label class="small text-muted-soft">Nombre</label>
+          <input class="form-control" id="ecName">
+        </div>
+        <div class="mb-2">
+          <label class="small text-muted-soft">Teléfono</label>
+          <input class="form-control" id="ecPhone">
+        </div>
+        <div class="mb-2">
+          <label class="small text-muted-soft">Dirección</label>
+          <input class="form-control" id="ecAddress">
+        </div>
+        <div class="form-check mt-2">
+          <input class="form-check-input" type="checkbox" id="ecActive">
+          <label class="form-check-label" for="ecActive">Cliente activo</label>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
+        <button class="btn btn-primary" id="btnSaveCustomer">Guardar cambios</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<script>
+  const API=
+    (location.hostname === "localhost" || location.hostname === "127.0.0.1")
+      ? "http://127.0.0.1:8001"
+      : "https://TU-SERVICIO-CLOUDRUN.a.run.app";
+  const $=id=>document.getElementById(id);
+
+function money(n){
+  return new Intl.NumberFormat("es-CO",{style:"currency",currency:"COP",maximumFractionDigits:0}).format(n)
+}
+function today(){
+  const d=new Date();
+  return d.toISOString().slice(0,10)
+}
+async function apiGet(p){
+  const r=await fetch(API+p);
+  const t=await r.text();
+  const d=t?JSON.parse(t):{};
+  if(!r.ok)throw new Error(d.error||r.status);
+  return d;
+}
+async function apiPost(p,b){
+  const r=await fetch(API+p,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(b)});
+  const t=await r.text();
+  const d=t?JSON.parse(t):{};
+  if(!r.ok)throw new Error(d.error||r.status);
+  return d;
+}
+async function apiPut(p,b){
+  const r=await fetch(API+p,{method:"PUT",headers:{"Content-Type":"application/json"},body:JSON.stringify(b)});
+  const t=await r.text();
+  const d=t?JSON.parse(t):{};
+  if(!r.ok)throw new Error(d.error||r.status);
+  return d;
+}
+async function apiDelete(p){
+  const r=await fetch(API+p,{method:"DELETE"});
+  const t=await r.text();
+  const d=t?JSON.parse(t):{};
+  if(!r.ok)throw new Error(d.error||r.status);
+  return d;
+}
+function status(ok,m){
+  $("statusText").textContent=m;
+  $("statusText").className=ok?"text-success":"text-danger";
+}
+
+let customersCache = [];
+
+let salesChart = null;
+
+function upsertSalesChart(rows){
+  const canvas = document.getElementById("salesChart");
+  if(!canvas) return;
+
+  const labels = (rows||[]).map(x => x.ym);
+  const values = (rows||[]).map(x => Number(x.total||0));
+
+  if(salesChart){
+    salesChart.data.labels = labels;
+    salesChart.data.datasets[0].data = values;
+    salesChart.update();
+    return;
+  }
+
+  salesChart = new Chart(canvas, {
+    type: "bar",
+    data: {
+      labels,
+      datasets: [{ label: "Ventas", data: values }]
+    },
+    options: {
+      responsive: true,
+      plugins: {
+        legend: { display: false },
+        tooltip: { callbacks: { label: (c)=> money(c.raw) } }
+      },
+      scales: {
+        y: { ticks: { callback: (v)=> money(v) } }
+      }
+    }
+  });
+}
+
+
+async function loadAll(){
+  try{
+    const [p,s,t]=await Promise.all([
+      apiGet("/api/products"),
+      apiGet("/api/sales"),
+      apiGet("/api/transactions")
+    ]);
+    renderProducts(p.products||[]);
+    renderSales(s.sales||[]);
+    renderTx(t.transactions||[]);
+    await loadCustomers();
+    status(true,"Conectado");
+  }catch(e){
+    status(false,e.message);
+  }
+}
+
+async function loadCustomers(){
+  const d=await apiGet("/api/customers_with_balance");
+  const c=d.customers||[];
+  customersCache = c;
+
+  $("saleCustomer").innerHTML='<option value="">— Sin cliente —</option>' + c.map(x=>`<option value="${x.id}">${x.name}</option>`).join("");
+  $("payCustomer").innerHTML=c.map(x=>`<option value="${x.id}">${x.name}</option>`).join("");
+  $("ledgerCustomer").innerHTML=c.map(x=>`<option value="${x.id}">${x.name}</option>`).join("");
+
+  $("customersBody").innerHTML=c.map(x=>`
+    <tr>
+      <td>${x.name}</td>
+      <td class="text-end mono">${money(Math.max(0,x.balance))}</td>
+      <td class="text-end">${x.status==="PAZ_Y_SALVO" ? '<span class="chip ps">PAZ</span>' : '<span class="chip debe">DEBE</span>'}</td>
+      <td class="text-end">
+        <button class="btn btn-sm btn-outline-secondary" data-edit-c="${x.id}">Editar</button>
+      </td>
+    </tr>
+  `).join("");
+}
+
+function renderProducts(p){
+  $("saleProduct").innerHTML=p.filter(x=>x.active==1)
+    .map(x=>`<option value="${x.id}" data-price="${x.price}">${x.name}</option>`)
+    .join("");
+
+  $("productsBody").innerHTML=p.map(x=>`
+    <tr>
+      <td>${x.name}</td>
+      <td>${x.sku||"—"}</td>
+      <td class="text-end mono">${money(x.price)}</td>
+    </tr>
+  `).join("");
+
+  updateEstimate();
+}
+
+function renderSales(s){
+  $("salesBody").innerHTML=s.map(x=>`
+    <tr>
+      <td>${x.sale_date}</td>
+      <td>${x.product_name}</td>
+      <td>${x.customer_name||"—"}</td>
+      <td class="text-end mono">${money(x.total)}</td>
+      <td class="text-end">${x.paid ? '<span class="chip ok">OK</span>' : '<span class="chip debe">Debe</span>'}</td>
+      <td class="text-end">
+        <button class="btn btn-sm btn-outline-danger" data-del-sale="${x.id}">Eliminar</button>
+      </td>
+    </tr>
+  `).join("");
+}
+
+function renderTx(t){
+  const i=t.filter(x=>x.kind=="income").reduce((a,b)=>a+Number(b.amount),0);
+  const e=t.filter(x=>x.kind=="expense").reduce((a,b)=>a+Number(b.amount),0);
+
+  $("tIncome").textContent=money(i);
+  $("tExpense").textContent=money(e);
+  $("tBalance").textContent=money(i-e);
+
+  $("txBody").innerHTML=t.map(x=>`
+    <tr>
+      <td>${x.date}</td>
+      <td>${x.kind}</td>
+      <td class="mono">${money(x.amount)}</td>
+      <td>${x.note||""}</td>
+      <td class="text-end">
+        <button class="btn btn-sm btn-outline-danger" data-del-tx="${x.id}">Eliminar</button>
+      </td>
+    </tr>
+  `).join("");
+}
+
+function updateEstimate(){
+  const o=$("saleProduct").selectedOptions[0];
+  if(!o)return;
+  const p=Number(o.dataset.price);
+  const q=Number($("saleQty").value);
+  $("saleEstimate").textContent=money(p*q);
+}
+
+async function loadLedger(){
+  const id=$("ledgerCustomer").value;
+  const d=await apiGet(`/api/ledger?customer_id=${id}`);
+
+  $("ledgerBody").innerHTML=(d.ledger||[]).map(x=>`
+    <tr>
+      <td>${x.entry_date}</td>
+      <td>${x.entry_type}</td>
+      <td class="mono">${money(x.amount)}</td>
+      <td>${x.note||""}</td>
+      <td class="text-end">
+        <button class="btn btn-sm btn-outline-danger" data-del-ledger="${x.id}">Eliminar</button>
+      </td>
+    </tr>
+  `).join("");
+}
+
+async function loadSummary(){
+  const f=$("sumFrom").value;
+  const t=$("sumTo").value;
+
+  const d=await apiGet(`/api/summary?from=${f}&to=${t}`);
+
+  $("sumIncome").textContent=money(d.totals.income);
+  $("sumExpense").textContent=money(d.totals.expense);
+  $("sumBalance").textContent=money(d.totals.balance);
+
+  $("sumSalesByMonth").innerHTML=(d.sales_by_month||[]).map(x=>`
+    <tr>
+      <td>${x.ym}</td>
+      <td class="text-end mono">${money(x.total)}</td>
+    </tr>
+  `).join("");
+  upsertSalesChart(d.sales_by_month || []);
+}
+
+document.addEventListener("DOMContentLoaded",()=>{
+  ["saleDate","date","payDate","sumTo","exTo"].forEach(x=>$(x).value=today());
+  $("sumFrom").value=today().slice(0,7)+"-01";
+  $("exFrom").value=$("sumFrom").value;
+
+  loadAll();
+  loadSummary();
+
+  $("btnReloadAll").onclick=async()=>{ await loadAll(); await loadSummary(); };
+
+  $("saleProduct").onchange=updateEstimate;
+  $("saleQty").oninput=updateEstimate;
+
+  $("btnLoadLedger").onclick=loadLedger;
+
+  // SALE submit
+  $("saleForm").onsubmit=async e=>{
+    e.preventDefault();
+    if(!$("salePaid").checked && !$("saleCustomer").value){
+      alert("Seleccione cliente si no pagó");
+      return;
+    }
+    await apiPost("/api/sales",{
+      sale_date:$("saleDate").value,
+      product_id:$("saleProduct").value,
+      qty:$("saleQty").value,
+      note:$("saleNote").value,
+      customer_id:$("saleCustomer").value||null,
+      paid:$("salePaid").checked
+    });
+    await loadAll();
+  };
+
+  // CUSTOMER create
+  $("customerForm").onsubmit=async e=>{
+    e.preventDefault();
+    await apiPost("/api/customers",{
+      name:$("cName").value,
+      phone:$("cPhone").value,
+      address:$("cAddress").value
+    });
+    e.target.reset();
+    await loadAll();
+  };
+
+  // PAYMENT submit (strict allocation happens in backend)
+  $("paymentForm").onsubmit=async e=>{
+    e.preventDefault();
+    await apiPost("/api/ledger",{
+      customer_id:$("payCustomer").value,
+      entry_type:"payment",
+      amount:$("payAmount").value,
+      entry_date:$("payDate").value,
+      note:$("payNote").value
+    });
+    e.target.reset();
+    await loadAll();  // ✅ esto actualiza ventas/movimientos/cartera
+  };
+
+  // PRODUCT create
+  $("productForm").onsubmit=async e=>{
+    e.preventDefault();
+    await apiPost("/api/products",{
+      name:$("pName").value,
+      sku:$("pSku").value,
+      price:$("pPrice").value
+    });
+    e.target.reset();
+    await loadAll();
+  };
+
+  // TX create
+  $("txForm").onsubmit=async e=>{
+    e.preventDefault();
+    await apiPost("/api/transactions",{
+      kind:$("kind").value,
+      amount:$("amount").value,
+      date:$("date").value,
+      category:$("category").value,
+      note:$("note").value
+    });
+    e.target.reset();
+    await loadAll();
+  };
+
+  // SUMMARY
+  $("summaryForm").onsubmit=async e=>{
+    e.preventDefault();
+    await loadSummary();
+  };
+
+  // EXPORT
+  $("exportForm").onsubmit=e=>{
+    e.preventDefault();
+    window.open(`${API}/export.xlsx?from=${$("exFrom").value}&to=${$("exTo").value}`);
+  };
+
+  // DELETE SALE
+  $("salesBody").addEventListener("click", async (e)=>{
+    const b = e.target.closest("[data-del-sale]");
+    if(!b) return;
+    const id=b.dataset.delSale;
+    if(!confirm("¿Eliminar esta venta? También borrará el ingreso ligado y el cargo en cartera si existía.")) return;
+    await apiDelete(`/api/sales?id=${id}`);
+    await loadAll();
+  });
+
+  // DELETE TX
+  $("txBody").addEventListener("click", async (e)=>{
+    const b = e.target.closest("[data-del-tx]");
+    if(!b) return;
+    const id=b.dataset.delTx;
+    if(!confirm("¿Eliminar este movimiento?")) return;
+    await apiDelete(`/api/transactions?id=${id}`);
+    await loadAll();
+  });
+
+  // DELETE LEDGER
+  $("ledgerBody").addEventListener("click", async (e)=>{
+    const b = e.target.closest("[data-del-ledger]");
+    if(!b) return;
+    const id=b.dataset.delLedger;
+    if(!confirm("¿Eliminar este registro de cartera/abono?")) return;
+    await apiDelete(`/api/ledger?id=${id}`);
+    await loadAll();
+    await loadLedger();
+  });
+
+  // OPEN EDIT MODAL
+  const modalEl = document.getElementById("editCustomerModal");
+  const editModal = new bootstrap.Modal(modalEl);
+
+  $("customersBody").addEventListener("click", async (e)=>{
+    const b = e.target.closest("[data-edit-c]");
+    if(!b) return;
+    const id = b.dataset.editC;
+
+    // Trae lista completa para obtener phone/address/active
+    const d = await apiGet("/api/customers");
+    const cust = (d.customers||[]).find(x=>String(x.id)===String(id));
+    if(!cust) return alert("Cliente no encontrado");
+
+    $("ecId").value = cust.id;
+    $("ecName").value = cust.name || "";
+    $("ecPhone").value = cust.phone || "";
+    $("ecAddress").value = cust.address || "";
+    $("ecActive").checked = !!cust.active;
+
+    editModal.show();
+  });
+
+  // SAVE CUSTOMER
+  $("btnSaveCustomer").onclick = async ()=>{
+    const id = $("ecId").value;
+    await apiPut(`/api/customers?id=${id}`,{
+      name: $("ecName").value,
+      phone: $("ecPhone").value,
+      address: $("ecAddress").value,
+      active: $("ecActive").checked
+    });
+    editModal.hide();
+    await loadAll();
+  };
+});
+</script>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

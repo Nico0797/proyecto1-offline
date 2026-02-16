@@ -1,3 +1,4 @@
+import os
 from flask import Flask, request, jsonify, send_from_directory
 from flask_cors import CORS
 import sqlite3
@@ -8,7 +9,12 @@ from openpyxl import Workbook
 DB_FILE = "cuaderno.db"
 
 app = Flask(__name__, static_folder=None)
-CORS(app, resources={r"/*": {"origins": "*"}})
+CORS(app, origins=[
+  "https://camino-resonante-contabilidad.web.app",
+  "https://camino-resonante-contabilidad.firebaseapp.com",
+  "http://127.0.0.1:8001",
+  "http://localhost:8001"
+])
 
 
 # ---------------- DB helpers ----------------
@@ -904,4 +910,6 @@ if __name__ == "__main__":
     host, port = "127.0.0.1", 8001
     print(f"✅ App:  http://{host}:{port}/")
     print(f"✅ Export: http://{host}:{port}/export.xlsx?from=YYYY-MM-DD&to=YYYY-MM-DD")
-    app.run(host=host, port=port, debug=False)
+    port = int(os.environ.get("PORT", 8001))
+    app.run(host="0.0.0.0", port=port, debug=False)
+    
