@@ -9,12 +9,12 @@ from openpyxl import Workbook
 DB_FILE = "cuaderno.db"
 
 app = Flask(__name__, static_folder=None)
-CORS(app, origins=[
-  "https://camino-resonante-contabilidad.web.app",
-  "https://camino-resonante-contabilidad.firebaseapp.com",
-  "http://127.0.0.1:8001",
-  "http://localhost:8001"
-])
+CORS(app, resources={r"/api/*": {"origins": [
+    "https://camino-resonante-contabilidad.web.app",
+    "https://camino-resonante-contabilidad.firebaseapp.com",
+    "http://localhost",
+    "http://127.0.0.1"
+]}})
 
 
 # ---------------- DB helpers ----------------

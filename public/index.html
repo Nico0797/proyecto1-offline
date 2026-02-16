@@ -558,11 +558,12 @@
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
 <script>
-  const API=
-    (location.hostname === "localhost" || location.hostname === "127.0.0.1")
-      ? "http://127.0.0.1:8001"
-      : "https://TU-SERVICIO-CLOUDRUN.a.run.app";
-  const $=id=>document.getElementById(id);
+const API=
+  (location.hostname === "localhost" || location.hostname === "127.0.0.1")
+    ? "http://127.0.0.1:8001"
+    : "https://cuaderno-contable.onrender.com";
+    console.log("API en uso:", API, "host:", location.hostname);
+const $=id=>document.getElementById(id);
 
 function money(n){
   return new Intl.NumberFormat("es-CO",{style:"currency",currency:"COP",maximumFractionDigits:0}).format(n)
