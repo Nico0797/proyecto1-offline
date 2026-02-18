@@ -10,7 +10,7 @@ from flask_cors import CORS
 from backend.config import get_config
 from backend.database import db, init_db
 from backend.auth import token_required, optional_token, AuthManager, create_token, permission_required
-from backend.models import User, Business, Product, Customer, Sale, Expense, Payment, LedgerEntry, LedgerAllocation, Permission, Role, UserRole, RolePermission, AuditLog, SubscriptionPayment
+from backend.models import User, Business, Product, Customer, Sale, Expense, Payment, LedgerEntry, LedgerAllocation, Permission, Role, UserRole, RolePermission, AuditLog, SubscriptionPayment, AppSettings, Order
 
 
 def create_app(config_class=None):
@@ -59,6 +59,56 @@ def create_app(config_class=None):
     def ping():
         return jsonify({"pong": True})
 
+    # ========== SETTINGS ==========
+    @app.route("/api/settings", methods=["GET"])
+    @optional_token
+    def get_settings():
+        """Obtener configuración global de la aplicación"""
+        try:
+            import json
+            settings = AppSettings.query.all()
+            settings_dict = {}
+            for s in settings:
+                if s.value:
+                    try:
+                        settings_dict[s.key] = json.loads(s.value)
+                    except:
+                        settings_dict[s.key] = s.value
+                else:
+                    settings_dict[s.key] = None
+            return jsonify({"settings": settings_dict})
+        except Exception as e:
+            return jsonify({"error": str(e)}), 500
+
+    @app.route("/api/settings", methods=["POST"])
+    @token_required
+    def save_settings():
+        """Guardar configuración global (requiere auth)"""
+        try:
+            import json
+            data = request.get_json() or {}
+            
+            # Verificar permisos de admin
+            if not g.current_user.is_admin and not (g.current_user.permissions and g.current_user.permissions.get('admin')):
+                return jsonify({"error": "No tienes permisos de administrador"}), 403
+            
+            for key, value in data.items():
+                if value is not None and not isinstance(value, (str, int, float, bool)):
+                    value = json.dumps(value)
+                
+                setting = AppSettings.query.filter_by(key=key).first()
+                if setting:
+                    setting.value = str(value) if value is not None else None
+                else:
+                    setting = AppSettings(key=key, value=str(value) if value is not None else None)
+                    db.session.add(setting)
+            
+            db.session.commit()
+            return jsonify({"message": "Configuración guardada"})
+        except Exception as e:
+            db.session.rollback()
+            return jsonify({"error": str(e)}), 500
+
     # ========== BILLING / CHECKOUT ==========
     @app.route("/api/billing/checkout", methods=["POST"])
     @token_required
@@ -91,6 +141,22 @@ def create_app(config_class=None):
         }
 
         return jsonify({"checkout": checkout_placeholder})
+
+    @app.route("/api/upgrade-to-pro", methods=["POST"])
+    @token_required
+    def upgrade_to_pro():
+        """Upgrade user to PRO plan"""
+        # In a real app, this would process payment
+        # For now, we just update the user's plan
+        user = g.current_user
+        user.plan = 'pro'
+        db.session.commit()
+        
+        return jsonify({
+            "success": True,
+            "message": "¡Ahora tienes Plan PRO!",
+            "plan": user.plan
+        })
 
     # ========== AUTH ROUTES ==========
     @app.route("/api/auth/register", methods=["POST"])
@@ -788,6 +854,201 @@ def create_app(config_class=None):
         db.session.commit()
         return jsonify({"ok": True})
 
+    # ========== ORDER ROUTES ==========
+    @app.route("/api/businesses/<int:business_id>/orders", methods=["GET"])
+    @token_required
+    @permission_required('sales.read')
+    def get_orders(business_id):
+        business = Business.query.filter_by(id=business_id, user_id=g.current_user.id).first()
+        if not business:
+            return jsonify({"error": "Negocio no encontrado"}), 404
+
+        # Filters
+        status = request.args.get("status")
+        customer_id = request.args.get("customer_id")
+        search = request.args.get("search")
+        start_date = request.args.get("start_date")
+        end_date = request.args.get("end_date")
+        sort = request.args.get("sort", "newest")  # newest, oldest, highest, lowest
+
+        query = Order.query.filter_by(business_id=business_id)
+
+        if status:
+            query = query.filter(Order.status == status)
+
+        if customer_id:
+            query = query.filter(Order.customer_id == customer_id)
+
+        if search:
+            query = query.filter(Order.order_number.ilike(f"%{search}%"))
+
+        if start_date:
+            try:
+                start = datetime.strptime(start_date, "%Y-%m-%d")
+                query = query.filter(Order.order_date >= start)
+            except:
+                pass
+
+        if end_date:
+            try:
+                end = datetime.strptime(end_date, "%Y-%m-%d")
+                query = query.filter(Order.order_date <= end)
+            except:
+                pass
+
+        # Sorting
+        if sort == "oldest":
+            query = query.order_by(Order.order_date.asc())
+        elif sort == "highest":
+            query = query.order_by(Order.total.desc())
+        elif sort == "lowest":
+            query = query.order_by(Order.total.asc())
+        else:  # newest
+            query = query.order_by(Order.order_date.desc())
+
+        orders = query.limit(500).all()
+        return jsonify({"orders": [o.to_dict() for o in orders]})
+
+    @app.route("/api/businesses/<int:business_id>/orders", methods=["POST"])
+    @token_required
+    @permission_required('sales.create')
+    def create_order(business_id):
+        business = Business.query.filter_by(id=business_id, user_id=g.current_user.id).first()
+        if not business:
+            return jsonify({"error": "Negocio no encontrado"}), 404
+
+        data = request.get_json()
+
+        # Generate order number
+        last_order = Order.query.filter_by(business_id=business_id).order_by(Order.id.desc()).first()
+        next_num = (last_order.id + 1) if last_order else 1
+        order_number = f"ORD-{next_num:05d}"
+
+        customer_id = data.get("customer_id")
+        items = data.get("items", [])
+        subtotal = data.get("subtotal", 0)
+        discount = data.get("discount", 0)
+        total = data.get("total", subtotal - discount)
+        notes = data.get("notes", "")
+
+        order = Order(
+            business_id=business_id,
+            customer_id=customer_id,
+            order_number=order_number,
+            status="pending",
+            items=items,
+            subtotal=subtotal,
+            discount=discount,
+            total=total,
+            notes=notes
+        )
+
+        db.session.add(order)
+        db.session.commit()
+
+        return jsonify({"order": order.to_dict()}), 201
+
+    @app.route("/api/businesses/<int:business_id>/orders/<int:order_id>", methods=["GET"])
+    @token_required
+    @permission_required('sales.read')
+    def get_order(business_id, order_id):
+        order = Order.query.filter_by(id=order_id, business_id=business_id).first()
+        if not order:
+            return jsonify({"error": "Pedido no encontrado"}), 404
+        return jsonify({"order": order.to_dict()})
+
+    @app.route("/api/businesses/<int:business_id>/orders/<int:order_id>", methods=["PUT"])
+    @token_required
+    @permission_required('sales.update')
+    def update_order(business_id, order_id):
+        order = Order.query.filter_by(id=order_id, business_id=business_id).first()
+        if not order:
+            return jsonify({"error": "Pedido no encontrado"}), 404
+
+        data = request.get_json()
+
+        if "status" in data:
+            order.status = data["status"]
+        if "customer_id" in data:
+            order.customer_id = data["customer_id"]
+        if "items" in data:
+            order.items = data["items"]
+        if "subtotal" in data:
+            order.subtotal = data["subtotal"]
+        if "discount" in data:
+            order.discount = data["discount"]
+        if "total" in data:
+            order.total = data["total"]
+        if "notes" in data:
+            order.notes = data["notes"]
+
+        db.session.commit()
+        return jsonify({"order": order.to_dict()})
+
+    @app.route("/api/businesses/<int:business_id>/orders/<int:order_id>", methods=["DELETE"])
+    @token_required
+    @permission_required('sales.delete')
+    def delete_order(business_id, order_id):
+        order = Order.query.filter_by(id=order_id, business_id=business_id).first()
+        if not order:
+            return jsonify({"error": "Pedido no encontrado"}), 404
+
+        db.session.delete(order)
+        db.session.commit()
+        return jsonify({"ok": True})
+
+    @app.route("/api/businesses/<int:business_id>/orders/<int:order_id>/status", methods=["PATCH"])
+    @token_required
+    @permission_required('sales.update')
+    def update_order_status(business_id, order_id):
+        order = Order.query.filter_by(id=order_id, business_id=business_id).first()
+        if not order:
+            return jsonify({"error": "Pedido no encontrado"}), 404
+
+        data = request.get_json()
+        status = data.get("status")
+
+        if status not in ["pending", "in_progress", "completed", "cancelled"]:
+            return jsonify({"error": "Estado inválido"}), 400
+
+        order.status = status
+        db.session.commit()
+
+        return jsonify({"order": order.to_dict()})
+
+    @app.route("/api/businesses/<int:business_id>/orders/stats", methods=["GET"])
+    @token_required
+    @permission_required('sales.read')
+    def get_order_stats(business_id):
+        business = Business.query.filter_by(id=business_id, user_id=g.current_user.id).first()
+        if not business:
+            return jsonify({"error": "Negocio no encontrado"}), 404
+
+        # Total orders
+        total_orders = Order.query.filter_by(business_id=business_id).count()
+
+        # Orders by status
+        pending = Order.query.filter_by(business_id=business_id, status="pending").count()
+        in_progress = Order.query.filter_by(business_id=business_id, status="in_progress").count()
+        completed = Order.query.filter_by(business_id=business_id, status="completed").count()
+        cancelled = Order.query.filter_by(business_id=business_id, status="cancelled").count()
+
+        # Total revenue from completed orders
+        from sqlalchemy import func
+        revenue_result = db.session.query(func.sum(Order.total)).filter(
+            Order.business_id == business_id,
+            Order.status == "completed"
+        ).scalar() or 0
+
+        return jsonify({
+            "total_orders": total_orders,
+            "pending": pending,
+            "in_progress": in_progress,
+            "completed": completed,
+            "cancelled": cancelled,
+            "total_revenue": revenue_result
+        })
+
     # ========== EXPENSE ROUTES ==========
     @app.route("/api/businesses/<int:business_id>/expenses", methods=["GET"])
     @token_required
@@ -1033,6 +1294,7 @@ def create_app(config_class=None):
         })
 
     @app.route("/api/businesses/<int:business_id>/reports/summary", methods=["GET"])
+    @app.route("/api/businesses/<int:business_id>/summary", methods=["GET"])
     @token_required
     def summary_report(business_id):
         business = Business.query.filter_by(id=business_id, user_id=g.current_user.id).first()
@@ -1654,6 +1916,222 @@ def create_app(config_class=None):
             })
         return jsonify({"businesses": result})
 
+    # ========== ADMIN GLOBAL DATA ==========
+    @app.route("/api/admin/all-customers", methods=["GET"])
+    @token_required
+    @permission_required('admin.*')
+    def get_all_customers_admin():
+        """Get all customers from all businesses"""
+        customers = db.session.query(
+            Customer, Business.name
+        ).join(Business, Customer.business_id == Business.id).all()
+        result = []
+        for customer, business_name in customers:
+            c = customer.to_dict()
+            c['business_name'] = business_name
+            result.append(c)
+        return jsonify({"customers": result})
+
+    @app.route("/api/admin/all-products", methods=["GET"])
+    @token_required
+    @permission_required('admin.*')
+    def get_all_products_admin():
+        """Get all products from all businesses"""
+        products = db.session.query(
+            Product, Business.name
+        ).join(Business, Product.business_id == Business.id).all()
+        result = []
+        for product, business_name in products:
+            p = product.to_dict()
+            p['business_name'] = business_name
+            result.append(p)
+        return jsonify({"products": result})
+
+    @app.route("/api/admin/analytics", methods=["GET"])
+    @token_required
+    @permission_required('admin.*')
+    def get_analytics_admin():
+        """Get global analytics across all businesses"""
+        # Total stats
+        total_users = User.query.count()
+        total_businesses = Business.query.count()
+        total_customers = Customer.query.count()
+        total_products = Product.query.count()
+        total_sales = Sale.query.count()
+        
+        # Revenue
+        total_revenue = db.session.query(db.func.sum(Sale.total)).scalar() or 0
+        total_expenses = db.session.query(db.func.sum(Expense.amount)).scalar() or 0
+        
+        # Recent activity
+        recent_sales = Sale.query.order_by(Sale.created_at.desc()).limit(5).all()
+        recent_users = User.query.order_by(User.created_at.desc()).limit(5).all()
+        
+        # Plan distribution
+        plan_counts = db.session.query(
+            User.plan, db.func.count(User.id)
+        ).group_by(User.plan).all()
+        
+        return jsonify({
+            "total_users": total_users,
+            "total_businesses": total_businesses,
+            "total_customers": total_customers,
+            "total_products": total_products,
+            "total_sales": total_sales,
+            "total_revenue": float(total_revenue),
+            "total_expenses": float(total_expenses),
+            "net_income": float(total_revenue) - float(total_expenses),
+            "recent_sales": [s.to_dict() for s in recent_sales],
+            "recent_users": [u.to_dict() for u in recent_users],
+            "plan_distribution": {plan: count for plan, count in plan_counts}
+        })
+
+    @app.route("/api/admin/security", methods=["GET"])
+    @token_required
+    @permission_required('admin.*')
+    def get_security_admin():
+        """Get security information"""
+        # Get recent audit logs related to security
+        security_logs = AuditLog.query.filter(
+            AuditLog.action.in_(['login', 'logout', 'failed_login', 'password_change', 'permission_denied'])
+        ).order_by(AuditLog.timestamp.desc()).limit(20).all()
+        
+        # Count by action type
+        login_attempts = AuditLog.query.filter(
+            AuditLog.action.in_(['login', 'failed_login'])
+        ).count()
+        failed_logins = AuditLog.query.filter(AuditLog.action == 'failed_login').count()
+        
+        # Active sessions (users with recent activity)
+        active_users = User.query.filter(
+            User.last_login != None
+        ).order_by(User.last_login.desc()).limit(10).all()
+        
+        return jsonify({
+            "security_logs": [log.to_dict() for log in security_logs],
+            "login_attempts": login_attempts,
+            "failed_logins": failed_logins,
+            "success_rate": ((login_attempts - failed_logins) / login_attempts * 100) if login_attempts > 0 else 100,
+            "active_users": [u.to_dict() for u in active_users]
+        })
+
+    @app.route("/api/admin/domains", methods=["GET"])
+    @token_required
+    @permission_required('admin.*')
+    def get_domains_admin():
+        """Get domain configuration"""
+        # Get app settings for domains
+        custom_domain = AppSettings.query.filter_by(key='custom_domain').first()
+        ssl_enabled = AppSettings.query.filter_by(key='ssl_enabled').first()
+        domain_verified = AppSettings.query.filter_by(key='domain_verified').first()
+        
+        return jsonify({
+            "domains": [
+                {
+                    "domain": custom_domain.value if custom_domain else None,
+                    "ssl_enabled": ssl_enabled.value == 'true' if ssl_enabled else False,
+                    "verified": domain_verified.value == 'true' if domain_verified else False,
+                    "status": "active" if (custom_domain and domain_verified and domain_verified.value == 'true') else "pending"
+                }
+            ],
+            "available_tlds": [".app", ".com", ".net", ".org", ".io"]
+        })
+
+    @app.route("/api/admin/integrations", methods=["GET"])
+    @token_required
+    @permission_required('admin.*')
+    def get_integrations_admin():
+        """Get integrations status"""
+        # Get integration settings
+        stripe_enabled = AppSettings.query.filter_by(key='stripe_enabled').first()
+        paypal_enabled = AppSettings.query.filter_by(key='paypal_enabled').first()
+        email_provider = AppSettings.query.filter_by(key='email_provider').first()
+        webhook_url = AppSettings.query.filter_by(key='webhook_url').first()
+        
+        return jsonify({
+            "integrations": [
+                {
+                    "id": "stripe",
+                    "name": "Stripe",
+                    "enabled": stripe_enabled.value == 'true' if stripe_enabled else False,
+                    "status": "connected" if (stripe_enabled and stripe_enabled.value == 'true') else "disconnected",
+                    "description": "Procesamiento de pagos"
+                },
+                {
+                    "id": "paypal",
+                    "name": "PayPal",
+                    "enabled": paypal_enabled.value == 'true' if paypal_enabled else False,
+                    "status": "connected" if (paypal_enabled and paypal_enabled.value == 'true') else "disconnected",
+                    "description": "Pagos con PayPal"
+                },
+                {
+                    "id": "email",
+                    "name": "Email",
+                    "enabled": email_provider.value != None if email_provider else False,
+                    "status": "connected" if (email_provider and email_provider.value) else "disconnected",
+                    "description": f"Proveedor: {email_provider.value if email_provider else 'No configurado'}"
+                },
+                {
+                    "id": "webhooks",
+                    "name": "Webhooks",
+                    "enabled": webhook_url.value != None if webhook_url else False,
+                    "status": "active" if (webhook_url and webhook_url.value) else "inactive",
+                    "description": "Notificaciones en tiempo real"
+                }
+            ]
+        })
+
+    @app.route("/api/admin/integrations/<integration_id>", methods=["POST"])
+    @token_required
+    @permission_required('admin.*')
+    def save_integration_config(integration_id):
+        """Save integration configuration"""
+        data = request.get_json() or {}
+        config = data.get('config', {})
+        enabled = data.get('enabled', False)
+        
+        # Map integration IDs to setting keys
+        key_mapping = {
+            'stripe': 'stripe_enabled',
+            'paypal': 'paypal_enabled',
+            'email': 'email_provider',
+            'webhooks': 'webhook_url'
+        }
+        
+        # Config field mappings
+        config_keys = {
+            'stripe': ['stripe_api_key', 'stripe_webhook_secret'],
+            'paypal': ['paypal_client_id', 'paypal_secret'],
+            'email': ['smtp_host', 'smtp_port', 'smtp_user', 'smtp_password', 'smtp_from'],
+            'webhooks': ['webhook_url', 'webhook_secret']
+        }
+        
+        main_key = key_mapping.get(integration_id)
+        if not main_key:
+            return jsonify({"error": "Integración no válida"}), 400
+        
+        # Save enabled status
+        setting = AppSettings.query.filter_by(key=main_key).first()
+        if not setting:
+            setting = AppSettings(key=main_key, value=str(enabled).lower())
+            db.session.add(setting)
+        else:
+            setting.value = str(enabled).lower()
+        
+        # Save config fields
+        for config_key in config_keys.get(integration_id, []):
+            if config_key in config:
+                setting_key = f"{integration_id}_{config_key}"
+                setting = AppSettings.query.filter_by(key=setting_key).first()
+                if not setting:
+                    setting = AppSettings(key=setting_key, value=config[config_key])
+                    db.session.add(setting)
+                else:
+                    setting.value = config[config_key]
+        
+        db.session.commit()
+        return jsonify({"ok": True})
+
     # ========== ADMIN USER MANAGEMENT ==========
     @app.route("/api/admin/users", methods=["GET"])
     @token_required
@@ -1730,7 +2208,7 @@ def create_app(config_class=None):
             
             db.session.commit()
             print(f"[DEBUG] User committed successfully: {user.email}")
-            return jsonify({"user": user.to_dict()}), 201
+            return jsonify({"ok": True, "user": user.to_dict()}), 201
         except Exception as e:
             db.session.rollback()
             print(f"[ERROR] Error creating user: {e}")
@@ -1769,12 +2247,23 @@ def create_app(config_class=None):
         if "plan" in data:
             user.plan = data["plan"]
         
-        # Update roles if provided
-        if "role_ids" in data:
+        # Update roles if provided - accept both role_ids (array) and role_id (single)
+        if "role_ids" in data or "role_id" in data:
             # Remove existing roles
             UserRole.query.filter_by(user_id=user_id).delete()
+            
+            role_ids = data.get("role_ids", [])
+            single_role_id = data.get("role_id")
+            if single_role_id:
+                try:
+                    single_role_id = int(single_role_id)
+                    if single_role_id not in role_ids:
+                        role_ids.append(single_role_id)
+                except (ValueError, TypeError):
+                    pass
+            
             # Add new roles
-            for role_id in data["role_ids"]:
+            for role_id in role_ids:
                 role = Role.query.get(role_id)
                 if role:
                     user_role = UserRole(user_id=user_id, role_id=role_id)
@@ -1818,6 +2307,43 @@ def create_app(config_class=None):
         user.set_password(new_password)
         db.session.commit()
         return jsonify({"ok": True, "message": "Contraseña actualizada"})
+
+    @app.route("/api/admin/users/<int:user_id>/roles", methods=["GET"])
+    @token_required
+    @permission_required('admin.users')
+    def get_user_roles(user_id):
+        """Get roles for a user"""
+        user = User.query.get(user_id)
+        if not user:
+            return jsonify({"error": "Usuario no encontrado"}), 404
+        
+        user_roles = UserRole.query.filter_by(user_id=user_id).all()
+        return jsonify({"roles": [ur.role_id for ur in user_roles]})
+
+    @app.route("/api/admin/users/<int:user_id>/roles", methods=["PUT"])
+    @token_required
+    @permission_required('admin.users')
+    def update_user_roles(user_id):
+        """Update roles for a user"""
+        user = User.query.get(user_id)
+        if not user:
+            return jsonify({"error": "Usuario no encontrado"}), 404
+        
+        data = request.get_json() or {}
+        role_ids = data.get("roles", [])
+        
+        # Remove existing roles
+        UserRole.query.filter_by(user_id=user_id).delete()
+        
+        # Add new roles
+        for role_id in role_ids:
+            role = Role.query.get(role_id)
+            if role:
+                user_role = UserRole(user_id=user_id, role_id=role_id, assigned_by=g.current_user.id)
+                db.session.add(user_role)
+        
+        db.session.commit()
+        return jsonify({"ok": True, "message": "Roles actualizados"})
 
     # ========== ADMIN ROLE MANAGEMENT ==========
     @app.route("/api/admin/roles", methods=["GET"])
@@ -1929,9 +2455,35 @@ def create_app(config_class=None):
         return jsonify({"ok": True})
 
     @app.route("/api/admin/roles/<int:role_id>/permissions", methods=["POST"])
+    @app.route("/api/admin/roles/<int:role_id>/permissions/bulk", methods=["POST"])
     @token_required
-    @permission_required('admin.permissions')
-    def add_permission_to_role(role_id):
+    @permission_required('admin.roles')
+    def update_role_permissions(role_id):
+        """Update all permissions for a role (bulk replace)"""
+        from backend.models import Role, Permission, RolePermission
+        
+        role = Role.query.get(role_id)
+        if not role:
+            return jsonify({"error": "Rol no encontrado"}), 404
+        
+        data = request.get_json() or {}
+        permissions = data.get("permissions", [])
+        
+        if not isinstance(permissions, list):
+            return jsonify({"error": "permissions debe ser una lista"}), 400
+        
+        # Remove all existing permissions
+        RolePermission.query.filter_by(role_id=role_id).delete()
+        
+        # Add new permissions
+        for perm_name in permissions:
+            perm = Permission.query.filter_by(name=perm_name).first()
+            if perm:
+                rp = RolePermission(role_id=role_id, permission_id=perm.id)
+                db.session.add(rp)
+        
+        db.session.commit()
+        return jsonify({"ok": True})
         """Add permission to role"""
         role = Role.query.get(role_id)
         if not role:
@@ -1979,6 +2531,148 @@ def create_app(config_class=None):
         RolePermission.query.filter_by(role_id=role_id, permission_id=perm.id).delete()
         db.session.commit()
         return jsonify({"ok": True})
+
+    # ========== ADMIN DATA MANAGEMENT ==========
+    @app.route("/api/admin/data-stats", methods=["GET"])
+    @token_required
+    @permission_required('admin.*')
+    def get_data_stats():
+        """Get database statistics"""
+        from backend.models import User, Business, Customer, Product, Sale, Payment, Expense
+        
+        users = User.query.count()
+        businesses = Business.query.count()
+        customers = Customer.query.count()
+        products = Product.query.count()
+        sales = Sale.query.count()
+        payments = Payment.query.count()
+        expenses = Expense.query.count()
+        
+        return jsonify({
+            "stats": {
+                "users": users,
+                "businesses": businesses,
+                "customers": customers,
+                "products": products,
+                "sales": sales,
+                "payments": payments,
+                "expenses": expenses,
+                "last_backup": None
+            }
+        })
+
+    @app.route("/api/admin/export", methods=["GET"])
+    @token_required
+    @permission_required('admin.*')
+    def export_data():
+        """Export all data"""
+        from backend.models import User, Business, Customer, Product, Sale, Payment, Expense, AuditLog
+        import json
+        
+        format_type = request.args.get('format', 'json')
+        
+        data = {
+            "export_date": datetime.datetime.utcnow().isoformat(),
+            "users": [u.to_dict() for u in User.query.all()],
+            "businesses": [b.to_dict() for b in Business.query.all()],
+            "customers": [c.to_dict() for c in Customer.query.all()],
+            "products": [p.to_dict() for p in Product.query.all()],
+            "sales": [s.to_dict() for s in Sale.query.all()],
+            "payments": [p.to_dict() for p in Payment.query.all()],
+            "expenses": [e.to_dict() for e in Expense.query.all()],
+            "audit_logs": [a.to_dict() for a in AuditLog.query.limit(1000).all()]
+        }
+        
+        if format_type == 'csv':
+            # Simple CSV export for sales
+            sales = Sale.query.all()
+            csv_data = "id,business_id,customer_id,total,balance,paid,sale_date\n"
+            for s in sales:
+                csv_data += f"{s.id},{s.business_id},{s.customer_id},{s.total},{s.balance},{s.paid},{s.sale_date}\n"
+            
+            from flask import Response
+            return Response(
+                csv_data,
+                mimetype="text/csv",
+                headers={"Content-disposition": f"attachment; filename=export_{datetime.datetime.now().strftime('%Y%m%d')}.csv"}
+            )
+        
+        return jsonify(data)
+
+    @app.route("/api/admin/import", methods=["POST"])
+    @token_required
+    @permission_required('admin.*')
+    def import_data():
+        """Import data from JSON file"""
+        from backend.models import User, Business, Customer, Product, Sale, Payment, Expense
+        
+        if 'file' not in request.files:
+            return jsonify({"error": "No file provided"}), 400
+        
+        file = request.files['file']
+        if file.filename == '':
+            return jsonify({"error": "No file selected"}), 400
+        
+        try:
+            import json
+            data = json.load(file)
+            
+            imported = {"users": 0, "businesses": 0, "customers": 0, "products": 0}
+            
+            # Import businesses
+            if 'businesses' in data:
+                for b in data['businesses']:
+                    if not Business.query.get(b.get('id')):
+                        business = Business(
+                            id=b['id'],
+                            user_id=b['user_id'],
+                            name=b['name'],
+                            currency=b.get('currency', 'USD'),
+                            timezone=b.get('timezone', 'UTC')
+                        )
+                        db.session.add(business)
+                        imported['businesses'] += 1
+            
+            # Import customers
+            if 'customers' in data:
+                for c in data['customers']:
+                    if not Customer.query.get(c.get('id')):
+                        customer = Customer(
+                            id=c['id'],
+                            business_id=c['business_id'],
+                            name=c['name'],
+                            phone=c.get('phone'),
+                            address=c.get('address'),
+                            notes=c.get('notes'),
+                            active=c.get('active', True)
+                        )
+                        db.session.add(customer)
+                        imported['customers'] += 1
+            
+            # Import products
+            if 'products' in data:
+                for p in data['products']:
+                    if not Product.query.get(p.get('id')):
+                        product = Product(
+                            id=p['id'],
+                            business_id=p['business_id'],
+                            name=p['name'],
+                            sku=p.get('sku'),
+                            price=p.get('price', 0),
+                            cost=p.get('cost'),
+                            unit=p.get('unit'),
+                            stock=p.get('stock', 0),
+                            active=p.get('active', True)
+                        )
+                        db.session.add(product)
+                        imported['products'] += 1
+            
+            db.session.commit()
+            return jsonify({"ok": True, "imported": imported})
+        
+        except Exception as e:
+            db.session.rollback()
+            return jsonify({"error": str(e)}), 400
 
     # ========== ADMIN PERMISSIONS ==========
     @app.route("/api/admin/permissions", methods=["GET"])
@@ -2044,10 +2738,21 @@ def create_app(config_class=None):
     @app.route("/")
     def index():
         return send_from_directory("../frontend", "index.html")
-
+    
+    @app.route("/app")
+    def app_view():
+        """Public App - Uses the main index.html with full functionality"""
+        return send_from_directory("../frontend", "index.html")
+    
+    @app.route("/panel")
+    def panel():
+        """Admin Panel - Full admin interface with sidebar"""
+        return send_from_directory("../frontend", "panel.html")
+    
     @app.route("/admin")
     def admin():
-        return send_from_directory("../frontend", "index.html")
+        """Legacy admin route - redirect to panel"""
+        return send_from_directory("../frontend", "panel.html")
 
     @app.route("/<path:path>")
     def serve_static(path):

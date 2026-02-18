@@ -1,17 +1,37 @@
+# Cuaderno - Dockerfile
+# ============================================
 FROM python:3.11-slim
 
+# Set working directory
 WORKDIR /app
 
-# Dependencias primero (mejor cache)
+# Set environment variables
+ENV PYTHONDONTWRITEBYTECODE=1
+ENV PYTHONUNBUFFERED=1
+ENV FLASK_APP=backend.main
+ENV FLASK_ENV=production
+ENV PORT=5000
+
+# Install system dependencies
+RUN apt-get update && apt-get install -y \
+    gcc \
+    postgresql-client \
+    libpq-dev \
+    && rm -rf /var/lib/apt/lists/*
+
+# Copy requirements first for better caching
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Código
-COPY . .
+# Copy application code
+COPY backend/ ./backend/
+COPY frontend/ ./frontend/
 
-# Cloud Run usa PORT env var; local puedes usar 8080
-ENV PORT=8080
-EXPOSE 8080
+# Create necessary directories
+RUN mkdir -p /app/exports /app/backups
 
-# Si usas Flask app = app dentro de server.py
-CMD ["python", "server.py"]
+# Expose port
+EXPOSE 5000
+
+# Run the application
+CMD ["gunicorn", "--bind", "0.0.0.0:5000", "--workers", "4", "--timeout", "120", "backend.main:app"]

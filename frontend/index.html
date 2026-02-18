@@ -375,6 +375,9 @@
                     <a href="#" onclick="app.navigate('dashboard')" class="nav-item block px-4 py-2 rounded-lg text-white/80 hover:bg-white/5" data-page="dashboard">
                         <i class="ph ph-chart-pie-slice ph-icon"></i> Dashboard
                     </a>
+                    <a href="#" onclick="app.navigate('orders')" class="nav-item block px-4 py-2 rounded-lg text-white/80 hover:bg-white/5" data-page="orders">
+                        <i class="ph ph-shopping-bag ph-icon"></i> Pedidos
+                    </a>
                     <a href="#" onclick="app.navigate('sales')" class="nav-item block px-4 py-2 rounded-lg text-white/80 hover:bg-white/5" data-page="sales">
                         <i class="ph ph-shopping-cart ph-icon"></i> Ventas
                     </a>
@@ -395,6 +398,9 @@
                     </a>
                     <a href="#" onclick="app.navigate('settings')" class="nav-item block px-4 py-2 rounded-lg text-white/80 hover:bg-white/5" data-page="settings">
                         <i class="ph ph-gear ph-icon"></i> Configuración
+                    </a>
+                    <a href="#" onclick="app.navigate('upgrade')" class="nav-item block px-4 py-2 rounded-lg text-yellow-400 hover:bg-yellow-400/10 hidden" data-page="upgrade" id="nav-upgrade">
+                        <i class="ph ph-star ph-icon"></i> Actualizar a Pro
                     </a>
                     <a href="#" onclick="app.navigate('admin')" class="nav-item block px-4 py-2 rounded-lg text-white/80 hover:bg-white/5 hidden" data-page="admin" id="nav-admin">
                         <i class="ph ph-wrench ph-icon"></i> Admin
@@ -562,9 +568,23 @@
                     </div>
                     
                     <div class="glass rounded-xl p-4 mb-4">
-                        <div class="flex gap-2">
+                        <div class="flex flex-wrap gap-4 items-center">
+                            <input type="text" id="sales-search" placeholder="Buscar venta..." class="input px-4 py-2 rounded-lg flex-1 min-w-48">
                             <input type="date" id="sales-start" class="input px-3 py-2 rounded-lg">
                             <input type="date" id="sales-end" class="input px-3 py-2 rounded-lg">
+                            <select id="sales-status-filter" class="input px-3 py-2 rounded-lg">
+                                <option value="">Todos los estados</option>
+                                <option value="completed">Completado</option>
+                                <option value="pending">Pendiente</option>
+                                <option value="cancelled">Cancelado</option>
+                            </select>
+                            <select id="sales-payment-filter" class="input px-3 py-2 rounded-lg">
+                                <option value="">Todos los métodos</option>
+                                <option value="cash">Efectivo</option>
+                                <option value="card">Tarjeta</option>
+                                <option value="transfer">Transferencia</option>
+                                <option value="credit">Crédito</option>
+                            </select>
                             <button onclick="app.loadSales()" class="btn-primary px-4 py-2 rounded-lg">Filtrar</button>
                         </div>
                     </div>
@@ -643,6 +663,24 @@
                         <button onclick="app.showCustomerModal()" class="btn-primary px-4 py-2 rounded-xl font-semibold">+ Nuevo Cliente</button>
                     </div>
                     
+                    <!-- Filters -->
+                    <div class="glass rounded-xl p-4 mb-4">
+                        <div class="flex flex-wrap gap-4 items-center">
+                            <input type="text" id="customer-search" placeholder="Buscar cliente..." class="input px-4 py-2 rounded-lg flex-1 min-w-48" oninput="app.filterCustomers()">
+                            <select id="customer-status-filter" class="input px-4 py-2 rounded-lg" onchange="app.filterCustomers()">
+                                <option value="">Todos los estados</option>
+                                <option value="active">Activo</option>
+                                <option value="inactive">Inactivo</option>
+                            </select>
+                            <select id="customer-balance-filter" class="input px-4 py-2 rounded-lg" onchange="app.filterCustomers()">
+                                <option value="">Cualquier saldo</option>
+                                <option value="positive">Con saldo</option>
+                                <option value="negative">Saldo negativo</option>
+                                <option value="zero">Sin saldo</option>
+                            </select>
+                        </div>
+                    </div>
+                    
                     <div class="glass rounded-xl overflow-hidden">
                         <table>
                             <thead>
@@ -665,6 +703,22 @@
                     <div class="flex justify-between items-center mb-6">
                         <h2 class="text-2xl font-bold">Productos</h2>
                         <button onclick="app.showProductModal()" class="btn-primary px-4 py-2 rounded-xl font-semibold">+ Nuevo Producto</button>
+                    </div>
+                    
+                    <!-- Filters -->
+                    <div class="glass rounded-xl p-4 mb-4">
+                        <div class="flex flex-wrap gap-4 items-center">
+                            <input type="text" id="product-search" placeholder="Buscar producto..." class="input px-4 py-2 rounded-lg flex-1 min-w-48" oninput="app.filterProducts()">
+                            <select id="product-category-filter" class="input px-4 py-2 rounded-lg" onchange="app.filterProducts()">
+                                <option value="">Todas las categorías</option>
+                            </select>
+                            <select id="product-stock-filter" class="input px-4 py-2 rounded-lg" onchange="app.filterProducts()">
+                                <option value="">Cualquier stock</option>
+                                <option value="in_stock">Con stock</option>
+                                <option value="out_of_stock">Sin stock</option>
+                                <option value="low_stock">Stock bajo</option>
+                            </select>
+                        </div>
                     </div>
                     
                     <div class="glass rounded-xl overflow-hidden">
@@ -713,6 +767,161 @@
                         <h3 class="font-semibold mb-4">Productos Más Vendidos</h3>
                         <div id="top-products" class="space-y-2">
                             <p class="text-muted">Sin datos</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Orders Page -->
+                <div id="page-orders" class="page hidden fade-in">
+                    <div class="flex justify-between items-center mb-6">
+                        <h2 class="text-2xl font-bold">Pedidos</h2>
+                        <button onclick="app.showOrderModal()" class="btn-primary px-4 py-2 rounded-xl flex items-center gap-2">
+                            <i class="ph ph-plus"></i> Nuevo Pedido
+                        </button>
+                    </div>
+                    
+                    <!-- Stats Cards -->
+                    <div class="grid grid-cols-2 md:grid-cols-5 gap-4 mb-6">
+                        <div class="glass rounded-xl p-4">
+                            <p class="text-muted text-sm">Total</p>
+                            <p id="orders-total" class="text-xl font-bold">0</p>
+                        </div>
+                        <div class="glass rounded-xl p-4 border-l-2 border-yellow-500">
+                            <p class="text-muted text-sm">Pendientes</p>
+                            <p id="orders-pending" class="text-xl font-bold text-yellow-400">0</p>
+                        </div>
+                        <div class="glass rounded-xl p-4 border-l-2 border-blue-500">
+                            <p class="text-muted text-sm">En Proceso</p>
+                            <p id="orders-in-progress" class="text-xl font-bold text-blue-400">0</p>
+                        </div>
+                        <div class="glass rounded-xl p-4 border-l-2 border-green-500">
+                            <p class="text-muted text-sm">Completados</p>
+                            <p id="orders-completed" class="text-xl font-bold text-green-400">0</p>
+                        </div>
+                        <div class="glass rounded-xl p-4 border-l-2 border-red-500">
+                            <p class="text-muted text-sm">Cancelados</p>
+                            <p id="orders-cancelled" class="text-xl font-bold text-red-400">0</p>
+                        </div>
+                    </div>
+                    
+                    <!-- Filters -->
+                    <div class="glass rounded-xl p-4 mb-6">
+                        <div class="flex flex-wrap gap-4 items-center">
+                            <input type="text" id="orders-search" placeholder="Buscar pedido..." class="input px-4 py-2 rounded-lg flex-1 min-w-48" oninput="app.filterOrders()">
+                            <select id="orders-status-filter" class="input px-4 py-2 rounded-lg" onchange="app.filterOrders()">
+                                <option value="">Todos los estados</option>
+                                <option value="pending">Pendiente</option>
+                                <option value="in_progress">En Proceso</option>
+                                <option value="completed">Completado</option>
+                                <option value="cancelled">Cancelado</option>
+                            </select>
+                            <input type="date" id="orders-date-from" class="input px-4 py-2 rounded-lg" onchange="app.filterOrders()">
+                            <input type="date" id="orders-date-to" class="input px-4 py-2 rounded-lg" onchange="app.filterOrders()">
+                            <select id="orders-sort" class="input px-4 py-2 rounded-lg" onchange="app.filterOrders()">
+                                <option value="newest">Más reciente</option>
+                                <option value="oldest">Más antiguo</option>
+                                <option value="highest">Mayor valor</option>
+                                <option value="lowest">Menor valor</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <!-- Orders Table -->
+                    <div class="glass rounded-xl overflow-hidden">
+                        <table class="w-full">
+                            <thead class="bg-white/5">
+                                <tr>
+                                    <th class="px-4 py-3 text-left text-sm font-medium">Pedido</th>
+                                    <th class="px-4 py-3 text-left text-sm font-medium">Cliente</th>
+                                    <th class="px-4 py-3 text-left text-sm font-medium">Fecha</th>
+                                    <th class="px-4 py-3 text-left text-sm font-medium">Estado</th>
+                                    <th class="px-4 py-3 text-left text-sm font-medium">Total</th>
+                                    <th class="px-4 py-3 text-left text-sm font-medium">Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody id="orders-table" class="divide-y divide-white/5">
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                
+                <!-- Upgrade to Pro Page -->
+                <div id="page-upgrade" class="page hidden fade-in">
+                    <div class="text-center py-8">
+                        <div class="inline-flex items-center justify-center w-24 h-24 rounded-full bg-gradient-to-br from-yellow-400 to-orange-500 mb-6 shadow-lg shadow-yellow-500/30 animate-pulse">
+                            <i class="ph ph-star text-5xl text-white"></i>
+                        </div>
+                        <h2 class="text-4xl font-bold mb-4 bg-gradient-to-r from-yellow-400 to-orange-500 bg-clip-text text-transparent">¡Actualiza a PRO!</h2>
+                        <p class="text-xl text-muted mb-8">Desbloquea todo el potencial de tu negocio</p>
+                    </div>
+                    
+                    <!-- Benefits -->
+                    <div class="grid md:grid-cols-3 gap-6 mb-8">
+                        <div class="glass rounded-xl p-6 text-center hover:bg-white/10 transition-all">
+                            <div class="w-16 h-16 mx-auto mb-4 rounded-full bg-blue-500/20 flex items-center justify-center">
+                                <i class="ph ph-users text-3xl text-blue-400"></i>
+                            </div>
+                            <h3 class="font-bold text-lg mb-2">Usuarios Ilimitados</h3>
+                            <p class="text-muted text-sm">Agrega todo tu equipo sin restricciones</p>
+                        </div>
+                        <div class="glass rounded-xl p-6 text-center hover:bg-white/10 transition-all">
+                            <div class="w-16 h-16 mx-auto mb-4 rounded-full bg-green-500/20 flex items-center justify-center">
+                                <i class="ph ph-chart-line-up text-3xl text-green-400"></i>
+                            </div>
+                            <h3 class="font-bold text-lg mb-2">Analíticas Avanzadas</h3>
+                            <p class="text-muted text-sm">Reports detallados y exportación</p>
+                        </div>
+                        <div class="glass rounded-xl p-6 text-center hover:bg-white/10 transition-all">
+                            <div class="w-16 h-16 mx-auto mb-4 rounded-full bg-purple-500/20 flex items-center justify-center">
+                                <i class="ph ph-cloud text-3xl text-purple-400"></i>
+                            </div>
+                            <h3 class="font-bold text-lg mb-2">Backup Automático</h3>
+                            <p class="text-muted text-sm">Tus datos siempre seguros</p>
+                        </div>
+                        <div class="glass rounded-xl p-6 text-center hover:bg-white/10 transition-all">
+                            <div class="w-16 h-16 mx-auto mb-4 rounded-full bg-pink-500/20 flex items-center justify-center">
+                                <i class="ph ph-globe text-3xl text-pink-400"></i>
+                            </div>
+                            <h3 class="font-bold text-lg mb-2">Dominios Personalizados</h3>
+                            <p class="text-muted text-sm">Tu marca, tu dominio</p>
+                        </div>
+                        <div class="glass rounded-xl p-6 text-center hover:bg-white/10 transition-all">
+                            <div class="w-16 h-16 mx-auto mb-4 rounded-full bg-yellow-500/20 flex items-center justify-center">
+                                <i class="ph ph-headset text-3xl text-yellow-400"></i>
+                            </div>
+                            <h3 class="font-bold text-lg mb-2">Soporte Prioritario</h3>
+                            <p class="text-muted text-sm">Ayuda cuando la necesites</p>
+                        </div>
+                        <div class="glass rounded-xl p-6 text-center hover:bg-white/10 transition-all">
+                            <div class="w-16 h-16 mx-auto mb-4 rounded-full bg-cyan-500/20 flex items-center justify-center">
+                                <i class="ph ph-gear text-3xl text-cyan-400"></i>
+                            </div>
+                            <h3 class="font-bold text-lg mb-2">Integraciones API</h3>
+                            <p class="text-muted text-sm">Conecta con otras herramientas</p>
+                        </div>
+                    </div>
+                    
+                    <!-- Pricing -->
+                    <div class="max-w-2xl mx-auto">
+                        <div class="glass rounded-2xl p-8 border-2 border-yellow-500/50 relative overflow-hidden">
+                            <div class="absolute top-0 right-0 bg-yellow-500 text-black text-xs font-bold px-4 py-1 rounded-bl-lg">MÁS POPULAR</div>
+                            <div class="text-center mb-6">
+                                <p class="text-muted mb-2">Plan PRO Mensual</p>
+                                <div class="flex items-baseline justify-center gap-1">
+                                    <span class="text-5xl font-bold text-yellow-400">$19.99</span>
+                                    <span class="text-muted">/mes</span>
+                                </div>
+                            </div>
+                            <ul class="space-y-3 mb-8">
+                                <li class="flex items-center gap-3"><i class="ph ph-check-circle text-green-400"></i> Todas las funcionalidades</li>
+                                <li class="flex items-center gap-3"><i class="ph ph-check-circle text-green-400"></i> Usuarios ilimitados</li>
+                                <li class="flex items-center gap-3"><i class="ph ph-check-circle text-green-400"></i> Analíticas avanzadas</li>
+                                <li class="flex items-center gap-3"><i class="ph ph-check-circle text-green-400"></i> Soporte prioritario</li>
+                                <li class="flex items-center gap-3"><i class="ph ph-check-circle text-green-400"></i> Sin anuncios</li>
+                            </ul>
+                            <button onclick="app.upgradeToPro('pro_monthly')" class="w-full btn-primary py-4 rounded-xl text-lg font-bold hover:scale-105 transition-transform">
+                                ¡Actualizar Ahora!
+                            </button>
                         </div>
                     </div>
                 </div>
@@ -1176,6 +1385,67 @@
                 </form>
             </div>
             
+            <!-- Order Modal -->
+            <div id="order-modal" class="glass rounded-2xl p-6 w-full max-w-lg hidden z-[100000]" style="display:none;">
+                <h3 id="order-modal-title" class="text-xl font-bold mb-4">Nuevo Pedido</h3>
+                <form id="order-form" onsubmit="event.preventDefault(); app.saveOrder();">
+                    <input type="hidden" id="order-id">
+                    <div class="mb-4">
+                        <label class="block text-sm mb-1">Número de Pedido</label>
+                        <input type="text" id="order-number" class="input w-full px-4 py-2 rounded-xl">
+                    </div>
+                    <div class="mb-4">
+                        <label class="block text-sm mb-1">Cliente</label>
+                        <select id="order-customer" class="input w-full px-4 py-2 rounded-xl">
+                            <option value="">Seleccionar cliente...</option>
+                        </select>
+                    </div>
+                    <div class="mb-4">
+                        <label class="block text-sm mb-1">Estado</label>
+                        <select id="order-status" class="input w-full px-4 py-2 rounded-xl">
+                            <option value="pending">Pendiente</option>
+                            <option value="in_progress">En Proceso</option>
+                            <option value="completed">Completado</option>
+                            <option value="cancelled">Cancelado</option>
+                        </select>
+                    </div>
+                    <div class="mb-4">
+                        <label class="block text-sm mb-1">Fecha</label>
+                        <input type="date" id="order-date" class="input w-full px-4 py-2 rounded-xl">
+                    </div>
+                    <div class="mb-4">
+                        <label class="block text-sm mb-1">Productos</label>
+                        <div id="order-items-container" class="space-y-2 mb-2"></div>
+                        <select id="order-product" class="input w-full px-4 py-2 rounded-xl mb-2">
+                            <option value="">Seleccionar producto...</option>
+                        </select>
+                        <button type="button" onclick="app.addOrderItem()" class="text-blue-400 text-sm">+ Agregar producto</button>
+                    </div>
+                    <div class="flex gap-4 mb-4">
+                        <div class="flex-1">
+                            <label class="block text-sm mb-1">Subtotal</label>
+                            <input type="number" id="order-subtotal" class="input w-full px-4 py-2 rounded-xl" step="0.01" readonly>
+                        </div>
+                        <div class="flex-1">
+                            <label class="block text-sm mb-1">Descuento</label>
+                            <input type="number" id="order-discount" class="input w-full px-4 py-2 rounded-xl" step="0.01" value="0" onchange="app.calculateOrderTotal()">
+                        </div>
+                        <div class="flex-1">
+                            <label class="block text-sm mb-1">Total</label>
+                            <input type="number" id="order-total" class="input w-full px-4 py-2 rounded-xl" step="0.01" readonly>
+                        </div>
+                    </div>
+                    <div class="mb-4">
+                        <label class="block text-sm mb-1">Notas</label>
+                        <textarea id="order-notes" class="input w-full px-4 py-2 rounded-xl" rows="2"></textarea>
+                    </div>
+                    <div class="flex justify-end gap-2">
+                        <button type="button" onclick="app.closeModal('order-modal')" class="px-4 py-2 rounded-lg bg-gray-700 hover:bg-gray-600">Cancelar</button>
+                        <button type="submit" class="btn-primary px-4 py-2 rounded-lg">Guardar</button>
+                    </div>
+                </form>
+            </div>
+            
             <!-- Sale Modal -->
             <div id="modal-sale" class="glass rounded-2xl p-6 w-full max-w-lg hidden">
                 <h3 class="text-xl font-bold mb-4">Nueva Venta</h3>
@@ -1473,12 +1743,10 @@
                     if (!contentType || !contentType.includes('application/json')) {
                         responseText = await response.text();
                         console.error('Non-JSON response:', responseText.substring(0, 200));
-                        console.log('=== createAdminUser RESPONSE ===', status, responseText);
                         throw new Error('El servidor devolvió HTML en lugar de JSON. Asegúrate de usar el puerto correcto del servidor');
                     }
                     
                     responseData = await response.json();
-                    console.log('=== createAdminUser RESPONSE ===', status, JSON.stringify(responseData));
                     
                     if (!response.ok) {
                         throw new Error(responseData.error || `Error ${status}: ${responseData.message || 'Error en la solicitud'}`);
@@ -1717,6 +1985,11 @@
                 // Show admin menu if user is admin or has admin permission
                 if (this.user.is_admin || (this.user.permissions && this.user.permissions.admin)) {
                     document.getElementById('nav-admin').classList.remove('hidden');
+                }
+                
+                // Show upgrade tab for free users
+                if (this.user.plan === 'free') {
+                    document.getElementById('nav-upgrade').classList.remove('hidden');
                 }
                 
                 // Load businesses
@@ -1991,6 +2264,12 @@
                     case 'settings':
                         await this.loadBusinesses();
                         break;
+                    case 'orders':
+                        await this.loadOrders();
+                        break;
+                    case 'upgrade':
+                        // Upgrade page doesn't need to load anything
+                        break;
                     case 'admin':
                         await this.loadAdmin();
                         break;
@@ -2195,11 +2474,15 @@
             async loadSales() {
                 const start = document.getElementById('sales-start').value;
                 const end = document.getElementById('sales-end').value;
+                const search = document.getElementById('sales-search').value;
+                const statusFilter = document.getElementById('sales-status-filter').value;
+                const paymentFilter = document.getElementById('sales-payment-filter').value;
                 
                 let url = `/businesses/${this.business.id}/sales`;
                 const params = [];
                 if (start) params.push(`start_date=${start}`);
                 if (end) params.push(`end_date=${end}`);
+                if (search) params.push(`search=${encodeURIComponent(search)}`);
                 if (params.length) url += '?' + params.join('&');
                 
                 const data = await this.api(url);
@@ -2209,18 +2492,35 @@
                 const customers = {};
                 customersData.customers.forEach(c => customers[c.id] = c.name);
                 
+                let sales = data.sales || [];
+                
+                // Apply client-side filters
+                if (statusFilter) {
+                    if (statusFilter === 'completed') {
+                        sales = sales.filter(s => s.paid);
+                    } else if (statusFilter === 'pending') {
+                        sales = sales.filter(s => !s.paid);
+                    } else if (statusFilter === 'cancelled') {
+                        sales = sales.filter(s => s.cancelled);
+                    }
+                }
+                
+                if (paymentFilter) {
+                    sales = sales.filter(s => s.payment_method === paymentFilter);
+                }
+                
                 const tbody = document.getElementById('sales-table');
-                if (data.sales.length === 0) {
-                    tbody.innerHTML = '<tr><td colspan="6" class="text-center text-muted py-8">Sin ventas registradas</td></tr>';
+                if (sales.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="7" class="text-center text-muted py-8">Sin ventas registradas</td></tr>';
                 } else {
-                    tbody.innerHTML = data.sales.map(s => `
+                    tbody.innerHTML = sales.map(s => `
                         <tr>
                             <td>${s.sale_date}</td>
                             <td>${customers[s.customer_id] || '-'}</td>
                             <td>${s.items.length}</td>
                             <td class="font-bold">${this.formatMoney(s.total)}</td>
                             <td class="${(s.balance || 0) > 0 ? 'money-negative' : 'money-positive'}">${this.formatMoney(s.balance || 0)}</td>
-                            <td>${s.payment_method === 'cash' ? 'Efectivo' : s.payment_method === 'transfer' ? 'Transferencia' : 'Fiado'}</td>
+                            <td>${s.payment_method === 'cash' ? 'Efectivo' : s.payment_method === 'transfer' ? 'Transferencia' : s.payment_method === 'card' ? 'Tarjeta' : 'Fiado'}</td>
                             <td>${s.paid ? '<span class="text-green-400">Pagado</span>' : '<span class="text-red-400">Pendiente</span>'}</td>
                         </tr>
                     `).join('');
@@ -2231,8 +2531,12 @@
                 this.loadProductsForSelect();
                 this.loadCustomersForSelect();
                 document.getElementById('sale-date').value = new Date().toISOString().split('T')[0];
-                document.getElementById('modal-sale').classList.remove('hidden');
-                document.getElementById('modal-overlay').classList.remove('hidden');
+                const modal = document.getElementById('modal-sale');
+                const overlay = document.getElementById('modal-overlay');
+                modal.classList.remove('hidden');
+                modal.style.display = 'block';
+                overlay.classList.remove('hidden');
+                overlay.style.display = 'flex';
                 this.saleItems = [];
                 this.renderSaleItems();
             },
@@ -2396,8 +2700,12 @@
                 document.getElementById('expense-amount').value = '';
                 document.getElementById('expense-category').value = '';
                 document.getElementById('expense-description').value = '';
-                document.getElementById('modal-expense').classList.remove('hidden');
-                document.getElementById('modal-overlay').classList.remove('hidden');
+                const modal = document.getElementById('modal-expense');
+                const overlay = document.getElementById('modal-overlay');
+                modal.classList.remove('hidden');
+                modal.style.display = 'block';
+                overlay.classList.remove('hidden');
+                overlay.style.display = 'flex';
             },
             
             async saveExpense() {
@@ -2441,8 +2749,12 @@
             showPaymentModal() {
                 this.loadCustomersForSelectPayment();
                 document.getElementById('payment-date').value = new Date().toISOString().split('T')[0];
-                document.getElementById('modal-payment').classList.remove('hidden');
-                document.getElementById('modal-overlay').classList.remove('hidden');
+                const modal = document.getElementById('modal-payment');
+                const overlay = document.getElementById('modal-overlay');
+                modal.classList.remove('hidden');
+                modal.style.display = 'block';
+                overlay.classList.remove('hidden');
+                overlay.style.display = 'flex';
             },
             
             async loadCustomersForSelectPayment() {
@@ -2485,18 +2797,47 @@
             
             // Customers
             async loadCustomers() {
-                const data = await this.api(`/businesses/${this.business.id}/customers`);
+                // Get filter values
+                const search = document.getElementById('customer-search')?.value || '';
+                const statusFilter = document.getElementById('customer-status-filter')?.value || '';
+                const balanceFilter = document.getElementById('customer-balance-filter')?.value || '';
+                
+                let url = `/businesses/${this.business.id}/customers`;
+                if (search) url += `?search=${encodeURIComponent(search)}`;
+                
+                const data = await this.api(url);
                 
                 // Get balances
                 const debtors = await this.api(`/businesses/${this.business.id}/customers/debtors`);
                 const balances = {};
                 debtors.debtors.forEach(d => balances[d.id] = d.balance);
                 
+                let customers = data.customers || [];
+                
+                // Apply client-side filters
+                if (statusFilter) {
+                    if (statusFilter === 'active') {
+                        customers = customers.filter(c => c.active);
+                    } else if (statusFilter === 'inactive') {
+                        customers = customers.filter(c => !c.active);
+                    }
+                }
+                
+                if (balanceFilter) {
+                    if (balanceFilter === 'positive') {
+                        customers = customers.filter(c => (balances[c.id] || 0) > 0);
+                    } else if (balanceFilter === 'negative') {
+                        customers = customers.filter(c => (balances[c.id] || 0) < 0);
+                    } else if (balanceFilter === 'zero') {
+                        customers = customers.filter(c => (balances[c.id] || 0) === 0);
+                    }
+                }
+                
                 const tbody = document.getElementById('customers-table');
-                if (data.customers.length === 0) {
+                if (customers.length === 0) {
                     tbody.innerHTML = '<tr><td colspan="5" class="text-center text-muted py-8">Sin clientes registrados</td></tr>';
                 } else {
-                    tbody.innerHTML = data.customers.map(c => `
+                    tbody.innerHTML = customers.map(c => `
                         <tr>
                             <td>${c.name}</td>
                             <td>${c.phone || '-'}</td>
@@ -2510,13 +2851,21 @@
                 }
             },
             
+            async filterCustomers() {
+                await this.loadCustomers();
+            },
+            
             showCustomerModal() {
                 document.getElementById('customer-name').value = '';
                 document.getElementById('customer-phone').value = '';
                 document.getElementById('customer-address').value = '';
                 document.getElementById('customer-notes').value = '';
-                document.getElementById('modal-customer').classList.remove('hidden');
-                document.getElementById('modal-overlay').classList.remove('hidden');
+                const modal = document.getElementById('modal-customer');
+                const overlay = document.getElementById('modal-overlay');
+                modal.classList.remove('hidden');
+                modal.style.display = 'block';
+                overlay.classList.remove('hidden');
+                overlay.style.display = 'flex';
             },
             
             async saveCustomer() {
@@ -2551,13 +2900,37 @@
             
             // Products
             async loadProducts() {
-                const data = await this.api(`/businesses/${this.business.id}/products`);
+                // Get filter values
+                const search = document.getElementById('product-search')?.value || '';
+                const category = document.getElementById('product-category-filter')?.value || '';
+                const stockFilter = document.getElementById('product-stock-filter')?.value || '';
+                
+                let url = `/businesses/${this.business.id}/products`;
+                const params = [];
+                if (search) params.push(`search=${encodeURIComponent(search)}`);
+                if (category) params.push(`category=${category}`);
+                if (params.length) url += '?' + params.join('&');
+                
+                const data = await this.api(url);
+                
+                let products = data.products || [];
+                
+                // Apply client-side stock filter
+                if (stockFilter) {
+                    if (stockFilter === 'in_stock') {
+                        products = products.filter(p => p.stock > 0);
+                    } else if (stockFilter === 'out_of_stock') {
+                        products = products.filter(p => p.stock <= 0);
+                    } else if (stockFilter === 'low_stock') {
+                        products = products.filter(p => p.stock > 0 && p.stock <= (p.low_stock_threshold || 5));
+                    }
+                }
                 
                 const tbody = document.getElementById('products-table');
-                if (data.products.length === 0) {
+                if (products.length === 0) {
                     tbody.innerHTML = '<tr><td colspan="6" class="text-center text-muted py-8">Sin productos registrados</td></tr>';
                 } else {
-                    tbody.innerHTML = data.products.map(p => `
+                    tbody.innerHTML = products.map(p => `
                         <tr>
                             <td>${p.name}</td>
                             <td>${p.sku || '-'}</td>
@@ -2575,6 +2948,10 @@
                 }
             },
             
+            async filterProducts() {
+                await this.loadProducts();
+            },
+            
             editingProductId: null,
             
             showProductModal() {
@@ -2587,8 +2964,12 @@
                 document.getElementById('product-unit').value = 'und';
                 document.getElementById('product-stock').value = '0';
                 document.getElementById('product-low-stock').value = '5';
-                document.getElementById('modal-product').classList.remove('hidden');
-                document.getElementById('modal-overlay').classList.remove('hidden');
+                const modal = document.getElementById('modal-product');
+                const overlay = document.getElementById('modal-overlay');
+                modal.classList.remove('hidden');
+                modal.style.display = 'block';
+                overlay.classList.remove('hidden');
+                overlay.style.display = 'flex';
             },
             
             async editProduct(id) {
@@ -2667,6 +3048,303 @@
                 }
             },
             
+            // Orders
+            async loadOrders() {
+                // Load filter values - match HTML IDs
+                const searchFilter = document.getElementById('orders-search')?.value || '';
+                const statusFilter = document.getElementById('orders-status-filter')?.value || '';
+                const startDate = document.getElementById('orders-date-from')?.value || '';
+                const endDate = document.getElementById('orders-date-to')?.value || '';
+                const sortValue = document.getElementById('orders-sort')?.value || 'newest';
+                
+                // Map sort values to API params
+                let sortBy = 'order_date';
+                let sortOrder = 'desc';
+                if (sortValue === 'oldest') {
+                    sortOrder = 'asc';
+                } else if (sortValue === 'highest') {
+                    sortBy = 'total';
+                } else if (sortValue === 'lowest') {
+                    sortBy = 'total';
+                    sortOrder = 'asc';
+                }
+                
+                // Build query params
+                const params = new URLSearchParams();
+                if (statusFilter) params.append('status', statusFilter);
+                if (searchFilter) params.append('search', searchFilter);
+                if (startDate) params.append('start_date', startDate);
+                if (endDate) params.append('end_date', endDate);
+                params.append('sort', sortBy);
+                params.append('order', sortOrder);
+                
+                const queryString = params.toString();
+                const url = queryString ? `/businesses/${this.business.id}/orders?${queryString}` : `/businesses/${this.business.id}/orders`;
+                
+                const orders = await this.api(url);
+                const stats = await this.api(`/businesses/${this.business.id}/orders/stats`);
+                
+                // Update stats cards
+                document.getElementById('orders-total').textContent = stats.total || 0;
+                document.getElementById('orders-pending').textContent = stats.pending || 0;
+                document.getElementById('orders-in-progress').textContent = stats.in_progress || 0;
+                document.getElementById('orders-completed').textContent = stats.completed || 0;
+                document.getElementById('orders-cancelled').textContent = stats.cancelled || 0;
+                
+                // Render orders table - match HTML column order: Pedido, Cliente, Fecha, Estado, Total, Acciones
+                const tbody = document.getElementById('orders-table');
+                if (!orders.length) {
+                    tbody.innerHTML = '<tr><td colspan="6" class="text-center py-4 text-muted">No hay pedidos</td></tr>';
+                    return;
+                }
+                
+                tbody.innerHTML = orders.map(order => `
+                    <tr class="hover:bg-white/5">
+                        <td class="py-2 px-3">${order.order_number}</td>
+                        <td class="py-2 px-3">${order.customer_name || 'N/A'}</td>
+                        <td class="py-2 px-3">${order.order_date ? new Date(order.order_date).toLocaleDateString() : 'N/A'}</td>
+                        <td class="py-2 px-3">
+                            <span class="px-2 py-1 rounded text-xs font-medium ${this.getOrderStatusClass(order.status)}">
+                                ${this.getOrderStatusLabel(order.status)}
+                            </span>
+                        </td>
+                        <td class="py-2 px-3">${this.formatMoney(order.total)}</td>
+                        <td class="py-2 px-3">
+                            <button onclick="app.editOrder(${order.id})" class="text-blue-400 hover:text-blue-300 mr-2">
+                                <svg class="w-4 h-4 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>
+                            </button>
+                            <button onclick="app.deleteOrder(${order.id})" class="text-red-400 hover:text-red-300">
+                                <svg class="w-4 h-4 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                            </button>
+                        </td>
+                    </tr>
+                `).join('');
+            },
+            
+            getOrderStatusClass(status) {
+                const classes = {
+                    'pending': 'bg-yellow-500/20 text-yellow-400',
+                    'in_progress': 'bg-blue-500/20 text-blue-400',
+                    'completed': 'bg-green-500/20 text-green-400',
+                    'cancelled': 'bg-red-500/20 text-red-400'
+                };
+                return classes[status] || 'bg-gray-500/20 text-gray-400';
+            },
+            
+            getOrderStatusLabel(status) {
+                const labels = {
+                    'pending': 'Pendiente',
+                    'in_progress': 'En Proceso',
+                    'completed': 'Completado',
+                    'cancelled': 'Cancelado'
+                };
+                return labels[status] || status;
+            },
+            
+            // Filter orders - called from filter inputs
+            async filterOrders() {
+                await this.loadOrders();
+            },
+            
+            async showOrderModal(orderId = null) {
+                const modal = document.getElementById('order-modal');
+                const title = document.getElementById('order-modal-title');
+                const form = document.getElementById('order-form');
+                
+                // Load customers for dropdown
+                const customersResponse = await this.api(`/businesses/${this.business.id}/customers`);
+                const customers = Array.isArray(customersResponse) ? customersResponse : (customersResponse.customers || []);
+                const customerSelect = document.getElementById('order-customer');
+                customerSelect.innerHTML = '<option value="">Seleccionar cliente...</option>' + 
+                    customers.map(c => `<option value="${c.id}">${c.name}</option>`).join('');
+                
+                // Load products and cache for order items
+                const productsResponse = await this.api(`/businesses/${this.business.id}/products`);
+                this._orderProducts = Array.isArray(productsResponse) ? productsResponse : (productsResponse.products || []);
+                
+                // Generate product options for inline selects
+                const productOptions = '<option value="">Seleccionar...</option>' + 
+                    this._orderProducts.map(p => `<option value="${p.id}" data-price="${p.price}" data-name="${p.name}">${p.name}</option>`).join('');
+                this._orderProductOptions = productOptions;
+                
+                // Also populate the standalone select if it exists
+                const productSelect = document.getElementById('order-product');
+                if (productSelect) {
+                    productSelect.innerHTML = '<option value="">Seleccionar producto...</option>' + 
+                        this._orderProducts.map(p => `<option value="${p.id}" data-price="${p.price}" data-name="${p.name}">${p.name} - ${this.formatMoney(p.price)}</option>`).join('');
+                }
+                
+                if (orderId) {
+                    // Edit mode
+                    const order = await this.api(`/businesses/${this.business.id}/orders/${orderId}`);
+                    title.textContent = 'Editar Pedido';
+                    document.getElementById('order-id').value = order.id;
+                    document.getElementById('order-number').value = order.order_number;
+                    document.getElementById('order-customer').value = order.customer_id || '';
+                    document.getElementById('order-status').value = order.status;
+                    document.getElementById('order-subtotal').value = order.subtotal;
+                    document.getElementById('order-discount').value = order.discount || 0;
+                    document.getElementById('order-total').value = order.total;
+                    document.getElementById('order-notes').value = order.notes || '';
+                    document.getElementById('order-date').value = order.order_date ? order.order_date.split('T')[0] : '';
+                    
+                    // Load existing items
+                    const itemsContainer = document.getElementById('order-items-container');
+                    itemsContainer.innerHTML = '';
+                    if (order.items && order.items.length) {
+                        order.items.forEach(item => this.addOrderItem(item.product_id, item.product_name, item.quantity, item.unit_price, item.subtotal));
+                    }
+                } else {
+                    // Create mode
+                    title.textContent = 'Nuevo Pedido';
+                    form.reset();
+                    document.getElementById('order-id').value = '';
+                    document.getElementById('order-number').value = 'PED-' + Date.now();
+                    document.getElementById('order-items-container').innerHTML = '';
+                    document.getElementById('order-status').value = 'pending';
+                    document.getElementById('order-date').value = new Date().toISOString().split('T')[0];
+                }
+                
+                // Show modal with overlay
+                const overlay = document.getElementById('modal-overlay');
+                overlay.classList.remove('hidden');
+                overlay.style.display = 'flex';
+                modal.classList.remove('hidden');
+                modal.style.display = 'block';
+            },
+            
+            addOrderItem(productId = '', productName = '', quantity = 1, unitPrice = 0, subtotal = 0) {
+                const container = document.getElementById('order-items-container');
+                const itemId = Date.now();
+                const productOptions = this._orderProductOptions || '<option value="">Seleccionar...</option>';
+                const html = `
+                    <div class="order-item flex gap-2 items-center mb-2" data-id="${itemId}">
+                        <select class="order-item-product flex-1 bg-gray-700 rounded px-2 py-1 text-sm" onchange="app.onOrderProductChange(this)">
+                            ${productOptions}
+                        </select>
+                        <input type="number" class="order-item-qty w-20 bg-gray-700 rounded px-2 py-1 text-sm" value="${quantity}" min="1" onchange="app.calculateOrderItem(this)">
+                        <input type="number" class="order-item-price w-24 bg-gray-700 rounded px-2 py-1 text-sm" value="${unitPrice}" step="0.01" onchange="app.calculateOrderItem(this)">
+                        <span class="order-item-subtotal w-24 text-right">${this.formatMoney(subtotal || quantity * unitPrice)}</span>
+                        <button type="button" onclick="this.closest('.order-item').remove(); app.calculateOrderTotal();" class="text-red-400 hover:text-red-300">✕</button>
+                    </div>
+                `;
+                container.insertAdjacentHTML('beforeend', html);
+            },
+            
+            async onOrderProductChange(select) {
+                const option = select.selectedOptions[0];
+                const price = parseFloat(option.dataset.price || 0);
+                const itemRow = select.closest('.order-item');
+                itemRow.querySelector('.order-item-price').value = price;
+                this.calculateOrderItem(select);
+            },
+            
+            calculateOrderItem(element) {
+                const itemRow = element.closest('.order-item');
+                const qty = parseInt(itemRow.querySelector('.order-item-qty').value) || 0;
+                const price = parseFloat(itemRow.querySelector('.order-item-price').value) || 0;
+                const subtotal = qty * price;
+                itemRow.querySelector('.order-item-subtotal').textContent = this.formatMoney(subtotal);
+                this.calculateOrderTotal();
+            },
+            
+            calculateOrderTotal() {
+                let subtotal = 0;
+                document.querySelectorAll('.order-item').forEach(item => {
+                    const qty = parseInt(item.querySelector('.order-item-qty').value) || 0;
+                    const price = parseFloat(item.querySelector('.order-item-price').value) || 0;
+                    subtotal += qty * price;
+                });
+                const discount = parseFloat(document.getElementById('order-discount').value) || 0;
+                const total = subtotal - discount;
+                document.getElementById('order-subtotal').value = subtotal.toFixed(2);
+                document.getElementById('order-total').value = total.toFixed(2);
+            },
+            
+            async saveOrder() {
+                const orderId = document.getElementById('order-id').value;
+                const customerId = document.getElementById('order-customer').value;
+                const orderNumber = document.getElementById('order-number').value;
+                const status = document.getElementById('order-status').value;
+                const subtotal = parseFloat(document.getElementById('order-subtotal').value) || 0;
+                const discount = parseFloat(document.getElementById('order-discount').value) || 0;
+                const total = parseFloat(document.getElementById('order-total').value) || 0;
+                const notes = document.getElementById('order-notes').value;
+                const orderDate = document.getElementById('order-date').value;
+                
+                // Collect items
+                const items = [];
+                document.querySelectorAll('.order-item').forEach(item => {
+                    const productSelect = item.querySelector('.order-item-product');
+                    const productId = productSelect.value;
+                    if (productId) {
+                        const option = productSelect.selectedOptions[0];
+                        items.push({
+                            product_id: parseInt(productId),
+                            product_name: option.dataset.name || productSelect.selectedOptions[0].text,
+                            quantity: parseInt(item.querySelector('.order-item-qty').value) || 1,
+                            unit_price: parseFloat(item.querySelector('.order-item-price').value) || 0
+                        });
+                    }
+                });
+                
+                const data = {
+                    customer_id: customerId || null,
+                    order_number: orderNumber,
+                    status: status,
+                    items: items,
+                    subtotal: subtotal,
+                    discount: discount,
+                    total: total,
+                    notes: notes,
+                    order_date: orderDate
+                };
+                
+                try {
+                    if (orderId) {
+                        await this.api(`/businesses/${this.business.id}/orders/${orderId}`, {
+                            method: 'PUT',
+                            body: JSON.stringify(data)
+                        });
+                    } else {
+                        await this.api(`/businesses/${this.business.id}/orders`, {
+                            method: 'POST',
+                            body: JSON.stringify(data)
+                        });
+                    }
+                    this.closeModal('order-modal');
+                    await this.loadOrders();
+                } catch (err) {
+                    alert('Error al guardar pedido: ' + err.message);
+                }
+            },
+            
+            async editOrder(orderId) {
+                await this.showOrderModal(orderId);
+            },
+            
+            async deleteOrder(orderId) {
+                if (!confirm('¿Estás seguro de eliminar este pedido?')) return;
+                try {
+                    await this.api(`/businesses/${this.business.id}/orders/${orderId}`, { method: 'DELETE' });
+                    await this.loadOrders();
+                } catch (err) {
+                    alert('Error al eliminar pedido: ' + err.message);
+                }
+            },
+            
+            async updateOrderStatus(orderId, newStatus) {
+                try {
+                    await this.api(`/businesses/${this.business.id}/orders/${orderId}/status`, {
+                        method: 'PATCH',
+                        body: JSON.stringify({ status: newStatus })
+                    });
+                    await this.loadOrders();
+                } catch (err) {
+                    alert('Error al actualizar estado: ' + err.message);
+                }
+            },
+            
             async exportSales() {
                 const start = document.getElementById('export-sales-start').value;
                 const end = document.getElementById('export-sales-end').value;
@@ -2693,6 +3371,34 @@
                 
                 const data = await this.api(url);
                 window.location.href = data.download_url;
+            },
+            
+            // Upgrade to Pro
+            async upgradeToPro(plan = 'pro_monthly') {
+                if (!confirm('¿Deseas actualizar a Plan PRO? Obtendrás acceso a todas las funciones avanzadas.')) {
+                    return;
+                }
+                
+                try {
+                    // In a real app, this would redirect to a payment processor
+                    // For now, we'll just update the user's plan
+                    const data = await this.api('/api/upgrade-to-pro', { method: 'POST' });
+                    
+                    if (data.success) {
+                        this.user.plan = 'pro';
+                        localStorage.setItem('user', JSON.stringify(this.user));
+                        
+                        // Hide upgrade tab
+                        document.getElementById('nav-upgrade').classList.add('hidden');
+                        
+                        alert('¡Felicidades! Ahora tienes Plan PRO');
+                        this.navigate('dashboard');
+                    } else {
+                        alert(data.message || 'Error al actualizar a PRO');
+                    }
+                } catch (err) {
+                    alert('Error al actualizar a PRO: ' + err.message);
+                }
             },
             
             // Backup
@@ -2837,29 +3543,31 @@
             },
             
             async loadAdminUsers() {
-                console.log('=== loadAdminUsers START ===');
                 try {
                     const data = await this.api('/admin/users');
-                    console.log('loadAdminUsers - API response:', data);
-                    console.log('loadAdminUsers - users count:', data.users ? data.users.length : 0);
-                    
-                    const tbody = document.getElementById('admin-users-table');
-                    if (!tbody) {
-                        console.error('admin-users-table element not found!');
-                        return;
-                    }
-                    
-                    tbody.innerHTML = '';
-                    
-                    if (!data.users || data.users.length === 0) {
-                        tbody.innerHTML = '<tr><td colspan="6" class="text-center text-muted py-4">No hay usuarios registrados</td></tr>';
-                        return;
-                    }
-                    
-                    for (const u of data.users) {
-                        const roles = u.roles && u.roles.length > 0 ? u.roles.map(r => r.name).join(', ') : 'Sin rol';
-                        console.log('Rendering user:', u.name, u.email);
-                        tbody.innerHTML += `
+                    this.renderUsersTable(data);
+                } catch (e) {
+                    console.error('Error loading users:', e);
+                }
+            },
+            
+            renderUsersTable(data) {
+                const tbody = document.getElementById('admin-users-table');
+                if (!tbody) {
+                    console.error('admin-users-table element not found!');
+                    return;
+                }
+                
+                tbody.innerHTML = '';
+                
+                if (!data.users || data.users.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="6" class="text-center text-muted py-4">No hay usuarios registrados</td></tr>';
+                    return;
+                }
+                
+                for (const u of data.users) {
+                    const roles = u.roles && u.roles.length > 0 ? u.roles.map(r => r.name).join(', ') : 'Sin rol';
+                    tbody.innerHTML += `
                             <tr>
                                 <td>${u.name || 'Sin nombre'}</td>
                                 <td>${u.email || 'Sin email'}</td>
@@ -2888,17 +3596,30 @@
                                 </td>
                             </tr>
                         `;
-                    }
-                } catch (e) {
-                    console.error('Error loading users:', e);
                 }
             },
             
             async loadAdminRoles() {
+                console.log('=== loadAdminRoles START ===');
                 try {
                     const data = await this.api('/admin/roles');
+                    console.log('=== loadAdminRoles RESPONSE ===', data);
+                    
+                    // Save roles globally for use in user form
+                    this.adminRoles = data.roles || [];
+                    
                     const tbody = document.getElementById('admin-roles-table');
+                    if (!tbody) {
+                        console.error('admin-roles-table not found');
+                        return;
+                    }
                     tbody.innerHTML = '';
+                    
+                    if (!data.roles || data.roles.length === 0) {
+                        tbody.innerHTML = '<tr><td colspan="5" class="text-center text-muted py-4">No hay roles registrados</td></tr>';
+                        return;
+                    }
+                    
                     for (const r of data.roles) {
                         const permissions = r.permissions ? r.permissions.join(', ') : 'Sin permisos';
                         tbody.innerHTML += `
@@ -2913,7 +3634,7 @@
                                         var roleModal = document.getElementById('role-modal');
                                         overlay.style.cssText = 'position:fixed !important; inset:0 !important; background:rgba(0,0,0,0.8) !important; z-index:99999 !important; display:flex !important; align-items:center !important; justify-content:center !important; padding:20px !important;';
                                         overlay.classList.remove('hidden');
-                                        roleModal.style.cssText = 'display:block !important; position:relative !important; z-index:100000 !important; background:#1e293b !important; color:white !important; border-radius:16px !important; padding:24px !important; max-width:500px !important; width:100% !important; box-shadow:0 25px50px -12px rgba(0,0,0,0.5) !important;';
+                                        roleModal.style.cssText = 'display:block !important; position:relative !important; z-index:100000 !important; background:#1e293b !important; color:white !important; border-radius:16px !important; padding:24px !important; max-width:500px !important; width:100% !important; box-shadow:0 25px 50px -12px rgba(0,0,0,0.5) !important;';
                                         roleModal.classList.remove('hidden');
                                         document.getElementById('role-modal-title').textContent = 'Editar Rol';
                                         document.getElementById('role-id').value = '${r.id}';
@@ -2957,21 +3678,33 @@
                 document.getElementById('user-plan').value = 'free';
                 document.getElementById('user-active').value = 'true';
                 
-                // Load roles into dropdown
-                try {
-                    const roles = await this.api('/admin/roles');
-                    const roleSelect = document.getElementById('user-role');
-                    roleSelect.innerHTML = '<option value="">Sin rol</option>';
-                    if (roles && roles.length > 0) {
-                        roles.forEach(role => {
-                            const option = document.createElement('option');
-                            option.value = role.id;
-                            option.textContent = role.name;
-                            roleSelect.appendChild(option);
-                        });
+                // Load roles into dropdown - use cached adminRoles if available
+                const roleSelect = document.getElementById('user-role');
+                roleSelect.innerHTML = '<option value="">Sin rol</option>';
+                
+                if (this.adminRoles && this.adminRoles.length > 0) {
+                    this.adminRoles.forEach(role => {
+                        const option = document.createElement('option');
+                        option.value = role.id;
+                        option.textContent = role.name;
+                        roleSelect.appendChild(option);
+                    });
+                } else {
+                    // Fallback: fetch from API if not cached
+                    try {
+                        const rolesData = await this.api('/admin/roles');
+                        this.adminRoles = rolesData.roles || [];
+                        if (this.adminRoles.length > 0) {
+                            this.adminRoles.forEach(role => {
+                                const option = document.createElement('option');
+                                option.value = role.id;
+                                option.textContent = role.name;
+                                roleSelect.appendChild(option);
+                            });
+                        }
+                    } catch (err) {
+                        console.error('Error loading roles:', err);
                     }
-                } catch (err) {
-                    console.error('Error loading roles:', err);
                 }
                 
                 // Force show user-modal with inline styles
@@ -2979,7 +3712,6 @@
                 userModal.classList.remove('hidden');
                 userModal.style.cssText = 'display:block !important; position:relative !important; z-index:100000 !important; background:#1e293b !important; color:white !important; border-radius:16px !important; padding:24px !important; max-width:500px !important; width:100% !important; box-shadow:0 25px 50px -12px rgba(0,0,0,0.5) !important;';
                 
-                console.log('User modal opened successfully');
             },
             
             closeUserModal() {
@@ -3020,12 +3752,23 @@
                     document.getElementById('user-plan').value = user.plan || 'free';
                     document.getElementById('user-active').value = user.is_active ? 'true' : 'false';
                     
-                    // Load roles
-                    const data = await this.api('/admin/roles');
+                    // Load roles - use cached adminRoles if available
                     const select = document.getElementById('user-role');
                     select.innerHTML = '<option value="">Sin rol</option>';
-                    for (const r of data.roles) {
-                        const isSelected = user.roles && user.roles.some(ur => ur.id === r.id);
+                    
+                    // Get roles from cache or fetch
+                    let rolesToUse = this.adminRoles;
+                    if (!rolesToUse || rolesToUse.length === 0) {
+                        const data = await this.api('/admin/roles');
+                        rolesToUse = data.roles || [];
+                        this.adminRoles = rolesToUse;
+                    }
+                    
+                    // Handle both single role_id and array of roles
+                    const userRoleIds = user.role_id ? [user.role_id] : (user.roles ? user.roles.map(r => r.id) : []);
+                    
+                    for (const r of rolesToUse) {
+                        const isSelected = userRoleIds.includes(r.id);
                         select.innerHTML += `<option value="${r.id}" ${isSelected ? 'selected' : ''}>${r.name}</option>`;
                     }
                     
@@ -3036,7 +3779,6 @@
                     userModal.style.zIndex = '100000';
                     userModal.style.visibility = 'visible';
                     
-                    console.log('Edit user modal opened successfully');
                 } catch (e) {
                     alert('Error al cargar usuario: ' + e.message);
                 }
@@ -3046,8 +3788,6 @@
                 if (e) {
                     e.preventDefault();
                 }
-                console.log('=== createAdminUser START ===', { name: document.getElementById('user-name')?.value, email: document.getElementById('user-email')?.value });
-                alert('DEBUG: saveUser iniciado');
                 
                 const userIdEl = document.getElementById('user-id');
                 const userNameEl = document.getElementById('user-name');
@@ -3058,22 +3798,23 @@
                 const userPasswordEl = document.getElementById('user-password');
                 
                 const userId = userIdEl ? userIdEl.value : '';
-                const name = userNameEl ? userNameEl.value : '';
+                const isEdit = !!userId;
+                
+                console.log('=== ' + (isEdit ? 'updateAdminUser' : 'createAdminUser') + ' START ===', { userId, name: userNameEl?.value, email: userEmailEl?.value });
+                
+                const name = userNameEl ? userNameEl.value.trim() : '';
                 const email = userEmailEl ? userEmailEl.value.trim() : '';
                 const plan = userPlanEl ? userPlanEl.value : 'free';
                 const isActive = userActiveEl ? (userActiveEl.value === 'true') : true;
-                const roleId = userRoleEl ? userRoleEl.value : '';
-                
-                console.log('Name input value:', userNameEl ? userNameEl.value : 'element not found');
-                console.log('Name after trim:', name.trim());
+                const roleIdVal = userRoleEl ? userRoleEl.value : '';
                 
                 // Validate name is required
-                if (!name || name.trim() === '') {
+                if (!name || name === '') {
                     alert('El nombre es requerido');
                     return;
                 }
                 // Validate email is required
-                if (!email || email.trim() === '') {
+                if (!email || email === '') {
                     alert('El email es requerido');
                     return;
                 }
@@ -3085,38 +3826,66 @@
                 
                 const data = { name, email: email.toLowerCase(), plan, is_active: isActive };
                 
-                const roleIdVal = userRoleEl ? userRoleEl.value : '';
+                // Add role_id if selected
                 if (roleIdVal) {
                     data.role_id = parseInt(roleIdVal);
                 }
                 
-                // Generate random password if not provided (required by backend)
-                let password = userPasswordEl ? userPasswordEl.value : '';
-                if (!password) {
-                    // Generate a random 8-character password
-                    password = Math.random().toString(36).slice(-4) + Math.random().toString(36).slice(-4).toUpperCase();
+                // Only include password for new users
+                if (!isEdit) {
+                    let password = userPasswordEl ? userPasswordEl.value : '';
+                    if (!password) {
+                        password = Math.random().toString(36).slice(-4) + Math.random().toString(36).slice(-4).toUpperCase();
+                    }
+                    data.password = password;
                 }
-                data.password = password;
-                
-                console.log('Guardando usuario con datos:', data);
                 
                 try {
-                    if (userId) {
-                        await this.api('/admin/users/' + userId, 'PUT', data);
+                    if (isEdit) {
+                        // Edit existing user
+                        console.log('=== updateAdminUser REQUEST ===', data);
+                        const response = await this.api('/admin/users/' + userId, 'PUT', data);
+                        console.log('=== updateAdminUser RESPONSE ===', response);
+                        this.closeUserModal();
+                        this.loadAdminUsers();
                     } else {
-                        await this.api('/admin/users', 'POST', data);
+                        // Create new user
+                        const response = await fetch('/api/admin/users', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'Authorization': 'Bearer ' + this.token
+                            },
+                            body: JSON.stringify(data)
+                        });
+                        
+                        const text = await response.text();
+                        console.log('=== createAdminUser RESPONSE ===', response.status, text);
+                        
+                        if (!response.ok) {
+                            let errorMsg = 'Error al crear usuario';
+                            try {
+                                const errorData = JSON.parse(text);
+                                errorMsg = errorData.error || errorMsg;
+                            } catch(e) {}
+                            alert(errorMsg);
+                            return;
+                        }
+                        
+                        this.closeUserModal();
+                        this.loadAdminUsers();
                     }
-                    this.closeUserModal();
-                    this.loadAdminUsers();
                 } catch (e) {
                     alert('Error al guardar usuario: ' + e.message);
                 }
             },
 
             async deleteUser(userId) {
+                console.log('=== deleteUser START ===', userId);
                 if (!confirm('¿Está seguro de eliminar este usuario?')) return;
                 try {
-                    await this.api('/admin/users/' + userId, 'DELETE');
+                    const response = await this.api('/admin/users/' + userId, 'DELETE');
+                    console.log('=== deleteUser RESPONSE ===', response);
                     this.loadAdminUsers();
                 } catch (e) {
                     alert('Error al eliminar usuario: ' + e.message);
@@ -3239,30 +4008,34 @@
 
             async saveRole(e) {
                 e.preventDefault();
-                alert('Guardando rol...');
-                console.log('saveRole called');
                 const roleId = document.getElementById('role-id').value;
+                const isEdit = !!roleId;
+                
                 const data = {
                     name: document.getElementById('role-name').value,
                     description: document.getElementById('role-description').value
                 };
                 
-                // Get selected permissions
+                // Get selected permissions as array of IDs
                 const permissions = [];
                 document.querySelectorAll('#role-permissions input[type="checkbox"]:checked').forEach(cb => {
                     permissions.push(parseInt(cb.value));
                 });
                 
-                console.log('Role data:', data, 'Permissions:', permissions);
+                console.log('=== ' + (isEdit ? 'updateRole' : 'createRole') + ' START ===', { roleId, data, permissions });
                 
                 try {
-                    if (roleId) {
-                        await this.api('/admin/roles/' + roleId, 'PUT', data);
+                    if (isEdit) {
+                        // Update existing role
+                        const updateResponse = await this.api('/admin/roles/' + roleId, 'PUT', data);
+                        console.log('=== updateRole RESPONSE ===', updateResponse);
                         // Update permissions
                         await this.api('/admin/roles/' + roleId + '/permissions', 'POST', { permissions });
                     } else {
-                        // Create new role first - API returns {role: {...}}
+                        // Create new role
                         const response = await this.api('/admin/roles', 'POST', data);
+                        console.log('=== createRole RESPONSE ===', response);
+                        
                         // Then assign permissions to the new role
                         if (response && response.role && response.role.id && permissions.length > 0) {
                             await this.api('/admin/roles/' + response.role.id + '/permissions', 'POST', { permissions });
@@ -3276,9 +4049,11 @@
             },
 
             async deleteRole(roleId) {
+                console.log('=== deleteRole START ===', roleId);
                 if (!confirm('¿Está seguro de eliminar este rol?')) return;
                 try {
-                    await this.api('/admin/roles/' + roleId, 'DELETE');
+                    const response = await this.api('/admin/roles/' + roleId, 'DELETE');
+                    console.log('=== deleteRole RESPONSE ===', response);
                     this.loadAdminRoles();
                 } catch (e) {
                     alert('Error al eliminar rol: ' + e.message);
@@ -3361,11 +4136,35 @@
             },
             
             // Modal helpers
-            closeModal() {
-                document.getElementById('modal-overlay').classList.add('hidden');
-                document.querySelectorAll('#modal-overlay > div').forEach(el => {
-                    el.classList.add('hidden');
-                });
+            closeModal(modalId = null) {
+                if (modalId) {
+                    // Close specific modal
+                    const modal = document.getElementById(modalId);
+                    const overlay = document.getElementById('modal-overlay');
+                    if (modal) {
+                        modal.classList.add('hidden');
+                        modal.style.display = 'none';
+                    }
+                    if (overlay) {
+                        // Check if any other modals are visible
+                        const visibleModals = document.querySelectorAll('#modal-overlay > div:not(.hidden)');
+                        if (visibleModals.length === 0) {
+                            overlay.classList.add('hidden');
+                            overlay.style.display = 'none';
+                        }
+                    }
+                } else {
+                    // Close all modals
+                    const overlay = document.getElementById('modal-overlay');
+                    if (overlay) {
+                        overlay.classList.add('hidden');
+                        overlay.style.display = 'none';
+                    }
+                    document.querySelectorAll('#modal-overlay > div').forEach(el => {
+                        el.classList.add('hidden');
+                        el.style.display = 'none';
+                    });
+                }
             },
             
             // Init

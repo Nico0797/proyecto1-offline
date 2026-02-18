@@ -1,0 +1,2355 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Panel de Administración - Cuaderno</title>
+    <link rel="icon" href="/favicon.ico">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-dark: #0b1220;
+            --bg-sidebar: #0f172a;
+            --card-bg: rgba(255,255,255,0.06);
+            --card-border: rgba(255,255,255,0.12);
+            --text-primary: rgba(255,255,255,0.92);
+            --text-muted: rgba(255,255,255,0.70);
+            --accent-blue: #2A6DFD;
+            --accent-green: #22C55E;
+            --accent-yellow: #F59E0B;
+            --accent-red: #EF4444;
+        }
+        
+        * { box-sizing: border-box; }
+        
+        body {
+            font-family: 'Inter', sans-serif;
+            background: var(--bg-dark);
+            color: var(--text-primary);
+            margin: 0;
+            min-height: 100vh;
+        }
+        
+        /* Sidebar */
+        .sidebar {
+            width: 260px;
+            background: var(--bg-sidebar);
+            border-right: 1px solid var(--card-border);
+            height: 100vh;
+            position: fixed;
+            left: 0;
+            top: 0;
+            display: flex;
+            flex-direction: column;
+            z-index: 50;
+        }
+        
+        .sidebar-header {
+            padding: 20px;
+            border-bottom: 1px solid var(--card-border);
+        }
+        
+        .sidebar-logo {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        
+        .sidebar-logo-icon {
+            width: 40px;
+            height: 40px;
+            background: linear-gradient(135deg, var(--accent-blue), #1D4ED8);
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+        }
+        
+        .sidebar-logo-text {
+            font-weight: 700;
+            font-size: 18px;
+        }
+        
+        .sidebar-search {
+            padding: 16px 20px;
+        }
+        
+        .search-input {
+            width: 100%;
+            padding: 10px 14px;
+            padding-left: 36px;
+            background: rgba(255,255,255,0.06);
+            border: 1px solid rgba(255,255,255,0.14);
+            border-radius: 8px;
+            color: white;
+            font-size: 14px;
+        }
+        
+        .search-input:focus {
+            outline: none;
+            border-color: var(--accent-blue);
+        }
+        
+        .search-wrapper {
+            position: relative;
+        }
+        
+        .search-icon {
+            position: absolute;
+            left: 12px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: rgba(255,255,255,0.5);
+        }
+        
+        .sidebar-nav {
+            flex: 1;
+            overflow-y: auto;
+            padding: 8px;
+        }
+        
+        .nav-section {
+            margin-bottom: 16px;
+        }
+        
+        .nav-section-title {
+            font-size: 11px;
+            text-transform: uppercase;
+            color: rgba(255,255,255,0.4);
+            padding: 8px 12px;
+            letter-spacing: 0.5px;
+        }
+        
+        .nav-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px 16px;
+            border-radius: 8px;
+            color: rgba(255,255,255,0.8);
+            text-decoration: none;
+            font-size: 14px;
+            transition: all 0.2s;
+            cursor: pointer;
+        }
+        
+        .nav-item:hover {
+            background: rgba(255,255,255,0.08);
+        }
+        
+        .nav-item.active {
+            background: rgba(42,109,253,0.2);
+            color: #60a5fa;
+        }
+        
+        .nav-item i {
+            font-size: 18px;
+        }
+        
+        /* Main content */
+        .main-content {
+            margin-left: 260px;
+            min-height: 100vh;
+        }
+        
+        /* Header */
+        .header {
+            background: rgba(15,23,42,0.8);
+            backdrop-filter: blur(10px);
+            border-bottom: 1px solid var(--card-border);
+            padding: 16px 24px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            position: sticky;
+            top: 0;
+            z-index: 40;
+        }
+        
+        .header-title {
+            font-size: 20px;
+            font-weight: 600;
+        }
+        
+        .header-actions {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        
+        .btn {
+            padding: 10px 16px;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            border: none;
+            transition: all 0.2s;
+        }
+        
+        .btn-primary {
+            background: linear-gradient(135deg, var(--accent-blue), #1D4ED8);
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            box-shadow: 0 4px 14px rgba(42,109,253,0.35);
+        }
+        
+        .btn-secondary {
+            background: rgba(255,255,255,0.1);
+            color: white;
+            border: 1px solid rgba(255,255,255,0.2);
+        }
+        
+        .btn-secondary:hover {
+            background: rgba(255,255,255,0.15);
+        }
+        
+        /* Content area */
+        .content {
+            padding: 24px;
+        }
+        
+        /* Cards */
+        .card {
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 12px;
+            padding: 20px;
+        }
+        
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 16px;
+        }
+        
+        .card-title {
+            font-size: 16px;
+            font-weight: 600;
+        }
+        
+        /* Stats grid */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+            gap: 16px;
+            margin-bottom: 24px;
+        }
+        
+        .stat-card {
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 12px;
+            padding: 20px;
+        }
+        
+        .stat-label {
+            font-size: 13px;
+            color: rgba(255,255,255,0.6);
+            margin-bottom: 8px;
+        }
+        
+        .stat-value {
+            font-size: 28px;
+            font-weight: 700;
+        }
+        
+        .stat-change {
+            font-size: 12px;
+            margin-top: 8px;
+        }
+        
+        .stat-change.positive { color: var(--accent-green); }
+        .stat-change.negative { color: var(--accent-red); }
+        
+        /* Tables */
+        .table-container {
+            overflow-x: auto;
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        
+        th, td {
+            padding: 12px 16px;
+            text-align: left;
+            border-bottom: 1px solid var(--card-border);
+        }
+        
+        th {
+            font-size: 12px;
+            text-transform: uppercase;
+            color: rgba(255,255,255,0.6);
+            font-weight: 600;
+        }
+        
+        td {
+            font-size: 14px;
+        }
+        
+        tr:hover td {
+            background: rgba(255,255,255,0.03);
+        }
+        
+        /* Forms */
+        .form-group {
+            margin-bottom: 16px;
+        }
+        
+        .form-label {
+            display: block;
+            font-size: 14px;
+            margin-bottom: 8px;
+            color: rgba(255,255,255,0.8);
+        }
+        
+        .form-input {
+            width: 100%;
+            padding: 12px 16px;
+            background: rgba(255,255,255,0.06);
+            border: 1px solid rgba(255,255,255,0.14);
+            border-radius: 8px;
+            color: white;
+            font-size: 14px;
+        }
+        
+        .form-input:focus {
+            outline: none;
+            border-color: var(--accent-blue);
+        }
+        
+        /* Modal */
+        .modal-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.7);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 100;
+        }
+        
+        .modal {
+            background: #1e293b;
+            border: 1px solid var(--card-border);
+            border-radius: 16px;
+            width: 90%;
+            max-width: 500px;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+        
+        .modal-header {
+            padding: 20px;
+            border-bottom: 1px solid var(--card-border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .modal-title {
+            font-size: 18px;
+            font-weight: 600;
+        }
+        
+        .modal-close {
+            background: none;
+            border: none;
+            color: white;
+            font-size: 24px;
+            cursor: pointer;
+            padding: 0;
+            line-height: 1;
+        }
+        
+        .modal-body {
+            padding: 20px;
+        }
+        
+        .modal-footer {
+            padding: 20px;
+            border-top: 1px solid var(--card-border);
+            display: flex;
+            justify-content: flex-end;
+            gap: 12px;
+        }
+        
+        /* Badge */
+        .badge {
+            display: inline-block;
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 500;
+        }
+        
+        .badge-success {
+            background: rgba(34,197,94,0.2);
+            color: #4ade80;
+        }
+        
+        .badge-warning {
+            background: rgba(245,158,11,0.2);
+            color: #fbbf24;
+        }
+        
+        .badge-danger {
+            background: rgba(239,68,68,0.2);
+            color: #f87171;
+        }
+        
+        .badge-info {
+            background: rgba(42,109,253,0.2);
+            color: #60a5fa;
+        }
+        
+        /* Hidden */
+        .hidden { display: none !important; }
+        
+        /* Loading */
+        .loading {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 40px;
+            color: rgba(255,255,255,0.6);
+        }
+        
+        /* User menu */
+        .user-menu {
+            position: relative;
+        }
+        
+        .user-avatar {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--accent-blue), #1D4ED8);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+            font-size: 14px;
+            cursor: pointer;
+        }
+        
+        /* Toast */
+        .toast-container {
+            position: fixed;
+            bottom: 24px;
+            right: 24px;
+            z-index: 200;
+        }
+        
+        .toast {
+            background: #1e293b;
+            border: 1px solid var(--card-border);
+            border-radius: 8px;
+            padding: 16px 20px;
+            margin-top: 8px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+            animation: slideIn 0.3s ease;
+        }
+        
+        @keyframes slideIn {
+            from { transform: translateX(100%); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+    </style>
+</head>
+<body class="bg-[#0b1220]">
+    <!-- Auth Screen -->
+    <div id="auth-screen" class="min-h-screen flex items-center justify-center p-4">
+        <div class="w-full max-w-md">
+            <div class="text-center mb-8">
+                <div class="w-16 h-16 bg-gradient-to-br from-blue-500 to-blue-700 rounded-2xl flex items-center justify-center mx-auto mb-4 text-3xl">📒</div>
+                <h1 class="text-2xl font-bold">Panel de Administración</h1>
+                <p class="text-white/60 mt-2">Cuaderno - Tu Contabilidad Simple</p>
+            </div>
+            
+            <div class="card">
+                <div id="login-form">
+                    <div class="form-group">
+                        <label class="form-label">Email</label>
+                        <input type="email" id="login-email" class="form-input" placeholder="admin@cuaderno.app">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Contraseña</label>
+                        <input type="password" id="login-password" class="form-input" placeholder="••••••••">
+                    </div>
+                    <button onclick="app.login()" class="btn btn-primary w-full py-3 rounded-xl font-semibold">Iniciar Sesión</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main App -->
+    <div id="main-app" class="hidden">
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <div class="sidebar-logo">
+                    <div class="sidebar-logo-icon">📒</div>
+                    <div class="sidebar-logo-text">Cuaderno</div>
+                </div>
+            </div>
+            
+            <div class="sidebar-search">
+                <div class="search-wrapper">
+                    <i class="ph ph-magnifying-glass search-icon"></i>
+                    <input type="text" class="search-input" placeholder="Buscar...">
+                </div>
+            </div>
+            
+            <nav class="sidebar-nav">
+                <div class="nav-section">
+                    <div class="nav-section-title">Principal</div>
+                    <a href="#" onclick="app.navigate('summary')" class="nav-item" data-page="summary">
+                        <i class="ph ph-chart-pie-slice"></i> Resumen
+                    </a>
+                    <a href="#" onclick="app.navigate('analytics')" class="nav-item" data-page="analytics">
+                        <i class="ph ph-chart-line-up"></i> Analíticas
+                    </a>
+                </div>
+                
+                <div class="nav-section">
+                    <div class="nav-section-title">Gestión</div>
+                    <a href="#" onclick="app.navigate('users')" class="nav-item" data-page="users">
+                        <i class="ph ph-users"></i> Usuarios
+                    </a>
+                    <a href="#" onclick="app.navigate('customers')" class="nav-item" data-page="customers">
+                        <i class="ph ph-user-circle"></i> Clientes
+                    </a>
+                    <a href="#" onclick="app.navigate('products')" class="nav-item" data-page="products">
+                        <i class="ph ph-package"></i> Productos
+                    </a>
+                </div>
+                
+                <div class="nav-section">
+                    <div class="nav-section-title">Negocios</div>
+                    <a href="#" onclick="app.navigate('businesses')" class="nav-item" data-page="businesses">
+                        <i class="ph ph-storefront"></i> Negocios
+                    </a>
+                    <a href="#" onclick="app.navigate('data')" class="nav-item" data-page="data">
+                        <i class="ph ph-database"></i> Datos
+                    </a>
+                </div>
+                
+                <div class="nav-section">
+                    <div class="nav-section-title">Sistema</div>
+                    <a href="#" onclick="app.navigate('roles')" class="nav-item" data-page="roles">
+                        <i class="ph ph-shield-check"></i> Roles
+                    </a>
+                    <a href="#" onclick="app.navigate('permissions')" class="nav-item" data-page="permissions">
+                        <i class="ph ph-key"></i> Permisos
+                    </a>
+                    <a href="#" onclick="app.navigate('security')" class="nav-item" data-page="security">
+                        <i class="ph ph-lock"></i> Seguridad
+                    </a>
+                    <a href="#" onclick="app.navigate('audit')" class="nav-item" data-page="audit">
+                        <i class="ph ph-file-text"></i> Auditoría
+                    </a>
+                </div>
+                
+                <div class="nav-section">
+                    <div class="nav-section-title">Configuración</div>
+                    <a href="#" onclick="app.navigate('domains')" class="nav-item" data-page="domains">
+                        <i class="ph ph-globe"></i> Dominios
+                    </a>
+                    <a href="#" onclick="app.navigate('integrations')" class="nav-item" data-page="integrations">
+                        <i class="ph ph-plugs-connected"></i> Integraciones
+                    </a>
+                    <a href="#" onclick="app.navigate('settings')" class="nav-item" data-page="settings">
+                        <i class="ph ph-gear"></i> Ajustes
+                    </a>
+                </div>
+            </nav>
+        </aside>
+        
+        <!-- Main Content -->
+        <main class="main-content">
+            <!-- Header -->
+            <header class="header">
+                <h1 class="header-title" id="page-title">Resumen</h1>
+                <div class="header-actions">
+                    <button class="btn btn-secondary" onclick="window.location.href='/app'">
+                        <i class="ph ph-app-window"></i> Abrir App
+                    </button>
+                    <button class="btn btn-secondary" onclick="app.copyAppLink()">
+                        <i class="ph ph-share-network"></i> Compartir
+                    </button>
+                    <div class="user-menu">
+                        <div class="user-avatar" id="user-avatar" onclick="app.toggleUserMenu()">
+                            <span id="user-initials">A</span>
+                        </div>
+                        <div id="user-dropdown" class="dropdown-menu hidden" style="position: absolute; right: 0; top: 100%; margin-top: 8px;">
+                            <div class="px-4 py-2 border-b border-white/10">
+                                <div class="font-medium" id="header-user-name">Admin</div>
+                                <div class="text-sm text-white/60" id="header-user-email">admin@cuaderno.app</div>
+                            </div>
+                            <a href="#" onclick="window.location.href='/app'">Mi Perfil</a>
+                            <a href="#" onclick="app.logout()" class="text-red-300">Cerrar Sesión</a>
+                        </div>
+                    </div>
+                </div>
+            </header>
+            
+            <!-- Content -->
+            <div class="content" id="content">
+                <!-- Dynamic content will be loaded here -->
+            </div>
+        </main>
+    </div>
+
+    <!-- Toast Container -->
+    <div class="toast-container" id="toast-container"></div>
+
+    <script>
+        // Panel Application
+        const app = {
+            user: null,
+            token: null,
+            currentPage: 'summary',
+            businesses: [],
+            business: null,
+            
+            // Initialize
+            async init() {
+                this.token = localStorage.getItem('token');
+                if (this.token) {
+                    await this.checkAuth();
+                }
+            },
+            
+            // Auth
+            async checkAuth() {
+                try {
+                    const res = await fetch('/api/auth/me', {
+                        headers: { 'Authorization': `Bearer ${this.token}` }
+                    });
+                    if (res.ok) {
+                        const data = await res.json();
+                        this.user = data.user;
+                        this.showApp();
+                    } else {
+                        this.showLogin();
+                    }
+                } catch (e) {
+                    this.showLogin();
+                }
+            },
+            
+            async login() {
+                const email = document.getElementById('login-email').value;
+                const password = document.getElementById('login-password').value;
+                
+                try {
+                    const res = await fetch('/api/auth/login', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ email, password })
+                    });
+                    
+                    if (res.ok) {
+                        const data = await res.json();
+                        this.token = data.access_token;
+                        localStorage.setItem('token', this.token);
+                        await this.checkAuth();
+                    } else {
+                        const data = await res.json();
+                        this.showToast(data.error || 'Error al iniciar sesión', 'error');
+                    }
+                } catch (e) {
+                    this.showToast('Error de conexión', 'error');
+                }
+            },
+            
+            logout() {
+                localStorage.removeItem('token');
+                this.token = null;
+                this.user = null;
+                this.showLogin();
+            },
+            
+            showLogin() {
+                document.getElementById('auth-screen').classList.remove('hidden');
+                document.getElementById('main-app').classList.add('hidden');
+            },
+            
+            showApp() {
+                document.getElementById('auth-screen').classList.add('hidden');
+                document.getElementById('main-app').classList.remove('hidden');
+                document.getElementById('header-user-name').textContent = this.user.name;
+                document.getElementById('header-user-email').textContent = this.user.email;
+                document.getElementById('user-initials').textContent = this.user.name.charAt(0).toUpperCase();
+                
+                this.navigate('summary');
+            },
+            
+            // Navigation
+            navigate(page) {
+                this.currentPage = page;
+                
+                // Update active nav item
+                document.querySelectorAll('.nav-item').forEach(item => {
+                    item.classList.remove('active');
+                    if (item.dataset.page === page) {
+                        item.classList.add('active');
+                    }
+                });
+                
+                // Update page title
+                const titles = {
+                    'summary': 'Resumen',
+                    'analytics': 'Analíticas',
+                    'users': 'Usuarios',
+                    'customers': 'Clientes',
+                    'products': 'Productos',
+                    'businesses': 'Negocios',
+                    'data': 'Datos',
+                    'roles': 'Roles',
+                    'permissions': 'Permisos',
+                    'security': 'Seguridad',
+                    'audit': 'Auditoría',
+                    'domains': 'Dominios',
+                    'integrations': 'Integraciones',
+                    'settings': 'Ajustes'
+                };
+                document.getElementById('page-title').textContent = titles[page] || page;
+                
+                // Load content
+                this.loadPage(page);
+            },
+            
+            async loadPage(page) {
+                const content = document.getElementById('content');
+                content.innerHTML = '<div class="loading">Cargando...</div>';
+                
+                switch(page) {
+                    case 'summary':
+                        await this.loadSummary();
+                        break;
+                    case 'users':
+                        await this.loadUsers();
+                        break;
+                    case 'customers':
+                        await this.loadCustomers();
+                        break;
+                    case 'products':
+                        await this.loadProducts();
+                        break;
+                    case 'analytics':
+                        await this.loadAnalytics();
+                        break;
+                    case 'security':
+                        await this.loadSecurity();
+                        break;
+                    case 'domains':
+                        await this.loadDomains();
+                        break;
+                    case 'integrations':
+                        await this.loadIntegrations();
+                        break;
+                    case 'businesses':
+                        await this.loadBusinesses();
+                        break;
+                    case 'data':
+                        await this.loadData();
+                        break;
+                    case 'roles':
+                        await this.loadRoles();
+                        break;
+                    case 'permissions':
+                        await this.loadPermissions();
+                        break;
+                    case 'audit':
+                        await this.loadAudit();
+                        break;
+                    case 'settings':
+                        await this.loadSettings();
+                        break;
+                    default:
+                        content.innerHTML = '<div class="card"><p class="text-white/60">Página en desarrollo: ' + page + '</p></div>';
+                }
+            },
+            
+            // Summary Page
+            async loadSummary() {
+                const content = document.getElementById('content');
+                try {
+                    const res = await fetch('/api/admin/stats', {
+                        headers: { 'Authorization': `Bearer ${this.token}` }
+                    });
+                    const stats = res.ok ? await res.json() : {};
+                    
+                    content.innerHTML = `
+                        <div class="stats-grid">
+                            <div class="stat-card">
+                                <div class="stat-label">Total Usuarios</div>
+                                <div class="stat-value">${stats.total_users || 0}</div>
+                                <div class="stat-change positive">↑ 12% vs mes anterior</div>
+                            </div>
+                            <div class="stat-card">
+                                <div class="stat-label">Negocios Activos</div>
+                                <div class="stat-value">${stats.total_businesses || 0}</div>
+                                <div class="stat-change positive">↑ 8% vs mes anterior</div>
+                            </div>
+                            <div class="stat-card">
+                                <div class="stat-label">Ventas del Mes</div>
+                                <div class="stat-value">${stats.total_sales || 0}</div>
+                            </div>
+                            <div class="stat-card">
+                                <div class="stat-label">Ingresos</div>
+                                <div class="stat-value">$${this.formatNumber(stats.total_revenue || 0)}</div>
+                            </div>
+                        </div>
+                        
+                        <div class="card">
+                            <div class="card-header">
+                                <h3 class="card-title">Actividad Reciente</h3>
+                            </div>
+                            <div class="table-container">
+                                <table>
+                                    <thead>
+                                        <tr>
+                                            <th>Usuario</th>
+                                            <th>Acción</th>
+                                            <th>Fecha</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="recent-activity">
+                                        <tr><td colspan="3" class="text-center text-white/60">Cargando...</td></tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    `;
+                    
+                    // Load recent activity
+                    this.loadRecentActivity();
+                } catch (e) {
+                    content.innerHTML = '<div class="card"><p class="text-red-400">Error al cargar datos</p></div>';
+                }
+            },
+            
+            async loadRecentActivity() {
+                try {
+                    const res = await fetch('/api/admin/audit?limit=10', {
+                        headers: { 'Authorization': `Bearer ${this.token}` }
+                    });
+                    if (res.ok) {
+                        const data = await res.json();
+                        const tbody = document.getElementById('recent-activity');
+                        if (data.logs && data.logs.length > 0) {
+                            tbody.innerHTML = data.logs.map(log => `
+                                <tr>
+                                    <td>${log.user_email || 'Sistema'}</td>
+                                    <td>${log.action}</td>
+                                    <td>${new Date(log.created_at).toLocaleString()}</td>
+                                </tr>
+                            `).join('');
+                        } else {
+                            tbody.innerHTML = '<tr><td colspan="3" class="text-center text-white/60">Sin actividad reciente</td></tr>';
+                        }
+                    }
+                } catch (e) {
+                    console.error('Error loading activity:', e);
+                }
+            },
+            
+            // Users Page
+            async loadUsers() {
+                const content = document.getElementById('content');
+                content.innerHTML = `
+                    <div class="card">
+                        <div class="card-header">
+                            <h3 class="card-title">Usuarios</h3>
+                            <button class="btn btn-primary" onclick="app.showCreateUserModal()">
+                                <i class="ph ph-plus"></i> Nuevo Usuario
+                            </button>
+                        </div>
+                        <div class="table-container">
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>Nombre</th>
+                                        <th>Email</th>
+                                        <th>Plan</th>
+                                        <th>Estado</th>
+                                        <th>Último Login</th>
+                                        <th>Acciones</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="users-table">
+                                    <tr><td colspan="6" class="text-center text-white/60">Cargando...</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                `;
+                
+                this.loadUsersTable();
+            },
+            
+            // Customers Page
+            async loadCustomers() {
+                const content = document.getElementById('content');
+                content.innerHTML = `
+                    <div class="card">
+                        <div class="card-header">
+                            <h3 class="card-title">Clientes Globales</h3>
+                        </div>
+                        <p class="text-white/60 mb-4">Todos los clientes de todos los negocios</p>
+                        <div class="table-container">
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>Nombre</th>
+                                        <th>Email</th>
+                                        <th>Teléfono</th>
+                                        <th>Negocio</th>
+                                        <th>Total Deuda</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="customers-table">
+                                    <tr><td colspan="5" class="text-center text-white/60">Cargando...</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                `;
+                
+                this.loadCustomersTable();
+            },
+            
+            async loadCustomersTable() {
+                try {
+                    const res = await fetch('/api/admin/all-customers', {
+                        headers: { 'Authorization': `Bearer ${this.token}` }
+                    });
+                    if (res.ok) {
+                        const data = await res.json();
+                        const tbody = document.getElementById('customers-table');
+                        if (data.customers && data.customers.length > 0) {
+                            tbody.innerHTML = data.customers.map(c => `
+                                <tr>
+                                    <td>${c.name}</td>
+                                    <td>${c.email || '-'}</td>
+                                    <td>${c.phone || '-'}</td>
+                                    <td>${c.business_name || '-'}</td>
+                                    <td>${c.balance || 0}</td>
+                                </tr>
+                            `).join('');
+                        } else {
+                            tbody.innerHTML = '<tr><td colspan="5" class="text-center text-white/60">No hay clientes</td></tr>';
+                        }
+                    }
+                } catch (e) {
+                    document.getElementById('customers-table').innerHTML = '<tr><td colspan="5" class="text-center text-red-400">Error al cargar</td></tr>';
+                }
+            },
+            
+            // Products Page
+            async loadProducts() {
+                const content = document.getElementById('content');
+                content.innerHTML = `
+                    <div class="card">
+                        <div class="card-header">
+                            <h3 class="card-title">Productos Globales</h3>
+                        </div>
+                        <p class="text-white/60 mb-4">Todos los productos de todos los negocios</p>
+                        <div class="table-container">
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>Nombre</th>
+                                        <th>SKU</th>
+                                        <th>Precio</th>
+                                        <th>Costo</th>
+                                        <th>Stock</th>
+                                        <th>Negocio</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="products-table">
+                                    <tr><td colspan="6" class="text-center text-white/60">Cargando...</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                `;
+                
+                this.loadProductsTable();
+            },
+            
+            async loadProductsTable() {
+                try {
+                    const res = await fetch('/api/admin/all-products', {
+                        headers: { 'Authorization': `Bearer ${this.token}` }
+                    });
+                    if (res.ok) {
+                        const data = await res.json();
+                        const tbody = document.getElementById('products-table');
+                        if (data.products && data.products.length > 0) {
+                            tbody.innerHTML = data.products.map(p => `
+                                <tr>
+                                    <td>${p.name}</td>
+                                    <td>${p.sku || '-'}</td>
+                                    <td>${p.price}</td>
+                                    <td>${p.cost || 0}</td>
+                                    <td>${p.stock}</td>
+                                    <td>${p.business_name || '-'}</td>
+                                </tr>
+                            `).join('');
+                        } else {
+                            tbody.innerHTML = '<tr><td colspan="6" class="text-center text-white/60">No hay productos</td></tr>';
+                        }
+                    }
+                } catch (e) {
+                    document.getElementById('products-table').innerHTML = '<tr><td colspan="6" class="text-center text-red-400">Error al cargar</td></tr>';
+                }
+            },
+            
+            // Analytics Page
+            async loadAnalytics() {
+                const content = document.getElementById('content');
+                content.innerHTML = `
+                    <div class="card">
+                        <div class="card-header">
+                            <h3 class="card-title">Analíticas Globales</h3>
+                        </div>
+                        <p class="text-white/60 mb-4">Estadísticas de toda la plataforma</p>
+                        <div id="analytics-content" class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                            <div class="bg-slate-800 p-4 rounded-lg">
+                                <p class="text-white/60 text-sm">Cargando...</p>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                this.loadAnalyticsData();
+            },
+            
+            async loadAnalyticsData() {
+                try {
+                    const res = await fetch('/api/admin/analytics', {
+                        headers: { 'Authorization': `Bearer ${this.token}` }
+                    });
+                    if (res.ok) {
+                        const data = await res.json();
+                        const container = document.getElementById('analytics-content');
+                        container.innerHTML = `
+                            <div class="bg-slate-800 p-4 rounded-lg">
+                                <p class="text-white/60 text-sm">Usuarios</p>
+                                <p class="text-2xl font-bold">${data.total_users}</p>
+                            </div>
+                            <div class="bg-slate-800 p-4 rounded-lg">
+                                <p class="text-white/60 text-sm">Negocios</p>
+                                <p class="text-2xl font-bold">${data.total_businesses}</p>
+                            </div>
+                            <div class="bg-slate-800 p-4 rounded-lg">
+                                <p class="text-white/60 text-sm">Clientes</p>
+                                <p class="text-2xl font-bold">${data.total_customers}</p>
+                            </div>
+                            <div class="bg-slate-800 p-4 rounded-lg">
+                                <p class="text-white/60 text-sm">Productos</p>
+                                <p class="text-2xl font-bold">${data.total_products}</p>
+                            </div>
+                            <div class="bg-slate-800 p-4 rounded-lg">
+                                <p class="text-white/60 text-sm">Ventas</p>
+                                <p class="text-2xl font-bold">${data.total_sales}</p>
+                            </div>
+                            <div class="bg-slate-800 p-4 rounded-lg">
+                                <p class="text-white/60 text-sm">Ingresos</p>
+                                <p class="text-2xl font-bold text-green-400">${data.total_revenue.toFixed(2)}</p>
+                            </div>
+                            <div class="bg-slate-800 p-4 rounded-lg">
+                                <p class="text-white/60 text-sm">Gastos</p>
+                                <p class="text-2xl font-bold text-red-400">${data.total_expenses.toFixed(2)}</p>
+                            </div>
+                            <div class="bg-slate-800 p-4 rounded-lg">
+                                <p class="text-white/60 text-sm">Neto</p>
+                                <p class="text-2xl font-bold ${data.net_income >= 0 ? 'text-green-400' : 'text-red-400'}">${data.net_income.toFixed(2)}</p>
+                            </div>
+                        `;
+                    }
+                } catch (e) {
+                    document.getElementById('analytics-content').innerHTML = '<p class="text-red-400">Error al cargar analíticas</p>';
+                }
+            },
+            
+            // Security Page
+            async loadSecurity() {
+                const content = document.getElementById('content');
+                content.innerHTML = `
+                    <div class="card">
+                        <div class="card-header">
+                            <h3 class="card-title">Seguridad</h3>
+                        </div>
+                        <p class="text-white/60 mb-4">Información de seguridad y actividad</p>
+                        <div id="security-content">
+                            <p class="text-white/60">Cargando...</p>
+                        </div>
+                    </div>
+                `;
+                this.loadSecurityData();
+            },
+            
+            async loadSecurityData() {
+                try {
+                    const res = await fetch('/api/admin/security', {
+                        headers: { 'Authorization': `Bearer ${this.token}` }
+                    });
+                    if (res.ok) {
+                        const data = await res.json();
+                        const container = document.getElementById('security-content');
+                        container.innerHTML = `
+                            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                                <div class="bg-slate-800 p-4 rounded-lg">
+                                    <p class="text-white/60 text-sm">Intentos de Login</p>
+                                    <p class="text-2xl font-bold">${data.login_attempts}</p>
+                                </div>
+                                <div class="bg-slate-800 p-4 rounded-lg">
+                                    <p class="text-white/60 text-sm">Logins Fallidos</p>
+                                    <p class="text-2xl font-bold text-red-400">${data.failed_logins}</p>
+                                </div>
+                                <div class="bg-slate-800 p-4 rounded-lg">
+                                    <p class="text-white/60 text-sm">Tasa de Éxito</p>
+                                    <p class="text-2xl font-bold text-green-400">${data.success_rate.toFixed(1)}%</p>
+                                </div>
+                            </div>
+                            <h4 class="text-lg font-semibold mb-3">Registro de Actividad Reciente</h4>
+                            <div class="table-container">
+                                <table>
+                                    <thead>
+                                        <tr>
+                                            <th>Acción</th>
+                                            <th>Entidad</th>
+                                            <th>Fecha</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        ${data.security_logs && data.security_logs.length > 0 ? data.security_logs.map(log => `
+                                            <tr>
+                                                <td><span class="px-2 py-1 rounded text-xs ${log.action === 'failed_login' ? 'bg-red-500/20 text-red-400' : 'bg-green-500/20 text-green-400'}">${log.action}</span></td>
+                                                <td>${log.entity || '-'}</td>
+                                                <td>${new Date(log.timestamp).toLocaleString()}</td>
+                                            </tr>
+                                        `).join('') : '<tr><td colspan="3" class="text-center text-white/60">No hay registros</td></tr>'}
+                                    </tbody>
+                                </table>
+                            </div>
+                        `;
+                    }
+                } catch (e) {
+                    document.getElementById('security-content').innerHTML = '<p class="text-red-400">Error al cargar seguridad</p>';
+                }
+            },
+            
+            // Domains Page
+            async loadDomains() {
+                const content = document.getElementById('content');
+                content.innerHTML = `
+                    <div class="card">
+                        <div class="card-header">
+                            <h3 class="card-title">Dominios</h3>
+                        </div>
+                        <p class="text-white/60 mb-4">Configuración de dominios personalizados</p>
+                        <div id="domains-content">
+                            <p class="text-white/60">Cargando...</p>
+                        </div>
+                    </div>
+                `;
+                this.loadDomainsData();
+            },
+            
+            async loadDomainsData() {
+                try {
+                    const res = await fetch('/api/admin/domains', {
+                        headers: { 'Authorization': `Bearer ${this.token}` }
+                    });
+                    if (res.ok) {
+                        const data = await res.json();
+                        const container = document.getElementById('domains-content');
+                        container.innerHTML = `
+                            <div class="space-y-4">
+                                ${data.domains && data.domains.length > 0 ? data.domains.map(d => `
+                                    <div class="bg-slate-800 p-4 rounded-lg flex justify-between items-center">
+                                        <div>
+                                            <p class="font-semibold">${d.domain || 'Sin dominio configurado'}</p>
+                                            <p class="text-white/60 text-sm">SSL: ${d.ssl_enabled ? 'Activado' : 'Desactivado'} | Estado: ${d.status}</p>
+                                        </div>
+                                        <span class="px-3 py-1 rounded text-xs ${d.status === 'active' ? 'bg-green-500/20 text-green-400' : 'bg-yellow-500/20 text-yellow-400'}">${d.status}</span>
+                                    </div>
+                                `).join('') : '<p class="text-white/60">No hay dominios configurados</p>'}
+                                <div class="mt-4">
+                                    <h4 class="text-lg font-semibold mb-2">Agregar Dominio</h4>
+                                    <div class="flex gap-2">
+                                        <input type="text" id="new-domain" placeholder="midominio.com" class="flex-1 bg-slate-800 border border-slate-700 rounded px-3 py-2 text-white">
+                                        <button onclick="app.addDomain()" class="btn-primary">Agregar</button>
+                                    </div>
+                                </div>
+                            </div>
+                        `;
+                    }
+                } catch (e) {
+                    document.getElementById('domains-content').innerHTML = '<p class="text-red-400">Error al cargar dominios</p>';
+                }
+            },
+            
+            // Integrations Page
+            async loadIntegrations() {
+                const content = document.getElementById('content');
+                content.innerHTML = `
+                    <div class="card">
+                        <div class="card-header">
+                            <h3 class="card-title">Integraciones</h3>
+                        </div>
+                        <p class="text-white/60 mb-4">Conecta con servicios externos</p>
+                        <div id="integrations-content">
+                            <p class="text-white/60">Cargando...</p>
+                        </div>
+                    </div>
+                `;
+                this.loadIntegrationsData();
+            },
+            
+            async loadIntegrationsData() {
+                try {
+                    const res = await fetch('/api/admin/integrations', {
+                        headers: { 'Authorization': `Bearer ${this.token}` }
+                    });
+                    if (res.ok) {
+                        const data = await res.json();
+                        const container = document.getElementById('integrations-content');
+                        container.innerHTML = `
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                ${data.integrations.map(i => `
+                                    <div class="bg-slate-800 p-4 rounded-lg">
+                                        <div class="flex justify-between items-start mb-2">
+                                            <div>
+                                                <h4 class="font-semibold">${i.name}</h4>
+                                                <p class="text-white/60 text-sm">${i.description}</p>
+                                            </div>
+                                            <span class="px-2 py-1 rounded text-xs ${i.status === 'connected' ? 'bg-green-500/20 text-green-400' : i.status === 'active' ? 'bg-blue-500/20 text-blue-400' : 'bg-gray-500/20 text-gray-400'}">${i.status}</span>
+                                        </div>
+                                        <button class="btn-secondary text-sm mt-2" onclick="app.configureIntegration('${i.id}')">${i.enabled ? 'Configurar' : 'Activar'}</button>
+                                    </div>
+                                `).join('')}
+                            </div>
+                        `;
+                    }
+                } catch (e) {
+                    document.getElementById('integrations-content').innerHTML = '<p class="text-red-400">Error al cargar integraciones</p>';
+                }
+            },
+            
+            async configureIntegration(integrationId) {
+                // Show configuration modal based on integration type
+                const configs = {
+                    'stripe': {
+                        name: 'Stripe',
+                        fields: [
+                            { id: 'stripe_api_key', label: 'API Key', type: 'password', placeholder: 'sk_live_...' },
+                            { id: 'stripe_webhook_secret', label: 'Webhook Secret', type: 'password', placeholder: 'whsec_...' }
+                        ]
+                    },
+                    'paypal': {
+                        name: 'PayPal',
+                        fields: [
+                            { id: 'paypal_client_id', label: 'Client ID', type: 'text', placeholder: 'Client ID' },
+                            { id: 'paypal_secret', label: 'Secret', type: 'password', placeholder: 'Secret' }
+                        ]
+                    },
+                    'email': {
+                        name: 'Email (SMTP)',
+                        fields: [
+                            { id: 'smtp_host', label: 'SMTP Host', type: 'text', placeholder: 'smtp.example.com' },
+                            { id: 'smtp_port', label: 'Puerto', type: 'number', placeholder: '587' },
+                            { id: 'smtp_user', label: 'Usuario', type: 'text', placeholder: 'user@example.com' },
+                            { id: 'smtp_password', label: 'Contraseña', type: 'password', placeholder: '••••••••' },
+                            { id: 'smtp_from', label: 'From Email', type: 'email', placeholder: 'noreply@example.com' }
+                        ]
+                    },
+                    'webhooks': {
+                        name: 'Webhooks',
+                        fields: [
+                            { id: 'webhook_url', label: 'URL del Webhook', type: 'url', placeholder: 'https://...' },
+                            { id: 'webhook_secret', label: 'Secreto', type: 'password', placeholder: '••••••••' }
+                        ]
+                    }
+                };
+                
+                const config = configs[integrationId];
+                if (!config) {
+                    this.showToast('Integración no configurada', 'info');
+                    return;
+                }
+                
+                const modal = document.createElement('div');
+                modal.id = 'config-integration-modal';
+                modal.className = 'fixed inset-0 bg-black/50 flex items-center justify-center z-50';
+                
+                let fieldsHtml = '';
+                config.fields.forEach(field => {
+                    fieldsHtml += `
+                        <div class="form-group">
+                            <label class="form-label">${field.label}</label>
+                            <input type="${field.type}" id="${field.id}" class="form-input" placeholder="${field.placeholder}">
+                        </div>
+                    `;
+                });
+                
+                modal.innerHTML = `
+                    <div class="bg-slate-800 rounded-xl p-6 w-full max-w-md border border-white/10">
+                        <h3 class="text-xl font-semibold mb-4">Configurar ${config.name}</h3>
+                        ${fieldsHtml}
+                        <div class="flex gap-2 justify-end mt-4">
+                            <button class="btn-secondary" onclick="document.getElementById('config-integration-modal').remove()">Cancelar</button>
+                            <button class="btn-primary" onclick="app.saveIntegrationConfig('${integrationId}')">Guardar</button>
+                        </div>
+                    </div>
+                `;
+                
+                document.body.appendChild(modal);
+                
+                // Load current values
+                this.loadIntegrationConfig(integrationId);
+            },
+            
+            async loadIntegrationConfig(integrationId) {
+                try {
+                    const res = await fetch('/api/admin/integrations', {
+                        headers: { 'Authorization': `Bearer ${this.token}` }
+                    });
+                    if (res.ok) {
+                        const data = await res.json();
+                        const integration = data.integrations.find(i => i.id === integrationId);
+                        if (integration && integration.config) {
+                            Object.entries(integration.config).forEach(([key, value]) => {
+                                const input = document.getElementById(key);
+                                if (input) input.value = value;
+                            });
+                        }
+                    }
+                } catch (e) {
+                    console.error('Error loading config:', e);
+                }
+            },
+            
+            async saveIntegrationConfig(integrationId) {
+                const configs = {
+                    'stripe': ['stripe_api_key', 'stripe_webhook_secret'],
+                    'paypal': ['paypal_client_id', 'paypal_secret'],
+                    'email': ['smtp_host', 'smtp_port', 'smtp_user', 'smtp_password', 'smtp_from'],
+                    'webhooks': ['webhook_url', 'webhook_secret']
+                };
+                
+                const fields = configs[integrationId] || [];
+                const config = {};
+                
+                fields.forEach(fieldId => {
+                    const input = document.getElementById(fieldId);
+                    if (input && input.value) {
+                        config[fieldId] = input.value;
+                    }
+                });
+                
+                try {
+                    const res = await fetch(`/api/admin/integrations/${integrationId}`, {
+                        method: 'POST',
+                        headers: { 
+                            'Authorization': `Bearer ${this.token}`,
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({ config, enabled: true })
+                    });
+                    
+                    if (res.ok) {
+                        document.getElementById('config-integration-modal').remove();
+                        this.showToast('Configuración guardada', 'success');
+                        this.loadIntegrationsData();
+                    } else {
+                        const data = await res.json();
+                        this.showToast(data.error || 'Error al guardar', 'error');
+                    }
+                } catch (e) {
+                    this.showToast('Error de conexión', 'error');
+                }
+            },
+            
+            // Permissions Page
+            async loadPermissions() {
+                const content = document.getElementById('content');
+                content.innerHTML = `
+                    <div class="card">
+                        <div class="card-header">
+                            <h3 class="card-title">Permisos del Sistema</h3>
+                        </div>
+                        <p class="text-white/60 mb-4">Listado de todos los permisos disponibles</p>
+                        <div class="table-container">
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>Nombre</th>
+                                        <th>Descripción</th>
+                                        <th>Categoría</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="permissions-table">
+                                    <tr><td colspan="3" class="text-center text-white/60">Cargando...</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                `;
+                
+                this.loadPermissionsTable();
+            },
+            
+            async loadPermissionsTable() {
+                try {
+                    const res = await fetch('/api/admin/permissions', {
+                        headers: { 'Authorization': `Bearer ${this.token}` }
+                    });
+                    if (res.ok) {
+                        const data = await res.json();
+                        const tbody = document.getElementById('permissions-table');
+                        if (data.permissions && data.permissions.length > 0) {
+                            tbody.innerHTML = data.permissions.map(p => `
+                                <tr>
+                                    <td><code class="bg-slate-700 px-2 py-1 rounded">${p.name}</code></td>
+                                    <td>${p.description || '-'}</td>
+                                    <td>${p.category || '-'}</td>
+                                </tr>
+                            `).join('');
+                        } else {
+                            tbody.innerHTML = '<tr><td colspan="3" class="text-center text-white/60">No hay permisos</td></tr>';
+                        }
+                    }
+                } catch (e) {
+                    document.getElementById('permissions-table').innerHTML = '<tr><td colspan="3" class="text-center text-red-400">Error al cargar</td></tr>';
+                }
+            },
+            
+            // Audit Page
+            async loadAudit() {
+                const content = document.getElementById('content');
+                content.innerHTML = `
+                    <div class="card">
+                        <div class="card-header">
+                            <h3 class="card-title">Auditoría</h3>
+                        </div>
+                        <p class="text-white/60 mb-4">Registro de acciones del sistema</p>
+                        <div class="table-container">
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>Fecha</th>
+                                        <th>Usuario</th>
+                                        <th>Acción</th>
+                                        <th>Entidad</th>
+                                        <th>IP</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="audit-table">
+                                    <tr><td colspan="5" class="text-center text-white/60">Cargando...</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                `;
+                
+                this.loadAuditTable();
+            },
+            
+            async loadAuditTable() {
+                try {
+                    const res = await fetch('/api/admin/audit?limit=50', {
+                        headers: { 'Authorization': `Bearer ${this.token}` }
+                    });
+                    if (res.ok) {
+                        const data = await res.json();
+                        const tbody = document.getElementById('audit-table');
+                        if (data.logs && data.logs.length > 0) {
+                            tbody.innerHTML = data.logs.map(l => `
+                                <tr>
+                                    <td>${new Date(l.timestamp).toLocaleString()}</td>
+                                    <td>${l.user_email || 'Sistema'}</td>
+                                    <td><span class="badge badge-info">${l.action}</span></td>
+                                    <td>${l.entity}</td>
+                                    <td class="text-white/50">${l.ip_address || '-'}</td>
+                                </tr>
+                            `).join('');
+                        } else {
+                            tbody.innerHTML = '<tr><td colspan="5" class="text-center text-white/60">No hay registros</td></tr>';
+                        }
+                    }
+                } catch (e) {
+                    document.getElementById('audit-table').innerHTML = '<tr><td colspan="5" class="text-center text-red-400">Error al cargar</td></tr>';
+                }
+            },
+            
+            // Users Page
+            
+            async loadUsersTable() {
+                try {
+                    const res = await fetch('/api/admin/users', {
+                        headers: { 'Authorization': `Bearer ${this.token}` }
+                    });
+                    if (res.ok) {
+                        const data = await res.json();
+                        const tbody = document.getElementById('users-table');
+                        if (data.users && data.users.length > 0) {
+                            tbody.innerHTML = data.users.map(user => `
+                                <tr>
+                                    <td>${user.name}</td>
+                                    <td>${user.email}</td>
+                                    <td><span class="badge badge-info">${user.plan || 'free'}</span></td>
+                                    <td>${user.is_active ? '<span class="badge badge-success">Activo</span>' : '<span class="badge badge-danger">Inactivo</span>'}</td>
+                                    <td>${user.last_login ? new Date(user.last_login).toLocaleString() : '-'}</td>
+                                    <td>
+                                        <button class="text-blue-400 hover:text-blue-300" onclick="app.editUser(${user.id})">
+                                            <i class="ph ph-pencil"></i>
+                                        </button>
+                                        <button class="text-red-400 hover:text-red-300 ml-2" onclick="app.deleteUser(${user.id})">
+                                            <i class="ph ph-trash"></i>
+                                        </button>
+                                    </td>
+                                </tr>
+                            `).join('');
+                        } else {
+                            tbody.innerHTML = '<tr><td colspan="6" class="text-center text-white/60">No hay usuarios</td></tr>';
+                        }
+                    }
+                } catch (e) {
+                    document.getElementById('users-table').innerHTML = '<tr><td colspan="6" class="text-center text-red-400">Error al cargar</td></tr>';
+                }
+            },
+            
+            async editUser(userId) {
+                try {
+                    // Get user details
+                    const userRes = await fetch(`/api/admin/users/${userId}`, {
+                        headers: { 'Authorization': `Bearer ${this.token}` }
+                    });
+                    
+                    // Get all available roles
+                    const rolesRes = await fetch('/api/admin/roles', {
+                        headers: { 'Authorization': `Bearer ${this.token}` }
+                    });
+                    
+                    if (!userRes.ok || !rolesRes.ok) {
+                        this.showToast('Error al cargar datos del usuario', 'error');
+                        return;
+                    }
+                    
+                    const userData = await userRes.json();
+                    const rolesData = await rolesRes.json();
+                    const user = userData.user;
+                    const roles = rolesData.roles || [];
+                    
+                    // Get current user roles
+                    const userRolesRes = await fetch(`/api/admin/users/${userId}/roles`, {
+                        headers: { 'Authorization': `Bearer ${this.token}` }
+                    });
+                    let currentRoles = [];
+                    if (userRolesRes.ok) {
+                        const userRolesData = await userRolesRes.json();
+                        currentRoles = userRolesData.roles || [];
+                    }
+                    
+                    const modal = document.createElement('div');
+                    modal.id = 'edit-user-modal';
+                    modal.className = 'fixed inset-0 bg-black/50 flex items-center justify-center z-50';
+                    
+                    const rolesOptions = roles.map(role => 
+                        `<option value="${role.id}" ${currentRoles.includes(role.id) ? 'selected' : ''}>${role.name}</option>`
+                    ).join('');
+                    
+                    modal.innerHTML = `
+                        <div class="bg-slate-800 rounded-xl p-6 w-full max-w-lg border border-white/10">
+                            <h3 class="text-xl font-semibold mb-4">Editar Usuario</h3>
+                            
+                            <div class="form-group mb-4">
+                                <label class="form-label">Nombre</label>
+                                <input type="text" id="edit-user-name" class="form-input" value="${user.name || ''}">
+                            </div>
+                            
+                            <div class="form-group mb-4">
+                                <label class="form-label">Email</label>
+                                <input type="email" id="edit-user-email" class="form-input" value="${user.email || ''}" disabled>
+                            </div>
+                            
+                            <div class="form-group mb-4">
+                                <label class="form-label">Plan</label>
+                                <select id="edit-user-plan" class="form-input">
+                                    <option value="free" ${user.plan === 'free' ? 'selected' : ''}>Free</option>
+                                    <option value="pro" ${user.plan === 'pro' ? 'selected' : ''}>Pro</option>
+                                </select>
+                            </div>
+                            
+                            <div class="form-group mb-4">
+                                <label class="form-label">Estado</label>
+                                <select id="edit-user-active" class="form-input">
+                                    <option value="true" ${user.is_active ? 'selected' : ''}>Activo</option>
+                                    <option value="false" ${!user.is_active ? 'selected' : ''}>Inactivo</option>
+                                </select>
+                            </div>
+                            
+                            <div class="form-group mb-4">
+                                <label class="form-label">Roles</label>
+                                <select id="edit-user-roles" class="form-input" multiple size="4">
+                                    ${rolesOptions}
+                                </select>
+                                <small class="text-white/50">Mantén Ctrl/Cmd presionado para seleccionar múltiples</small>
+                            </div>
+                            
+                            <div class="flex gap-2 justify-end">
+                                <button class="btn-secondary" onclick="document.getElementById('edit-user-modal').remove()">Cancelar</button>
+                                <button class="btn-primary" onclick="app.saveUser(${userId})">Guardar</button>
+                            </div>
+                        </div>
+                    `;
+                    
+                    document.body.appendChild(modal);
+                    
+                } catch (e) {
+                    console.error(e);
+                    this.showToast('Error al cargar usuario', 'error');
+                }
+            },
+            
+            async saveUser(userId) {
+                const name = document.getElementById('edit-user-name').value;
+                const plan = document.getElementById('edit-user-plan').value;
+                const isActive = document.getElementById('edit-user-active').value === 'true';
+                const selectedRoles = Array.from(document.getElementById('edit-user-roles').selectedOptions).map(opt => parseInt(opt.value));
+                
+                try {
+                    // Update user
+                    const updateRes = await fetch(`/api/admin/users/${userId}`, {
+                        method: 'PUT',
+                        headers: { 
+                            'Authorization': `Bearer ${this.token}`,
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({ name, plan, is_active: isActive })
+                    });
+                    
+                    if (!updateRes.ok) {
+                        const err = await updateRes.json();
+                        this.showToast(err.error || 'Error al actualizar usuario', 'error');
+                        return;
+                    }
+                    
+                    // Update roles
+                    const rolesRes = await fetch(`/api/admin/users/${userId}/roles`, {
+                        method: 'PUT',
+                        headers: { 
+                            'Authorization': `Bearer ${this.token}`,
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({ roles: selectedRoles })
+                    });
+                    
+                    if (!rolesRes.ok) {
+                        const err = await rolesRes.json();
+                        this.showToast(err.error || 'Error al actualizar roles', 'error');
+                        return;
+                    }
+                    
+                    document.getElementById('edit-user-modal').remove();
+                    this.showToast('Usuario actualizado correctamente', 'success');
+                    this.loadUsersTable();
+                    
+                } catch (e) {
+                    console.error(e);
+                    this.showToast('Error al guardar usuario', 'error');
+                }
+            },
+            
+            showCreateUserModal() {
+                const modal = document.createElement('div');
+                modal.className = 'modal-overlay';
+                modal.innerHTML = `
+                    <div class="modal">
+                        <div class="modal-header">
+                            <h3 class="modal-title">Crear Usuario</h3>
+                            <button class="modal-close" onclick="this.closest('.modal-overlay').remove()">×</button>
+                        </div>
+                        <div class="modal-body">
+                            <div class="form-group">
+                                <label class="form-label">Nombre</label>
+                                <input type="text" id="new-user-name" class="form-input" placeholder="Nombre completo">
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Email</label>
+                                <input type="email" id="new-user-email" class="form-input" placeholder="email@ejemplo.com">
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Contraseña</label>
+                                <input type="password" id="new-user-password" class="form-input" placeholder="••••••••">
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Plan</label>
+                                <select id="new-user-plan" class="form-input">
+                                    <option value="free">Free</option>
+                                    <option value="pro">Pro</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="modal-footer">
+                            <button class="btn btn-secondary" onclick="this.closest('.modal-overlay').remove()">Cancelar</button>
+                            <button class="btn btn-primary" onclick="app.createUser()">Crear</button>
+                        </div>
+                    </div>
+                `;
+                document.body.appendChild(modal);
+            },
+            
+            async createUser() {
+                const name = document.getElementById('new-user-name').value;
+                const email = document.getElementById('new-user-email').value;
+                const password = document.getElementById('new-user-password').value;
+                const plan = document.getElementById('new-user-plan').value;
+                
+                try {
+                    const res = await fetch('/api/admin/users', {
+                        method: 'POST',
+                        headers: { 
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${this.token}`
+                        },
+                        body: JSON.stringify({ name, email, password, plan })
+                    });
+                    
+                    if (res.ok) {
+                        this.showToast('Usuario creado correctamente', 'success');
+                        document.querySelector('.modal-overlay').remove();
+                        this.loadUsersTable();
+                    } else {
+                        const data = await res.json();
+                        this.showToast(data.error || 'Error al crear usuario', 'error');
+                    }
+                } catch (e) {
+                    this.showToast('Error de conexión', 'error');
+                }
+            },
+            
+            async deleteUser(id) {
+                if (!confirm('¿Estás seguro de eliminar este usuario?')) return;
+                
+                try {
+                    const res = await fetch(`/api/admin/users/${id}`, {
+                        method: 'DELETE',
+                        headers: { 'Authorization': `Bearer ${this.token}` }
+                    });
+                    
+                    if (res.ok) {
+                        this.showToast('Usuario eliminado', 'success');
+                        this.loadUsersTable();
+                    } else {
+                        const data = await res.json();
+                        this.showToast(data.error || 'Error al eliminar', 'error');
+                    }
+                } catch (e) {
+                    this.showToast('Error de conexión', 'error');
+                }
+            },
+            
+            // Businesses Page
+            async loadBusinesses() {
+                const content = document.getElementById('content');
+                content.innerHTML = `
+                    <div class="card">
+                        <div class="card-header">
+                            <h3 class="card-title">Negocios</h3>
+                        </div>
+                        <div class="table-container">
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>Nombre</th>
+                                        <th>Moneda</th>
+                                        <th>Zona Horaria</th>
+                                        <th>Usuario</th>
+                                        <th>Creado</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="businesses-table">
+                                    <tr><td colspan="5" class="text-center text-white/60">Cargando...</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                `;
+                
+                this.loadBusinessesTable();
+            },
+            
+            async loadBusinessesTable() {
+                try {
+                    const res = await fetch('/api/admin/businesses', {
+                        headers: { 'Authorization': `Bearer ${this.token}` }
+                    });
+                    if (res.ok) {
+                        const data = await res.json();
+                        const tbody = document.getElementById('businesses-table');
+                        if (data.businesses && data.businesses.length > 0) {
+                            tbody.innerHTML = data.businesses.map(b => `
+                                <tr>
+                                    <td>${b.name}</td>
+                                    <td>${b.currency}</td>
+                                    <td>${b.timezone || 'America/Bogota'}</td>
+                                    <td>${b.user_email || '-'}</td>
+                                    <td>${new Date(b.created_at).toLocaleDateString()}</td>
+                                </tr>
+                            `).join('');
+                        } else {
+                            tbody.innerHTML = '<tr><td colspan="5" class="text-center text-white/60">No hay negocios</td></tr>';
+                        }
+                    }
+                } catch (e) {
+                    document.getElementById('businesses-table').innerHTML = '<tr><td colspan="5" class="text-center text-red-400">Error al cargar</td></tr>';
+                }
+            },
+            
+            // Data Page - Database management and export
+            async loadData() {
+                const content = document.getElementById('content');
+                content.innerHTML = `
+                    <div class="card">
+                        <div class="card-header">
+                            <h3 class="card-title">Gestión de Datos</h3>
+                        </div>
+                        <p class="text-white/60 mb-4">Exporta, importa y gestiona los datos del sistema</p>
+                        
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                            <div class="bg-slate-800 p-4 rounded-lg">
+                                <h4 class="font-semibold mb-2"><i class="ph ph-download-simple mr-2"></i>Exportar Datos</h4>
+                                <p class="text-white/60 text-sm mb-3">Descarga todos los datos en formato JSON o CSV</p>
+                                <div class="flex gap-2">
+                                    <button class="btn-secondary text-sm" onclick="app.exportData('json')">JSON</button>
+                                    <button class="btn-secondary text-sm" onclick="app.exportData('csv')">CSV</button>
+                                </div>
+                            </div>
+                            <div class="bg-slate-800 p-4 rounded-lg">
+                                <h4 class="font-semibold mb-2"><i class="ph ph-upload-simple mr-2"></i>Importar Datos</h4>
+                                <p class="text-white/60 text-sm mb-3">Importa datos desde un archivo JSON</p>
+                                <input type="file" id="import-file" accept=".json" class="text-sm text-white/60 mb-2">
+                                <button class="btn-secondary text-sm" onclick="app.importData()">Importar</button>
+                            </div>
+                        </div>
+                        
+                        <div class="bg-slate-800 p-4 rounded-lg">
+                            <h4 class="font-semibold mb-2"><i class="ph ph-database mr-2"></i>Información de la Base de Datos</h4>
+                            <div id="db-stats" class="text-sm text-white/60">
+                                <p>Cargando estadísticas...</p>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                
+                this.loadDataStats();
+            },
+            
+            async loadDataStats() {
+                try {
+                    const res = await fetch('/api/admin/data-stats', {
+                        headers: { 'Authorization': `Bearer ${this.token}` }
+                    });
+                    if (res.ok) {
+                        const data = await res.json();
+                        const container = document.getElementById('db-stats');
+                        container.innerHTML = `
+                            <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                                <div><span class="text-white/40">Usuarios:</span> ${data.stats.users}</div>
+                                <div><span class="text-white/40">Negocios:</span> ${data.stats.businesses}</div>
+                                <div><span class="text-white/40">Clientes:</span> ${data.stats.customers}</div>
+                                <div><span class="text-white/40">Productos:</span> ${data.stats.products}</div>
+                                <div><span class="text-white/40">Ventas:</span> ${data.stats.sales}</div>
+                                <div><span class="text-white/40">Pagos:</span> ${data.stats.payments}</div>
+                                <div><span class="text-white/40">Gastos:</span> ${data.stats.expenses}</div>
+                                <div><span class="text-white/40">Última copia:</span> ${data.stats.last_backup || 'Nunca'}</div>
+                            </div>
+                        `;
+                    }
+                } catch (e) {
+                    document.getElementById('db-stats').innerHTML = '<p class="text-red-400">Error al cargar estadísticas</p>';
+                }
+            },
+            
+            async exportData(format) {
+                try {
+                    const res = await fetch(`/api/admin/export?format=${format}`, {
+                        headers: { 'Authorization': `Bearer ${this.token}` }
+                    });
+                    if (res.ok) {
+                        const blob = await res.blob();
+                        const url = window.URL.createObjectURL(blob);
+                        const a = document.createElement('a');
+                        a.href = url;
+                        a.download = `backup_${new Date().toISOString().split('T')[0]}.${format}`;
+                        a.click();
+                        this.showToast('Datos exportados correctamente', 'success');
+                    } else {
+                        this.showToast('Error al exportar', 'error');
+                    }
+                } catch (e) {
+                    this.showToast('Error de conexión', 'error');
+                }
+            },
+            
+            async importData() {
+                const input = document.getElementById('import-file');
+                if (!input.files[0]) {
+                    this.showToast('Selecciona un archivo', 'error');
+                    return;
+                }
+                
+                const formData = new FormData();
+                formData.append('file', input.files[0]);
+                
+                try {
+                    const res = await fetch('/api/admin/import', {
+                        method: 'POST',
+                        headers: { 'Authorization': `Bearer ${this.token}` },
+                        body: formData
+                    });
+                    if (res.ok) {
+                        this.showToast('Datos importados correctamente', 'success');
+                        this.loadData();
+                    } else {
+                        const data = await res.json();
+                        this.showToast(data.error || 'Error al importar', 'error');
+                    }
+                } catch (e) {
+                    this.showToast('Error de conexión', 'error');
+                }
+            },
+            
+            // Roles Page
+            async loadRoles() {
+                const content = document.getElementById('content');
+                content.innerHTML = `
+                    <div class="card">
+                        <div class="card-header">
+                            <h3 class="card-title">Roles</h3>
+                            <button class="btn btn-primary" onclick="app.showCreateRoleModal()">
+                                <i class="ph ph-plus"></i> Nuevo Rol
+                            </button>
+                        </div>
+                        <div class="table-container">
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>Nombre</th>
+                                        <th>Descripción</th>
+                                        <th>Usuarios</th>
+                                        <th>Sistema</th>
+                                        <th>Acciones</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="roles-table">
+                                    <tr><td colspan="5" class="text-center text-white/60">Cargando...</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                `;
+                
+                this.loadRolesTable();
+            },
+            
+            async loadRolesTable() {
+                try {
+                    const res = await fetch('/api/admin/roles', {
+                        headers: { 'Authorization': `Bearer ${this.token}` }
+                    });
+                    if (res.ok) {
+                        const data = await res.json();
+                        const tbody = document.getElementById('roles-table');
+                        if (data.roles && data.roles.length > 0) {
+                            tbody.innerHTML = data.roles.map(role => `
+                                <tr>
+                                    <td>${role.name}</td>
+                                    <td>${role.description || '-'}</td>
+                                    <td>${role.user_count || 0}</td>
+                                    <td>${role.is_system ? '<span class="badge badge-warning">Sistema</span>' : '-'}</td>
+                                    <td>
+                                        ${!role.is_system ? `
+                                        <button class="text-blue-400 hover:text-blue-300" onclick="app.editRole(${role.id})">
+                                            <i class="ph ph-pencil"></i>
+                                        </button>
+                                        <button class="text-red-400 hover:text-red-300 ml-2" onclick="app.deleteRole(${role.id})">
+                                            <i class="ph ph-trash"></i>
+                                        </button>
+                                        ` : ''}
+                                    </td>
+                                </tr>
+                            `).join('');
+                        } else {
+                            tbody.innerHTML = '<tr><td colspan="5" class="text-center text-white/60">No hay roles</td></tr>';
+                        }
+                    }
+                } catch (e) {
+                    document.getElementById('roles-table').innerHTML = '<tr><td colspan="5" class="text-center text-red-400">Error al cargar</td></tr>';
+                }
+            },
+            
+            showCreateRoleModal() {
+                const modal = document.createElement('div');
+                modal.id = 'create-role-modal';
+                modal.className = 'fixed inset-0 bg-black/50 flex items-center justify-center z-50';
+                modal.innerHTML = `
+                    <div class="bg-slate-800 rounded-xl p-6 w-full max-w-md border border-white/10">
+                        <h3 class="text-xl font-semibold mb-4">Crear Nuevo Rol</h3>
+                        <div class="form-group mb-4">
+                            <label class="form-label">Nombre del Rol</label>
+                            <input type="text" id="role-name" class="form-input" placeholder="Ej: Gerente">
+                        </div>
+                        <div class="form-group mb-4">
+                            <label class="form-label">Descripción</label>
+                            <textarea id="role-description" class="form-input" rows="3" placeholder="Descripción del rol"></textarea>
+                        </div>
+                        <div class="flex gap-3">
+                            <button onclick="app.createRole()" class="btn btn-primary flex-1">Crear</button>
+                            <button onclick="this.closest('.fixed').remove()" class="btn btn-secondary flex-1">Cancelar</button>
+                        </div>
+                    </div>
+                `;
+                document.body.appendChild(modal);
+            },
+            
+            async createRole() {
+                const name = document.getElementById('role-name').value.trim();
+                const description = document.getElementById('role-description').value.trim();
+                
+                if (!name) {
+                    this.showToast('El nombre es requerido', 'error');
+                    return;
+                }
+                
+                try {
+                    const res = await fetch('/api/admin/roles', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${this.token}`
+                        },
+                        body: JSON.stringify({ name, description })
+                    });
+                    
+                    if (res.ok) {
+                        this.showToast('Rol creado exitosamente', 'success');
+                        document.getElementById('create-role-modal').remove();
+                        this.loadRoles();
+                    } else {
+                        const data = await res.json();
+                        this.showToast(data.error || 'Error al crear rol', 'error');
+                    }
+                } catch (e) {
+                    this.showToast('Error de conexión', 'error');
+                }
+            },
+            
+            editRole(roleId) {
+                // Show edit modal with role data and permissions
+                this.showEditRoleModal(roleId);
+            },
+            
+            async showEditRoleModal(roleId) {
+                try {
+                    // Get role details and permissions
+                    const roleRes = await fetch(`/api/admin/roles/${roleId}`, {
+                        headers: { 'Authorization': `Bearer ${this.token}` }
+                    });
+                    const permsRes = await fetch('/api/admin/permissions', {
+                        headers: { 'Authorization': `Bearer ${this.token}` }
+                    });
+                    
+                    if (!roleRes.ok || !permsRes.ok) {
+                        this.showToast('Error al cargar datos', 'error');
+                        return;
+                    }
+                    
+                    const roleData = await roleRes.json();
+                    const allPerms = await permsRes.json();
+                    const role = roleData.role;
+                    const rolePerms = role.permissions || [];
+                    const rolePermNames = rolePerms.map(p => typeof p === 'string' ? p : p.name);
+                    
+                    // Group permissions by category
+                    const groupedPerms = {};
+                    allPerms.permissions.forEach(p => {
+                        const cat = p.category || 'Other';
+                        if (!groupedPerms[cat]) groupedPerms[cat] = [];
+                        groupedPerms[cat].push(p);
+                    });
+                    
+                    const modal = document.createElement('div');
+                    modal.id = 'edit-role-modal';
+                    modal.className = 'fixed inset-0 bg-black/50 flex items-center justify-center z-50';
+                    
+                    let permissionsHtml = '';
+                    for (const [category, perms] of Object.entries(groupedPerms)) {
+                        permissionsHtml += `
+                            <div class="mb-4">
+                                <h4 class="text-sm font-semibold text-white/80 mb-2">${category}</h4>
+                                <div class="grid grid-cols-2 gap-2">
+                                    ${perms.map(p => `
+                                        <label class="flex items-center gap-2 text-sm">
+                                            <input type="checkbox" name="permission" value="${p.name}" 
+                                                ${rolePermNames.includes(p.name) ? 'checked' : ''}
+                                                class="rounded bg-slate-700 border-slate-600">
+                                            <span class="text-white/70">${p.name}</span>
+                                        </label>
+                                    `).join('')}
+                                </div>
+                            </div>
+                        `;
+                    }
+                    
+                    modal.innerHTML = `
+                        <div class="bg-slate-800 rounded-xl p-6 w-full max-w-lg border border-white/10 max-h-[80vh] overflow-y-auto">
+                            <h3 class="text-xl font-semibold mb-4">Editar Rol: ${role.name}</h3>
+                            
+                            <div class="form-group mb-4">
+                                <label class="form-label">Nombre</label>
+                                <input type="text" id="edit-role-name" class="form-input" value="${role.name}" ${role.is_system ? 'disabled' : ''}>
+                            </div>
+                            
+                            <div class="form-group mb-4">
+                                <label class="form-label">Descripción</label>
+                                <input type="text" id="edit-role-description" class="form-input" value="${role.description || ''}">
+                            </div>
+                            
+                            <div class="mb-4">
+                                <h4 class="form-label mb-2">Permisos</h4>
+                                ${permissionsHtml}
+                            </div>
+                            
+                            <div class="flex gap-2 justify-end">
+                                <button class="btn-secondary" onclick="document.getElementById('edit-role-modal').remove()">Cancelar</button>
+                                <button class="btn-primary" onclick="app.saveRolePermissions(${roleId})">Guardar</button>
+                            </div>
+                        </div>
+                    `;
+                    
+                    document.body.appendChild(modal);
+                    
+                } catch (e) {
+                    console.error(e);
+                    this.showToast('Error al cargar rol', 'error');
+                }
+            },
+            
+            async saveRolePermissions(roleId) {
+                const name = document.getElementById('edit-role-name').value;
+                const description = document.getElementById('edit-role-description').value;
+                const selectedPerms = Array.from(document.querySelectorAll('input[name="permission"]:checked')).map(cb => cb.value);
+                
+                try {
+                    // Update role details
+                    const updateRes = await fetch(`/api/admin/roles/${roleId}`, {
+                        method: 'PUT',
+                        headers: { 
+                            'Authorization': `Bearer ${this.token}`,
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({ name, description })
+                    });
+                    
+                    if (!updateRes.ok) {
+                        const err = await updateRes.json();
+                        this.showToast(err.error || 'Error al actualizar rol', 'error');
+                        return;
+                    }
+                    
+                    // Update permissions - now uses bulk endpoint
+                    const permsRes = await fetch(`/api/admin/roles/${roleId}/permissions`, {
+                        method: 'POST',
+                        headers: { 
+                            'Authorization': `Bearer ${this.token}`,
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({ permissions: selectedPerms })
+                    });
+                    
+                    if (!permsRes.ok) {
+                        const err = await permsRes.json();
+                        this.showToast(err.error || 'Error al actualizar permisos', 'error');
+                        return;
+                    }
+                    
+                    this.showToast('Rol actualizado correctamente', 'success');
+                    this.loadRoles();
+                    document.getElementById('edit-role-modal').remove();
+                    
+                    if (permsRes.ok) {
+                        document.getElementById('edit-role-modal').remove();
+                        this.showToast('Rol actualizado correctamente', 'success');
+                        this.loadRoles();
+                    } else {
+                        const err = await permsRes.json();
+                        this.showToast(err.error || 'Error al actualizar permisos', 'error');
+                    }
+                    
+                } catch (e) {
+                    this.showToast('Error de conexión', 'error');
+                }
+            },
+            
+            async deleteRole(roleId) {
+                if (!confirm('¿Estás seguro de eliminar este rol?')) return;
+                
+                try {
+                    const res = await fetch(`/api/admin/roles/${roleId}`, {
+                        method: 'DELETE',
+                        headers: { 'Authorization': `Bearer ${this.token}` }
+                    });
+                    
+                    if (res.ok) {
+                        this.showToast('Rol eliminado', 'success');
+                        this.loadRoles();
+                    } else {
+                        const data = await res.json();
+                        this.showToast(data.error || 'Error al eliminar', 'error');
+                    }
+                } catch (e) {
+                    this.showToast('Error de conexión', 'error');
+                }
+            },
+            
+            // Settings Page
+            async loadSettings() {
+                const content = document.getElementById('content');
+                content.innerHTML = `
+                    <div class="card">
+                        <div class="card-header">
+                            <h3 class="card-title">Configuración del Sistema</h3>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Nombre de la Aplicación</label>
+                            <input type="text" id="settings-app-name" class="form-input" value="Cuaderno">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Modo de Acceso</label>
+                            <select id="settings-require-login" class="form-input">
+                                <option value="true">Requiere Login</option>
+                                <option value="false">Público</option>
+                            </select>
+                        </div>
+                        <button class="btn btn-primary" onclick="app.saveSettings()">Guardar Cambios</button>
+                    </div>
+                `;
+                
+                // Load current settings
+                this.loadCurrentSettings();
+            },
+            
+            async loadCurrentSettings() {
+                try {
+                    const res = await fetch('/api/settings', {
+                        headers: { 'Authorization': `Bearer ${this.token}` }
+                    });
+                    if (res.ok) {
+                        const data = await res.json();
+                        if (data.settings) {
+                            document.getElementById('settings-app-name').value = data.settings.app_name || 'Cuaderno';
+                            document.getElementById('settings-require-login').value = String(data.settings.require_login !== false);
+                        }
+                    }
+                } catch (e) {
+                    console.error('Error loading settings:', e);
+                }
+            },
+            
+            async saveSettings() {
+                const app_name = document.getElementById('settings-app-name').value;
+                const require_login = document.getElementById('settings-require-login').value === 'true';
+                
+                try {
+                    const res = await fetch('/api/settings', {
+                        method: 'POST',
+                        headers: { 
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${this.token}`
+                        },
+                        body: JSON.stringify({ app_name, require_login })
+                    });
+                    
+                    if (res.ok) {
+                        this.showToast('Configuración guardada', 'success');
+                    } else {
+                        const data = await res.json();
+                        this.showToast(data.error || 'Error al guardar', 'error');
+                    }
+                } catch (e) {
+                    this.showToast('Error de conexión', 'error');
+                }
+            },
+            
+            // Utilities
+            toggleUserMenu() {
+                const dropdown = document.getElementById('user-dropdown');
+                dropdown.classList.toggle('hidden');
+            },
+            
+            copyAppLink() {
+                const url = window.location.origin + '/app';
+                navigator.clipboard.writeText(url).then(() => {
+                    this.showToast('Enlace copiado al portapapeles', 'success');
+                });
+            },
+            
+            showToast(message, type = 'info') {
+                const container = document.getElementById('toast-container');
+                const toast = document.createElement('div');
+                toast.className = 'toast';
+                toast.innerHTML = message;
+                container.appendChild(toast);
+                setTimeout(() => toast.remove(), 3000);
+            },
+            
+            formatNumber(num) {
+                return new Intl.NumberFormat('es-CO').format(num);
+            },
+            
+            async api(endpoint, options = {}) {
+                const headers = {
+                    'Content-Type': 'application/json',
+                    ...(this.token ? { 'Authorization': `Bearer ${this.token}` } : {}),
+                    ...options.headers
+                };
+                
+                const res = await fetch(endpoint, { ...options, headers });
+                if (!res.ok) {
+                    const data = await res.json();
+                    throw new Error(data.error || 'API Error');
+                }
+                return res.json();
+            }
+        };
+        
+        // Close user dropdown when clicking outside
+        document.addEventListener('click', (e) => {
+            const dropdown = document.getElementById('user-dropdown');
+            const avatar = document.getElementById('user-avatar');
+            if (!dropdown.contains(e.target) && !avatar.contains(e.target)) {
+                dropdown.classList.add('hidden');
+            }
+        });
+        
+        // Initialize
+        app.init();
+    </script>
+</body>
+</html>

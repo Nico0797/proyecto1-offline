@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Negocios</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .business {
+            border: 1px solid #ddd;
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 5px;
+        }
+        .active {
+            background-color: #f0f0f0;
+            font-weight: bold;
+        }
+        button {
+            background-color: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin-right: 5px;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+    </style>
+</head>
+<body>
+    <h1>Test de Negocios</h1>
+    
+    <div id="login">
+        <h2>Iniciar Sesión</h2>
+        <input type="email" id="email" value="admin@cuaderno.app" placeholder="Email">
+        <input type="password" id="password" value="admin123" placeholder="Password">
+        <button onclick="login()">Iniciar Sesión</button>
+    </div>
+    
+    <div id="businesses" class="hidden">
+        <h2>Negocios</h2>
+        <div id="business-list"></div>
+        <div id="business-details"></div>
+    </div>
+    
+    <script>
+        let token = null;
+        let businesses = [];
+        let currentBusiness = null;
+        
+        async function login() {
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+            
+            const response = await fetch('http://127.0.0.1:5000/api/auth/login', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email, password })
+            });
+            
+            const data = await response.json();
+            token = data.access_token;
+            
+            document.getElementById('login').classList.add('hidden');
+            document.getElementById('businesses').classList.remove('hidden');
+            
+            await loadBusinesses();
+        }
+        
+        async function loadBusinesses() {
+            const response = await fetch('http://127.0.0.1:5000/api/businesses', {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            
+            const data = await response.json();
+            businesses = data.businesses;
+            currentBusiness = businesses[0];
+            
+            displayBusinesses();
+            displayBusinessDetails();
+        }
+        
+        function displayBusinesses() {
+            const listDiv = document.getElementById('business-list');
+            listDiv.innerHTML = businesses.map(b => `
+                <div class="business ${b.id === currentBusiness.id ? 'active' : ''}">
+                    <h3>${b.name}</h3>
+                    <button onclick="switchBusiness(${b.id})">Cambiar</button>
+                    <button onclick="showAddBusiness()">Agregar Negocio</button>
+                </div>
+            `).join('');
+        }
+        
+        async function switchBusiness(businessId) {
+            currentBusiness = businesses.find(b => b.id === businessId);
+            displayBusinesses();
+            displayBusinessDetails();
+        }
+        
+        async function showAddBusiness() {
+            const name = prompt('Ingrese el nombre del nuevo negocio:');
+            if (name) {
+                const response = await fetch('http://127.0.0.1:5000/api/businesses', {
+                    method: 'POST',
+                    headers: { 
+                        'Content-Type': 'application/json', 
+                        'Authorization': `Bearer ${token}` 
+                    },
+                    body: JSON.stringify({ name })
+                });
+                
+                const data = await response.json();
+                businesses.push(data.business);
+                displayBusinesses();
+            }
+        }
+        
+        async function displayBusinessDetails() {
+            const detailsDiv = document.getElementById('business-details');
+            
+            // Obtener datos del negocio actual
+            const [productsResponse, customersResponse, salesResponse] = await Promise.all([
+                fetch(`http://127.0.0.1:5000/api/businesses/${currentBusiness.id}/products`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                }),
+                fetch(`http://127.0.0.1:5000/api/businesses/${currentBusiness.id}/customers`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                }),
+                fetch(`http://127.0.0.1:5000/api/businesses/${currentBusiness.id}/sales`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                })
+            ]);
+            
+            const [productsData, customersData, salesData] = await Promise.all([
+                productsResponse.json(),
+                customersResponse.json(),
+                salesResponse.json()
+            ]);
+            
+            detailsDiv.innerHTML = `
+                <h3>Detalles del Negocio: ${currentBusiness.name}</h3>
+                <p><strong>ID:</strong> ${currentBusiness.id}</p>
+                <p><strong>Moneda:</strong> ${currentBusiness.currency}</p>
+                <p><strong>Zona Horaria:</strong> ${currentBusiness.timezone}</p>
+                <h4>Productos (${productsData.products.length}):</h4>
+                <ul>
+                    ${productsData.products.map(p => `<li>${p.name} - ${p.price}</li>`).join('')}
+                </ul>
+                <h4>Clientes (${customersData.customers.length}):</h4>
+                <ul>
+                    ${customersData.customers.map(c => `<li>${c.name} - ${c.phone}</li>`).join('')}
+                </ul>
+                <h4>Ventas (${salesData.sales.length}):</h4>
+                <ul>
+                    ${salesData.sales.slice(0, 5).map(s => `<li>${s.sale_date} - ${s.total}</li>`).join('')}
+                </ul>
+            `;
+        }
+    </script>
+</body>
+</html>
