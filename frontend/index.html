@@ -157,7 +157,7 @@
         }
         
         
-        /* Mobile menu button - hidden by default */
+        /* Mobile menu button - hidden by default, controlled by JavaScript */
         .mobile-menu-btn { display: none; }
         
         /* Desktop sidebar - always visible */
@@ -166,7 +166,7 @@
         }
         
         /* Mobile optimizations */
-        @media (max-width: 768px) {
+        @media (max-width: 1439px) {
             .sidebar { 
                 display: none; 
                 position: fixed; 
@@ -210,7 +210,7 @@
             }
         }
         
-        @media (min-width: 769px) {
+        @media (min-width: 1440px) {
             .mobile-menu-btn { display: none; }
             .sidebar-overlay { display: none !important; }
             .sidebar-close-btn { display: none; }
@@ -245,8 +245,11 @@
             <div class="min-h-screen flex items-center justify-center p-4">
                 <div class="glass rounded-2xl p-8 w-full max-w-md">
                     <div class="text-center mb-8">
-                        <h1 class="text-3xl font-bold mb-2"><i class="ph ph-notebook-ph text-4xl text-blue-400"></i> Cuaderno</h1>
-                        <p class="text-muted">Tu contabilidad simple</p>
+                        <div class="flex items-center justify-center gap-3 mb-3">
+                            <img src="/assets/logo.png" alt="Prospera" class="w-16 h-16 rounded-xl" style="object-fit: contain; background: linear-gradient(135deg, #2A6DFD, #1D4ED8); padding: 8px;">
+                        </div>
+                        <h1 class="text-3xl font-bold mb-2">Progresa</h1>
+                        <p class="text-muted">Tu gestión empresarial</p>
                     </div>
                     
                     <!-- Login Form -->
@@ -361,12 +364,12 @@
                 </button>
                 <div class="mb-6" id="app-header">
                     <div class="relative">
-                        <button onclick="app.toggleBusinessMenu()" class="w-full text-left">
+                        <div class="w-full text-left">
                             <h1 class="text-xl font-bold flex items-center gap-2">
-                                <img id="header-logo" src="" class="w-8 h-8 rounded hidden" onerror="this.classList.add('hidden')">
-                                <span id="header-business-name"><i class="ph ph-notebook-ph text-blue-400"></i> Cuaderno</span>
+                                <img id="header-logo" src="/assets/logo.png" class="w-8 h-8 rounded" onerror="this.classList.add('hidden')">
+                                <span id="header-business-name">Progresa</span>
                             </h1>
-                        </button>
+                        </div>
                         <div id="business-switch-dropdown" class="dropdown-menu hidden"></div>
                     </div>
                 </div>
@@ -385,7 +388,7 @@
                         <i class="ph ph-receipt ph-icon"></i> Gastos
                     </a>
                     <a href="#" onclick="app.navigate('payments')" class="nav-item block px-4 py-2 rounded-lg text-white/80 hover:bg-white/5" data-page="payments">
-                        <i class="ph ph-bank-card ph-icon"></i> Pagos/Abonos
+                        <i class="ph ph-money ph-icon"></i> Pagos/Abonos
                     </a>
                     <a href="#" onclick="app.navigate('customers')" class="nav-item block px-4 py-2 rounded-lg text-white/80 hover:bg-white/5" data-page="customers">
                         <i class="ph ph-users ph-icon"></i> Clientes
@@ -401,9 +404,6 @@
                     </a>
                     <a href="#" onclick="app.navigate('upgrade')" class="nav-item block px-4 py-2 rounded-lg text-yellow-400 hover:bg-yellow-400/10 hidden" data-page="upgrade" id="nav-upgrade">
                         <i class="ph ph-star ph-icon"></i> Actualizar a Pro
-                    </a>
-                    <a href="#" onclick="app.navigate('admin')" class="nav-item block px-4 py-2 rounded-lg text-white/80 hover:bg-white/5 hidden" data-page="admin" id="nav-admin">
-                        <i class="ph ph-wrench ph-icon"></i> Admin
                     </a>
                 </nav>
                 
@@ -428,6 +428,27 @@
                             <a href="#" onclick="app.navigate('settings')">Perfil</a>
                             <a href="#" onclick="app.logout()" class="text-red-300">Cerrar sesión</a>
                         </div>
+                    </div>
+                </div>
+                
+                <!-- Business Header - Center of page -->
+                <div id="business-header" class="glass rounded-xl p-4 mb-4 flex items-center justify-between">
+                    <div class="flex items-center gap-3">
+                        <img id="center-business-logo" src="/assets/logo.png" class="w-12 h-12 rounded-lg object-cover border-2 border-blue-500/30" onerror="this.style.display='none'">
+                        <div>
+                            <p class="text-muted text-xs uppercase tracking-wide">Negocio Actual</p>
+                            <h3 id="center-business-name" class="text-lg font-bold text-white">Mi Negocio</h3>
+                        </div>
+                    </div>
+                    <div class="flex gap-2 relative">
+                        <button onclick="app.toggleCenterBusinessMenu(event)" class="px-4 py-2 bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-500 hover:to-blue-400 text-white rounded-lg font-medium text-sm flex items-center gap-2 shadow-lg shadow-blue-500/25 transition-all duration-200 hover:scale-105">
+                            <i class="ph ph-arrows-left-right"></i> Cambiar
+                        </button>
+                        <button onclick="app.createNewBusiness()" class="px-4 py-2 bg-gradient-to-r from-green-600 to-green-500 hover:from-green-500 hover:to-green-400 text-white rounded-lg font-medium text-sm flex items-center gap-2 shadow-lg shadow-green-500/25 transition-all duration-200 hover:scale-105">
+                            <i class="ph ph-plus"></i> Nuevo
+                        </button>
+                        <!-- Center Business Dropdown -->
+                        <div id="center-business-dropdown" class="dropdown-menu hidden absolute right-0 top-full mt-2 z-50 w-64"></div>
                     </div>
                 </div>
                 
@@ -600,6 +621,7 @@
                                     <th>Saldo</th>
                                     <th>Método</th>
                                     <th>Estado</th>
+                                    <th>Acciones</th>
                                 </tr>
                             </thead>
                             <tbody id="sales-table">
@@ -713,10 +735,10 @@
                                 <option value="">Todas las categorías</option>
                             </select>
                             <select id="product-stock-filter" class="input px-4 py-2 rounded-lg" onchange="app.filterProducts()">
-                                <option value="">Cualquier stock</option>
-                                <option value="in_stock">Con stock</option>
-                                <option value="out_of_stock">Sin stock</option>
-                                <option value="low_stock">Stock bajo</option>
+                                <option value="">Cualquier inventario</option>
+                                <option value="in_stock">Con inventario</option>
+                                <option value="out_of_stock">Sin inventario</option>
+                                <option value="low_stock">Inventario bajo</option>
                             </select>
                         </div>
                     </div>
@@ -729,7 +751,7 @@
                                     <th>SKU</th>
                                     <th>Precio</th>
                                     <th>Costo</th>
-                                    <th>Stock</th>
+                                    <th>Inventario</th>
                                     <th></th>
                                 </tr>
                             </thead>
@@ -902,13 +924,60 @@
                     </div>
                     
                     <!-- Pricing -->
-                    <div class="max-w-2xl mx-auto">
+                    <div class="max-w-4xl mx-auto grid md:grid-cols-3 gap-6">
+                        <!-- Quarterly Plan -->
+                        <div class="glass rounded-2xl p-8 border-2 border-green-500/50 relative overflow-hidden">
+                            <div class="absolute top-0 right-0 bg-green-500 text-white text-xs font-bold px-4 py-1 rounded-bl-lg">AHORRA 8%</div>
+                            <div class="text-center mb-6">
+                                <p class="text-muted mb-2">Plan PRO Trimestral</p>
+                                <div class="flex items-baseline justify-center gap-1">
+                                    <span class="text-4xl font-bold text-green-400">$18,308</span>
+                                    <span class="text-muted">/mes</span>
+                                </div>
+                                <p class="text-sm text-muted mt-2">$54,924 cada 3 meses</p>
+                            </div>
+                            <ul class="space-y-3 mb-8">
+                                <li class="flex items-center gap-3"><i class="ph ph-check-circle text-green-400"></i> Todas las funcionalidades</li>
+                                <li class="flex items-center gap-3"><i class="ph ph-check-circle text-green-400"></i> Usuarios ilimitados</li>
+                                <li class="flex items-center gap-3"><i class="ph ph-check-circle text-green-400"></i> Analíticas avanzadas</li>
+                                <li class="flex items-center gap-3"><i class="ph ph-check-circle text-green-400"></i> Soporte prioritario</li>
+                                <li class="flex items-center gap-3"><i class="ph ph-check-circle text-green-400"></i> Sin anuncios</li>
+                            </ul>
+                            <button onclick="app.upgradeToPro('pro_quarterly')" class="w-full btn-primary py-4 rounded-xl text-lg font-bold hover:scale-105 transition-transform" style="background: linear-gradient(135deg, #10b981, #059669);">
+                                ¡Actualizar Ahora!
+                            </button>
+                        </div>
+                        
+                        <!-- Annual Plan -->
+                        <div class="glass rounded-2xl p-8 border-2 border-purple-500/50 relative overflow-hidden">
+                            <div class="absolute top-0 right-0 bg-purple-500 text-white text-xs font-bold px-4 py-1 rounded-bl-lg">MEJOR VALOR</div>
+                            <div class="text-center mb-6">
+                                <p class="text-muted mb-2">Plan PRO Anual</p>
+                                <div class="flex items-baseline justify-center gap-1">
+                                    <span class="text-4xl font-bold text-purple-400">$16,915</span>
+                                    <span class="text-muted">/mes</span>
+                                </div>
+                                <p class="text-sm text-green-400 mt-2">Ahorras $35,820 al año</p>
+                            </div>
+                            <ul class="space-y-3 mb-8">
+                                <li class="flex items-center gap-3"><i class="ph ph-check-circle text-green-400"></i> Todas las funcionalidades</li>
+                                <li class="flex items-center gap-3"><i class="ph ph-check-circle text-green-400"></i> Usuarios ilimitados</li>
+                                <li class="flex items-center gap-3"><i class="ph ph-check-circle text-green-400"></i> Analíticas avanzadas</li>
+                                <li class="flex items-center gap-3"><i class="ph ph-check-circle text-green-400"></i> Soporte prioritario</li>
+                                <li class="flex items-center gap-3"><i class="ph ph-check-circle text-green-400"></i> Sin anuncios</li>
+                            </ul>
+                            <button onclick="app.upgradeToPro('pro_annual')" class="w-full btn-primary py-4 rounded-xl text-lg font-bold hover:scale-105 transition-transform" style="background: linear-gradient(135deg, #8b5cf6, #6366f1);">
+                                ¡Actualizar Ahora!
+                            </button>
+                        </div>
+                        
+                        <!-- Monthly Plan -->
                         <div class="glass rounded-2xl p-8 border-2 border-yellow-500/50 relative overflow-hidden">
                             <div class="absolute top-0 right-0 bg-yellow-500 text-black text-xs font-bold px-4 py-1 rounded-bl-lg">MÁS POPULAR</div>
                             <div class="text-center mb-6">
                                 <p class="text-muted mb-2">Plan PRO Mensual</p>
                                 <div class="flex items-baseline justify-center gap-1">
-                                    <span class="text-5xl font-bold text-yellow-400">$19.99</span>
+                                    <span class="text-4xl font-bold text-yellow-400">$19,900</span>
                                     <span class="text-muted">/mes</span>
                                 </div>
                             </div>
@@ -992,14 +1061,59 @@
                         </div>
                     </div>
                     
+                    <!-- Mi Negocio (Receipt Profile) -->
+                    <div class="glass rounded-xl p-6 mb-6">
+                        <h3 class="font-semibold mb-4">🏪 Mi Negocio (para recibos)</h3>
+                        <p class="text-sm text-muted mb-4">Esta información aparece en los comprobantes de venta que compartes por WhatsApp.</p>
+                        <div class="space-y-4">
+                            <div>
+                                <label class="block text-sm mb-1">Nombre del negocio</label>
+                                <input type="text" id="receipt-business-name" class="input w-full px-4 py-2 rounded-xl" placeholder="Mi Tienda" maxlength="120">
+                            </div>
+                            <div>
+                                <label class="block text-sm mb-1">Teléfono</label>
+                                <input type="text" id="receipt-phone" class="input w-full px-4 py-2 rounded-xl" placeholder="300 123 4567" maxlength="20">
+                            </div>
+                            <div>
+                                <label class="block text-sm mb-1">NIT / CC</label>
+                                <input type="text" id="receipt-tax-id" class="input w-full px-4 py-2 rounded-xl" placeholder="12345678" maxlength="20">
+                            </div>
+                            <div>
+                                <label class="block text-sm mb-1">Dirección</label>
+                                <input type="text" id="receipt-address" class="input w-full px-4 py-2 rounded-xl" placeholder="Calle 123 #45-67" maxlength="200">
+                            </div>
+                            <div>
+                                <label class="block text-sm mb-1">Mensaje personalizado</label>
+                                <textarea id="receipt-message" class="input w-full px-4 py-2 rounded-xl" placeholder="Gracias por su compra. Vuelve pronto!" maxlength="500" rows="2"></textarea>
+                            </div>
+                            <button onclick="app.saveReceiptProfile()" class="btn-primary px-6 py-2 rounded-xl">Guardar</button>
+                        </div>
+                    </div>
+                    
                     <!-- Plan Info -->
                     <div class="glass rounded-xl p-6">
                         <h3 class="font-semibold mb-4">Tu Plan</h3>
-                        <div id="plan-info" class="p-4 bg-blue-500/20 rounded-lg">
-                            <p class="font-bold">Plan Free</p>
-                            <p class="text-sm text-muted">1 negocio, hasta 20 productos, 10 clientes</p>
+                        <div id="plan-info" class="p-4 bg-blue-500/20 rounded-lg mb-4">
+                            <p class="font-bold text-lg">Plan Free - Prueba</p>
+                            <p class="text-sm text-muted mt-1">Solo para pruebas. Limite: 5 productos, 5 clientes, 5 ventas</p>
                         </div>
-                        <button onclick="app.navigate('pricing')" class="btn-primary w-full mt-4 py-2 rounded-xl">Ver Planes Pro</button>
+                        <div class="grid md:grid-cols-3 gap-4">
+                            <div class="p-4 bg-green-500/20 rounded-lg">
+                                <p class="text-sm text-muted">Plan Trimestral</p>
+                                <p class="font-bold text-xl text-green-400">$18,308/mes</p>
+                                <p class="text-xs text-muted">$54,924/3 meses</p>
+                            </div>
+                            <div class="p-4 bg-purple-500/20 rounded-lg">
+                                <p class="text-sm text-muted">Plan Anual</p>
+                                <p class="font-bold text-xl text-purple-400">$16,915/mes</p>
+                                <p class="text-xs text-green-400">Ahorras $35,820</p>
+                            </div>
+                            <div class="p-4 bg-yellow-500/20 rounded-lg">
+                                <p class="text-sm text-muted">Plan Mensual</p>
+                                <p class="font-bold text-xl text-yellow-400">$19,900/mes</p>
+                            </div>
+                        </div>
+                        <button onclick="app.navigate('upgrade')" class="btn-primary w-full mt-4 py-2 rounded-xl">Actualizar a Pro</button>
                     </div>
                 </div>
                 
@@ -1010,6 +1124,7 @@
                     <div class="flex justify-center mb-6">
                         <div class="glass rounded-xl p-4 flex gap-2">
                             <button id="pricing-monthly-btn" class="btn-primary px-4 py-2 rounded-xl" onclick="app.setPricingCycle('monthly')">Mensual</button>
+                            <button id="pricing-quarterly-btn" class="px-4 py-2 rounded-xl" onclick="app.setPricingCycle('quarterly')">Trimestral -8%</button>
                             <button id="pricing-annual-btn" class="px-4 py-2 rounded-xl" onclick="app.setPricingCycle('annual')">Anual -15%</button>
                         </div>
                     </div>
@@ -1017,14 +1132,16 @@
                     <div class="grid md:grid-cols-2 gap-6 max-w-3xl mx-auto">
                         <!-- Free Plan -->
                         <div class="glass rounded-xl p-6 border border-white/20">
-                            <h3 class="text-xl font-bold mb-2">Free</h3>
+                            <h3 class="text-xl font-bold mb-2">Free - Prueba</h3>
                             <p class="text-3xl font-bold mb-4">$0<span class="text-sm font-normal">/mes</span></p>
                             <ul class="space-y-2 text-muted mb-6">
                                 <li>✓ 1 Negocio</li>
-                                <li>✓ Hasta 20 productos</li>
-                                <li>✓ Hasta 10 clientes</li>
-                                <li>✓ Exportación CSV</li>
-                                <li>✓ Backup manual</li>
+                                <li class="text-red-400">✗ Solo 5 productos</li>
+                                <li class="text-red-400">✗ Solo 5 clientes</li>
+                                <li class="text-red-400">✗ Solo 5 ventas</li>
+                                <li class="text-red-400">✗ Sin reportes</li>
+                                <li class="text-red-400">✗ Sin exportación</li>
+                                <li class="text-yellow-400">★ Solo para pruebas</li>
                             </ul>
                             <button class="btn-primary w-full py-2 rounded-xl" disabled>Plan Actual</button>
                         </div>
@@ -1577,11 +1694,11 @@
                     </div>
                     <div class="flex gap-4">
                         <div class="flex-1">
-                            <label class="block text-sm mb-1">Stock inicial</label>
+                            <label class="block text-sm mb-1">Inventario inicial</label>
                             <input type="number" id="product-stock" class="input w-full px-4 py-2 rounded-xl" value="0">
                         </div>
                         <div class="flex-1">
-                            <label class="block text-sm mb-1">Alerta stock bajo</label>
+                            <label class="block text-sm mb-1">Alerta inventario bajo</label>
                             <input type="number" id="product-low-stock" class="input w-full px-4 py-2 rounded-xl" value="5">
                         </div>
                     </div>
@@ -1806,7 +1923,17 @@
                         body: JSON.stringify({ name, email, password })
                     });
 
-                    this.showVerify(email);
+                    // If verification code is in response (development mode), show it
+                    if (data.verification_code) {
+                        alert(`Código de verificación: ${data.verification_code}\n\nEste código también se enviará a tu correo.`);
+                        // Pre-fill the verification code
+                        this.showVerify(email);
+                        setTimeout(() => {
+                            document.getElementById('verify-code').value = data.verification_code;
+                        }, 100);
+                    } else {
+                        this.showVerify(email);
+                    }
                 } catch (e) {
                     // Error already shown
                 }
@@ -1849,6 +1976,43 @@
                 menu.classList.toggle('hidden');
             },
             
+            toggleCenterBusinessMenu(event) {
+                event.stopPropagation();
+                const dropdown = document.getElementById('center-business-dropdown');
+                if (!dropdown) return;
+                
+                const isHidden = dropdown.classList.contains('hidden');
+                
+                // Hide all other dropdowns first
+                document.getElementById('business-switch-dropdown')?.classList.add('hidden');
+                
+                if (isHidden) {
+                    // Populate the dropdown
+                    dropdown.innerHTML = this.businesses.map(b => `
+                        <a href="#" onclick="app.switchBusiness(${b.id}); document.getElementById('center-business-dropdown').classList.add('hidden');" class="${b.id === this.business.id ? 'bg-white/10' : ''}">
+                            <span class="flex items-center gap-2">
+                                ${b.id === this.business.id ? '<i class="ph ph-check-circle text-green-400"></i>' : '<i class="ph ph-storefront text-white/50"></i>'}
+                                ${b.name}
+                            </span>
+                        </a>
+                    `).join('');
+                    dropdown.classList.remove('hidden');
+                } else {
+                    dropdown.classList.add('hidden');
+                }
+            },
+            
+            // Close dropdowns when clicking outside
+            initClickOutside() {
+                document.addEventListener('click', (e) => {
+                    const dropdown = document.getElementById('center-business-dropdown');
+                    const button = e.target.closest('button');
+                    if (dropdown && !dropdown.contains(e.target) && !button?.closest('.relative')) {
+                        dropdown.classList.add('hidden');
+                    }
+                });
+            },
+            
             toggleSettingsMenu() {
                 document.getElementById('settings-menu').classList.toggle('hidden');
             },
@@ -1859,6 +2023,25 @@
                 sidebar.classList.toggle('open');
                 if (overlay) {
                     overlay.classList.toggle('show');
+                }
+                this.updateMobileMenuButton();
+            },
+            
+            updateMobileMenuButton() {
+                const sidebar = document.getElementById('sidebar');
+                const mobileBtn = document.querySelector('.mobile-menu-btn');
+                if (!sidebar || !mobileBtn) return;
+                
+                // Check if sidebar is actually visible using computed style
+                const sidebarStyle = window.getComputedStyle(sidebar);
+                const isSidebarVisible = sidebarStyle.display !== 'none';
+                const isMobileView = window.innerWidth < 1440;
+                
+                // Show mobile button only when in mobile view
+                if (isMobileView) {
+                    mobileBtn.style.display = 'flex';
+                } else {
+                    mobileBtn.style.display = 'none';
                 }
             },
             
@@ -1982,11 +2165,6 @@
                 document.getElementById('main-app').classList.remove('hidden');
                 document.getElementById('header-user-name').textContent = this.user.name;
                 
-                // Show admin menu if user is admin or has admin permission
-                if (this.user.is_admin || (this.user.permissions && this.user.permissions.admin)) {
-                    document.getElementById('nav-admin').classList.remove('hidden');
-                }
-                
                 // Show upgrade tab for free users
                 if (this.user.plan === 'free') {
                     document.getElementById('nav-upgrade').classList.remove('hidden');
@@ -1995,12 +2173,14 @@
                 // Load businesses
                 await this.loadBusinesses();
                 
+                // Initialize click outside handler
+                this.initClickOutside();
+                
                 // Navigate to dashboard
-                if (window.location.pathname === '/admin') {
-                    this.navigate('admin');
-                } else {
-                    this.navigate('dashboard');
-                }
+                this.navigate('dashboard');
+                
+                // Update mobile menu button visibility
+                this.updateMobileMenuButton();
             },
             
             // Business
@@ -2049,6 +2229,32 @@
                 }
             },
             
+            async createNewBusiness() {
+                const name = prompt('Nombre del nuevo negocio:');
+                if (!name || !name.trim()) {
+                    alert('Por favor ingresa un nombre');
+                    return;
+                }
+                
+                try {
+                    const data = await this.api('/businesses', {
+                        method: 'POST',
+                        body: JSON.stringify({ name: name.trim() })
+                    });
+                    
+                    await this.loadBusinesses();
+                    
+                    // Select the new business
+                    this.business = this.businesses.find(b => b.id === data.business.id);
+                    this.updateHeader();
+                    this.updateBusinessSwitch();
+                    
+                    alert('Negocio creado exitosamente!');
+                } catch (e) {
+                    alert('Error al crear el negocio');
+                }
+            },
+            
             async saveBusiness() {
                 const name = document.getElementById('business-name').value;
                 const currency = document.getElementById('business-currency').value;
@@ -2065,6 +2271,81 @@
                 this.business.settings.logo = logo;
                 this.updateHeader();
                 alert('Negocio actualizado');
+            },
+            
+            // Receipt Profile
+            async loadReceiptProfile() {
+                try {
+                    const data = await fetch('/api/business_profile').then(r => r.json());
+                    if (data && !data.error) {
+                        document.getElementById('receipt-business-name').value = data.business_name || '';
+                        document.getElementById('receipt-phone').value = data.phone || '';
+                        document.getElementById('receipt-tax-id').value = data.tax_id || '';
+                        document.getElementById('receipt-address').value = data.address || '';
+                        document.getElementById('receipt-message').value = data.message || '';
+                    }
+                } catch (e) {
+                    console.error('Error loading receipt profile:', e);
+                }
+            },
+            
+            async saveReceiptProfile() {
+                const profile = {
+                    business_name: document.getElementById('receipt-business-name').value,
+                    phone: document.getElementById('receipt-phone').value,
+                    tax_id: document.getElementById('receipt-tax-id').value,
+                    address: document.getElementById('receipt-address').value,
+                    message: document.getElementById('receipt-message').value
+                };
+                
+                try {
+                    const data = await fetch('/api/business_profile', {
+                        method: 'PUT',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(profile)
+                    }).then(r => r.json());
+                    
+                    if (data.success) {
+                        alert('✅ Perfil guardado correctamente');
+                    } else {
+                        alert('Error: ' + (data.error || 'Desconocido'));
+                    }
+                } catch (e) {
+                    alert('Error al guardar: ' + e.message);
+                }
+            },
+            
+            generateReceipt(saleId) {
+                window.open(`/api/receipt?sale_id=${saleId}&format=png`, '_blank');
+            },
+            
+            shareOnWhatsApp(saleId, customerName) {
+                // Get sale data
+                fetch(`/api/sales?id=${saleId}`)
+                    .then(r => r.json())
+                    .then(data => {
+                        if (data.sales && data.sales.length > 0) {
+                            const sale = data.sales[0];
+                            const total = sale.total;
+                            const paid = sale.paid ? sale.total : 0;
+                            const balance = total - paid;
+                            
+                            // Get business name
+                            const businessName = document.getElementById('receipt-business-name').value || 'Mi Negocio';
+                            
+                            let message = `Hola${customerName ? ' ' + customerName : ''}, aquí está tu comprobante de compra en *${businessName}*.%0A%0A`;
+                            message += `*Total:* ${total.toLocaleString()}`;
+                            if (balance > 0) {
+                                message += `%0A*Saldo pendiente:* ${balance.toLocaleString()}`;
+                            }
+                            message += `%0A%0APuedes ver el comprobante completo aquí:%0A${window.location.origin}/api/receipt?sale_id=${saleId}&format=png`;
+                            
+                            window.open(`https://wa.me/?text=${message}`, '_blank');
+                        }
+                    })
+                    .catch(e => {
+                        alert('Error al obtener datos de la venta');
+                    });
             },
             
             async switchBusiness(businessId) {
@@ -2185,10 +2466,23 @@
                 if (logo && logo.trim()) {
                     headerLogo.src = logo;
                     headerLogo.classList.remove('hidden');
-                    headerName.innerHTML = '<i class="ph ph-notebook-ph text-blue-400"></i> ' + name;
+                    headerName.innerHTML = 'Progresa';
                 } else {
                     headerLogo.classList.add('hidden');
-                    headerName.innerHTML = '<i class="ph ph-notebook-ph text-blue-400"></i> ' + name;
+                    headerName.innerHTML = 'Progresa';
+                }
+                
+                // Update center business header
+                const centerBusinessName = document.getElementById('center-business-name');
+                const centerBusinessLogo = document.getElementById('center-business-logo');
+                if (centerBusinessName) {
+                    centerBusinessName.textContent = name;
+                }
+                if (centerBusinessLogo && logo && logo.trim()) {
+                    centerBusinessLogo.src = logo;
+                    centerBusinessLogo.style.display = 'block';
+                } else if (centerBusinessLogo) {
+                    centerBusinessLogo.style.display = 'none';
                 }
             },
 
@@ -2259,19 +2553,22 @@
                         await this.loadProducts();
                         break;
                     case 'reports':
+                        if (this.user.plan !== 'pro' && this.user.plan !== 'pro_monthly' && this.user.plan !== 'pro_annual') {
+                            alert('Los reportes son solo para cuentas Pro. ¡Actualiza tu plan para acceder a esta función!');
+                            this.navigate('upgrade');
+                            return;
+                        }
                         await this.loadReports();
                         break;
                     case 'settings':
                         await this.loadBusinesses();
+                        await this.loadReceiptProfile();
                         break;
                     case 'orders':
                         await this.loadOrders();
                         break;
                     case 'upgrade':
                         // Upgrade page doesn't need to load anything
-                        break;
-                    case 'admin':
-                        await this.loadAdmin();
                         break;
                     case 'pricing':
                         this.renderPricing();
@@ -2432,7 +2729,7 @@
                     } else {
                         invEl.innerHTML = `
                             <div class="bg-yellow-500/20 border border-yellow-500 rounded-lg p-3">
-                                <p class="font-bold text-yellow-300"><i class="ph ph-warning"></i> ${inv.count} productos con poco stock</p>
+                                <p class="font-bold text-yellow-300"><i class="ph ph-warning"></i> ${inv.count} productos con poco inventario</p>
                                 <div class="mt-2 space-y-1">
                                     ${inv.products.map(p => `
                                         <div class="flex justify-between text-sm">
@@ -2511,7 +2808,7 @@
                 
                 const tbody = document.getElementById('sales-table');
                 if (sales.length === 0) {
-                    tbody.innerHTML = '<tr><td colspan="7" class="text-center text-muted py-8">Sin ventas registradas</td></tr>';
+                    tbody.innerHTML = '<tr><td colspan="8" class="text-center text-muted py-8">Sin ventas registradas</td></tr>';
                 } else {
                     tbody.innerHTML = sales.map(s => `
                         <tr>
@@ -2522,6 +2819,16 @@
                             <td class="${(s.balance || 0) > 0 ? 'money-negative' : 'money-positive'}">${this.formatMoney(s.balance || 0)}</td>
                             <td>${s.payment_method === 'cash' ? 'Efectivo' : s.payment_method === 'transfer' ? 'Transferencia' : s.payment_method === 'card' ? 'Tarjeta' : 'Fiado'}</td>
                             <td>${s.paid ? '<span class="text-green-400">Pagado</span>' : '<span class="text-red-400">Pendiente</span>'}</td>
+                            <td>
+                                <div class="flex gap-1">
+                                    <button onclick="app.generateReceipt(${s.id})" class="text-blue-400 hover:text-blue-300 p-1" title="Ver recibo">
+                                        <i class="ph ph-receipt text-lg"></i>
+                                    </button>
+                                    <button onclick="app.shareOnWhatsApp(${s.id}, '${customers[s.customer_id] || ''}')" class="text-green-400 hover:text-green-300 p-1" title="Compartir por WhatsApp">
+                                        <i class="ph ph-whatsapp-logo text-lg"></i>
+                                    </button>
+                                </div>
+                            </td>
                         </tr>
                     `).join('');
                 }
@@ -3081,11 +3388,13 @@
                 const queryString = params.toString();
                 const url = queryString ? `/businesses/${this.business.id}/orders?${queryString}` : `/businesses/${this.business.id}/orders`;
                 
-                const orders = await this.api(url);
-                const stats = await this.api(`/businesses/${this.business.id}/orders/stats`);
+                const data = await this.api(url);
+                const orders = data.orders || [];
+                const statsData = await this.api(`/businesses/${this.business.id}/orders/stats`);
+                const stats = statsData || {};
                 
                 // Update stats cards
-                document.getElementById('orders-total').textContent = stats.total || 0;
+                document.getElementById('orders-total').textContent = stats.total_orders || 0;
                 document.getElementById('orders-pending').textContent = stats.pending || 0;
                 document.getElementById('orders-in-progress').textContent = stats.in_progress || 0;
                 document.getElementById('orders-completed').textContent = stats.completed || 0;
@@ -3176,7 +3485,8 @@
                 
                 if (orderId) {
                     // Edit mode
-                    const order = await this.api(`/businesses/${this.business.id}/orders/${orderId}`);
+                    const orderData = await this.api(`/businesses/${this.business.id}/orders/${orderId}`);
+                    const order = orderData.order;
                     title.textContent = 'Editar Pedido';
                     document.getElementById('order-id').value = order.id;
                     document.getElementById('order-number').value = order.order_number;
@@ -4210,6 +4520,13 @@
         
         // Initialize app
         document.addEventListener('DOMContentLoaded', () => app.init());
+        
+        // Update mobile menu button on resize
+        window.addEventListener('resize', () => {
+            if (app.updateMobileMenuButton) {
+                app.updateMobileMenuButton();
+            }
+        });
         
         // Close modal on overlay click
         document.getElementById('modal-overlay').addEventListener('click', (e) => {

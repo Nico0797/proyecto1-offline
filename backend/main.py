@@ -5,8 +5,19 @@ Punto de entrada de la aplicación Flask
 """
 import os
 from datetime import datetime, date, timedelta
-from flask import Flask, request, jsonify, send_from_directory, g
+from flask import Flask, request, jsonify, send_from_directory, g, send_file
 from flask_cors import CORS
+from io import BytesIO
+
+# PIL for receipt generation (optional)
+try:
+    from PIL import Image, ImageDraw, ImageFont
+    HAS_PIL = True
+except ImportError:
+    HAS_PIL = False
+    Image = ImageDraw = ImageFont = None
+
+import textwrap
 from backend.config import get_config
 from backend.database import db, init_db
 from backend.auth import token_required, optional_token, AuthManager, create_token, permission_required
@@ -192,11 +203,20 @@ def create_app(config_class=None):
                 "refresh_token": refresh_token
             }), 201
 
-        return jsonify({
+        # Return verification code in response for development (when SMTP is not configured)
+        # In production, the code is sent via email
+        response_data = {
             "user": user.to_dict(),
             "verification_required": True,
             "message": "Revisa tu correo para el código de verificación"
-        }), 201
+        }
+        
+        # Include verification code for development/debugging purposes
+        # This helps when SMTP is not configured
+        if app.config.get("DEBUG"):
+            response_data["verification_code"] = user.email_verification_code
+        
+        return jsonify(response_data), 201
 
     @app.route("/api/auth/verify-email", methods=["POST"])
     def verify_email():
@@ -1230,12 +1250,6 @@ def create_app(config_class=None):
         db.session.add(ledger_entry)
         db.session.flush()
 
-        # Auto-allocate payment to oldest charges
-        allocate_payment(db.session, business_id, customer_id, ledger_entry.id, amount)
-
-        # Update ALL unpaid sales for this customer based on ledger allocations
-        update_sales_paid_status(db.session, customer_id)
-
         db.session.commit()
 
         return jsonify({"payment": payment.to_dict()}), 201
@@ -1440,7 +1454,10 @@ def create_app(config_class=None):
 
         # Daily average
         daily_avg = sales_30_days / 30 if sales_30_days > 0 else 0
-
+        
+        # Initialize growth_rate
+        growth_rate = 0
+        
         # Projection: next 30 days based on trend
         if sales_prev_30 > 0:
             growth_rate = (sales_30_days - sales_prev_30) / sales_prev_30
@@ -2749,6 +2766,104 @@ def create_app(config_class=None):
         """Admin Panel - Full admin interface with sidebar"""
         return send_from_directory("../frontend", "panel.html")
     
+    @app.route("/tienda")
+    def tienda():
+        """Public Store - Landing page for customers"""
+        return send_from_directory("../frontend", "landing.html")
+    
+    # ========== PUBLIC CUSTOMER API ==========
+    @app.route("/api/public/register", methods=["POST"])
+    def public_register():
+        """Public registration for customers"""
+        try:
+            data = request.get_json() or {}
+            name = (data.get("name", "") or "").strip()[:100]
+            phone = (data.get("phone", "") or "").strip()[:20]
+            address = (data.get("address", "") or "").strip()[:200]
+            
+            if not phone:
+                return jsonify({"error": "El celular es requerido"}), 400
+            
+            # Get first business
+            business = Business.query.first()
+            if not business:
+                return jsonify({"error": "No hay negocios disponibles"}), 400
+            
+            # Check if customer exists
+            existing = Customer.query.filter_by(business_id=business.id, phone=phone).first()
+            if existing:
+                return jsonify({"success": True, "message": "Cliente ya registrado", "customer_id": existing.id})
+            
+            # Create new customer
+            customer = Customer(
+                business_id=business.id,
+                name=name or "Cliente",
+                phone=phone,
+                address=address,
+                active=True
+            )
+            db.session.add(customer)
+            db.session.commit()
+            
+            return jsonify({"success": True, "message": "Registro exitoso", "customer_id": customer.id})
+        except Exception as e:
+            db.session.rollback()
+            return jsonify({"error": str(e)}), 500
+    
+    @app.route("/api/public/login", methods=["POST"])
+    def public_login():
+        """Public login for customers - returns token"""
+        try:
+            data = request.get_json() or {}
+            phone = (data.get("phone", "") or "").strip()
+            password = (data.get("password", "") or "")
+            
+            if not phone or not password:
+                return jsonify({"error": "Celular y contraseña requeridos"}), 400
+            
+            # Get first business
+            business = Business.query.first()
+            if not business:
+                return jsonify({"error": "No hay negocios disponibles"}), 400
+            
+            # Find customer
+            customer = Customer.query.filter_by(business_id=business.id, phone=phone).first()
+            if not customer:
+                return jsonify({"error": "Cliente no encontrado"}), 404
+            
+            # Generate simple token (in production, use proper JWT)
+            import base64
+            token_data = f"customer_{customer.id}_{business.id}"
+            token = base64.b64encode(token_data.encode()).decode()
+            
+            return jsonify({
+                "success": True,
+                "token": token,
+                "customer_id": customer.id,
+                "customer_name": customer.name
+            })
+        except Exception as e:
+            return jsonify({"error": str(e)}), 500
+    
+    @app.route("/api/public/business")
+    def public_business_info():
+        """Get public business info for store page"""
+        try:
+            business = Business.query.first()
+            if not business:
+                return jsonify({"error": "Negocio no encontrado"}), 404
+            
+            settings = business.settings or {}
+            return jsonify({
+                "id": business.id,
+                "name": business.name,
+                "phone": business.phone or "",
+                "address": business.address or "",
+                "logo": settings.get("logo", "")
+            })
+        except Exception as e:
+            return jsonify({"error": str(e)}), 500
+    
     @app.route("/admin")
     def admin():
         """Legacy admin route - redirect to panel"""
@@ -2818,96 +2933,297 @@ def create_app(config_class=None):
     return app
 
 
-# Helper functions
-def allocate_payment(session, business_id, customer_id, payment_ledger_id, amount):
-    """Allocate payment to oldest unpaid charges"""
-    # Get unpaid charges
-    charges = session.query(LedgerEntry).filter(
-        LedgerEntry.business_id == business_id,
-        LedgerEntry.customer_id == customer_id,
-        LedgerEntry.entry_type == "charge"
-    ).order_by(LedgerEntry.entry_date).all()
-
-    remaining = amount
-
-    for charge in charges:
-        if remaining <= 0:
-            break
-
-        # Calculate how much is already allocated
-        allocated = session.query(db.func.sum(LedgerAllocation.amount)).filter(
-            LedgerAllocation.charge_id == charge.id
-        ).scalar() or 0
-
-        due = charge.amount - allocated
-        if due <= 0:
-            continue
-
-        pay_part = min(due, remaining)
-
-        allocation = LedgerAllocation(
-            payment_id=payment_ledger_id,
-            charge_id=charge.id,
-            amount=pay_part
-        )
-        session.add(allocation)
-        remaining -= pay_part
-
-
-def calculate_customer_debt(session, customer_id):
-    """Calculate total debt for a customer"""
-    charges = session.query(db.func.sum(LedgerEntry.amount)).filter(
-        LedgerEntry.customer_id == customer_id,
-        LedgerEntry.entry_type == "charge"
-    ).scalar() or 0
-
-    payments = session.query(db.func.sum(LedgerEntry.amount)).filter(
-        LedgerEntry.customer_id == customer_id,
-        LedgerEntry.entry_type == "payment"
-    ).scalar() or 0
-
-    return charges - payments
-
-
-def update_sales_paid_status(session, customer_id):
-    """Update paid status for all sales based on ledger allocations"""
-    # Get all credit sales for this customer
-    credit_sales = Sale.query.filter_by(
-        customer_id=customer_id,
-        paid=False
-    ).all()
+# ========== BUSINESS PROFILE (RECEIPTS) - Outside create_app ==========
+def register_receipt_routes(application):
+    """Register receipt routes with the app"""
+    from flask import request, jsonify, send_file
+    from io import BytesIO
+    from datetime import datetime
     
-    for sale in credit_sales:
-        # Find the charge for this sale
-        charge = LedgerEntry.query.filter_by(
-            customer_id=customer_id,
-            ref_type="sale",
-            ref_id=sale.id,
-            entry_type="charge"
-        ).first()
-        
-        if not charge:
-            continue
-        
-        # Calculate how much has been paid for this charge
-        allocated = session.query(db.func.sum(LedgerAllocation.amount)).filter(
-            LedgerAllocation.charge_id == charge.id
-        ).scalar() or 0
-        
-        # Update sale status and balance
-        remaining = max(charge.amount - allocated, 0)
-        sale.balance = remaining
-        if remaining <= 0:
-            sale.paid = True
-        else:
-            sale.paid = False
+    # PIL for receipt generation (optional)
+    try:
+        from PIL import Image, ImageDraw, ImageFont
+        HAS_PIL = True
+    except ImportError:
+        HAS_PIL = False
     
-    session.commit()
+    @application.route("/api/business_profile", methods=["GET"])
+    def get_business_profile():
+        """Get business profile for receipts"""
+        try:
+            result = db.session.execute(db.text("SELECT * FROM business_profile WHERE id=1")).fetchone()
+            if not result:
+                db.session.execute(db.text("""
+                    INSERT INTO business_profile (id, business_name, phone, tax_id, address, message, updated_at)
+                    VALUES (1, '', '', '', '', '', '')
+                """))
+                db.session.commit()
+                result = db.session.execute(db.text("SELECT * FROM business_profile WHERE id=1")).fetchone()
+            
+            if result:
+                return jsonify({
+                    "id": result[0], "business_name": result[1] or "",
+                    "phone": result[2] or "", "tax_id": result[3] or "",
+                    "address": result[4] or "", "message": result[5] or "", "updated_at": result[6] or ""
+                })
+            return jsonify({"error": "Perfil no encontrado"}), 404
+        except Exception as e:
+            return jsonify({"id": 1, "business_name": "", "phone": "", "tax_id": "", "address": "", "message": "", "updated_at": ""})
+
+    @application.route("/api/business_profile", methods=["PUT"])
+    def update_business_profile():
+        data = request.get_json() or {}
+        business_name = (data.get("business_name", "") or "")[:120]
+        phone = (data.get("phone", "") or "")[:20]
+        tax_id = (data.get("tax_id", "") or "")[:20]
+        address = (data.get("address", "") or "")[:200]
+        message = (data.get("message", "") or "")[:500]
+        
+        try:
+            result = db.session.execute(db.text("SELECT id FROM business_profile WHERE id=1")).fetchone()
+            if not result:
+                db.session.execute(db.text("""
+                    INSERT INTO business_profile (id, business_name, phone, tax_id, address, message, updated_at)
+                    VALUES (1, :business_name, :phone, :tax_id, :address, :message, :updated_at)
+                """), {"business_name": business_name, "phone": phone, "tax_id": tax_id, "address": address, "message": message, "updated_at": datetime.utcnow().isoformat()})
+            else:
+                db.session.execute(db.text("""
+                    UPDATE business_profile SET business_name=:business_name, phone=:phone, tax_id=:tax_id, address=:address, message=:message, updated_at=:updated_at WHERE id=1
+                """), {"business_name": business_name, "phone": phone, "tax_id": tax_id, "address": address, "message": message, "updated_at": datetime.utcnow().isoformat()})
+            db.session.commit()
+            return jsonify({"success": True})
+        except Exception as e:
+            try:
+                db.session.execute(db.text("""
+                    CREATE TABLE IF NOT EXISTS business_profile (id INTEGER PRIMARY KEY CHECK (id=1), business_name TEXT NOT NULL DEFAULT '', phone TEXT DEFAULT '', tax_id TEXT DEFAULT '', address TEXT DEFAULT '', message TEXT DEFAULT '', updated_at TEXT DEFAULT '')
+                """))
+                db.session.commit()
+                return jsonify({"success": True})
+            except:
+                db.session.rollback()
+                return jsonify({"error": str(e)}), 500
+
+    @application.route("/api/receipt", methods=["GET"])
+    def get_receipt():
+        if not HAS_PIL:
+            return jsonify({"error": "PIL/Pillow no está instalado. Instala: pip install Pillow"}), 500
+        
+        try:
+            sale_id = request.args.get("sale_id", type=int)
+        except:
+            return jsonify({"error": "sale_id inválido"}), 400
+        
+        if not sale_id:
+            return jsonify({"error": "sale_id es requerido"}), 400
+        
+        sale = Sale.query.get(sale_id)
+        if not sale:
+            return jsonify({"error": "Venta no encontrada"}), 404
+        
+        customer = Customer.query.get(sale.customer_id) if sale.customer_id else None
+        
+        profile_data = {"business_name": "Mi Negocio", "phone": "", "tax_id": "", "address": "", "message": ""}
+        try:
+            result = db.session.execute(db.text("SELECT * FROM business_profile WHERE id=1")).fetchone()
+            if result:
+                profile_data = {"business_name": result[1] or "Mi Negocio", "phone": result[2] or "", "tax_id": result[3] or "", "address": result[4] or "", "message": result[5] or ""}
+        except:
+            pass
+        
+        receipt_number = f"RC-{datetime.now().year}-{sale.id:06d}"
+        total = sale.total
+        paid = total if sale.paid else 0
+        balance = sale.balance or 0
+        
+        try:
+            # Receipt dimensions and styling
+            width, height = 450, 500 + (len(sale.items) * 25)
+            img = Image.new('RGB', (width, height), color=(250, 250, 252))
+            draw = ImageDraw.Draw(img)
+            
+            # Colors
+            primary_color = (41, 128, 185)  # Blue
+            secondary_color = (52, 73, 94)  # Dark gray
+            accent_color = (46, 204, 113)   # Green
+            text_color = (44, 62, 80)        # Dark text
+            light_gray = (189, 195, 199)
+            white = (255, 255, 255)
+            
+            # Decorative border
+            draw.rectangle([(5, 5), (width-5, height-5)], outline=primary_color, width=3)
+            draw.rectangle([(10, 10), (width-10, height-10)], outline=light_gray, width=1)
+            
+            # Header background
+            draw.rectangle([(15, 15), (width-15, 90)], fill=primary_color)
+            
+            try:
+                font_title = ImageFont.truetype("arial.ttf", 22)
+                font_header = ImageFont.truetype("arial.ttf", 16)
+                font_normal = ImageFont.truetype("arial.ttf", 13)
+                font_small = ImageFont.truetype("arial.ttf", 10)
+                font_tiny = ImageFont.truetype("arial.ttf", 9)
+            except:
+                font_title = font_header = font_normal = font_small = font_tiny = ImageFont.load_default()
+            
+            # Business name in header (white text on blue)
+            y = 25
+            business_name = profile_data["business_name"] or "RECIBO DE VENTA"
+            draw.text((width//2, y), business_name.upper(), fill='white', anchor='mm', font=font_title)
+            y += 30
+            draw.text((width//2, y), "COMPROBANTE DE PAGO", fill='white', anchor='mm', font=font_header)
+            
+            # Reset y for content
+            y = 110
+            
+            # Receipt info box
+            draw.rectangle([(20, y), (width-20, y+60)], outline=light_gray, width=1)
+            y += 15
+            draw.text((30, y), f"Recibo #: {receipt_number}", fill=secondary_color, font=font_normal)
+            y += 18
+            draw.text((30, y), f"Fecha: {sale.sale_date}", fill=secondary_color, font=font_normal)
+            y += 18
+            draw.text((30, y), f"Hora: {datetime.now().strftime('%H:%M:%S')}", fill=secondary_color, font=font_normal)
+            
+            # Business info
+            y += 25
+            if profile_data["tax_id"]:
+                draw.text((30, y), f"NIT/RUT: {profile_data['tax_id']}", fill=text_color, font=font_small)
+                y += 15
+            if profile_data["phone"]:
+                draw.text((30, y), f"Teléfono: {profile_data['phone']}", fill=text_color, font=font_small)
+                y += 15
+            if profile_data["address"]:
+                draw.text((30, y), f"Dirección: {profile_data['address']}", fill=text_color, font=font_small)
+                y += 15
+            
+            # Separator line
+            y += 10
+            draw.line([(30, y), (width-30, y)], fill=primary_color, width=2)
+            y += 15
+            
+            # Customer info
+            customer_name = customer.name if customer else "Cliente general"
+            customer_doc = customer.tax_id if customer and hasattr(customer, 'tax_id') else ""
+            draw.text((30, y), f"CLIENTE:", fill=primary_color, font=font_small)
+            y += 15
+            draw.text((30, y), customer_name, fill=text_color, font=font_normal)
+            if customer_doc:
+                y += 15
+                draw.text((30, y), f"Documento: {customer_doc}", fill=text_color, font=font_small)
+            
+            # Separator
+            y += 20
+            draw.line([(30, y), (width-30, y)], fill=light_gray, width=1)
+            y += 15
+            
+            # Items header
+            draw.text((35, y), "DESCRIPCIÓN", fill=primary_color, font=font_small)
+            draw.text((280, y), "CANT.", fill=primary_color, font=font_small)
+            draw.text((360, y), "PRECIO", fill=primary_color, font=font_small)
+            
+            # Items separator
+            y += 18
+            draw.line([(30, y), (width-30, y)], fill=light_gray, width=1)
+            y += 10
+            
+            for item in sale.items:
+                name = item.get("name", "Producto")[:25]
+                qty = item.get("qty", 1)
+                price = item.get("price", 0)
+                item_total = item.get("total", qty * price)
+                
+                draw.text((35, y), name, fill=text_color, font=font_small)
+                draw.text((285, y), str(qty), fill=text_color, font=font_small)
+                draw.text((360, y), f"${price:,.0f}", fill=text_color, font=font_small)
+                y += 18
+                
+                # Show subtotal if different from total
+                if item_total != price * qty:
+                    draw.text((320, y), f"Subtotal: ${item_total:,.0f}", fill=(128, 128, 128), font=font_tiny)
+                    y += 15
+            
+            # Total section
+            y += 15
+            draw.line([(30, y), (width-30, y)], fill=primary_color, width=2)
+            y += 15
+            
+            # Total box with background
+            draw.rectangle([(250, y-5), (width-20, y+55)], fill=(245, 247, 250))
+            draw.text((260, y), "SUBTOTAL:", fill=text_color, font=font_normal)
+            draw.text((380, y), f"${total:,.0f}", fill=text_color, font=font_normal)
+            y += 22
+            draw.text((260, y), "TOTAL A PAGAR:", fill=secondary_color, font=font_normal)
+            draw.text((380, y), f"${total:,.0f}", fill=secondary_color, font=font_normal)
+            y += 22
+            
+            # Payment status
+            if paid > 0:
+                draw.text((260, y), f"PAGADO:", fill=accent_color, font=font_normal)
+                draw.text((380, y), f"${paid:,.0f}", fill=accent_color, font=font_normal)
+            if balance > 0:
+                y += 22
+                draw.text((260, y), "SALDO PENDIENTE:", fill=(231, 76, 60), font=font_normal)
+                draw.text((380, y), f"${balance:,.0f}", fill=(231, 76, 60), font=font_normal)
+            
+            # Custom message from business
+            y += 40
+            if profile_data["message"]:
+                draw.line([(30, y-10), (width-30, y-10)], fill=light_gray, width=1)
+                y += 5
+                draw.text((width//2, y), "📝 MENSAJE", fill=primary_color, anchor='mm', font=font_small)
+                y += 18
+                # Wrap message text
+                import textwrap
+                message_lines = textwrap.wrap(profile_data["message"], width=45)
+                for line in message_lines:
+                    draw.text((30, y), line, fill=(100, 100, 100), font=font_small)
+                    y += 14
+            
+            # Footer
+            y = height - 50
+            draw.line([(50, y), (width-50, y)], fill=light_gray, width=1)
+            y += 10
+            draw.text((width//2, y), "Gracias por su compra!", fill=primary_color, anchor='mm', font=font_normal)
+            y += 18
+            draw.text((width//2, y), f"Sistema de Gestión - {datetime.now().year}", fill=light_gray, anchor='mm', font=font_tiny)
+            
+            img_bytes = BytesIO()
+            img.save(img_bytes, format='PNG')
+            img_bytes.seek(0)
+            return send_file(img_bytes, mimetype='image/png', as_attachment=False, download_name=f'recibo_{sale_id}.png')
+        except Exception as e:
+            return jsonify({"error": f"Error: {str(e)}"}), 500
 
 
 # Create app instance
 app = create_app()
 
+# Register additional routes
+register_receipt_routes(app)
+
+# Additional route for WhatsApp sharing - get sale by ID
+@app.route("/api/sales", methods=["GET"])
+def get_sale_for_whatsapp():
+    """Get sale data for WhatsApp sharing"""
+    from flask import request
+    sale_id = request.args.get("id", type=int)
+    if not sale_id:
+        return jsonify({"error": "id es requerido"}), 400
+    
+    sale = Sale.query.get(sale_id)
+    if not sale:
+        return jsonify({"error": "Venta no encontrada"}), 404
+    
+    return jsonify({
+        "sales": [{
+            "id": sale.id,
+            "total": sale.total,
+            "paid": sale.paid,
+            "balance": sale.balance,
+            "customer_id": sale.customer_id,
+            "sale_date": sale.sale_date.isoformat() if sale.sale_date else None
+        }]
+    })
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000, debug=True)
