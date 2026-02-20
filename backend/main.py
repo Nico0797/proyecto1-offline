@@ -2717,9 +2717,160 @@ def create_app(config_class=None):
     @token_required
     @permission_required('admin.*')
     def reseed_rbac():
-        from scripts.seed import seed_rbac
-        roles_map = seed_rbac()
-        return jsonify({"ok": True, "roles": list(roles_map.keys())})
+        base_permissions = [
+            {"name": "admin.*", "description": "Acceso total al panel de administración", "category": "admin"},
+            {"name": "admin.users", "description": "Gestionar usuarios", "category": "admin"},
+            {"name": "admin.roles", "description": "Gestionar roles", "category": "admin"},
+            {"name": "admin.permissions", "description": "Gestionar permisos", "category": "admin"},
+            {"name": "products.*", "description": "Acceso completo a productos", "category": "products"},
+            {"name": "products.read", "description": "Ver productos", "category": "products"},
+            {"name": "products.create", "description": "Crear productos", "category": "products"},
+            {"name": "products.update", "description": "Editar productos", "category": "products"},
+            {"name": "products.delete", "description": "Eliminar productos", "category": "products"},
+            {"name": "clients.*", "description": "Acceso completo a clientes", "category": "clients"},
+            {"name": "clients.read", "description": "Ver clientes", "category": "clients"},
+            {"name": "clients.create", "description": "Crear clientes", "category": "clients"},
+            {"name": "clients.update", "description": "Editar clientes", "category": "clients"},
+            {"name": "clients.delete", "description": "Eliminar clientes", "category": "clients"},
+            {"name": "sales.*", "description": "Acceso completo a ventas", "category": "sales"},
+            {"name": "sales.read", "description": "Ver ventas", "category": "sales"},
+            {"name": "sales.create", "description": "Crear ventas", "category": "sales"},
+            {"name": "sales.update", "description": "Editar ventas", "category": "sales"},
+            {"name": "sales.delete", "description": "Eliminar ventas", "category": "sales"},
+            {"name": "payments.*", "description": "Acceso completo a pagos", "category": "payments"},
+            {"name": "payments.read", "description": "Ver pagos", "category": "payments"},
+            {"name": "payments.create", "description": "Registrar pagos", "category": "payments"},
+            {"name": "payments.update", "description": "Editar pagos", "category": "payments"},
+            {"name": "payments.delete", "description": "Eliminar pagos", "category": "payments"},
+            {"name": "expenses.*", "description": "Acceso completo a gastos", "category": "expenses"},
+            {"name": "expenses.read", "description": "Ver gastos", "category": "expenses"},
+            {"name": "expenses.create", "description": "Crear gastos", "category": "expenses"},
+            {"name": "expenses.update", "description": "Editar gastos", "category": "expenses"},
+            {"name": "expenses.delete", "description": "Eliminar gastos", "category": "expenses"},
+            {"name": "summary.*", "description": "Acceso completo a resúmenes y reportes", "category": "summary"},
+            {"name": "summary.dashboard", "description": "Ver dashboard", "category": "summary"},
+            {"name": "summary.financial", "description": "Ver estados financieros", "category": "summary"},
+            {"name": "export.*", "description": "Acceso completo a exportaciones", "category": "export"},
+            {"name": "export.pdf", "description": "Exportar PDF", "category": "export"},
+            {"name": "export.excel", "description": "Exportar Excel", "category": "export"},
+            {"name": "settings.*", "description": "Acceso completo a configuración", "category": "settings"},
+            {"name": "settings.business", "description": "Configuración del negocio", "category": "settings"},
+        ]
+
+        roles_config = [
+            {
+                "name": "SUPERADMIN",
+                "description": "Administrador supreme con acceso total al sistema",
+                "is_system": True,
+                "permissions": ["admin.*"],
+            },
+            {
+                "name": "ADMIN",
+                "description": "Administrador del negocio con acceso completo",
+                "is_system": True,
+                "permissions": [
+                    "products.*",
+                    "clients.*",
+                    "sales.*",
+                    "payments.*",
+                    "expenses.*",
+                    "summary.*",
+                    "export.*",
+                    "settings.*",
+                ],
+            },
+            {
+                "name": "VENTAS",
+                "description": "Rol para vendedores - acceso a ventas, clientes y productos",
+                "is_system": True,
+                "permissions": [
+                    "products.read",
+                    "clients.*",
+                    "sales.*",
+                    "payments.create",
+                    "summary.dashboard",
+                ],
+            },
+            {
+                "name": "CONTABILIDAD",
+                "description": "Rol para área contable - acceso a reportes y gastos",
+                "is_system": True,
+                "permissions": [
+                    "clients.read",
+                    "sales.read",
+                    "payments.*",
+                    "expenses.*",
+                    "summary.*",
+                    "export.*",
+                ],
+            },
+            {
+                "name": "LECTOR",
+                "description": "Solo lectura - puede ver información sin modificar",
+                "is_system": True,
+                "permissions": [
+                    "products.read",
+                    "clients.read",
+                    "sales.read",
+                    "payments.read",
+                    "expenses.read",
+                    "summary.dashboard",
+                ],
+            },
+        ]
+
+        try:
+            permissions_map = {}
+            for perm_data in base_permissions:
+                existing_perm = Permission.query.filter_by(name=perm_data["name"]).first()
+                if not existing_perm:
+                    perm = Permission(
+                        name=perm_data["name"],
+                        description=perm_data["description"],
+                        category=perm_data["category"],
+                    )
+                    db.session.add(perm)
+                    db.session.flush()
+                    permissions_map[perm_data["name"]] = perm
+                else:
+                    permissions_map[perm_data["name"]] = existing_perm
+
+            roles_map = {}
+            for role_data in roles_config:
+                role_name = role_data["name"]
+                perm_names = role_data["permissions"]
+                existing_role = Role.query.filter_by(name=role_name).first()
+                if not existing_role:
+                    role = Role(
+                        name=role_name,
+                        description=role_data["description"],
+                        is_system=role_data["is_system"],
+                    )
+                    db.session.add(role)
+                    db.session.flush()
+                else:
+                    role = existing_role
+
+                for perm_name in perm_names:
+                    perm_obj = permissions_map.get(perm_name)
+                    if not perm_obj:
+                        continue
+                    existing_rp = RolePermission.query.filter_by(
+                        role_id=role.id, permission_id=perm_obj.id
+                    ).first()
+                    if not existing_rp:
+                        db.session.add(
+                            RolePermission(role_id=role.id, permission_id=perm_obj.id)
+                        )
+
+                roles_map[role_name] = role
+
+            db.session.commit()
+            return jsonify({"ok": True, "roles": list(roles_map.keys())})
+        except Exception as e:
+            db.session.rollback()
+            print(f"[RBAC] reseed error: {e}")
+            return jsonify({"error": "RBAC reseed failed", "detail": str(e)}), 500
 
     # ========== ADMIN DATA MANAGEMENT ==========
     @app.route("/api/admin/data-stats", methods=["GET"])
