@@ -249,35 +249,76 @@ class AuthManager:
     @staticmethod
     def _build_html_email(subject, text):
         """Plantilla HTML básica con branding EnCaja"""
+        base_url = os.getenv("PUBLIC_BASE_URL") or os.getenv("APP_BASE_URL") or "https://app.encaja.co"
+        logo_url = f"{base_url.rstrip('/')}/public/assets/logo.png"
+        theme = (os.getenv("EMAIL_THEME") or "light").lower()
+        is_dark = theme == "dark"
+        body_bg = "#0b1220" if is_dark else "#f8fafc"
+        card_bg = "#0f172a" if is_dark else "#ffffff"
+        border_color = "#1f2937" if is_dark else "#e5e7eb"
+        text_color = "#e5e7eb" if is_dark else "#334155"
+        footer_bg = "#0b0f1a" if is_dark else "#fafafa"
+        footer_text = "#94a3b8"
+        code_bg = "#1f2937" if is_dark else "#fff1f2"
+        code_border = "#374151" if is_dark else "#fecdd3"
+        code_label = "#fda4af" if is_dark else "#ef4444"
+        code_value = "#fca5a5" if is_dark else "#dc2626"
         import re
         code_match = re.search(r"\b(\d{6})\b", text or "")
         code = code_match.group(1) if code_match else ""
-        paragraphs = "".join(f"<p style=\"margin:0 0 12px;color:#334155;font-size:14px;line-height:1.6\">{line}</p>" for line in (text or "").split("\n") if line.strip())
+        paragraphs = "".join(
+            f"<p style=\"margin:0 0 12px;color:{text_color};font-size:14px;line-height:1.6\">{line}</p>"
+            for line in (text or "").split("\n") if line.strip()
+        )
         code_block = f"""
-            <div style="margin:16px 0;padding:16px;border-radius:12px;background:#fff1f2;border:1px solid #fecdd3;text-align:center">
-                <div style="font-size:12px;color:#ef4444;margin-bottom:8px">Tu código</div>
-                <div style="font-size:28px;font-weight:700;color:#dc2626;letter-spacing:6px">{code}</div>
+            <div style="margin:16px 0;padding:16px;border-radius:12px;background:{code_bg};border:1px solid {code_border};text-align:center">
+                <div style="font-size:12px;color:{code_label};margin-bottom:8px">Tu código</div>
+                <div style="font-size:28px;font-weight:700;color:{code_value};letter-spacing:6px">{code}</div>
             </div>
         """ if code else ""
+        support_block = f"""
+            <div style="margin-top:12px;padding:12px;border-radius:12px;background:{footer_bg};color:{footer_text}">
+                <div style="font-weight:600;margin-bottom:6px;color:{text_color}">¿Necesitas ayuda?</div>
+                <div>WhatsApp: +57 319 242 6874</div>
+                <div>Email: encajapp@gmail.com</div>
+                <div>Web: app.encaja.co</div>
+            </div>
+        """
         return f"""
         <html>
-        <body style="margin:0;padding:0;background:#f8fafc">
-            <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background:#f8fafc">
+        <body style="margin:0;padding:0;background:{body_bg}">
+            <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background:{body_bg}">
                 <tr>
                     <td align="center" style="padding:24px">
-                        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:640px;background:#ffffff;border-radius:16px;overflow:hidden;border:1px solid #e5e7eb">
+                        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:640px;background:{card_bg};border-radius:16px;overflow:hidden;border:1px solid {border_color}">
                             <tr>
                                 <td style="padding:24px;background:linear-gradient(135deg,#ef4444,#f87171);color:#ffffff">
-                                    <div style="font-size:20px;font-weight:800">EnCaja</div>
-                                    <div style="font-size:14px;opacity:.9">{subject}</div>
+                                    <div style="display:flex;align-items:center;gap:12px">
+                                        <img src="{logo_url}" alt="EnCaja" width="36" height="36" style="border-radius:8px;display:block" />
+                                        <div style="font-size:20px;font-weight:800">EnCaja</div>
+                                    </div>
+                                    <div style="font-size:14px;opacity:.9;margin-top:4px">{subject}</div>
+                                    <div style="font-size:12px;opacity:.9;margin-top:6px">orden para soñar en grande.</div>
                                 </td>
                             </tr>
                             <tr>
-                                <td style="padding:24px">{paragraphs}{code_block}</td>
+                                <td style="padding:24px">
+                                    {paragraphs}
+                                    {code_block}
+                                    <p style="margin:0 0 12px;color:{text_color};font-size:13px;line-height:1.6">
+                                        Ingresa el código en la aplicación para continuar. Si no solicitaste este correo, puedes ignorarlo.
+                                    </p>
+                                    <div style="margin-top:12px">
+                                        <a href="{base_url}" style="display:inline-block;padding:10px 16px;border-radius:10px;background:#ef4444;color:#ffffff;text-decoration:none;font-weight:600">
+                                            Abrir EnCaja
+                                        </a>
+                                    </div>
+                                    {support_block}
+                                </td>
                             </tr>
                             <tr>
-                                <td style="padding:16px 24px;background:#fafafa;color:#64748b;font-size:12px">
-                                    Si no solicitaste este correo, ignóralo. Este código expira en 10 minutos.
+                                <td style="padding:16px 24px;background:{footer_bg};color:{footer_text};font-size:12px">
+                                    Este código expira en 10 minutos.
                                 </td>
                             </tr>
                         </table>
