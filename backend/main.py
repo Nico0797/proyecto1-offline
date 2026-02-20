@@ -3135,6 +3135,14 @@ def create_app(config_class=None):
         base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
         return send_from_directory(os.path.join(base_dir, "assets"), filename)
 
+    @app.route("/public/assets/<path:filename>")
+    def serve_public_assets(filename):
+        return send_from_directory("../public/assets", filename)
+
+    @app.route("/favicon.ico")
+    def favicon():
+        return send_from_directory("../public", "favicon.ico")
+
     @app.route("/")
     def index():
         return send_from_directory("../frontend", "index.html")

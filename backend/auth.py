@@ -247,6 +247,49 @@ class AuthManager:
         return "".join(str(random.randint(0, 9)) for _ in range(6))
 
     @staticmethod
+    def _build_html_email(subject, text):
+        """Plantilla HTML básica con branding EnCaja"""
+        import re
+        code_match = re.search(r"\b(\d{6})\b", text or "")
+        code = code_match.group(1) if code_match else ""
+        paragraphs = "".join(f"<p style=\"margin:0 0 12px;color:#334155;font-size:14px;line-height:1.6\">{line}</p>" for line in (text or "").split("\n") if line.strip())
+        code_block = f"""
+            <div style="margin:16px 0;padding:16px;border-radius:12px;background:#fff1f2;border:1px solid #fecdd3;text-align:center">
+                <div style="font-size:12px;color:#ef4444;margin-bottom:8px">Tu código</div>
+                <div style="font-size:28px;font-weight:700;color:#dc2626;letter-spacing:6px">{code}</div>
+            </div>
+        """ if code else ""
+        return f"""
+        <html>
+        <body style="margin:0;padding:0;background:#f8fafc">
+            <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background:#f8fafc">
+                <tr>
+                    <td align="center" style="padding:24px">
+                        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:640px;background:#ffffff;border-radius:16px;overflow:hidden;border:1px solid #e5e7eb">
+                            <tr>
+                                <td style="padding:24px;background:linear-gradient(135deg,#ef4444,#f87171);color:#ffffff">
+                                    <div style="font-size:20px;font-weight:800">EnCaja</div>
+                                    <div style="font-size:14px;opacity:.9">{subject}</div>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td style="padding:24px">{paragraphs}{code_block}</td>
+                            </tr>
+                            <tr>
+                                <td style="padding:16px 24px;background:#fafafa;color:#64748b;font-size:12px">
+                                    Si no solicitaste este correo, ignóralo. Este código expira en 10 minutos.
+                                </td>
+                            </tr>
+                        </table>
+                        <div style="margin-top:12px;color:#94a3b8;font-size:12px">© {datetime.utcnow().year} EnCaja</div>
+                    </td>
+                </tr>
+            </table>
+        </body>
+        </html>
+        """
+
+    @staticmethod
     def send_password_reset_email(email, name, code):
         """Enviar email de recuperación de contraseña o log si SMTP no está configurado"""
         if os.getenv("EMAIL_PROVIDER", "").lower() == "mailjet":
@@ -272,10 +315,9 @@ class AuthManager:
         msg["Subject"] = "Tu código para restablecer contraseña"
         msg["From"] = sender
         msg["To"] = email
-        msg.set_content(
-            f"Hola {name},\n\nTu código para restablecer contraseña es: {code}\n\n"
-            "Este código expira en 10 minutos."
-        )
+        plain = f"Hola {name},\n\nTu código para restablecer contraseña es: {code}\n\nEste código expira en 10 minutos."
+        msg.set_content(plain)
+        msg.add_alternative(AuthManager._build_html_email("Restablecer contraseña", plain), subtype="html")
 
         with smtplib.SMTP(host, int(port)) as server:
             server.starttls()
@@ -310,10 +352,9 @@ class AuthManager:
         msg["Subject"] = "Tu código de verificación"
         msg["From"] = sender
         msg["To"] = email
-        msg.set_content(
-            f"Hola {name},\n\nTu código de verificación es: {code}\n\n"
-            "Este código expira en 10 minutos."
-        )
+        plain = f"Hola {name},\n\nTu código de verificación es: {code}\n\nEste código expira en 10 minutos."
+        msg.set_content(plain)
+        msg.add_alternative(AuthManager._build_html_email("Verificación de correo", plain), subtype="html")
 
         try:
             with smtplib.SMTP(host, int(port), timeout=10) as server:
@@ -342,12 +383,13 @@ class AuthManager:
             return False
 
         url = "https://api.mailjet.com/v3.1/send"
+        html = AuthManager._build_html_email(subject, text or "")
         payload = {
             "Messages": [
                 {
                     "From": {
                         "Email": sender,
-                        "Name": "Cuaderno"
+                        "Name": "EnCaja"
                     },
                     "To": [
                         {
@@ -357,6 +399,7 @@ class AuthManager:
                     ],
                     "Subject": subject,
                     "TextPart": text,
+                    "HTMLPart": html,
                 }
             ]
         }
