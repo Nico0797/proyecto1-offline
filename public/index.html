@@ -2556,29 +2556,13 @@
                 const logo = settings.logo || '';
                 const name = this.business.name || 'Mi Negocio';
                 
-                const headerLogo = document.getElementById('header-logo');
                 const headerName = document.getElementById('header-business-name');
-                
-                if (logo && logo.trim()) {
-                    headerLogo.src = logo;
-                    headerLogo.classList.remove('hidden');
-                    headerName.innerHTML = 'Progresa';
-                } else {
-                    headerLogo.classList.add('hidden');
-                    headerName.innerHTML = 'Progresa';
-                }
+                if (headerName) headerName.innerHTML = 'Progresa';
                 
                 // Update center business header
                 const centerBusinessName = document.getElementById('center-business-name');
-                const centerBusinessLogo = document.getElementById('center-business-logo');
                 if (centerBusinessName) {
                     centerBusinessName.textContent = name;
-                }
-                if (centerBusinessLogo && logo && logo.trim()) {
-                    centerBusinessLogo.src = logo;
-                    centerBusinessLogo.style.display = 'block';
-                } else if (centerBusinessLogo) {
-                    centerBusinessLogo.style.display = 'none';
                 }
             },
 
