@@ -10,6 +10,7 @@ from openpyxl import Workbook
 from openpyxl.styles import Font, Alignment, PatternFill
 from backend.database import db
 from backend.models import Business, Product, Customer, Sale, Expense, Payment, LedgerEntry
+from flask import current_app
 
 
 def export_sales_excel(business_id, start_date=None, end_date=None):
@@ -86,7 +87,7 @@ def export_sales_excel(business_id, start_date=None, end_date=None):
         ws.column_dimensions[column_letter].width = adjusted_width
 
     # Save file
-    export_dir = os.getenv("EXPORT_DIR", "exports")
+    export_dir = current_app.config.get("EXPORT_DIR", "exports")
     os.makedirs(export_dir, exist_ok=True)
     
     filename = f"ventas_{business_id}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.xlsx"
@@ -159,7 +160,7 @@ def export_expenses_excel(business_id, start_date=None, end_date=None):
         ws.column_dimensions[column_letter].width = adjusted_width
 
     # Save file
-    export_dir = os.getenv("EXPORT_DIR", "exports")
+    export_dir = current_app.config.get("EXPORT_DIR", "exports")
     os.makedirs(export_dir, exist_ok=True)
     
     filename = f"gastos_{business_id}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.xlsx"
@@ -239,7 +240,7 @@ def export_customers_excel(business_id):
         ws.column_dimensions[column_letter].width = adjusted_width
 
     # Save file
-    export_dir = os.getenv("EXPORT_DIR", "exports")
+    export_dir = current_app.config.get("EXPORT_DIR", "exports")
     os.makedirs(export_dir, exist_ok=True)
     
     filename = f"clientes_{business_id}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.xlsx"
@@ -267,7 +268,7 @@ def create_backup_json(business_id):
     }
 
     # Save file
-    backup_dir = os.getenv("BACKUP_DIR", "backups")
+    backup_dir = current_app.config.get("BACKUP_DIR", "backups")
     os.makedirs(backup_dir, exist_ok=True)
     
     filename = f"backup_{business_id}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json"

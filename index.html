@@ -3742,6 +3742,13 @@
             async exportSales() {
                 const start = document.getElementById('export-sales-start').value;
                 const end = document.getElementById('export-sales-end').value;
+                if (!this.business || !this.business.id || isNaN(Number(this.business.id))) {
+                    await this.loadBusinesses();
+                    if (!this.business || !this.business.id || isNaN(Number(this.business.id))) {
+                        alert('No hay negocio seleccionado');
+                        return;
+                    }
+                }
                 
                 let url = `/businesses/${this.business.id}/export/sales`;
                 const params = [];
@@ -3750,12 +3757,36 @@
                 if (params.length) url += '?' + params.join('&');
                 
                 const data = await this.api(url);
-                window.location.href = data.download_url;
+                const fileRes = await fetch(data.download_url, {
+                    headers: { 'Authorization': `Bearer ${this.token}` }
+                });
+                if (!fileRes.ok) {
+                    const errText = await fileRes.text();
+                    throw new Error(errText || 'Error descargando ventas');
+                }
+                const blob = await fileRes.blob();
+                const dlUrl = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                const cd = fileRes.headers.get('content-disposition') || '';
+                const m = cd.match(/filename="?([^"]+)"?/i);
+                a.download = m ? m[1] : `ventas_${new Date().toISOString().split('T')[0]}.xlsx`;
+                a.href = dlUrl;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(dlUrl);
             },
             
             async exportExpenses() {
                 const start = document.getElementById('export-expenses-start').value;
                 const end = document.getElementById('export-expenses-end').value;
+                if (!this.business || !this.business.id || isNaN(Number(this.business.id))) {
+                    await this.loadBusinesses();
+                    if (!this.business || !this.business.id || isNaN(Number(this.business.id))) {
+                        alert('No hay negocio seleccionado');
+                        return;
+                    }
+                }
                 
                 let url = `/businesses/${this.business.id}/export/expenses`;
                 const params = [];
@@ -3764,7 +3795,24 @@
                 if (params.length) url += '?' + params.join('&');
                 
                 const data = await this.api(url);
-                window.location.href = data.download_url;
+                const fileRes = await fetch(data.download_url, {
+                    headers: { 'Authorization': `Bearer ${this.token}` }
+                });
+                if (!fileRes.ok) {
+                    const errText = await fileRes.text();
+                    throw new Error(errText || 'Error descargando gastos');
+                }
+                const blob = await fileRes.blob();
+                const dlUrl = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                const cd = fileRes.headers.get('content-disposition') || '';
+                const m = cd.match(/filename="?([^"]+)"?/i);
+                a.download = m ? m[1] : `gastos_${new Date().toISOString().split('T')[0]}.xlsx`;
+                a.href = dlUrl;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(dlUrl);
             },
             
             // Upgrade to Pro
@@ -3797,8 +3845,32 @@
             
             // Backup
             async downloadBackup() {
+                if (!this.business || !this.business.id || isNaN(Number(this.business.id))) {
+                    await this.loadBusinesses();
+                    if (!this.business || !this.business.id || isNaN(Number(this.business.id))) {
+                        alert('No hay negocio seleccionado');
+                        return;
+                    }
+                }
                 const data = await this.api(`/businesses/${this.business.id}/backup`);
-                window.location.href = data.download_url;
+                const fileRes = await fetch(data.download_url, {
+                    headers: { 'Authorization': `Bearer ${this.token}` }
+                });
+                if (!fileRes.ok) {
+                    const errText = await fileRes.text();
+                    throw new Error(errText || 'Error descargando respaldo');
+                }
+                const blob = await fileRes.blob();
+                const dlUrl = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                const cd = fileRes.headers.get('content-disposition') || '';
+                const m = cd.match(/filename="?([^"]+)"?/i);
+                a.download = m ? m[1] : `respaldo_${new Date().toISOString().split('T')[0]}.json`;
+                a.href = dlUrl;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(dlUrl);
             },
             
             async importBackup(input) {

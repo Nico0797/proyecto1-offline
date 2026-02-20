@@ -37,6 +37,18 @@ def create_app(config_class=None):
     # Inicializar extensiones
     init_db(app)
     
+    # Normalizar rutas de export y backup a absolutas
+    import os as _os
+    base_dir = _os.path.dirname(_os.path.dirname(_os.path.abspath(__file__)))
+    export_dir = app.config.get("EXPORT_DIR", "exports")
+    backup_dir = app.config.get("BACKUP_DIR", "backups")
+    if not _os.path.isabs(export_dir):
+        export_dir = _os.path.join(base_dir, export_dir)
+    if not _os.path.isabs(backup_dir):
+        backup_dir = _os.path.join(base_dir, backup_dir)
+    app.config["EXPORT_DIR"] = export_dir
+    app.config["BACKUP_DIR"] = backup_dir
+    
     # CORS
     CORS(app, resources={r"/api/*": {"origins": app.config["CORS_ORIGINS"]}}, supports_credentials=True)
 
@@ -54,8 +66,8 @@ def create_app(config_class=None):
         return jsonify({"error": "Internal server error"}), 500
 
     # Crear directorios necesarios
-    os.makedirs(app.config.get("EXPORT_DIR", "exports"), exist_ok=True)
-    os.makedirs(app.config.get("BACKUP_DIR", "backups"), exist_ok=True)
+    os.makedirs(app.config.get("EXPORT_DIR"), exist_ok=True)
+    os.makedirs(app.config.get("BACKUP_DIR"), exist_ok=True)
 
     # ========== HEALTH CHECK ==========
     @app.route("/api/health")
@@ -516,7 +528,18 @@ def create_app(config_class=None):
         if not business:
             return jsonify({"error": "Negocio no encontrado"}), 404
 
-        products = Product.query.filter_by(business_id=business_id).order_by(Product.name).all()
+        search = request.args.get("search")
+        category = request.args.get("category")
+
+        query = Product.query.filter_by(business_id=business_id)
+
+        if search:
+            query = query.filter(Product.name.ilike(f"%{search}%"))
+
+        if category:
+            query = query.filter(Product.category == category)
+
+        products = query.order_by(Product.name).all()
         return jsonify({"products": [p.to_dict() for p in products]})
 
     @app.route("/api/businesses/<int:business_id>/products", methods=["POST"])
@@ -615,7 +638,14 @@ def create_app(config_class=None):
         if not business:
             return jsonify({"error": "Negocio no encontrado"}), 404
 
-        customers = Customer.query.filter_by(business_id=business_id).order_by(Customer.name).all()
+        search = request.args.get("search")
+
+        query = Customer.query.filter_by(business_id=business_id)
+
+        if search:
+            query = query.filter(Customer.name.ilike(f"%{search}%"))
+
+        customers = query.order_by(Customer.name).all()
         return jsonify({"customers": [c.to_dict() for c in customers]})
 
     @app.route("/api/businesses/<int:business_id>/customers", methods=["POST"])
@@ -763,6 +793,8 @@ def create_app(config_class=None):
         # Get date filters
         start_date = request.args.get("start_date")
         end_date = request.args.get("end_date")
+        search = request.args.get("search")
+        status = request.args.get("status")
 
         query = Sale.query.filter_by(business_id=business_id)
 
@@ -779,6 +811,17 @@ def create_app(config_class=None):
                 query = query.filter(Sale.sale_date <= end)
             except:
                 pass
+
+        if search:
+            # Search in customer name through customer relationship
+            query = query.join(Customer, Sale.customer_id == Customer.id).filter(
+                Customer.name.ilike(f"%{search}%")
+            )
+
+        if status == 'paid':
+            query = query.filter(Sale.paid == True)
+        elif status == 'pending':
+            query = query.filter(Sale.paid == False)
 
         sales = query.order_by(Sale.sale_date.desc()).limit(500).all()
         return jsonify({"sales": [s.to_dict() for s in sales]})
@@ -1081,6 +1124,7 @@ def create_app(config_class=None):
         start_date = request.args.get("start_date")
         end_date = request.args.get("end_date")
         category = request.args.get("category")
+        search = request.args.get("search")
 
         query = Expense.query.filter_by(business_id=business_id)
 
@@ -1100,6 +1144,9 @@ def create_app(config_class=None):
 
         if category:
             query = query.filter(Expense.category == category)
+
+        if search:
+            query = query.filter(Expense.description.ilike(f"%{search}%"))
 
         expenses = query.order_by(Expense.expense_date.desc()).limit(500).all()
         return jsonify({"expenses": [e.to_dict() for e in expenses]})
@@ -1190,8 +1237,34 @@ def create_app(config_class=None):
         business = Business.query.filter_by(id=business_id, user_id=g.current_user.id).first()
         if not business:
             return jsonify({"error": "Negocio no encontrado"}), 404
-
-        payments = Payment.query.filter_by(business_id=business_id).order_by(Payment.payment_date.desc()).limit(500).all()
+        
+        start_date = request.args.get("start_date")
+        end_date = request.args.get("end_date")
+        search = request.args.get("search")
+        
+        query = Payment.query.filter_by(business_id=business_id)
+        
+        if start_date:
+            try:
+                start = datetime.strptime(start_date, "%Y-%m-%d").date()
+                query = query.filter(Payment.payment_date >= start)
+            except:
+                pass
+        
+        if end_date:
+            try:
+                end = datetime.strptime(end_date, "%Y-%m-%d").date()
+                query = query.filter(Payment.payment_date <= end)
+            except:
+                pass
+        
+        if search:
+            # Search in customer name through customer relationship
+            query = query.join(Customer, Payment.customer_id == Customer.id).filter(
+                Customer.name.ilike(f"%{search}%")
+            )
+        
+        payments = query.order_by(Payment.payment_date.desc()).limit(500).all()
         return jsonify({"payments": [p.to_dict() for p in payments]})
 
     @app.route("/api/businesses/<int:business_id>/payments", methods=["POST"])
