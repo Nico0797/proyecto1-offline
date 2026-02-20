@@ -5179,13 +5179,33 @@
     document.addEventListener('DOMContentLoaded', () => {
         const emailInput = document.getElementById('login-email');
         const passwordInput = document.getElementById('login-password');
+        const wipe = () => {
+            if (emailInput) {
+                emailInput.value = '';
+                emailInput.setAttribute('autocomplete', 'off');
+                emailInput.setAttribute('name', 'login_email');
+                emailInput.setAttribute('autocapitalize', 'none');
+                emailInput.setAttribute('spellcheck', 'false');
+            }
+            if (passwordInput) {
+                passwordInput.value = '';
+                passwordInput.setAttribute('autocomplete', 'new-password');
+                passwordInput.setAttribute('name', 'login_password');
+            }
+        };
+        wipe();
+        let tries = 0;
+        const interval = setInterval(() => {
+            tries++;
+            if (emailInput && emailInput.value) emailInput.value = '';
+            if (passwordInput && passwordInput.value) passwordInput.value = '';
+            if (tries > 20) clearInterval(interval);
+        }, 100);
         if (emailInput) {
-            emailInput.value = '';
             emailInput.readOnly = true;
             emailInput.addEventListener('focus', () => { emailInput.readOnly = false; }, { once: true });
         }
         if (passwordInput) {
-            passwordInput.value = '';
             passwordInput.readOnly = true;
             passwordInput.addEventListener('focus', () => { passwordInput.readOnly = false; }, { once: true });
         }
