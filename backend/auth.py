@@ -414,12 +414,13 @@ class AuthManager:
             print(f"[MAILJET FALLBACK] To: {email} | Subject: {subject} | Body: {text}")
             return False
 
-        api_key = os.getenv("MAILJET_API_KEY") or os.getenv("MJ_APIKEY_PUBLIC")
-        api_secret = os.getenv("MAILJET_API_SECRET") or os.getenv("MJ_APIKEY_PRIVATE")
-        sender = os.getenv("MAILJET_SENDER") or os.getenv("MJ_SENDER") or os.getenv("SMTP_FROM") or "no-reply@localhost"
+        api_key = (os.getenv("MAILJET_API_KEY") or os.getenv("MJ_APIKEY_PUBLIC") or os.getenv("MAILJET_APIKEY_PUBLIC") or "").strip()
+        api_secret = (os.getenv("MAILJET_API_SECRET") or os.getenv("MJ_APIKEY_PRIVATE") or os.getenv("MAILJET_APIKEY_PRIVATE") or "").strip()
+        sender = (os.getenv("MAILJET_SENDER") or os.getenv("MJ_SENDER") or os.getenv("SMTP_FROM") or "no-reply@localhost").strip()
 
         if not api_key or not api_secret or not sender:
             print("[MAILJET] Configuración incompleta, usando fallback.")
+            print(f"[MAILJET DEBUG] api_key_len={len(api_key)} api_secret_len={len(api_secret)} sender_set={bool(sender)}")
             print(f"[MAILJET FALLBACK] To: {email} | Subject: {subject} | Body: {text}")
             return False
 
@@ -451,6 +452,8 @@ class AuthManager:
                 print(f"[MAILJET] Email enviado a {email}")
                 return True
             print(f"[MAILJET] Error {response.status_code}: {response.text}")
+            if response.status_code == 401:
+                print("[MAILJET DEBUG] Autenticación fallida. Verifica claves (sin espacios ni comillas) y remitente verificado.")
         except Exception as e:
             print(f"[MAILJET] Excepción al enviar: {e}")
 
