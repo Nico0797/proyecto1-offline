@@ -11,7 +11,7 @@ from email.message import EmailMessage
 from datetime import datetime, timedelta
 from functools import wraps
 from flask import request, jsonify, g, current_app
-from backend.models import User, Permission, Role, AuditLog
+from backend.models import User, Permission, Role, AuditLog, UserRole
 
 
 def create_token(user_id, token_type="access"):
@@ -95,11 +95,14 @@ def has_permission(user, permission_name):
     if hasattr(user, 'is_active') and not user.is_active:
         return False
     
-    # Obtener todos los permisos del usuario a través de sus roles
     user_permissions = set()
-    for role in user.roles:
-        for perm in role.permissions:
-            user_permissions.add(perm.name)
+    for user_role in user.roles:
+        role = user_role.role
+        if not role:
+            continue
+        for role_perm in role.permissions:
+            if role_perm.permission:
+                user_permissions.add(role_perm.permission.name)
     
     # Verificar permiso exacto
     if permission_name in user_permissions:
@@ -144,6 +147,24 @@ def permission_required(permission_name):
             return f(*args, **kwargs)
         return decorated
     return decorator
+
+
+def _ensure_default_role(user):
+    from backend.database import db
+    try:
+        if not user or not user.id:
+            return
+        existing = UserRole.query.filter_by(user_id=user.id).first()
+        if existing:
+            return
+        admin_role = Role.query.filter_by(name="ADMIN").first()
+        if not admin_role:
+            return
+        user_role = UserRole(user_id=user.id, role_id=admin_role.id)
+        db.session.add(user_role)
+        db.session.commit()
+    except Exception as e:
+        print(f"[AUTH] Error ensuring default role: {e}")
 
 
 def _log_audit(user, action, entity, entity_id, old_value=None, new_value=None):
@@ -295,6 +316,7 @@ class AuthManager:
                 existing.is_active = True
                 db.session.commit()
                 AuthManager.send_verification_email(existing.email, existing.name, verification_code)
+                _ensure_default_role(existing)
                 return existing, None
             return None, "El email ya está registrado"
 
@@ -314,6 +336,8 @@ class AuthManager:
 
         AuthManager.send_verification_email(user.email, user.name, verification_code)
 
+        _ensure_default_role(user)
+
         return user, None
 
     @staticmethod
@@ -327,7 +351,8 @@ class AuthManager:
         if not user.email_verified:
             return None, None, None, "Email no verificado. Revisa tu correo para el código OTP"
 
-        # Generar tokens
+        _ensure_default_role(user)
+
         access_token = create_token(user.id, "access")
         refresh_token = create_token(user.id, "refresh")
 
