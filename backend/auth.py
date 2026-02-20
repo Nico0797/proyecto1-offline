@@ -414,9 +414,9 @@ class AuthManager:
             print(f"[MAILJET FALLBACK] To: {email} | Subject: {subject} | Body: {text}")
             return False
 
-        api_key = os.getenv("MAILJET_API_KEY")
-        api_secret = os.getenv("MAILJET_API_SECRET")
-        sender = os.getenv("MAILJET_SENDER") or os.getenv("SMTP_FROM") or "no-reply@localhost"
+        api_key = os.getenv("MAILJET_API_KEY") or os.getenv("MJ_APIKEY_PUBLIC")
+        api_secret = os.getenv("MAILJET_API_SECRET") or os.getenv("MJ_APIKEY_PRIVATE")
+        sender = os.getenv("MAILJET_SENDER") or os.getenv("MJ_SENDER") or os.getenv("SMTP_FROM") or "no-reply@localhost"
 
         if not api_key or not api_secret or not sender:
             print("[MAILJET] Configuración incompleta, usando fallback.")
