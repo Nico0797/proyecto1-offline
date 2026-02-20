@@ -29,10 +29,8 @@ et-xmlfile>=2.0.0
 # Validation
 email-validator>=2.0.0
 
-# Production (optional - only for production deployment)
 psycopg2-binary>=2.9.0
-# sentry-sdk[flask]>=2.0.0
-# gunicorn>=23.0.0
+gunicorn>=23.0.0
 
 # Development
 pytest>=8.0.0
