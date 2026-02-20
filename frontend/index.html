@@ -345,6 +345,16 @@
             background-size: 400% 100%;
             animation: shimmer 1.4s ease infinite;
         }
+        .encaja-gradient {
+            background: linear-gradient(135deg, #ef4444, #f87171);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+        }
+        .logo-glass {
+            background: linear-gradient(135deg, rgba(255,255,255,0.7), rgba(255,255,255,0.5));
+            backdrop-filter: blur(8px);
+        }
         @keyframes shimmer {
             0% { background-position: 200% 0; }
             100% { background-position: -200% 0; }
@@ -359,10 +369,12 @@
                 <div class="glass rounded-2xl p-8 w-full max-w-md">
                     <div class="text-center mb-8">
                         <div class="flex items-center justify-center gap-3 mb-3">
-                            <img src="/assets/logo.png" alt="Prospera" class="w-16 h-16 rounded-xl" style="object-fit: contain; background: linear-gradient(135deg, #2A6DFD, #1D4ED8); padding: 8px;">
+                            <div class="logo-glass rounded-2xl p-2">
+                                <img src="/assets/encaja-logo.png" alt="EnCaja" class="w-20 h-20 object-contain" onerror="this.parentElement.innerHTML='<span class=&quot;text-3xl font-bold encaja-gradient&quot;>EnCaja</span>'">
+                            </div>
                         </div>
-                        <h1 class="text-3xl font-bold mb-2">Progresa</h1>
-                        <p class="text-muted">Tu gestión empresarial</p>
+                        <h1 class="text-3xl font-bold mb-2 encaja-gradient">EnCaja</h1>
+                        <p class="text-muted">Tu backoffice en la nube</p>
                     </div>
                     
                     <!-- Login Form -->
@@ -478,9 +490,14 @@
                 <div class="mb-6" id="app-header">
                     <div class="relative">
                         <div class="w-full text-left">
-                            <h1 class="text-xl font-bold flex items-center gap-2">
-                                <span id="header-business-name">Progresa</span>
-                            </h1>
+                            <div class="flex items-center gap-3">
+                                <div class="logo-glass p-2 rounded-xl">
+                                    <img src="/assets/encaja-logo.png" alt="EnCaja" class="w-12 h-12 object-contain" onerror="this.parentElement.innerHTML='<span class=&quot;text-xl font-bold encaja-gradient&quot;>EnCaja</span>'">
+                                </div>
+                                <h1 class="text-xl font-bold">
+                                    <span id="header-business-name" class="encaja-gradient">EnCaja</span>
+                                </h1>
+                            </div>
                         </div>
                         <div id="business-switch-dropdown" class="dropdown-menu hidden"></div>
                     </div>
@@ -2807,7 +2824,7 @@
                 const name = this.business.name || 'Mi Negocio';
                 
                 const headerName = document.getElementById('header-business-name');
-                if (headerName) headerName.innerHTML = 'Progresa';
+                if (headerName) headerName.innerHTML = 'EnCaja';
                 
                 // Update center business header
                 const centerBusinessName = document.getElementById('center-business-name');

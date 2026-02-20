@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Cuaderno App - Tu Contabilidad en el Bolsillo</title>
+    <title>EnCaja - Tu backoffice en la nube</title>
     <meta name="description" content="Descarga Cuaderno App - La mejor aplicación de contabilidad móvil. Gestiona tus finanzas de forma simple y profesional.">
     <link rel="icon" href="/favicon.ico">
     <script src="https://cdn.tailwindcss.com"></script>
@@ -19,6 +19,8 @@
             --dark: #0f172a;
             --light: #f8fafc;
             --gray: #64748b;
+            --encaja-start: #ef4444;
+            --encaja-end: #f87171;
         }
         
         * {
@@ -73,6 +75,16 @@
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
             background-clip: text;
+        }
+        .encaja-gradient {
+            background: linear-gradient(135deg, var(--encaja-start), var(--encaja-end));
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+        }
+        .logo-glass {
+            background: linear-gradient(135deg, rgba(255,255,255,0.7), rgba(255,255,255,0.5));
+            backdrop-filter: blur(8px);
         }
         
         /* Buttons */
@@ -330,10 +342,10 @@
             <div class="flex justify-between items-center h-16 md:h-20">
                 <!-- Logo -->
                 <div class="flex items-center gap-3">
-                    <div class="gradient-primary p-2 rounded-xl">
-                        <i class="ph ph-notebook text-white text-xl"></i>
+                    <div class="logo-glass p-2 rounded-xl">
+                        <img src="/assets/encaja-logo.png" alt="EnCaja" class="w-10 h-10 object-contain" onerror="this.parentElement.innerHTML='<span class=&quot;text-2xl font-bold encaja-gradient&quot;>EnCaja</span>'">
                     </div>
-                    <span class="text-xl md:text-2xl font-bold gradient-text">Cuaderno</span>
+                    <span class="text-xl md:text-2xl font-bold encaja-gradient">EnCaja</span>
                 </div>
                 
                 <!-- Desktop Menu -->
@@ -430,10 +442,10 @@
                             <div class="bg-white h-full p-4">
                                 <div class="flex justify-between items-center mb-6">
                                     <div class="flex items-center gap-2">
-                                        <div class="gradient-primary p-1.5 rounded-lg">
-                                            <i class="ph ph-notebook text-white text-sm"></i>
+                                        <div class="logo-glass p-1.5 rounded-lg">
+                                            <img src="/assets/encaja-logo.png" alt="EnCaja" class="w-6 h-6 object-contain" onerror="this.parentElement.innerHTML='<span class=&quot;text-sm font-bold encaja-gradient&quot;>EnCaja</span>'">
                                         </div>
-                                        <span class="font-bold text-gray-900 text-sm">Cuaderno</span>
+                                        <span class="font-bold encaja-gradient text-sm">EnCaja</span>
                                     </div>
                                     <div class="w-6 h-6 bg-gray-200 rounded-full"></div>
                                 </div>
