@@ -1020,19 +1020,6 @@
                         <h3 class="font-semibold mb-4">Información del Negocio</h3>
                         <div class="space-y-4">
                             <div>
-                                <label class="block text-sm mb-1">Logo del Negocio</label>
-                                <div class="flex items-center gap-4">
-                                    <div id="business-logo-preview" class="w-20 h-20 rounded-full bg-white/10 flex items-center justify-center overflow-hidden">
-                                        <span class="text-3xl"><i class="ph ph-storefront text-3xl text-white/50"></i></span>
-                                    </div>
-                                    <div class="flex-1">
-                                        <input type="file" id="business-logo-file" accept="image/*" class="input w-full px-4 py-2 rounded-xl mb-2" onchange="app.uploadLogo(this)">
-                                        <input type="text" id="business-logo" class="input w-full px-4 py-2 rounded-xl mb-2" placeholder="URL del logo (ej: /assets/logo.png)">
-                                        <p class="text-xs text-muted">Sube una imagen o ingresa la URL</p>
-                                    </div>
-                                </div>
-                            </div>
-                            <div>
                                 <label class="block text-sm mb-1">Nombre del Negocio</label>
                                 <input type="text" id="business-name" class="input w-full px-4 py-2 rounded-xl">
                             </div>
@@ -1040,9 +1027,20 @@
                                 <label class="block text-sm mb-1">Moneda</label>
                                 <select id="business-currency" class="input w-full px-4 py-2 rounded-xl">
                                     <option value="COP">COP - Peso Colombiano</option>
-                                    <option value="USD">USD - Dólar</option>
-                                    <option value="MXN">MXN - Peso Mexicano</option>
+                                    <option value="USD">USD - Dólar Estadounidense</option>
                                     <option value="EUR">EUR - Euro</option>
+                                    <option value="MXN">MXN - Peso Mexicano</option>
+                                    <option value="ARS">ARS - Peso Argentino</option>
+                                    <option value="CLP">CLP - Peso Chileno</option>
+                                    <option value="PEN">PEN - Sol Peruano</option>
+                                    <option value="BRL">BRL - Real Brasileño</option>
+                                    <option value="GBP">GBP - Libra Esterlina</option>
+                                    <option value="JPY">JPY - Yen Japonés</option>
+                                    <option value="CNY">CNY - Yuan Chino</option>
+                                    <option value="CAD">CAD - Dólar Canadiense</option>
+                                    <option value="AUD">AUD - Dólar Australiano</option>
+                                    <option value="CHF">CHF - Franco Suizo</option>
+                                    <option value="VES">VES - Bolívar Venezolano</option>
                                 </select>
                             </div>
                             <button onclick="app.saveBusiness()" class="btn-primary px-6 py-2 rounded-xl">Guardar</button>
@@ -1762,7 +1760,194 @@
         </div>
     </div>
     
+    <!-- Custom Modal Container -->
+    <div id="custom-modal" class="fixed inset-0 z-[100] hidden">
+        <div class="absolute inset-0 bg-black/70 backdrop-blur-sm" onclick="closeCustomModal()"></div>
+        <div class="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-full max-w-md">
+            <div class="glass rounded-2xl p-6 mx-4 fade-in" id="modal-content">
+                <div class="flex items-start gap-4">
+                    <div id="modal-icon" class="flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center"></div>
+                    <div class="flex-1">
+                        <h3 id="modal-title" class="text-lg font-semibold text-white mb-2"></h3>
+                        <p id="modal-message" class="text-white/70 text-sm"></p>
+                        <input type="text" id="modal-input" class="input w-full mt-4 px-4 py-3 rounded-xl hidden" placeholder="">
+                    </div>
+                </div>
+                <div class="flex justify-end gap-3 mt-6" id="modal-buttons">
+                    <button onclick="closeCustomModal()" class="px-5 py-2.5 rounded-xl bg-white/10 hover:bg-white/20 text-white transition-colors" id="modal-cancel">Cancelar</button>
+                    <button onclick="confirmCustomModal()" class="px-5 py-2.5 rounded-xl btn-primary transition-colors" id="modal-confirm">Aceptar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <script>
+        // Custom Alert/Confirm/Prompt System
+        let modalCallback = null;
+        let modalType = 'alert';
+        
+        function showCustomAlert(message, type = 'info') {
+            return new Promise((resolve) => {
+                const modal = document.getElementById('custom-modal');
+                const icon = document.getElementById('modal-icon');
+                const title = document.getElementById('modal-title');
+                const msg = document.getElementById('modal-message');
+                const input = document.getElementById('modal-input');
+                const cancelBtn = document.getElementById('modal-cancel');
+                const confirmBtn = document.getElementById('modal-confirm');
+                
+                modalType = 'alert';
+                
+                const icons = {
+                    info: '<i class="ph ph-info text-xl text-blue-400"></i>',
+                    success: '<i class="ph ph-check-circle text-xl text-green-400"></i>',
+                    warning: '<i class="ph ph-warning text-xl text-yellow-400"></i>',
+                    error: '<i class="ph ph-x-circle text-xl text-red-400"></i>',
+                    question: '<i class="ph ph-question text-xl text-white"></i>'
+                };
+                
+                const titles = {
+                    info: 'Información',
+                    success: 'Éxito',
+                    warning: 'Advertencia',
+                    error: 'Error',
+                    question: 'Confirmar'
+                };
+                
+                icon.innerHTML = icons[type] || icons.info;
+                icon.className = 'flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center bg-white/10';
+                title.textContent = titles[type] || 'Información';
+                msg.textContent = message;
+                input.classList.add('hidden');
+                cancelBtn.classList.add('hidden');
+                confirmBtn.textContent = 'Aceptar';
+                confirmBtn.className = 'px-5 py-2.5 rounded-xl btn-primary transition-colors';
+                
+                modalCallback = resolve;
+                modal.classList.remove('hidden');
+            });
+        }
+        
+        function showCustomConfirm(message) {
+            return new Promise((resolve) => {
+                const modal = document.getElementById('custom-modal');
+                const icon = document.getElementById('modal-icon');
+                const title = document.getElementById('modal-title');
+                const msg = document.getElementById('modal-message');
+                const input = document.getElementById('modal-input');
+                const cancelBtn = document.getElementById('modal-cancel');
+                const confirmBtn = document.getElementById('modal-confirm');
+                
+                modalType = 'confirm';
+                
+                icon.innerHTML = '<i class="ph ph-question text-xl text-white"></i>';
+                icon.className = 'flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center bg-yellow-500/20';
+                title.textContent = 'Confirmar';
+                msg.textContent = message;
+                input.classList.add('hidden');
+                cancelBtn.classList.remove('hidden');
+                cancelBtn.textContent = 'Cancelar';
+                confirmBtn.textContent = 'Confirmar';
+                confirmBtn.className = 'px-5 py-2.5 rounded-xl btn-danger transition-colors';
+                
+                modalCallback = (value) => resolve(value);
+                modal.classList.remove('hidden');
+            });
+        }
+        
+        function showCustomPrompt(message, defaultValue = '') {
+            return new Promise((resolve) => {
+                const modal = document.getElementById('custom-modal');
+                const icon = document.getElementById('modal-icon');
+                const title = document.getElementById('modal-title');
+                const msg = document.getElementById('modal-message');
+                const input = document.getElementById('modal-input');
+                const cancelBtn = document.getElementById('modal-cancel');
+                const confirmBtn = document.getElementById('modal-confirm');
+                
+                modalType = 'prompt';
+                
+                icon.innerHTML = '<i class="ph ph-pencil text-xl text-white"></i>';
+                icon.className = 'flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center bg-blue-500/20';
+                title.textContent = 'Ingresar';
+                msg.textContent = message;
+                input.value = defaultValue;
+                input.classList.remove('hidden');
+                cancelBtn.classList.remove('hidden');
+                cancelBtn.textContent = 'Cancelar';
+                confirmBtn.textContent = 'Aceptar';
+                confirmBtn.className = 'px-5 py-2.5 rounded-xl btn-primary transition-colors';
+                
+                modalCallback = (value) => resolve(value);
+                modal.classList.remove('hidden');
+                setTimeout(() => input.focus(), 100);
+            });
+        }
+        
+        function closeCustomModal() {
+            const modal = document.getElementById('custom-modal');
+            modal.classList.add('hidden');
+            if (modalCallback) {
+                if (modalType === 'confirm') {
+                    modalCallback(false);
+                } else if (modalType === 'prompt') {
+                    modalCallback(null);
+                }
+                modalCallback = null;
+            }
+        }
+        
+        function confirmCustomModal() {
+            const modal = document.getElementById('custom-modal');
+            const input = document.getElementById('modal-input');
+            modal.classList.add('hidden');
+            if (modalCallback) {
+                if (modalType === 'prompt') {
+                    modalCallback(input.value || null);
+                } else {
+                    modalCallback(true);
+                }
+                modalCallback = null;
+            }
+        }
+        
+        // Keyboard support
+        document.addEventListener('keydown', function(e) {
+            const modal = document.getElementById('custom-modal');
+            if (modal && !modal.classList.contains('hidden')) {
+                if (e.key === 'Escape') {
+                    closeCustomModal();
+                } else if (e.key === 'Enter') {
+                    confirmCustomModal();
+                }
+            }
+        });
+        
+        // Override native alert/confirm/prompt with custom styled versions
+        // Note: These work as async - use await or .then() for confirm/prompt
+        
+        window.alert = function(message) {
+            // Auto-detect message type for styling
+            let type = 'info';
+            const lowerMsg = message.toLowerCase();
+            if (lowerMsg.includes('✅') || lowerMsg.includes('éxito') || lowerMsg.includes('correctamente') || lowerMsg.includes('listo') || lowerMsg.includes('guardado')) {
+                type = 'success';
+            } else if (lowerMsg.includes('error')) {
+                type = 'error';
+            } else if (lowerMsg.includes('advertencia') || lowerMsg.includes('cuidado')) {
+                type = 'warning';
+            }
+            return showCustomAlert(message, type);
+        };
+        
+        window.showConfirm = function(message) {
+            return showCustomConfirm(message);
+        };
+        
+        window.showPrompt = function(message, defaultValue) {
+            return showCustomPrompt(message, defaultValue || '');
+        };
+
         // Cuaderno App
         const app = {
             // State
@@ -2202,12 +2387,15 @@
                         }
                     }
                     
-                    document.getElementById('business-name').value = this.business.name;
-                    document.getElementById('business-currency').value = this.business.currency;
+                    const nameEl = document.getElementById('business-name');
+                    const currencyEl = document.getElementById('business-currency');
+                    const logoEl = document.getElementById('business-logo');
+                    if (nameEl) nameEl.value = this.business.name || '';
+                    if (currencyEl) currencyEl.value = this.business.currency || '';
                     // Logo
                     const settings = this.business.settings || {};
                     const logo = settings.logo || '';
-                    document.getElementById('business-logo').value = logo;
+                    if (logoEl) logoEl.value = logo;
                     // Update logo preview
                     const logoPreview = document.getElementById('business-logo-preview');
                     if (logo && logo.trim()) {
@@ -2230,7 +2418,7 @@
             },
             
             async createNewBusiness() {
-                const name = prompt('Nombre del nuevo negocio:');
+                const name = await showPrompt('Nombre del nuevo negocio:');
                 if (!name || !name.trim()) {
                     alert('Por favor ingresa un nombre');
                     return;
@@ -2353,11 +2541,14 @@
                 if (business && business.id !== this.business.id) {
                     this.business = business;
                     // Update settings form
-                    document.getElementById('business-name').value = this.business.name;
-                    document.getElementById('business-currency').value = this.business.currency;
+                    const nameEl2 = document.getElementById('business-name');
+                    const currencyEl2 = document.getElementById('business-currency');
+                    const logoEl2 = document.getElementById('business-logo');
+                    if (nameEl2) nameEl2.value = this.business.name || '';
+                    if (currencyEl2) currencyEl2.value = this.business.currency || '';
                     const settings = this.business.settings || {};
                     const logo = settings.logo || '';
-                    document.getElementById('business-logo').value = logo;
+                    if (logoEl2) logoEl2.value = logo;
                     const logoPreview = document.getElementById('business-logo-preview');
                     if (logo && logo.trim()) {
                         logoPreview.innerHTML = `<img src="${logo}" class="w-full h-full object-cover" onerror="this.parentElement.innerHTML='<span class=\\''text-3xl\\''>🏪</span>'">`;
@@ -3042,7 +3233,7 @@
             },
             
             async deleteExpense(id) {
-                if (!confirm('¿Eliminar gasto?')) return;
+                if (!await showConfirm('¿Eliminar gasto?')) return;
                 
                 await this.api(`/businesses/${this.business.id}/expenses/${id}`, {
                     method: 'DELETE'
@@ -3196,7 +3387,7 @@
             },
             
             async deleteCustomer(id) {
-                if (!confirm('¿Eliminar cliente?')) return;
+                if (!await showConfirm('¿Eliminar cliente?')) return;
                 
                 await this.api(`/businesses/${this.business.id}/customers/${id}`, {
                     method: 'DELETE'
@@ -3329,7 +3520,7 @@
             },
             
             async deleteProduct(id) {
-                if (!confirm('¿Eliminar producto?')) return;
+                if (!await showConfirm('¿Eliminar producto?')) return;
                 
                 await this.api(`/businesses/${this.business.id}/products/${id}`, {
                     method: 'DELETE'
@@ -3634,7 +3825,7 @@
             },
             
             async deleteOrder(orderId) {
-                if (!confirm('¿Estás seguro de eliminar este pedido?')) return;
+                if (!await showConfirm('¿Estás seguro de eliminar este pedido?')) return;
                 try {
                     await this.api(`/businesses/${this.business.id}/orders/${orderId}`, { method: 'DELETE' });
                     await this.loadOrders();
@@ -3685,7 +3876,7 @@
             
             // Upgrade to Pro
             async upgradeToPro(plan = 'pro_monthly') {
-                if (!confirm('¿Deseas actualizar a Plan PRO? Obtendrás acceso a todas las funciones avanzadas.')) {
+                if (!await showConfirm('¿Deseas actualizar a Plan PRO? Obtendrás acceso a todas las funciones avanzadas.')) {
                     return;
                 }
                 
@@ -4192,7 +4383,7 @@
 
             async deleteUser(userId) {
                 console.log('=== deleteUser START ===', userId);
-                if (!confirm('¿Está seguro de eliminar este usuario?')) return;
+                if (!await showConfirm('¿Está seguro de eliminar este usuario?')) return;
                 try {
                     const response = await this.api('/admin/users/' + userId, 'DELETE');
                     console.log('=== deleteUser RESPONSE ===', response);
@@ -4203,7 +4394,7 @@
             },
 
             async resetUserPassword(userId) {
-                const newPassword = prompt('Ingrese nueva contraseña:');
+                const newPassword = await showPrompt('Ingrese nueva contraseña:');
                 if (!newPassword) return;
                 try {
                     await this.api('/admin/users/' + userId + '/reset-password', 'POST', { password: newPassword });
@@ -4360,7 +4551,7 @@
 
             async deleteRole(roleId) {
                 console.log('=== deleteRole START ===', roleId);
-                if (!confirm('¿Está seguro de eliminar este rol?')) return;
+                if (!await showConfirm('¿Está seguro de eliminar este rol?')) return;
                 try {
                     const response = await this.api('/admin/roles/' + roleId, 'DELETE');
                     console.log('=== deleteRole RESPONSE ===', response);
