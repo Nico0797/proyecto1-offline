@@ -3016,56 +3016,51 @@ def create_app(config_class=None):
         except:
             return send_from_directory("../frontend", "index.html")
 
-    # ========== INIT DATABASE ==========
     with app.app_context():
         db.create_all()
-        
-        # Run RBAC seed to create roles and permissions (lazy import to avoid circular dependency)
         try:
-            # Import inside function to avoid circular dependency
-            from scripts.seed import seed_rbac
-            seed_rbac()
-        except ImportError as e:
-            print(f"Warning: Could not run RBAC seed: {e}")
-        
-        # Ensure at least one admin user exists and has SUPERADMIN role
-        admin_email = os.getenv("ADMIN_EMAIL", "admin@cuaderno.app")
-        admin_password = os.getenv("ADMIN_PASSWORD", "admin123")
-        admin_name = os.getenv("ADMIN_NAME", "Administrador")
-        
-        # Get or create admin user
-        admin_user = User.query.filter_by(email=admin_email.lower()).first()
-        if not admin_user:
-            admin_user = User(
-                email=admin_email.lower(),
-                name=admin_name,
-                plan="pro",
-                is_admin=True,
-                email_verified=True
-            )
-            admin_user.set_password(admin_password)
-            db.session.add(admin_user)
-            db.session.flush()
-            print(f"[INIT] Admin user created: {admin_email}")
-        else:
-            # Update existing user to be admin
-            admin_user.is_admin = True
-            admin_user.email_verified = True
-            admin_user.plan = "pro"
-            admin_user.set_password(admin_password)
-            print(f"[INIT] Existing user promoted to admin: {admin_email}")
-        
-        # Assign SUPERADMIN role to admin user
-        superadmin_role = Role.query.filter_by(name="SUPERADMIN").first()
-        if superadmin_role:
-            # Check if user already has the role
-            existing_role = UserRole.query.filter_by(user_id=admin_user.id, role_id=superadmin_role.id).first()
-            if not existing_role:
-                user_role = UserRole(user_id=admin_user.id, role_id=superadmin_role.id)
-                db.session.add(user_role)
-                print(f"[INIT] Assigned SUPERADMIN role to {admin_email}")
-        
-        db.session.commit()
+            try:
+                from scripts.seed import seed_rbac
+                seed_rbac()
+            except ImportError as e:
+                print(f"Warning: Could not run RBAC seed: {e}")
+            
+            admin_email = os.getenv("ADMIN_EMAIL", "admin@cuaderno.app")
+            admin_password = os.getenv("ADMIN_PASSWORD", "admin123")
+            admin_name = os.getenv("ADMIN_NAME", "Administrador")
+            
+            admin_user = User.query.filter_by(email=admin_email.lower()).first()
+            if not admin_user:
+                admin_user = User(
+                    email=admin_email.lower(),
+                    name=admin_name,
+                    plan="pro",
+                    is_admin=True,
+                    email_verified=True
+                )
+                admin_user.set_password(admin_password)
+                db.session.add(admin_user)
+                db.session.flush()
+                print(f"[INIT] Admin user created: {admin_email}")
+            else:
+                admin_user.is_admin = True
+                admin_user.email_verified = True
+                admin_user.plan = "pro"
+                admin_user.set_password(admin_password)
+                print(f"[INIT] Existing user promoted to admin: {admin_email}")
+            
+            superadmin_role = Role.query.filter_by(name="SUPERADMIN").first()
+            if superadmin_role and admin_user.id:
+                existing_role = UserRole.query.filter_by(user_id=admin_user.id, role_id=superadmin_role.id).first()
+                if not existing_role:
+                    user_role = UserRole(user_id=admin_user.id, role_id=superadmin_role.id)
+                    db.session.add(user_role)
+                    print(f"[INIT] Assigned SUPERADMIN role to {admin_email}")
+            
+            db.session.commit()
+        except Exception as e:
+            db.session.rollback()
+            print(f"[INIT] Skipping seed due to error: {e}")
 
     return app
 

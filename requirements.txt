@@ -28,7 +28,7 @@ et-xmlfile>=2.0.0
 
 # Validation
 email-validator>=2.0.0
-
+gi
 psycopg2-binary>=2.9.0
 gunicorn>=23.0.0
 
