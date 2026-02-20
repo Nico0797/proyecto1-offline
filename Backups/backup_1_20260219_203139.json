@@ -1,0 +1,5315 @@
+{
+  "version": "1.0",
+  "created_at": "2026-02-20T01:31:39.012900",
+  "business": {
+    "id": 1,
+    "user_id": 1,
+    "name": "Mi Negocio",
+    "currency": "COP",
+    "timezone": "America/Bogota",
+    "settings": {
+      "logo": "/assets/logo_1_655c7297.png"
+    },
+    "created_at": "2026-02-17T14:59:19.431786"
+  },
+  "products": [
+    {
+      "id": 1,
+      "business_id": 1,
+      "name": "yogurt griego 1L",
+      "sku": "YG-1000G",
+      "price": 20000.0,
+      "cost": 7000.0,
+      "unit": "lt",
+      "stock": 28.0,
+      "low_stock_threshold": 5.0,
+      "active": true,
+      "created_at": "2026-02-18T12:47:13.293958"
+    },
+    {
+      "id": 2,
+      "business_id": 1,
+      "name": "Yogurt griego 500g",
+      "sku": "YG-500G",
+      "price": 12000.0,
+      "cost": 4000.0,
+      "unit": "und",
+      "stock": 4.0,
+      "low_stock_threshold": 5.0,
+      "active": true,
+      "created_at": "2026-02-18T12:48:33.290901"
+    }
+  ],
+  "customers": [
+    {
+      "id": 1,
+      "business_id": 1,
+      "name": "nicolas vallejo",
+      "phone": "3192427864",
+      "address": "Cra 6ta # 6-20",
+      "notes": null,
+      "active": true,
+      "created_at": "2026-02-18T05:10:50.760044"
+    },
+    {
+      "id": 2,
+      "business_id": 1,
+      "name": "Cliente Prueba",
+      "phone": "3001234567",
+      "address": "Calle 123",
+      "notes": null,
+      "active": true,
+      "created_at": "2026-02-18T21:39:36.049102"
+    }
+  ],
+  "sales": [
+    {
+      "id": 839,
+      "business_id": 1,
+      "customer_id": 1,
+      "sale_date": "2026-02-20",
+      "items": [
+        {
+          "product_id": 1,
+          "name": "yogurt griego 1L",
+          "qty": 1,
+          "unit_price": 20000,
+          "total": 20000
+        }
+      ],
+      "subtotal": 20000.0,
+      "discount": 0.0,
+      "total": 20000.0,
+      "balance": 0.0,
+      "payment_method": "cash",
+      "paid": true,
+      "note": null,
+      "created_at": "2026-02-20T00:47:59.304967"
+    },
+    {
+      "id": 840,
+      "business_id": 1,
+      "customer_id": 1,
+      "sale_date": "2026-02-20",
+      "items": [
+        {
+          "product_id": 2,
+          "name": "Yogurt griego 500g",
+          "qty": 4,
+          "unit_price": 12000,
+          "total": 48000
+        },
+        {
+          "product_id": 1,
+          "name": "yogurt griego 1L",
+          "qty": 1,
+          "unit_price": 20000,
+          "total": 20000
+        }
+      ],
+      "subtotal": 68000.0,
+      "discount": 0.0,
+      "total": 68000.0,
+      "balance": 0.0,
+      "payment_method": "cash",
+      "paid": true,
+      "note": null,
+      "created_at": "2026-02-20T00:48:27.892248"
+    },
+    {
+      "id": 661,
+      "business_id": 1,
+      "customer_id": 1,
+      "sale_date": "2025-12-20",
+      "items": [
+        {
+          "product_id": 2,
+          "name": "Yogurt griego 500g",
+          "quantity": 3,
+          "price": 12000.0,
+          "subtotal": 36000.0
+        },
+        {
+          "product_id": 1,
+          "name": "yogurt griego 1L",
+          "quantity": 3,
+          "price": 20000.0,
+          "subtotal": 60000.0
+        }
+      ],
+      "subtotal": 96000.0,
+      "discount": 0.0,
+      "total": 96000.0,
+      "balance": 0.0,
+      "payment_method": "transfer",
+      "paid": true,
+      "note": null,
+      "created_at": "2026-02-19T02:05:27.146390"
+    },
+    {
+      "id": 662,
+      "business_id": 1,
+      "customer_id": 1,
+      "sale_date": "2025-12-21",
+      "items": [
+        {
+          "product_id": 2,
+          "name": "Yogurt griego 500g",
+          "quantity": 3,
+          "price": 12000.0,
+          "subtotal": 36000.0
+        }
+      ],
+      "subtotal": 36000.0,
+      "discount": 0.0,
+      "total": 36000.0,
+      "balance": 36000.0,
+      "payment_method": "card",
+      "paid": false,
+      "note": null,
+      "created_at": "2026-02-19T02:05:27.148628"
+    },
+    {
+      "id": 663,
+      "business_id": 1,
+      "customer_id": 1,
+      "sale_date": "2025-12-21",
+      "items": [
+        {
+          "product_id": 2,
+          "name": "Yogurt griego 500g",
+          "quantity": 1,
+          "price": 12000.0,
+          "subtotal": 12000.0
+        }
+      ],
+      "subtotal": 12000.0,
+      "discount": 0.0,
+      "total": 12000.0,
+      "balance": 0.0,
+      "payment_method": "cash",
+      "paid": true,
+      "note": null,
+      "created_at": "2026-02-19T02:05:27.152431"
+    },
+    {
+      "id": 664,
+      "business_id": 1,
+      "customer_id": 1,
+      "sale_date": "2025-12-22",
+      "items": [
+        {
+          "product_id": 2,
+          "name": "Yogurt griego 500g",
+          "quantity": 1,
+          "price": 12000.0,
+          "subtotal": 12000.0
+        }
+      ],
+      "subtotal": 12000.0,
+      "discount": 0.0,
+      "total": 12000.0,
+      "balance": 0.0,
+      "payment_method": "cash",
+      "paid": true,
+      "note": null,
+      "created_at": "2026-02-19T02:05:27.153607"
+    },
+    {
+      "id": 665,
+      "business_id": 1,
+      "customer_id": 1,
+      "sale_date": "2025-12-22",
+      "items": [
+        {
+          "product_id": 2,
+          "name": "Yogurt griego 500g",
+          "quantity": 3,
+          "price": 12000.0,
+          "subtotal": 36000.0
+        }
+      ],
+      "subtotal": 36000.0,
+      "discount": 3600.0,
+      "total": 32400.0,
+      "balance": 0.0,
+      "payment_method": "cash",
+      "paid": true,
+      "note": null,
+      "created_at": "2026-02-19T02:05:27.154650"
+    },
+    {
+      "id": 666,
+      "business_id": 1,
+      "customer_id": 1,
+      "sale_date": "2025-12-23",
+      "items": [
+        {
+          "product_id": 1,
+          "name": "yogurt griego 1L",
+          "quantity": 2,
+          "price": 20000.0,
+          "subtotal": 40000.0
+        },
+        {
+          "product_id": 1,
+          "name": "yogurt griego 1L",
+          "quantity": 2,
+          "price": 20000.0,
+          "subtotal": 40000.0
+        }
+      ],
+      "subtotal": 80000.0,
+      "discount": 0.0,
+      "total": 80000.0,
+      "balance": 0.0,
+      "payment_method": "card",
+      "paid": true,
+      "note": null,
+      "created_at": "2026-02-19T02:05:27.155664"
+    },
+    {
+      "id": 667,
+      "business_id": 1,
+      "customer_id": 1,
+      "sale_date": "2025-12-23",
+      "items": [
+        {
+          "product_id": 1,
+          "name": "yogurt griego 1L",
+          "quantity": 2,
+          "price": 20000.0,
+          "subtotal": 40000.0
+        },
+        {
+          "product_id": 2,
+          "name": "Yogurt griego 500g",
+          "quantity": 3,
+          "price": 12000.0,
+          "subtotal": 36000.0
+        },
+        {
+          "product_id": 1,
+          "name": "yogurt griego 1L",
+          "quantity": 1,
+          "price": 20000.0,
+          "subtotal": 20000.0
+        }
+      ],
+      "subtotal": 96000.0,
+      "discount": 9600.0,
+      "total": 86400.0,
+      "balance": 0.0,
+      "payment_method": "cash",
+      "paid": true,
+      "note": null,
+      "created_at": "2026-02-19T02:05:27.156678"
+    },
+    {
+      "id": 668,
+      "business_id": 1,
+      "customer_id": 1,
+      "sale_date": "2025-12-23",
+      "items": [
+        {
+          "product_id": 2,
+          "name": "Yogurt griego 500g",
+          "quantity": 3,
+          "price": 12000.0,
+          "subtotal": 36000.0
+        }
+      ],
+      "subtotal": 36000.0,
+      "discount": 0.0,
+      "total": 36000.0,
+      "balance": 0.0,
+      "payment_method": "transfer",
+      "paid": true,
+      "note": null,
+      "created_at": "2026-02-19T02:05:27.157601"
+    },
+    {
+      "id": 669,
+      "business_id": 1,
+      "customer_id": 1,
+      "sale_date": "2025-12-23",
+      "items": [
+        {
+          "product_id": 2,
+          "name": "Yogurt griego 500g",
+          "quantity": 3,
+          "price": 12000.0,
+          "subtotal": 36000.0
+        }
+      ],
+      "subtotal": 36000.0,
+      "discount": 0.0,
+      "total": 36000.0,
+      "balance": 36000.0,
+      "payment_method": "cash",
+      "paid": false,
+      "note": null,
+      "created_at": "2026-02-19T02:05:27.158484"
+    },
+    {
+      "id": 670,
+      "business_id": 1,
+      "customer_id": 1,
+      "sale_date": "2025-12-24",
+      "items": [
+        {
+          "product_id": 2,
+          "name": "Yogurt griego 500g",
+          "quantity": 2,
+          "price": 12000.0,
+          "subtotal": 24000.0
+        },
+        {
+          "product_id": 1,
+          "name": "yogurt griego 1L",
+          "quantity": 1,
+          "price": 20000.0,
+          "subtotal": 20000.0
+        }
+      ],
+      "subtotal": 44000.0,
+      "discount": 0.0,
+      "total": 44000.0,
+      "balance": 0.0,
+      "payment_method": "transfer",
+      "paid": true,
+      "note": null,
+      "created_at": "2026-02-19T02:05:27.160231"
+    },
+    {
+      "id": 671,
+      "business_id": 1,
+      "customer_id": 1,
+      "sale_date": "2025-12-25",
+      "items": [
+        {
+          "product_id": 1,
+          "name": "yogurt griego 1L",
+          "quantity": 2,
+          "price": 20000.0,
+          "subtotal": 40000.0
+        },
+        {
+          "product_id": 2,
+          "name": "Yogurt griego 500g",
+          "quantity": 1,
+          "price": 12000.0,
+          "subtotal": 12000.0
+        }
+      ],
+      "subtotal": 52000.0,
+      "discount": 5200.0,
+      "total": 46800.0,
+      "balance": 46800.0,
+      "payment_method": "card",
+      "paid": false,
+      "note": null,
+      "created_at": "2026-02-19T02:05:27.161152"
+    },
+    {
+      "id": 672,
+      "business_id": 1,
+      "customer_id": 1,
+      "sale_date": "2025-12-25",
+      "items": [
+        {
+          "product_id": 2,
+          "name": "Yogurt griego 500g",
+          "quantity": 1,
+          "price": 12000.0,
+          "subtotal": 12000.0
+        },
+        {
+          "product_id": 2,
+          "name": "Yogurt griego 500g",
+          "quantity": 2,
+          "price": 12000.0,
+          "subtotal": 24000.0
+        }
+      ],
+      "subtotal": 36000.0,
+      "discount": 3600.0,
+      "total": 32400.0,
+      "balance": 0.0,
+      "payment_method": "cash",
+      "paid": true,
+      "note": null,
+      "created_at": "2026-02-19T02:05:27.162966"
+    },
+    {
+      "id": 673,
+      "business_id": 1,
+      "customer_id": 1,
+      "sale_date": "2025-12-25",
+      "items": [
+        {
+          "product_id": 2,
+          "name": "Yogurt griego 500g",
+          "quantity": 2,
+          "price": 12000.0,
+          "subtotal": 24000.0
+        },
+        {
+          "product_id": 2,
+          "name": "Yogurt griego 500g",
+          "quantity": 3,
+          "price": 12000.0,
+          "subtotal": 36000.0
+        }
+      ],
+      "subtotal": 60000.0,
+      "discount": 0.0,
+      "total": 60000.0,
+      "balance": 0.0,
+      "payment_method": "transfer",
+      "paid": true,
+      "note": null,
+      "created_at": "2026-02-19T02:05:27.163894"
+    },
+    {
+      "id": 674,
+      "business_id": 1,
+      "customer_id": 1,
+      "sale_date": "2025-12-25",
+      "items": [
+        {
+          "product_id": 1,
+          "name": "yogurt griego 1L",
+          "quantity": 3,
+          "price": 20000.0,
+          "subtotal": 60000.0
+        },
+        {
+          "product_id": 2,
+          "name": "Yogurt griego 500g",
+          "quantity": 1,
+          "price": 12000.0,
+          "subtotal": 12000.0
+        }
+      ],
+      "subtotal": 72000.0,
+      "discount": 7200.0,
+      "total": 64800.0,
+      "balance": 0.0,
+      "payment_method": "cash",
+      "paid": true,
+      "note": null,
+      "created_at": "2026-02-19T02:05:27.164762"
+    },
+    {
+      "id": 675,
+      "business_id": 1,
+      "customer_id": 1,
+      "sale_date": "2025-12-26",
+      "items": [
+        {
+          "product_id": 1,
+          "name": "yogurt griego 1L",
+          "quantity": 3,
+          "price": 20000.0,
+          "subtotal": 60000.0
+        }
+      ],
+      "subtotal": 60000.0,
+      "discount": 0.0,
+      "total": 60000.0,
+      "balance": 0.0,
+      "payment_method": "card",
+      "paid": true,
+      "note": null,
+      "created_at": "2026-02-19T02:05:27.165636"
+    },
+    {
+      "id": 676,
+      "business_id": 1,
+      "customer_id": 1,
+      "sale_date": "2025-12-26",
+      "items": [
+        {
+          "product_id": 2,
+          "name": "Yogurt griego 500g",
+          "quantity": 1,
+          "price": 12000.0,
+          "subtotal": 12000.0
+        }
+      ],
+      "subtotal": 12000.0,
+      "discount": 1200.0,
+      "total": 10800.0,
+      "balance": 0.0,
+      "payment_method": "cash",
+      "paid": true,
+      "note": null,
+      "created_at": "2026-02-19T02:05:27.166484"
+    },
+    {
+      "id": 677,
+      "business_id": 1,
+      "customer_id": 1,
+      "sale_date": "2025-12-26",
+      "items": [
+        {
+          "product_id": 2,
+          "name": "Yogurt griego 500g",
+          "quantity": 3,
+          "price": 12000.0,
+          "subtotal": 36000.0
+        },
+        {
+          "product_id": 2,
+          "name": "Yogurt griego 500g",
+          "quantity": 3,
+          "price": 12000.0,
+          "subtotal": 36000.0
+        },
+        {
+          "product_id": 2,
+          "name": "Yogurt griego 500g",
+          "quantity": 2,
+          "price": 12000.0,
+          "subtotal": 24000.0
+        }
+      ],
+      "subtotal": 96000.0,
+      "discount": 0.0,
+      "total": 96000.0,
+      "balance": 0.0,
+      "payment_method": "cash",
+      "paid": true,
+      "note": null,
+      "created_at": "2026-02-19T02:05:27.167317"
+    },
+    {
+      "id": 678,
+      "business_id": 1,
+      "customer_id": 1,
+      "sale_date": "2025-12-26",
+      "items": [
+        {
+          "product_id": 2,
+          "name": "Yogurt griego 500g",
+          "quantity": 1,
+          "price": 12000.0,
+          "subtotal": 12000.0
+        },
+        {
+          "product_id": 2,
+          "name": "Yogurt griego 500g",
+          "quantity": 3,
+          "price": 12000.0,
+          "subtotal": 36000.0
+        },
+        {
+          "product_id": 2,
+          "name": "Yogurt griego 500g",
+          "quantity": 3,
+          "price": 12000.0,
+          "subtotal": 36000.0
+        }
+      ],
+      "subtotal": 84000.0,
+      "discount": 8400.0,
+      "total": 75600.0,
+      "balance": 0.0,
+      "payment_method": "cash",
+      "paid": true,
+      "note": null,
+      "created_at": "2026-02-19T02:05:27.168204"
+    },
+    {
+      "id": 679,
+      "business_id": 1,
+      "customer_id": 1,
+      "sale_date": "2025-12-26",
+      "items": [
+        {
+          "product_id": 1,
+          "name": "yogurt griego 1L",
+          "quantity": 3,
+          "price": 20000.0,
+          "subtotal": 60000.0
+        }
+      ],
+      "subtotal": 60000.0,
+      "discount": 0.0,
+      "total": 60000.0,
+      "balance": 0.0,
+      "payment_method": "card",
+      "paid": true,
+      "note": null,
+      "created_at": "2026-02-19T02:05:27.169064"
+    },
+    {
+      "id": 680,
+      "business_id": 1,
+      "customer_id": 1,
+      "sale_date": "2025-12-27",
+      "items": [
+        {
+          "product_id": 2,
+          "name": "Yogurt griego 500g",
+          "quantity": 3,
+          "price": 12000.0,
+          "subtotal": 36000.0
+        },
+        {
+          "product_id": 1,
+          "name": "yogurt griego 1L",
+          "quantity": 1,
+          "price": 20000.0,
+          "subtotal": 20000.0
+        },
+        {
+          "product_id": 1,
+          "name": "yogurt griego 1L",
+          "quantity": 3,
+          "price": 20000.0,
+          "subtotal": 60000.0
+        }
+      ],
+      "subtotal": 116000.0,
+      "discount": 0.0,
+      "total": 116000.0,
+      "balance": 0.0,
+      "payment_method": "transfer",
+      "paid": true,
+      "note": null,
+      "created_at": "2026-02-19T02:05:27.169913"
+    },
+    {
+      "id": 681,
+      "business_id": 1,
+      "customer_id": 1,
+      "sale_date": "2025-12-27",
+      "items": [
+        {
+          "product_id": 2,
+          "name": "Yogurt griego 500g",
+          "quantity": 3,
+          "price": 12000.0,
+          "subtotal": 36000.0
+        },
+        {
+          "product_id": 2,
+          "name": "Yogurt griego 500g",
+          "quantity": 2,
+          "price": 12000.0,
+          "subtotal": 24000.0
+        },
+        {
+          "product_id": 2,
+          "name": "Yogurt griego 500g",
+          "quantity": 2,
+          "price": 12000.0,
+          "subtotal": 24000.0
+        }
+      ],
+      "subtotal": 84000.0,
+      "discount": 0.0,
+      "total": 84000.0,
+      "balance": 84000.0,
+      "payment_method": "transfer",
+      "paid": false,
+      "note": null,
+      "created_at": "2026-02-19T02:05:27.170775"
+    },
+    {
+      "id": 682,
+      "business_id": 1,
+      "customer_id": 1,
+      "sale_date": "2025-12-28",
+      "items": [
+        {
+          "product_id": 2,
+          "name": "Yogurt griego 500g",
+          "quantity": 2,
+          "price": 12000.0,
+          "subtotal": 24000.0
+        },
+        {
+          "product_id": 2,
+          "name": "Yogurt griego 500g",
+          "quantity": 2,
+          "price": 12000.0,
+          "subtotal": 24000.0
+        },
+        {
+          "product_id": 1,
+          "name": "yogurt griego 1L",
+          "quantity": 1,
+          "price": 20000.0,
+          "subtotal": 20000.0
+        }
+      ],
+      "subtotal": 68000.0,
+      "discount": 0.0,
+      "total": 68000.0,
+      "balance": 0.0,
+      "payment_method": "transfer",
+      "paid": true,
+      "note": null,
+      "created_at": "2026-02-19T02:05:27.172393"
+    },
+    {
+      "id": 683,
+      "business_id": 1,
+      "customer_id": 1,
+      "sale_date": "2025-12-28",
+      "items": [
+        {
+          "product_id": 2,
+          "name": "Yogurt griego 500g",
+          "quantity": 1,
+          "price": 12000.0,
+          "subtotal": 12000.0
+        }
+      ],
+      "subtotal": 12000.0,
+      "discount": 0.0,
+      "total": 12000.0,
+      "balance": 0.0,
+      "payment_method": "transfer",
+      "paid": true,
+      "note": null,
+      "created_at": "2026-02-19T02:05:27.173293"
+    },
+    {
+      "id": 684,
+      "business_id": 1,
+      "customer_id": 1,
+      "sale_date": "2025-12-28",
+      "items": [
+        {
+          "product_id": 1,
+          "name": "yogurt griego 1L",
+          "quantity": 2,
+          "price": 20000.0,
+          "subtotal": 40000.0
+        },
+        {
+          "product_id": 1,
+          "name": "yogurt griego 1L",
+          "quantity": 2,
+          "price": 20000.0,
+          "subtotal": 40000.0
+        }
+      ],
+      "subtotal": 80000.0,
+      "discount": 0.0,
+      "total": 80000.0,
+      "balance": 0.0,
+      "payment_method": "cash",
+      "paid": true,
+      "note": null,
+      "created_at": "2026-02-19T02:05:27.174174"
+    },
+    {
+      "id": 685,
+      "business_id": 1,
+      "customer_id": 1,
+      "sale_date": "2025-12-28",
+      "items": [
+        {
+          "product_id": 2,
+          "name": "Yogurt griego 500g",
+          "quantity": 2,
+          "price": 12000.0,
+          "subtotal": 24000.0
+        },
+        {
+          "product_id": 2,
+          "name": "Yogurt griego 500g",
+          "quantity": 2,
+          "price": 12000.0,
+          "subtotal": 24000.0
+        },
+        {
+          "product_id": 2,
+          "name": "Yogurt griego 500g",
+          "quantity": 1,
+          "price": 12000.0,
+          "subtotal": 12000.0
+        }
+      ],
+      "subtotal": 60000.0,
+      "discount": 0.0,
+      "total": 60000.0,
+      "balance": 0.0,
+      "payment_method": "cash",
+      "paid": true,
+      "note": null,
+      "created_at": "2026-02-19T02:05:27.175110"
+    },
+    {
+      "id": 686,
+      "business_id": 1,
+      "customer_id": 1,
+      "sale_date": "2025-12-28",
+      "items": [
+        {
+          "product_id": 1,
+          "name": "yogurt griego 1L",
+          "quantity": 3,
+          "price": 20000.0,
+          "subtotal": 60000.0
+        },
+        {
+          "product_id": 2,
+          "name": "Yogurt griego 500g",
+          "quantity": 1,
+          "price": 12000.0,
+          "subtotal": 12000.0
+        }
+      ],
+      "subtotal": 72000.0,
+      "discount": 7200.0,
+      "total": 64800.0,
+      "balance": 64800.0,
+      "payment_method": "transfer",
+      "paid": false,
+      "note": null,
+      "created_at": "2026-02-19T02:05:27.176030"
+    },
+    {
+      "id": 687,
+      "business_id": 1,
+      "customer_id": 1,
+      "sale_date": "2025-12-29",
+      "items": [
+        {
+          "product_id": 2,
+          "name": "Yogurt griego 500g",
+          "quantity": 3,
+          "price": 12000.0,
+          "subtotal": 36000.0
+        }
+      ],
+      "subtotal": 36000.0,
+      "discount": 0.0,
+      "total": 36000.0,
+      "balance": 0.0,
+      "payment_method": "card",
+      "paid": true,
+      "note": null,
+      "created_at": "2026-02-19T02:05:27.177767"
+    },
+    {
+      "id": 688,
+      "business_id": 1,
+      "customer_id": 1,
+      "sale_date": "2025-12-30",
+      "items": [
+        {
+          "product_id": 2,
+          "name": "Yogurt griego 500g",
+          "quantity": 2,
+          "price": 12000.0,
+          "subtotal": 24000.0
+        },
+        {
+          "product_id": 1,
+          "name": "yogurt griego 1L",
+          "quantity": 3,
+          "price": 20000.0,
+          "subtotal": 60000.0
+        },
+        {
+          "product_id": 1,
+          "name": "yogurt griego 1L",
+          "quantity": 3,
+          "price": 20000.0,
+          "subtotal": 60000.0
+        }
+      ],
+      "subtotal": 144000.0,
+      "discount": 14400.0,
+      "total": 129600.0,
+      "balance": 0.0,
+      "payment_method": "card",
+      "paid": true,
+      "note": null,
+      "created_at": "2026-02-19T02:05:27.178764"
+    },
+    {
+      "id": 689,
+      "business_id": 1,
+      "customer_id": 1,
+      "sale_date": "2025-12-30",
+      "items": [
+        {
+          "product_id": 2,
+          "name": "Yogurt griego 500g",
+          "quantity": 2,
+          "price": 12000.0,
+          "subtotal": 24000.0
+        }
+      ],
+      "subtotal": 24000.0,
+      "discount": 0.0,
+      "total": 24000.0,
+      "balance": 0.0,
+      "payment_method": "cash",
+      "paid": true,
+      "note": null,
+      "created_at": "2026-02-19T02:05:27.179751"
+    },
+    {
+      "id": 690,
+      "business_id": 1,
+      "customer_id": 1,
+      "sale_date": "2025-12-30",
+      "items": [
+        {
+          "product_id": 2,
+          "name": "Yogurt griego 500g",
+          "quantity": 3,
+          "price": 12000.0,
+          "subtotal": 36000.0
+        }
+      ],
+      "subtotal": 36000.0,
+      "discount": 3600.0,
+      "total": 32400.0,
+      "balance": 0.0,
+      "payment_method": "card",
+      "paid": true,
+      "note": null,
+      "created_at": "2026-02-19T02:05:27.180691"
+    },
+    {
+      "id": 691,
+      "business_id": 1,
+      "customer_id": 1,
+      "sale_date": "2025-12-30",
+      "items": [
+        {
+          "product_id": 2,
+          "name": "Yogurt griego 500g",
+          "quantity": 1,
+          "price": 12000.0,
+          "subtotal": 12000.0
+        },
+        {
+          "product_id": 1,
+          "name": "yogurt griego 1L",
+          "quantity": 1,
+          "price": 20000.0,
+          "subtotal": 20000.0
+        },
+        {
+          "product_id": 2,
+          "name": "Yogurt griego 500g",
+          "quantity": 1,
+          "price": 12000.0,
+          "subtotal": 12000.0
+        }
+      ],
+      "subtotal": 44000.0,
+      "discount": 4400.0,
+      "total": 39600.0,
+      "balance": 0.0,
+      "payment_method": "transfer",
+      "paid": true,
+      "note": null,
+      "created_at": "2026-02-19T02:05:27.181620"
+    },
+    {
+      "id": 692,
+      "business_id": 1,
+      "customer_id": 1,
+      "sale_date": "2025-12-31",
+      "items": [
+        {
+          "product_id": 2,
+          "name": "Yogurt griego 500g",
+          "quantity": 3,
+          "price": 12000.0,
+          "subtotal": 36000.0
+        }
+      ],
+      "subtotal": 36000.0,
+      "discount": 0.0,
+      "total": 36000.0,
+      "balance": 0.0,
+      "payment_method": "transfer",
+      "paid": true,
+      "note": null,
+      "created_at": "2026-02-19T02:05:27.182563"
+    },
+    {
+      "id": 693,
+      "business_id": 1,
+      "customer_id": 1,
+      "sale_date": "2025-12-31",
+      "items": [
+        {
+          "product_id": 2,
+          "name": "Yogurt griego 500g",
+          "quantity": 1,
+          "price": 12000.0,
+          "subtotal": 12000.0
+        },
+        {
+          "product_id": 1,
+          "name": "yogurt griego 1L",
+          "quantity": 3,
+          "price": 20000.0,
+          "subtotal": 60000.0
+        },
+        {
+          "product_id": 1,
+          "name": "yogurt griego 1L",
+          "quantity": 1,
+          "price": 20000.0,
+          "subtotal": 20000.0
+        }
+      ],
+      "subtotal": 92000.0,
+      "discount": 9200.0,
+      "total": 82800.0,
+      "balance": 0.0,
+      "payment_method": "transfer",
+      "paid": true,
+      "note": null,
+      "created_at": "2026-02-19T02:05:27.183509"
+    },
+    {
+      "id": 694,
+      "business_id": 1,
+      "customer_id": 1,
+      "sale_date": "2026-01-01",
+      "items": [
+        {
+          "product_id": 2,
+          "name": "Yogurt griego 500g",
+          "quantity": 2,
+          "price": 12000.0,
+          "subtotal": 24000.0
+        }
+      ],
+      "subtotal": 24000.0,
+      "discount": 2400.0,
+      "total": 21600.0,
+      "balance": 0.0,
+      "payment_method": "cash",
+      "paid": true,
+      "note": null,
+      "created_at": "2026-02-19T02:05:27.184580"
+    },
+    {
+      "id": 695,
+      "business_id": 1,
+      "customer_id": 1,
+      "sale_date": "2026-01-01",
+      "items": [
+        {
+          "product_id": 1,
+          "name": "yogurt griego 1L",
+          "quantity": 3,
+          "price": 20000.0,
+          "subtotal": 60000.0
+        },
+        {
+          "product_id": 1,
+          "name": "yogurt griego 1L",
+          "quantity": 1,
+          "price": 20000.0,
+          "subtotal": 20000.0
+        }
+      ],
+      "subtotal": 80000.0,
+      "discount": 0.0,
+      "total": 80000.0,
+      "balance": 0.0,
+      "payment_method": "card",
+      "paid": true,
+      "note": null,
+      "created_at": "2026-02-19T02:05:27.185523"
+    },
+    {
+      "id": 696,
+      "business_id": 1,
+      "customer_id": 1,
+      "sale_date": "2026-01-01",
+      "items": [
+        {
+          "product_id": 2,
+          "name": "Yogurt griego 500g",
+          "quantity": 1,
+          "price": 12000.0,
+          "subtotal": 12000.0
+        },
+        {
+          "product_id": 2,
+          "name": "Yogurt griego 500g",
+          "quantity": 3,
+          "price": 12000.0,
+          "subtotal": 36000.0
+        }
+      ],
+      "subtotal": 48000.0,
+      "discount": 0.0,
+      "total": 48000.0,
+      "balance": 48000.0,
+      "payment_method": "transfer",
+      "paid": false,
+      "note": null,
+      "created_at": "2026-02-19T02:05:27.186439"
+    },
+    {
+      "id": 697,
+      "business_id": 1,
+      "customer_id": 1,
+      "sale_date": "2026-01-02",
+      "items": [
+        {
+          "product_id": 2,
+          "name": "Yogurt griego 500g",
+          "quantity": 3,
+          "price": 12000.0,
+          "subtotal": 36000.0
+        },
+        {
+          "product_id": 2,
+          "name": "Yogurt griego 500g",
+          "quantity": 1,
+          "price": 12000.0,
+          "subtotal": 12000.0
+        }
+      ],
+      "subtotal": 48000.0,
+      "discount": 0.0,
+      "total": 48000.0,
+      "balance": 0.0,
+      "payment_method": "transfer",
+      "paid": true,
+      "note": null,
+      "created_at": "2026-02-19T02:05:27.188196"
+    },
+    {
+      "id": 698,
+      "business_id": 1,
+      "customer_id": 1,
+      "sale_date": "2026-01-02",
+      "items": [
+        {
+          "product_id": 2,
+          "name": "Yogurt griego 500g",
+          "quantity": 1,
+          "price": 12000.0,
+          "subtotal": 12000.0
+        },
+        {
+          "product_id": 1,
+          "name": "yogurt griego 1L",
+          "quantity": 1,
+          "price": 20000.0,
+          "subtotal": 20000.0
+        }
+      ],
+      "subtotal": 32000.0,
+      "discount": 0.0,
+      "total": 32000.0,
+      "balance": 0.0,
+      "payment_method": "transfer",
+      "paid": true,
+      "note": null,
+      "created_at": "2026-02-19T02:05:27.189090"
+    },
+    {
+      "id": 699,
+      "business_id": 1,
+      "customer_id": 1,
+      "sale_date": "2026-01-02",
+      "items": [
+        {
+          "product_id": 2,
+          "name": "Yogurt griego 500g",
+          "quantity": 1,
+          "price": 12000.0,
+          "subtotal": 12000.0
+        },
+        {
+          "product_id": 2,
+          "name": "Yogurt griego 500g",
+          "quantity": 3,
+          "price": 12000.0,
+          "subtotal": 36000.0
+        }
+      ],
+      "subtotal": 48000.0,
+      "discount": 0.0,
+      "total": 48000.0,
+      "balance": 0.0,
+      "payment_method": "card",
+      "paid": true,
+      "note": null,
+      "created_at": "2026-02-19T02:05:27.189986"
+    },
+    {
+      "id": 700,
+      "business_id": 1,
+      "customer_id": 1,
+      "sale_date": "2026-01-03",
+      "items": [
+        {
+          "product_id": 1,
+          "name": "yogurt griego 1L",
+          "quantity": 1,
+          "price": 20000.0,
+          "subtotal": 20000.0
+        },
+        {
+          "product_id": 2,
+          "name": "Yogurt griego 500g",
+          "quantity": 2,
+          "price": 12000.0,
+          "subtotal": 24000.0
+        },
+        {
+          "product_id": 2,
+          "name": "Yogurt griego 500g",
+          "quantity": 2,
+          "price": 12000.0,
+          "subtotal": 24000.0
+        }
+      ],
+      "subtotal": 68000.0,
+      "discount": 0.0,
+      "total": 68000.0,
+      "balance": 0.0,
+      "payment_method": "card",
+      "paid": true,
+      "note": null,
+      "created_at": "2026-02-19T02:05:27.190867"
+    },
+    {
+      "id": 701,
+      "business_id": 1,
+      "customer_id": 1,
+      "sale_date": "2026-01-03",
+      "items": [
+        {
+          "product_id": 1,
+          "name": "yogurt griego 1L",
+          "quantity": 3,
+          "price": 20000.0,
+          "subtotal": 60000.0
+        }
+      ],
+      "subtotal": 60000.0,
+      "discount": 6000.0,
+      "total": 54000.0,
+      "balance": 0.0,
+      "payment_method": "cash",
+      "paid": true,
+      "note": null,
+      "created_at": "2026-02-19T02:05:27.191743"
+    },
+    {
+      "id": 702,
+      "business_id": 1,
+      "customer_id": 1,
+      "sale_date": "2026-01-03",
+      "items": [
+        {
+          "product_id": 1,
+          "name": "yogurt griego 1L",
+          "quantity": 1,
+          "price": 20000.0,
+          "subtotal": 20000.0
+        },
+        {
+          "product_id": 2,
+          "name": "Yogurt griego 500g",
+          "quantity": 2,
+          "price": 12000.0,
+          "subtotal": 24000.0
+        }
+      ],
+      "subtotal": 44000.0,
+      "discount": 0.0,
+      "total": 44000.0,
+      "balance": 0.0,
+      "payment_method": "transfer",
+      "paid": true,
+      "note": null,
+      "created_at": "2026-02-19T02:05:27.192594"
+    },
+    {
+      "id": 703,
+      "business_id": 1,
+      "customer_id": 1,
+      "sale_date": "2026-01-03",
+      "items": [
+        {
+          "product_id": 1,
+          "name": "yogurt griego 1L",
+          "quantity": 1,
+          "price": 20000.0,
+          "subtotal": 20000.0
+        },
+        {
+          "product_id": 1,
+          "name": "yogurt griego 1L",
+          "quantity": 2,
+          "price": 20000.0,
+          "subtotal": 40000.0
+        },
+        {
+          "product_id": 1,
+          "name": "yogurt griego 1L",
+          "quantity": 1,
+          "price": 20000.0,
+          "subtotal": 20000.0
+        }
+      ],
+      "subtotal": 80000.0,
+      "discount": 0.0,
+      "total": 80000.0,
+      "balance": 0.0,
+      "payment_method": "transfer",
+      "paid": true,
+      "note": null,
+      "created_at": "2026-02-19T02:05:27.193452"
+    },
+    {
+      "id": 704,
+      "business_id": 1,
+      "customer_id": 1,
+      "sale_date": "2026-01-04",
+      "items": [
+        {
+          "product_id": 2,
+          "name": "Yogurt griego 500g",
+          "quantity": 1,
+          "price": 12000.0,
+          "subtotal": 12000.0
+        }
+      ],
+      "subtotal": 12000.0,
+      "discount": 1200.0,
+      "total": 10800.0,
+      "balance": 0.0,
+      "payment_method": "card",
+      "paid": true,
+      "note": null,
+      "created_at": "2026-02-19T02:05:27.194330"
+    },
+    {
+      "id": 705,
+      "business_id": 1,
+      "customer_id": 1,
+      "sale_date": "2026-01-04",
+      "items": [
+        {
+          "product_id": 2,
+          "name": "Yogurt griego 500g",
+          "quantity": 2,
+          "price": 12000.0,
+          "subtotal": 24000.0
+        }
+      ],
+      "subtotal": 24000.0,
+      "discount": 2400.0,
+      "total": 21600.0,
+      "balance": 0.0,
+      "payment_method": "transfer",
+      "paid": true,
+      "note": null,
+      "created_at": "2026-02-19T02:05:27.195270"
+    },
+    {
+      "id": 706,
+      "business_id": 1,
+      "customer_id": 1,
+      "sale_date": "2026-01-05",
+      "items": [
+        {
+          "product_id": 1,
+          "name": "yogurt griego 1L",
+          "quantity": 1,
+          "price": 20000.0,
+          "subtotal": 20000.0
+        }
+      ],
+      "subtotal": 20000.0,
+      "discount": 0.0,
+      "total": 20000.0,
+      "balance": 0.0,
+      "payment_method": "cash",
+      "paid": true,
+      "note": null,
+      "created_at": "2026-02-19T02:05:27.196150"
+    },
+    {
+      "id": 707,
+      "business_id": 1,
+      "customer_id": 1,
+      "sale_date": "2026-01-05",
+      "items": [
+        {
+          "product_id": 1,
+          "name": "yogurt griego 1L",
+          "quantity": 1,
+          "price": 20000.0,
+          "subtotal": 20000.0
+        },
+        {
+          "product_id": 1,
+          "name": "yogurt griego 1L",
+          "quantity": 3,
+          "price": 20000.0,
+          "subtotal": 60000.0
+        }
+      ],
+      "subtotal": 80000.0,
+      "discount": 8000.0,
+      "total": 72000.0,
+      "balance": 0.0,
+      "payment_method": "cash",
+      "paid": true,
+      "note": null,
+      "created_at": "2026-02-19T02:05:27.196989"
+    },
+    {
+      "id": 708,
+      "business_id": 1,
+      "customer_id": 1,
+      "sale_date": "2026-01-05",
+      "items": [
+        {
+          "product_id": 2,
+          "name": "Yogurt griego 500g",
+          "quantity": 2,
+          "price": 12000.0,
+          "subtotal": 24000.0
+        },
+        {
+          "product_id": 1,
+          "name": "yogurt griego 1L",
+          "quantity": 3,
+          "price": 20000.0,
+          "subtotal": 60000.0
+        },
+        {
+          "product_id": 1,
+          "name": "yogurt griego 1L",
+          "quantity": 2,
+          "price": 20000.0,
+          "subtotal": 40000.0
+        }
+      ],
+      "subtotal": 124000.0,
+      "discount": 0.0,
+      "total": 124000.0,
+      "balance": 0.0,
+      "payment_method": "transfer",
+      "paid": true,
+      "note": null,
+      "created_at": "2026-02-19T02:05:27.197822"
+    },
+    {
+      "id": 709,
+      "business_id": 1,
+      "customer_id": 1,
+      "sale_date": "2026-01-06",
+      "items": [
+        {
+          "product_id": 1,
+          "name": "yogurt griego 1L",
+          "quantity": 2,
+          "price": 20000.0,
+          "subtotal": 40000.0
+        },
+        {
+          "product_id": 2,
+          "name": "Yogurt griego 500g",
+          "quantity": 2,
+          "price": 12000.0,
+          "subtotal": 24000.0
+        },
+        {
+          "product_id": 1,
+          "name": "yogurt griego 1L",
+          "quantity": 3,
+          "price": 20000.0,
+          "subtotal": 60000.0
+        }
+      ],
+      "subtotal": 124000.0,
+      "discount": 0.0,
+      "total": 124000.0,
+      "balance": 0.0,
+      "payment_method": "card",
+      "paid": true,
+      "note": null,
+      "created_at": "2026-02-19T02:05:27.198664"
+    },
+    {
+      "id": 710,
+      "business_id": 1,
+      "customer_id": 1,
+      "sale_date": "2026-01-06",
+      "items": [
+        {
+          "product_id": 1,
+          "name": "yogurt griego 1L",
+          "quantity": 1,
+          "price": 20000.0,
+          "subtotal": 20000.0
+        }
+      ],
+      "subtotal": 20000.0,
+      "discount": 0.0,
+      "total": 20000.0,
+      "balance": 0.0,
+      "payment_method": "cash",
+      "paid": true,
+      "note": null,
+      "created_at": "2026-02-19T02:05:27.199499"
+    },
+    {
+      "id": 711,
+      "business_id": 1,
+      "customer_id": 1,
+      "sale_date": "2026-01-07",
+      "items": [
+        {
+          "product_id": 1,
+          "name": "yogurt griego 1L",
+          "quantity": 2,
+          "price": 20000.0,
+          "subtotal": 40000.0
+        },
+        {
+          "product_id": 1,
+          "name": "yogurt griego 1L",
+          "quantity": 1,
+          "price": 20000.0,
+          "subtotal": 20000.0
+        },
+        {
+          "product_id": 1,
+          "name": "yogurt griego 1L",
+          "quantity": 2,
+          "price": 20000.0,
+          "subtotal": 40000.0
+        }
+      ],
+      "subtotal": 100000.0,
+      "discount": 0.0,
+      "total": 100000.0,
+      "balance": 0.0,
+      "payment_method": "cash",
+      "paid": true,
+      "note": null,
+      "created_at": "2026-02-19T02:05:27.200330"
+    },
+    {
+      "id": 712,
+      "business_id": 1,
+      "customer_id": 1,
+      "sale_date": "2026-01-07",
+      "items": [
+        {
+          "product_id": 2,
+          "name": "Yogurt griego 500g",
+          "quantity": 3,
+          "price": 12000.0,
+          "subtotal": 36000.0
+        },
+        {
+          "product_id": 1,
+          "name": "yogurt griego 1L",
+          "quantity": 2,
+          "price": 20000.0,
+          "subtotal": 40000.0
+        }
+      ],
+      "subtotal": 76000.0,
+      "discount": 7600.0,
+      "total": 68400.0,
+      "balance": 0.0,
+      "payment_method": "cash",
+      "paid": true,
+      "note": null,
+      "created_at": "2026-02-19T02:05:27.201183"
+    },
+    {
+      "id": 713,
+      "business_id": 1,
+      "customer_id": 1,
+      "sale_date": "2026-01-07",
+      "items": [
+        {
+          "product_id": 1,
+          "name": "yogurt griego 1L",
+          "quantity": 1,
+          "price": 20000.0,
+          "subtotal": 20000.0
+        },
+        {
+          "product_id": 2,
+          "name": "Yogurt griego 500g",
+          "quantity": 2,
+          "price": 12000.0,
+          "subtotal": 24000.0
+        }
+      ],
+      "subtotal": 44000.0,
+      "discount": 0.0,
+      "total": 44000.0,
+      "balance": 0.0,
+      "payment_method": "transfer",
+      "paid": true,
+      "note": null,
+      "created_at": "2026-02-19T02:05:27.202010"
+    },
+    {
+      "id": 714,
+      "business_id": 1,
+      "customer_id": 1,
+      "sale_date": "2026-01-07",
+      "items": [
+        {
+          "product_id": 2,
+          "name": "Yogurt griego 500g",
+          "quantity": 3,
+          "price": 12000.0,
+          "subtotal": 36000.0
+        }
+      ],
+      "subtotal": 36000.0,
+      "discount": 0.0,
+      "total": 36000.0,
+      "balance": 0.0,
+      "payment_method": "transfer",
+      "paid": true,
+      "note": null,
+      "created_at": "2026-02-19T02:05:27.202926"
+    },
+    {
+      "id": 715,
+      "business_id": 1,
+      "customer_id": 1,
+      "sale_date": "2026-01-07",
+      "items": [
+        {
+          "product_id": 2,
+          "name": "Yogurt griego 500g",
+          "quantity": 2,
+          "price": 12000.0,
+          "subtotal": 24000.0
+        },
+        {
+          "product_id": 1,
+          "name": "yogurt griego 1L",
+          "quantity": 1,
+          "price": 20000.0,
+          "subtotal": 20000.0
+        }
+      ],
+      "subtotal": 44000.0,
+      "discount": 0.0,
+      "total": 44000.0,
+      "balance": 0.0,
+      "payment_method": "cash",
+      "paid": true,
+      "note": null,
+      "created_at": "2026-02-19T02:05:27.203796"
+    },
+    {
+      "id": 716,
+      "business_id": 1,
+      "customer_id": 1,
+      "sale_date": "2026-01-08",
+      "items": [
+        {
+          "product_id": 1,
+          "name": "yogurt griego 1L",
+          "quantity": 3,
+          "price": 20000.0,
+          "subtotal": 60000.0
+        },
+        {
+          "product_id": 2,
+          "name": "Yogurt griego 500g",
+          "quantity": 2,
+          "price": 12000.0,
+          "subtotal": 24000.0
+        }
+      ],
+      "subtotal": 84000.0,
+      "discount": 0.0,
+      "total": 84000.0,
+      "balance": 84000.0,
+      "payment_method": "card",
+      "paid": false,
+      "note": null,
+      "created_at": "2026-02-19T02:05:27.204660"
+    },
+    {
+      "id": 717,
+      "business_id": 1,
+      "customer_id": 1,
+      "sale_date": "2026-01-08",
+      "items": [
+        {
+          "product_id": 2,
+          "name": "Yogurt griego 500g",
+          "quantity": 3,
+          "price": 12000.0,
+          "subtotal": 36000.0
+        },
+        {
+          "product_id": 2,
+          "name": "Yogurt griego 500g",
+          "quantity": 2,
+          "price": 12000.0,
+          "subtotal": 24000.0
+        }
+      ],
+      "subtotal": 60000.0,
+      "discount": 0.0,
+      "total": 60000.0,
+      "balance": 0.0,
+      "payment_method": "transfer",
+      "paid": true,
+      "note": null,
+      "created_at": "2026-02-19T02:05:27.206211"
+    },
+    {
+      "id": 718,
+      "business_id": 1,
+      "customer_id": 1,
+      "sale_date": "2026-01-08",
+      "items": [
+        {
+          "product_id": 2,
+          "name": "Yogurt griego 500g",
+          "quantity": 2,
+          "price": 12000.0,
+          "subtotal": 24000.0
+        }
+      ],
+      "subtotal": 24000.0,
+      "discount": 0.0,
+      "total": 24000.0,
+      "balance": 0.0,
+      "payment_method": "cash",
+      "paid": true,
+      "note": null,
+      "created_at": "2026-02-19T02:05:27.207078"
+    },
+    {
+      "id": 719,
+      "business_id": 1,
+      "customer_id": 1,
+      "sale_date": "2026-01-09",
+      "items": [
+        {
+          "product_id": 1,
+          "name": "yogurt griego 1L",
+          "quantity": 3,
+          "price": 20000.0,
+          "subtotal": 60000.0
+        },
+        {
+          "product_id": 1,
+          "name": "yogurt griego 1L",
+          "quantity": 1,
+          "price": 20000.0,
+          "subtotal": 20000.0
+        }
+      ],
+      "subtotal": 80000.0,
+      "discount": 8000.0,
+      "total": 72000.0,
+      "balance": 0.0,
+      "payment_method": "card",
+      "paid": true,
+      "note": null,
+      "created_at": "2026-02-19T02:05:27.207959"
+    },
+    {
+      "id": 720,
+      "business_id": 1,
+      "customer_id": 1,
+      "sale_date": "2026-01-09",
+      "items": [
+        {
+          "product_id": 1,
+          "name": "yogurt griego 1L",
+          "quantity": 3,
+          "price": 20000.0,
+          "subtotal": 60000.0
+        }
+      ],
+      "subtotal": 60000.0,
+      "discount": 0.0,
+      "total": 60000.0,
+      "balance": 0.0,
+      "payment_method": "card",
+      "paid": true,
+      "note": null,
+      "created_at": "2026-02-19T02:05:27.208835"
+    },
+    {
+      "id": 721,
+      "business_id": 1,
+      "customer_id": 1,
+      "sale_date": "2026-01-10",
+      "items": [
+        {
+          "product_id": 2,
+          "name": "Yogurt griego 500g",
+          "quantity": 3,
+          "price": 12000.0,
+          "subtotal": 36000.0
+        }
+      ],
+      "subtotal": 36000.0,
+      "discount": 3600.0,
+      "total": 32400.0,
+      "balance": 0.0,
+      "payment_method": "transfer",
+      "paid": true,
+      "note": null,
+      "created_at": "2026-02-19T02:05:27.209677"
+    },
+    {
+      "id": 722,
+      "business_id": 1,
+      "customer_id": 1,
+      "sale_date": "2026-01-10",
+      "items": [
+        {
+          "product_id": 1,
+          "name": "yogurt griego 1L",
+          "quantity": 1,
+          "price": 20000.0,
+          "subtotal": 20000.0
+        }
+      ],
+      "subtotal": 20000.0,
+      "discount": 0.0,
+      "total": 20000.0,
+      "balance": 0.0,
+      "payment_method": "cash",
+      "paid": true,
+      "note": null,
+      "created_at": "2026-02-19T02:05:27.210510"
+    },
+    {
+      "id": 723,
+      "business_id": 1,
+      "customer_id": 1,
+      "sale_date": "2026-01-10",
+      "items": [
+        {
+          "product_id": 1,
+          "name": "yogurt griego 1L",
+          "quantity": 2,
+          "price": 20000.0,
+          "subtotal": 40000.0
+        },
+        {
+          "product_id": 1,
+          "name": "yogurt griego 1L",
+          "quantity": 1,
+          "price": 20000.0,
+          "subtotal": 20000.0
+        }
+      ],
+      "subtotal": 60000.0,
+      "discount": 0.0,
+      "total": 60000.0,
+      "balance": 60000.0,
+      "payment_method": "cash",
+      "paid": false,
+      "note": null,
+      "created_at": "2026-02-19T02:05:27.211336"
+    },
+    {
+      "id": 724,
+      "business_id": 1,
+      "customer_id": 1,
+      "sale_date": "2026-01-10",
+      "items": [
+        {
+          "product_id": 2,
+          "name": "Yogurt griego 500g",
+          "quantity": 1,
+          "price": 12000.0,
+          "subtotal": 12000.0
+        },
+        {
+          "product_id": 2,
+          "name": "Yogurt griego 500g",
+          "quantity": 1,
+          "price": 12000.0,
+          "subtotal": 12000.0
+        }
+      ],
+      "subtotal": 24000.0,
+      "discount": 0.0,
+      "total": 24000.0,
+      "balance": 0.0,
+      "payment_method": "card",
+      "paid": true,
+      "note": null,
+      "created_at": "2026-02-19T02:05:27.212937"
+    },
+    {
+      "id": 725,
+      "business_id": 1,
+      "customer_id": 1,
+      "sale_date": "2026-01-11",
+      "items": [
+        {
+          "product_id": 2,
+          "name": "Yogurt griego 500g",
+          "quantity": 1,
+          "price": 12000.0,
+          "subtotal": 12000.0
+        }
+      ],
+      "subtotal": 12000.0,
+      "discount": 0.0,
+      "total": 12000.0,
+      "balance": 12000.0,
+      "payment_method": "transfer",
+      "paid": false,
+      "note": null,
+      "created_at": "2026-02-19T02:05:27.213846"
+    },
+    {
+      "id": 726,
+      "business_id": 1,
+      "customer_id": 1,
+      "sale_date": "2026-01-11",
+      "items": [
+        {
+          "product_id": 1,
+          "name": "yogurt griego 1L",
+          "quantity": 1,
+          "price": 20000.0,
+          "subtotal": 20000.0
+        },
+        {
+          "product_id": 1,
+          "name": "yogurt griego 1L",
+          "quantity": 2,
+          "price": 20000.0,
+          "subtotal": 40000.0
+        },
+        {
+          "product_id": 1,
+          "name": "yogurt griego 1L",
+          "quantity": 3,
+          "price": 20000.0,
+          "subtotal": 60000.0
+        }
+      ],
+      "subtotal": 120000.0,
+      "discount": 0.0,
+      "total": 120000.0,
+      "balance": 0.0,
+      "payment_method": "card",
+      "paid": true,
+      "note": null,
+      "created_at": "2026-02-19T02:05:27.215459"
+    },
+    {
+      "id": 727,
+      "business_id": 1,
+      "customer_id": 1,
+      "sale_date": "2026-01-11",
+      "items": [
+        {
+          "product_id": 2,
+          "name": "Yogurt griego 500g",
+          "quantity": 1,
+          "price": 12000.0,
+          "subtotal": 12000.0
+        },
+        {
+          "product_id": 2,
+          "name": "Yogurt griego 500g",
+          "quantity": 1,
+          "price": 12000.0,
+          "subtotal": 12000.0
+        },
+        {
+          "product_id": 1,
+          "name": "yogurt griego 1L",
+          "quantity": 2,
+          "price": 20000.0,
+          "subtotal": 40000.0
+        }
+      ],
+      "subtotal": 64000.0,
+      "discount": 0.0,
+      "total": 64000.0,
+      "balance": 0.0,
+      "payment_method": "transfer",
+      "paid": true,
+      "note": null,
+      "created_at": "2026-02-19T02:05:27.216446"
+    },
+    {
+      "id": 728,
+      "business_id": 1,
+      "customer_id": 1,
+      "sale_date": "2026-01-11",
+      "items": [
+        {
+          "product_id": 2,
+          "name": "Yogurt griego 500g",
+          "quantity": 3,
+          "price": 12000.0,
+          "subtotal": 36000.0
+        },
+        {
+          "product_id": 2,
+          "name": "Yogurt griego 500g",
+          "quantity": 1,
+          "price": 12000.0,
+          "subtotal": 12000.0
+        }
+      ],
+      "subtotal": 48000.0,
+      "discount": 0.0,
+      "total": 48000.0,
+      "balance": 0.0,
+      "payment_method": "cash",
+      "paid": true,
+      "note": null,
+      "created_at": "2026-02-19T02:05:27.217418"
+    },
+    {
+      "id": 729,
+      "business_id": 1,
+      "customer_id": 1,
+      "sale_date": "2026-01-12",
+      "items": [
+        {
+          "product_id": 2,
+          "name": "Yogurt griego 500g",
+          "quantity": 1,
+          "price": 12000.0,
+          "subtotal": 12000.0
+        },
+        {
+          "product_id": 1,
+          "name": "yogurt griego 1L",
+          "quantity": 3,
+          "price": 20000.0,
+          "subtotal": 60000.0
+        }
+      ],
+      "subtotal": 72000.0,
+      "discount": 0.0,
+      "total": 72000.0,
+      "balance": 0.0,
+      "payment_method": "card",
+      "paid": true,
+      "note": null,
+      "created_at": "2026-02-19T02:05:27.218378"
+    },
+    {
+      "id": 730,
+      "business_id": 1,
+      "customer_id": 1,
+      "sale_date": "2026-01-12",
+      "items": [
+        {
+          "product_id": 1,
+          "name": "yogurt griego 1L",
+          "quantity": 3,
+          "price": 20000.0,
+          "subtotal": 60000.0
+        }
+      ],
+      "subtotal": 60000.0,
+      "discount": 0.0,
+      "total": 60000.0,
+      "balance": 0.0,
+      "payment_method": "transfer",
+      "paid": true,
+      "note": null,
+      "created_at": "2026-02-19T02:05:27.219333"
+    },
+    {
+      "id": 731,
+      "business_id": 1,
+      "customer_id": 1,
+      "sale_date": "2026-01-12",
+      "items": [
+        {
+          "product_id": 1,
+          "name": "yogurt griego 1L",
+          "quantity": 1,
+          "price": 20000.0,
+          "subtotal": 20000.0
+        },
+        {
+          "product_id": 1,
+          "name": "yogurt griego 1L",
+          "quantity": 3,
+          "price": 20000.0,
+          "subtotal": 60000.0
+        },
+        {
+          "product_id": 1,
+          "name": "yogurt griego 1L",
+          "quantity": 2,
+          "price": 20000.0,
+          "subtotal": 40000.0
+        }
+      ],
+      "subtotal": 120000.0,
+      "discount": 0.0,
+      "total": 120000.0,
+      "balance": 0.0,
+      "payment_method": "transfer",
+      "paid": true,
+      "note": null,
+      "created_at": "2026-02-19T02:05:27.220324"
+    },
+    {
+      "id": 732,
+      "business_id": 1,
+      "customer_id": 1,
+      "sale_date": "2026-01-13",
+      "items": [
+        {
+          "product_id": 1,
+          "name": "yogurt griego 1L",
+          "quantity": 1,
+          "price": 20000.0,
+          "subtotal": 20000.0
+        },
+        {
+          "product_id": 2,
+          "name": "Yogurt griego 500g",
+          "quantity": 2,
+          "price": 12000.0,
+          "subtotal": 24000.0
+        }
+      ],
+      "subtotal": 44000.0,
+      "discount": 0.0,
+      "total": 44000.0,
+      "balance": 0.0,
+      "payment_method": "cash",
+      "paid": true,
+      "note": null,
+      "created_at": "2026-02-19T02:05:27.221300"
+    },
+    {
+      "id": 733,
+      "business_id": 1,
+      "customer_id": 1,
+      "sale_date": "2026-01-13",
+      "items": [
+        {
+          "product_id": 1,
+          "name": "yogurt griego 1L",
+          "quantity": 3,
+          "price": 20000.0,
+          "subtotal": 60000.0
+        },
+        {
+          "product_id": 2,
+          "name": "Yogurt griego 500g",
+          "quantity": 3,
+          "price": 12000.0,
+          "subtotal": 36000.0
+        },
+        {
+          "product_id": 2,
+          "name": "Yogurt griego 500g",
+          "quantity": 1,
+          "price": 12000.0,
+          "subtotal": 12000.0
+        }
+      ],
+      "subtotal": 108000.0,
+      "discount": 10800.0,
+      "total": 97200.0,
+      "balance": 0.0,
+      "payment_method": "transfer",
+      "paid": true,
+      "note": null,
+      "created_at": "2026-02-19T02:05:27.222248"
+    },
+    {
+      "id": 734,
+      "business_id": 1,
+      "customer_id": 1,
+      "sale_date": "2026-01-13",
+      "items": [
+        {
+          "product_id": 1,
+          "name": "yogurt griego 1L",
+          "quantity": 1,
+          "price": 20000.0,
+          "subtotal": 20000.0
+        },
+        {
+          "product_id": 2,
+          "name": "Yogurt griego 500g",
+          "quantity": 3,
+          "price": 12000.0,
+          "subtotal": 36000.0
+        }
+      ],
+      "subtotal": 56000.0,
+      "discount": 5600.0,
+      "total": 50400.0,
+      "balance": 0.0,
+      "payment_method": "card",
+      "paid": true,
+      "note": null,
+      "created_at": "2026-02-19T02:05:27.223166"
+    },
+    {
+      "id": 735,
+      "business_id": 1,
+      "customer_id": 1,
+      "sale_date": "2026-01-13",
+      "items": [
+        {
+          "product_id": 2,
+          "name": "Yogurt griego 500g",
+          "quantity": 2,
+          "price": 12000.0,
+          "subtotal": 24000.0
+        },
+        {
+          "product_id": 1,
+          "name": "yogurt griego 1L",
+          "quantity": 2,
+          "price": 20000.0,
+          "subtotal": 40000.0
+        }
+      ],
+      "subtotal": 64000.0,
+      "discount": 0.0,
+      "total": 64000.0,
+      "balance": 0.0,
+      "payment_method": "card",
+      "paid": true,
+      "note": null,
+      "created_at": "2026-02-19T02:05:27.224074"
+    },
+    {
+      "id": 736,
+      "business_id": 1,
+      "customer_id": 1,
+      "sale_date": "2026-01-13",
+      "items": [
+        {
+          "product_id": 2,
+          "name": "Yogurt griego 500g",
+          "quantity": 2,
+          "price": 12000.0,
+          "subtotal": 24000.0
+        },
+        {
+          "product_id": 2,
+          "name": "Yogurt griego 500g",
+          "quantity": 1,
+          "price": 12000.0,
+          "subtotal": 12000.0
+        }
+      ],
+      "subtotal": 36000.0,
+      "discount": 0.0,
+      "total": 36000.0,
+      "balance": 0.0,
+      "payment_method": "transfer",
+      "paid": true,
+      "note": null,
+      "created_at": "2026-02-19T02:05:27.224961"
+    },
+    {
+      "id": 737,
+      "business_id": 1,
+      "customer_id": 1,
+      "sale_date": "2026-01-14",
+      "items": [
+        {
+          "product_id": 2,
+          "name": "Yogurt griego 500g",
+          "quantity": 2,
+          "price": 12000.0,
+          "subtotal": 24000.0
+        },
+        {
+          "product_id": 1,
+          "name": "yogurt griego 1L",
+          "quantity": 1,
+          "price": 20000.0,
+          "subtotal": 20000.0
+        }
+      ],
+      "subtotal": 44000.0,
+      "discount": 0.0,
+      "total": 44000.0,
+      "balance": 0.0,
+      "payment_method": "card",
+      "paid": true,
+      "note": null,
+      "created_at": "2026-02-19T02:05:27.225882"
+    },
+    {
+      "id": 738,
+      "business_id": 1,
+      "customer_id": 1,
+      "sale_date": "2026-01-15",
+      "items": [
+        {
+          "product_id": 2,
+          "name": "Yogurt griego 500g",
+          "quantity": 3,
+          "price": 12000.0,
+          "subtotal": 36000.0
+        }
+      ],
+      "subtotal": 36000.0,
+      "discount": 3600.0,
+      "total": 32400.0,
+      "balance": 0.0,
+      "payment_method": "cash",
+      "paid": true,
+      "note": null,
+      "created_at": "2026-02-19T02:05:27.226878"
+    },
+    {
+      "id": 739,
+      "business_id": 1,
+      "customer_id": 1,
+      "sale_date": "2026-01-15",
+      "items": [
+        {
+          "product_id": 2,
+          "name": "Yogurt griego 500g",
+          "quantity": 3,
+          "price": 12000.0,
+          "subtotal": 36000.0
+        }
+      ],
+      "subtotal": 36000.0,
+      "discount": 0.0,
+      "total": 36000.0,
+      "balance": 0.0,
+      "payment_method": "transfer",
+      "paid": true,
+      "note": null,
+      "created_at": "2026-02-19T02:05:27.227867"
+    },
+    {
+      "id": 740,
+      "business_id": 1,
+      "customer_id": 1,
+      "sale_date": "2026-01-15",
+      "items": [
+        {
+          "product_id": 2,
+          "name": "Yogurt griego 500g",
+          "quantity": 2,
+          "price": 12000.0,
+          "subtotal": 24000.0
+        }
+      ],
+      "subtotal": 24000.0,
+      "discount": 0.0,
+      "total": 24000.0,
+      "balance": 24000.0,
+      "payment_method": "cash",
+      "paid": false,
+      "note": null,
+      "created_at": "2026-02-19T02:05:27.228888"
+    },
+    {
+      "id": 741,
+      "business_id": 1,
+      "customer_id": 1,
+      "sale_date": "2026-01-15",
+      "items": [
+        {
+          "product_id": 1,
+          "name": "yogurt griego 1L",
+          "quantity": 2,
+          "price": 20000.0,
+          "subtotal": 40000.0
+        },
+        {
+          "product_id": 1,
+          "name": "yogurt griego 1L",
+          "quantity": 3,
+          "price": 20000.0,
+          "subtotal": 60000.0
+        }
+      ],
+      "subtotal": 100000.0,
+      "discount": 10000.0,
+      "total": 90000.0,
+      "balance": 0.0,
+      "payment_method": "cash",
+      "paid": true,
+      "note": null,
+      "created_at": "2026-02-19T02:05:27.230715"
+    },
+    {
+      "id": 742,
+      "business_id": 1,
+      "customer_id": 1,
+      "sale_date": "2026-01-16",
+      "items": [
+        {
+          "product_id": 2,
+          "name": "Yogurt griego 500g",
+          "quantity": 3,
+          "price": 12000.0,
+          "subtotal": 36000.0
+        },
+        {
+          "product_id": 1,
+          "name": "yogurt griego 1L",
+          "quantity": 3,
+          "price": 20000.0,
+          "subtotal": 60000.0
+        }
+      ],
+      "subtotal": 96000.0,
+      "discount": 0.0,
+      "total": 96000.0,
+      "balance": 0.0,
+      "payment_method": "transfer",
+      "paid": true,
+      "note": null,
+      "created_at": "2026-02-19T02:05:27.231728"
+    },
+    {
+      "id": 743,
+      "business_id": 1,
+      "customer_id": 1,
+      "sale_date": "2026-01-16",
+      "items": [
+        {
+          "product_id": 2,
+          "name": "Yogurt griego 500g",
+          "quantity": 1,
+          "price": 12000.0,
+          "subtotal": 12000.0
+        },
+        {
+          "product_id": 2,
+          "name": "Yogurt griego 500g",
+          "quantity": 2,
+          "price": 12000.0,
+          "subtotal": 24000.0
+        },
+        {
+          "product_id": 2,
+          "name": "Yogurt griego 500g",
+          "quantity": 2,
+          "price": 12000.0,
+          "subtotal": 24000.0
+        }
+      ],
+      "subtotal": 60000.0,
+      "discount": 6000.0,
+      "total": 54000.0,
+      "balance": 0.0,
+      "payment_method": "cash",
+      "paid": true,
+      "note": null,
+      "created_at": "2026-02-19T02:05:27.232732"
+    },
+    {
+      "id": 744,
+      "business_id": 1,
+      "customer_id": 1,
+      "sale_date": "2026-01-16",
+      "items": [
+        {
+          "product_id": 1,
+          "name": "yogurt griego 1L",
+          "quantity": 3,
+          "price": 20000.0,
+          "subtotal": 60000.0
+        }
+      ],
+      "subtotal": 60000.0,
+      "discount": 0.0,
+      "total": 60000.0,
+      "balance": 0.0,
+      "payment_method": "cash",
+      "paid": true,
+      "note": null,
+      "created_at": "2026-02-19T02:05:27.233736"
+    },
+    {
+      "id": 745,
+      "business_id": 1,
+      "customer_id": 1,
+      "sale_date": "2026-01-16",
+      "items": [
+        {
+          "product_id": 1,
+          "name": "yogurt griego 1L",
+          "quantity": 2,
+          "price": 20000.0,
+          "subtotal": 40000.0
+        }
+      ],
+      "subtotal": 40000.0,
+      "discount": 0.0,
+      "total": 40000.0,
+      "balance": 0.0,
+      "payment_method": "transfer",
+      "paid": true,
+      "note": null,
+      "created_at": "2026-02-19T02:05:27.234726"
+    },
+    {
+      "id": 746,
+      "business_id": 1,
+      "customer_id": 1,
+      "sale_date": "2026-01-17",
+      "items": [
+        {
+          "product_id": 2,
+          "name": "Yogurt griego 500g",
+          "quantity": 1,
+          "price": 12000.0,
+          "subtotal": 12000.0
+        },
+        {
+          "product_id": 2,
+          "name": "Yogurt griego 500g",
+          "quantity": 3,
+          "price": 12000.0,
+          "subtotal": 36000.0
+        },
+        {
+          "product_id": 2,
+          "name": "Yogurt griego 500g",
+          "quantity": 3,
+          "price": 12000.0,
+          "subtotal": 36000.0
+        }
+      ],
+      "subtotal": 84000.0,
+      "discount": 8400.0,
+      "total": 75600.0,
+      "balance": 0.0,
+      "payment_method": "cash",
+      "paid": true,
+      "note": null,
+      "created_at": "2026-02-19T02:05:27.235733"
+    },
+    {
+      "id": 747,
+      "business_id": 1,
+      "customer_id": 1,
+      "sale_date": "2026-01-17",
+      "items": [
+        {
+          "product_id": 2,
+          "name": "Yogurt griego 500g",
+          "quantity": 3,
+          "price": 12000.0,
+          "subtotal": 36000.0
+        }
+      ],
+      "subtotal": 36000.0,
+      "discount": 0.0,
+      "total": 36000.0,
+      "balance": 0.0,
+      "payment_method": "cash",
+      "paid": true,
+      "note": null,
+      "created_at": "2026-02-19T02:05:27.236748"
+    },
+    {
+      "id": 748,
+      "business_id": 1,
+      "customer_id": 1,
+      "sale_date": "2026-01-17",
+      "items": [
+        {
+          "product_id": 1,
+          "name": "yogurt griego 1L",
+          "quantity": 3,
+          "price": 20000.0,
+          "subtotal": 60000.0
+        }
+      ],
+      "subtotal": 60000.0,
+      "discount": 0.0,
+      "total": 60000.0,
+      "balance": 0.0,
+      "payment_method": "transfer",
+      "paid": true,
+      "note": null,
+      "created_at": "2026-02-19T02:05:27.237765"
+    },
+    {
+      "id": 749,
+      "business_id": 1,
+      "customer_id": 1,
+      "sale_date": "2026-01-17",
+      "items": [
+        {
+          "product_id": 2,
+          "name": "Yogurt griego 500g",
+          "quantity": 1,
+          "price": 12000.0,
+          "subtotal": 12000.0
+        },
+        {
+          "product_id": 2,
+          "name": "Yogurt griego 500g",
+          "quantity": 3,
+          "price": 12000.0,
+          "subtotal": 36000.0
+        },
+        {
+          "product_id": 1,
+          "name": "yogurt griego 1L",
+          "quantity": 1,
+          "price": 20000.0,
+          "subtotal": 20000.0
+        }
+      ],
+      "subtotal": 68000.0,
+      "discount": 0.0,
+      "total": 68000.0,
+      "balance": 0.0,
+      "payment_method": "transfer",
+      "paid": true,
+      "note": null,
+      "created_at": "2026-02-19T02:05:27.238793"
+    },
+    {
+      "id": 750,
+      "business_id": 1,
+      "customer_id": 1,
+      "sale_date": "2026-01-18",
+      "items": [
+        {
+          "product_id": 2,
+          "name": "Yogurt griego 500g",
+          "quantity": 3,
+          "price": 12000.0,
+          "subtotal": 36000.0
+        },
+        {
+          "product_id": 1,
+          "name": "yogurt griego 1L",
+          "quantity": 1,
+          "price": 20000.0,
+          "subtotal": 20000.0
+        }
+      ],
+      "subtotal": 56000.0,
+      "discount": 0.0,
+      "total": 56000.0,
+      "balance": 56000.0,
+      "payment_method": "transfer",
+      "paid": false,
+      "note": null,
+      "created_at": "2026-02-19T02:05:27.239871"
+    },
+    {
+      "id": 751,
+      "business_id": 1,
+      "customer_id": 1,
+      "sale_date": "2026-01-18",
+      "items": [
+        {
+          "product_id": 2,
+          "name": "Yogurt griego 500g",
+          "quantity": 1,
+          "price": 12000.0,
+          "subtotal": 12000.0
+        },
+        {
+          "product_id": 1,
+          "name": "yogurt griego 1L",
+          "quantity": 3,
+          "price": 20000.0,
+          "subtotal": 60000.0
+        },
+        {
+          "product_id": 2,
+          "name": "Yogurt griego 500g",
+          "quantity": 2,
+          "price": 12000.0,
+          "subtotal": 24000.0
+        }
+      ],
+      "subtotal": 96000.0,
+      "discount": 0.0,
+      "total": 96000.0,
+      "balance": 0.0,
+      "payment_method": "card",
+      "paid": true,
+      "note": null,
+      "created_at": "2026-02-19T02:05:27.241824"
+    },
+    {
+      "id": 752,
+      "business_id": 1,
+      "customer_id": 1,
+      "sale_date": "2026-01-18",
+      "items": [
+        {
+          "product_id": 1,
+          "name": "yogurt griego 1L",
+          "quantity": 1,
+          "price": 20000.0,
+          "subtotal": 20000.0
+        }
+      ],
+      "subtotal": 20000.0,
+      "discount": 2000.0,
+      "total": 18000.0,
+      "balance": 0.0,
+      "payment_method": "card",
+      "paid": true,
+      "note": null,
+      "created_at": "2026-02-19T02:05:27.242951"
+    },
+    {
+      "id": 753,
+      "business_id": 1,
+      "customer_id": 1,
+      "sale_date": "2026-01-18",
+      "items": [
+        {
+          "product_id": 1,
+          "name": "yogurt griego 1L",
+          "quantity": 2,
+          "price": 20000.0,
+          "subtotal": 40000.0
+        },
+        {
+          "product_id": 1,
+          "name": "yogurt griego 1L",
+          "quantity": 2,
+          "price": 20000.0,
+          "subtotal": 40000.0
+        }
+      ],
+      "subtotal": 80000.0,
+      "discount": 0.0,
+      "total": 80000.0,
+      "balance": 0.0,
+      "payment_method": "cash",
+      "paid": true,
+      "note": null,
+      "created_at": "2026-02-19T02:05:27.244073"
+    },
+    {
+      "id": 754,
+      "business_id": 1,
+      "customer_id": 1,
+      "sale_date": "2026-01-19",
+      "items": [
+        {
+          "product_id": 1,
+          "name": "yogurt griego 1L",
+          "quantity": 2,
+          "price": 20000.0,
+          "subtotal": 40000.0
+        }
+      ],
+      "subtotal": 40000.0,
+      "discount": 4000.0,
+      "total": 36000.0,
+      "balance": 0.0,
+      "payment_method": "cash",
+      "paid": true,
+      "note": null,
+      "created_at": "2026-02-19T02:05:27.245230"
+    },
+    {
+      "id": 755,
+      "business_id": 1,
+      "customer_id": 1,
+      "sale_date": "2026-01-19",
+      "items": [
+        {
+          "product_id": 2,
+          "name": "Yogurt griego 500g",
+          "quantity": 3,
+          "price": 12000.0,
+          "subtotal": 36000.0
+        }
+      ],
+      "subtotal": 36000.0,
+      "discount": 3600.0,
+      "total": 32400.0,
+      "balance": 0.0,
+      "payment_method": "card",
+      "paid": true,
+      "note": null,
+      "created_at": "2026-02-19T02:05:27.246417"
+    },
+    {
+      "id": 756,
+      "business_id": 1,
+      "customer_id": 1,
+      "sale_date": "2026-01-20",
+      "items": [
+        {
+          "product_id": 1,
+          "name": "yogurt griego 1L",
+          "quantity": 3,
+          "price": 20000.0,
+          "subtotal": 60000.0
+        },
+        {
+          "product_id": 1,
+          "name": "yogurt griego 1L",
+          "quantity": 2,
+          "price": 20000.0,
+          "subtotal": 40000.0
+        },
+        {
+          "product_id": 1,
+          "name": "yogurt griego 1L",
+          "quantity": 1,
+          "price": 20000.0,
+          "subtotal": 20000.0
+        }
+      ],
+      "subtotal": 120000.0,
+      "discount": 12000.0,
+      "total": 108000.0,
+      "balance": 0.0,
+      "payment_method": "cash",
+      "paid": true,
+      "note": null,
+      "created_at": "2026-02-19T02:05:27.247539"
+    },
+    {
+      "id": 757,
+      "business_id": 1,
+      "customer_id": 1,
+      "sale_date": "2026-01-20",
+      "items": [
+        {
+          "product_id": 2,
+          "name": "Yogurt griego 500g",
+          "quantity": 2,
+          "price": 12000.0,
+          "subtotal": 24000.0
+        }
+      ],
+      "subtotal": 24000.0,
+      "discount": 0.0,
+      "total": 24000.0,
+      "balance": 0.0,
+      "payment_method": "cash",
+      "paid": true,
+      "note": null,
+      "created_at": "2026-02-19T02:05:27.248659"
+    },
+    {
+      "id": 758,
+      "business_id": 1,
+      "customer_id": 1,
+      "sale_date": "2026-01-20",
+      "items": [
+        {
+          "product_id": 1,
+          "name": "yogurt griego 1L",
+          "quantity": 1,
+          "price": 20000.0,
+          "subtotal": 20000.0
+        },
+        {
+          "product_id": 1,
+          "name": "yogurt griego 1L",
+          "quantity": 3,
+          "price": 20000.0,
+          "subtotal": 60000.0
+        },
+        {
+          "product_id": 2,
+          "name": "Yogurt griego 500g",
+          "quantity": 3,
+          "price": 12000.0,
+          "subtotal": 36000.0
+        }
+      ],
+      "subtotal": 116000.0,
+      "discount": 11600.0,
+      "total": 104400.0,
+      "balance": 0.0,
+      "payment_method": "card",
+      "paid": true,
+      "note": null,
+      "created_at": "2026-02-19T02:05:27.249836"
+    },
+    {
+      "id": 759,
+      "business_id": 1,
+      "customer_id": 1,
+      "sale_date": "2026-01-20",
+      "items": [
+        {
+          "product_id": 2,
+          "name": "Yogurt griego 500g",
+          "quantity": 2,
+          "price": 12000.0,
+          "subtotal": 24000.0
+        }
+      ],
+      "subtotal": 24000.0,
+      "discount": 0.0,
+      "total": 24000.0,
+      "balance": 0.0,
+      "payment_method": "card",
+      "paid": true,
+      "note": null,
+      "created_at": "2026-02-19T02:05:27.251174"
+    },
+    {
+      "id": 760,
+      "business_id": 1,
+      "customer_id": 1,
+      "sale_date": "2026-01-20",
+      "items": [
+        {
+          "product_id": 2,
+          "name": "Yogurt griego 500g",
+          "quantity": 3,
+          "price": 12000.0,
+          "subtotal": 36000.0
+        }
+      ],
+      "subtotal": 36000.0,
+      "discount": 0.0,
+      "total": 36000.0,
+      "balance": 0.0,
+      "payment_method": "cash",
+      "paid": true,
+      "note": null,
+      "created_at": "2026-02-19T02:05:27.252565"
+    },
+    {
+      "id": 761,
+      "business_id": 1,
+      "customer_id": 1,
+      "sale_date": "2026-01-21",
+      "items": [
+        {
+          "product_id": 2,
+          "name": "Yogurt griego 500g",
+          "quantity": 2,
+          "price": 12000.0,
+          "subtotal": 24000.0
+        }
+      ],
+      "subtotal": 24000.0,
+      "discount": 2400.0,
+      "total": 21600.0,
+      "balance": 0.0,
+      "payment_method": "card",
+      "paid": true,
+      "note": null,
+      "created_at": "2026-02-19T02:05:27.253813"
+    },
+    {
+      "id": 762,
+      "business_id": 1,
+      "customer_id": 1,
+      "sale_date": "2026-01-21",
+      "items": [
+        {
+          "product_id": 2,
+          "name": "Yogurt griego 500g",
+          "quantity": 3,
+          "price": 12000.0,
+          "subtotal": 36000.0
+        },
+        {
+          "product_id": 2,
+          "name": "Yogurt griego 500g",
+          "quantity": 3,
+          "price": 12000.0,
+          "subtotal": 36000.0
+        },
+        {
+          "product_id": 1,
+          "name": "yogurt griego 1L",
+          "quantity": 3,
+          "price": 20000.0,
+          "subtotal": 60000.0
+        }
+      ],
+      "subtotal": 132000.0,
+      "discount": 0.0,
+      "total": 132000.0,
+      "balance": 0.0,
+      "payment_method": "cash",
+      "paid": true,
+      "note": null,
+      "created_at": "2026-02-19T02:05:27.254990"
+    },
+    {
+      "id": 763,
+      "business_id": 1,
+      "customer_id": 1,
+      "sale_date": "2026-01-21",
+      "items": [
+        {
+          "product_id": 2,
+          "name": "Yogurt griego 500g",
+          "quantity": 1,
+          "price": 12000.0,
+          "subtotal": 12000.0
+        },
+        {
+          "product_id": 2,
+          "name": "Yogurt griego 500g",
+          "quantity": 3,
+          "price": 12000.0,
+          "subtotal": 36000.0
+        }
+      ],
+      "subtotal": 48000.0,
+      "discount": 4800.0,
+      "total": 43200.0,
+      "balance": 43200.0,
+      "payment_method": "card",
+      "paid": false,
+      "note": null,
+      "created_at": "2026-02-19T02:05:27.256168"
+    },
+    {
+      "id": 764,
+      "business_id": 1,
+      "customer_id": 1,
+      "sale_date": "2026-01-22",
+      "items": [
+        {
+          "product_id": 1,
+          "name": "yogurt griego 1L",
+          "quantity": 3,
+          "price": 20000.0,
+          "subtotal": 60000.0
+        }
+      ],
+      "subtotal": 60000.0,
+      "discount": 6000.0,
+      "total": 54000.0,
+      "balance": 0.0,
+      "payment_method": "cash",
+      "paid": true,
+      "note": null,
+      "created_at": "2026-02-19T02:05:27.258199"
+    },
+    {
+      "id": 765,
+      "business_id": 1,
+      "customer_id": 1,
+      "sale_date": "2026-01-22",
+      "items": [
+        {
+          "product_id": 2,
+          "name": "Yogurt griego 500g",
+          "quantity": 1,
+          "price": 12000.0,
+          "subtotal": 12000.0
+        }
+      ],
+      "subtotal": 12000.0,
+      "discount": 0.0,
+      "total": 12000.0,
+      "balance": 0.0,
+      "payment_method": "transfer",
+      "paid": true,
+      "note": null,
+      "created_at": "2026-02-19T02:05:27.259360"
+    },
+    {
+      "id": 766,
+      "business_id": 1,
+      "customer_id": 1,
+      "sale_date": "2026-01-22",
+      "items": [
+        {
+          "product_id": 2,
+          "name": "Yogurt griego 500g",
+          "quantity": 2,
+          "price": 12000.0,
+          "subtotal": 24000.0
+        }
+      ],
+      "subtotal": 24000.0,
+      "discount": 0.0,
+      "total": 24000.0,
+      "balance": 0.0,
+      "payment_method": "card",
+      "paid": true,
+      "note": null,
+      "created_at": "2026-02-19T02:05:27.260457"
+    },
+    {
+      "id": 767,
+      "business_id": 1,
+      "customer_id": 1,
+      "sale_date": "2026-01-22",
+      "items": [
+        {
+          "product_id": 2,
+          "name": "Yogurt griego 500g",
+          "quantity": 3,
+          "price": 12000.0,
+          "subtotal": 36000.0
+        },
+        {
+          "product_id": 1,
+          "name": "yogurt griego 1L",
+          "quantity": 1,
+          "price": 20000.0,
+          "subtotal": 20000.0
+        },
+        {
+          "product_id": 1,
+          "name": "yogurt griego 1L",
+          "quantity": 1,
+          "price": 20000.0,
+          "subtotal": 20000.0
+        }
+      ],
+      "subtotal": 76000.0,
+      "discount": 0.0,
+      "total": 76000.0,
+      "balance": 0.0,
+      "payment_method": "card",
+      "paid": true,
+      "note": null,
+      "created_at": "2026-02-19T02:05:27.261494"
+    },
+    {
+      "id": 768,
+      "business_id": 1,
+      "customer_id": 1,
+      "sale_date": "2026-01-23",
+      "items": [
+        {
+          "product_id": 2,
+          "name": "Yogurt griego 500g",
+          "quantity": 3,
+          "price": 12000.0,
+          "subtotal": 36000.0
+        }
+      ],
+      "subtotal": 36000.0,
+      "discount": 0.0,
+      "total": 36000.0,
+      "balance": 0.0,
+      "payment_method": "card",
+      "paid": true,
+      "note": null,
+      "created_at": "2026-02-19T02:05:27.262698"
+    },
+    {
+      "id": 769,
+      "business_id": 1,
+      "customer_id": 1,
+      "sale_date": "2026-01-24",
+      "items": [
+        {
+          "product_id": 1,
+          "name": "yogurt griego 1L",
+          "quantity": 1,
+          "price": 20000.0,
+          "subtotal": 20000.0
+        },
+        {
+          "product_id": 2,
+          "name": "Yogurt griego 500g",
+          "quantity": 3,
+          "price": 12000.0,
+          "subtotal": 36000.0
+        },
+        {
+          "product_id": 1,
+          "name": "yogurt griego 1L",
+          "quantity": 2,
+          "price": 20000.0,
+          "subtotal": 40000.0
+        }
+      ],
+      "subtotal": 96000.0,
+      "discount": 0.0,
+      "total": 96000.0,
+      "balance": 0.0,
+      "payment_method": "card",
+      "paid": true,
+      "note": null,
+      "created_at": "2026-02-19T02:05:27.263742"
+    },
+    {
+      "id": 770,
+      "business_id": 1,
+      "customer_id": 1,
+      "sale_date": "2026-01-24",
+      "items": [
+        {
+          "product_id": 2,
+          "name": "Yogurt griego 500g",
+          "quantity": 3,
+          "price": 12000.0,
+          "subtotal": 36000.0
+        },
+        {
+          "product_id": 2,
+          "name": "Yogurt griego 500g",
+          "quantity": 1,
+          "price": 12000.0,
+          "subtotal": 12000.0
+        }
+      ],
+      "subtotal": 48000.0,
+      "discount": 0.0,
+      "total": 48000.0,
+      "balance": 0.0,
+      "payment_method": "transfer",
+      "paid": true,
+      "note": null,
+      "created_at": "2026-02-19T02:05:27.264726"
+    },
+    {
+      "id": 771,
+      "business_id": 1,
+      "customer_id": 1,
+      "sale_date": "2026-01-24",
+      "items": [
+        {
+          "product_id": 2,
+          "name": "Yogurt griego 500g",
+          "quantity": 1,
+          "price": 12000.0,
+          "subtotal": 12000.0
+        }
+      ],
+      "subtotal": 12000.0,
+      "discount": 0.0,
+      "total": 12000.0,
+      "balance": 0.0,
+      "payment_method": "cash",
+      "paid": true,
+      "note": null,
+      "created_at": "2026-02-19T02:05:27.265669"
+    },
+    {
+      "id": 772,
+      "business_id": 1,
+      "customer_id": 1,
+      "sale_date": "2026-01-24",
+      "items": [
+        {
+          "product_id": 1,
+          "name": "yogurt griego 1L",
+          "quantity": 2,
+          "price": 20000.0,
+          "subtotal": 40000.0
+        }
+      ],
+      "subtotal": 40000.0,
+      "discount": 0.0,
+      "total": 40000.0,
+      "balance": 0.0,
+      "payment_method": "transfer",
+      "paid": true,
+      "note": null,
+      "created_at": "2026-02-19T02:05:27.266594"
+    },
+    {
+      "id": 773,
+      "business_id": 1,
+      "customer_id": 1,
+      "sale_date": "2026-01-25",
+      "items": [
+        {
+          "product_id": 1,
+          "name": "yogurt griego 1L",
+          "quantity": 3,
+          "price": 20000.0,
+          "subtotal": 60000.0
+        },
+        {
+          "product_id": 1,
+          "name": "yogurt griego 1L",
+          "quantity": 3,
+          "price": 20000.0,
+          "subtotal": 60000.0
+        },
+        {
+          "product_id": 1,
+          "name": "yogurt griego 1L",
+          "quantity": 2,
+          "price": 20000.0,
+          "subtotal": 40000.0
+        }
+      ],
+      "subtotal": 160000.0,
+      "discount": 16000.0,
+      "total": 144000.0,
+      "balance": 0.0,
+      "payment_method": "transfer",
+      "paid": true,
+      "note": null,
+      "created_at": "2026-02-19T02:05:27.267536"
+    },
+    {
+      "id": 774,
+      "business_id": 1,
+      "customer_id": 1,
+      "sale_date": "2026-01-25",
+      "items": [
+        {
+          "product_id": 1,
+          "name": "yogurt griego 1L",
+          "quantity": 3,
+          "price": 20000.0,
+          "subtotal": 60000.0
+        },
+        {
+          "product_id": 2,
+          "name": "Yogurt griego 500g",
+          "quantity": 3,
+          "price": 12000.0,
+          "subtotal": 36000.0
+        },
+        {
+          "product_id": 2,
+          "name": "Yogurt griego 500g",
+          "quantity": 2,
+          "price": 12000.0,
+          "subtotal": 24000.0
+        }
+      ],
+      "subtotal": 120000.0,
+      "discount": 12000.0,
+      "total": 108000.0,
+      "balance": 0.0,
+      "payment_method": "cash",
+      "paid": true,
+      "note": null,
+      "created_at": "2026-02-19T02:05:27.268481"
+    },
+    {
+      "id": 775,
+      "business_id": 1,
+      "customer_id": 1,
+      "sale_date": "2026-01-25",
+      "items": [
+        {
+          "product_id": 1,
+          "name": "yogurt griego 1L",
+          "quantity": 3,
+          "price": 20000.0,
+          "subtotal": 60000.0
+        },
+        {
+          "product_id": 2,
+          "name": "Yogurt griego 500g",
+          "quantity": 1,
+          "price": 12000.0,
+          "subtotal": 12000.0
+        },
+        {
+          "product_id": 2,
+          "name": "Yogurt griego 500g",
+          "quantity": 3,
+          "price": 12000.0,
+          "subtotal": 36000.0
+        }
+      ],
+      "subtotal": 108000.0,
+      "discount": 10800.0,
+      "total": 97200.0,
+      "balance": 0.0,
+      "payment_method": "transfer",
+      "paid": true,
+      "note": null,
+      "created_at": "2026-02-19T02:05:27.269444"
+    },
+    {
+      "id": 776,
+      "business_id": 1,
+      "customer_id": 1,
+      "sale_date": "2026-01-25",
+      "items": [
+        {
+          "product_id": 2,
+          "name": "Yogurt griego 500g",
+          "quantity": 1,
+          "price": 12000.0,
+          "subtotal": 12000.0
+        }
+      ],
+      "subtotal": 12000.0,
+      "discount": 0.0,
+      "total": 12000.0,
+      "balance": 0.0,
+      "payment_method": "card",
+      "paid": true,
+      "note": null,
+      "created_at": "2026-02-19T02:05:27.270367"
+    },
+    {
+      "id": 777,
+      "business_id": 1,
+      "customer_id": 1,
+      "sale_date": "2026-01-25",
+      "items": [
+        {
+          "product_id": 2,
+          "name": "Yogurt griego 500g",
+          "quantity": 3,
+          "price": 12000.0,
+          "subtotal": 36000.0
+        },
+        {
+          "product_id": 1,
+          "name": "yogurt griego 1L",
+          "quantity": 2,
+          "price": 20000.0,
+          "subtotal": 40000.0
+        }
+      ],
+      "subtotal": 76000.0,
+      "discount": 0.0,
+      "total": 76000.0,
+      "balance": 0.0,
+      "payment_method": "cash",
+      "paid": true,
+      "note": null,
+      "created_at": "2026-02-19T02:05:27.271232"
+    },
+    {
+      "id": 778,
+      "business_id": 1,
+      "customer_id": 1,
+      "sale_date": "2026-01-26",
+      "items": [
+        {
+          "product_id": 1,
+          "name": "yogurt griego 1L",
+          "quantity": 2,
+          "price": 20000.0,
+          "subtotal": 40000.0
+        },
+        {
+          "product_id": 1,
+          "name": "yogurt griego 1L",
+          "quantity": 2,
+          "price": 20000.0,
+          "subtotal": 40000.0
+        }
+      ],
+      "subtotal": 80000.0,
+      "discount": 0.0,
+      "total": 80000.0,
+      "balance": 0.0,
+      "payment_method": "transfer",
+      "paid": true,
+      "note": null,
+      "created_at": "2026-02-19T02:05:27.272093"
+    },
+    {
+      "id": 779,
+      "business_id": 1,
+      "customer_id": 1,
+      "sale_date": "2026-01-26",
+      "items": [
+        {
+          "product_id": 2,
+          "name": "Yogurt griego 500g",
+          "quantity": 3,
+          "price": 12000.0,
+          "subtotal": 36000.0
+        },
+        {
+          "product_id": 1,
+          "name": "yogurt griego 1L",
+          "quantity": 3,
+          "price": 20000.0,
+          "subtotal": 60000.0
+        }
+      ],
+      "subtotal": 96000.0,
+      "discount": 9600.0,
+      "total": 86400.0,
+      "balance": 86400.0,
+      "payment_method": "transfer",
+      "paid": false,
+      "note": null,
+      "created_at": "2026-02-19T02:05:27.272986"
+    },
+    {
+      "id": 780,
+      "business_id": 1,
+      "customer_id": 1,
+      "sale_date": "2026-01-26",
+      "items": [
+        {
+          "product_id": 1,
+          "name": "yogurt griego 1L",
+          "quantity": 1,
+          "price": 20000.0,
+          "subtotal": 20000.0
+        },
+        {
+          "product_id": 2,
+          "name": "Yogurt griego 500g",
+          "quantity": 2,
+          "price": 12000.0,
+          "subtotal": 24000.0
+        }
+      ],
+      "subtotal": 44000.0,
+      "discount": 0.0,
+      "total": 44000.0,
+      "balance": 44000.0,
+      "payment_method": "cash",
+      "paid": false,
+      "note": null,
+      "created_at": "2026-02-19T02:05:27.274729"
+    },
+    {
+      "id": 781,
+      "business_id": 1,
+      "customer_id": 1,
+      "sale_date": "2026-01-27",
+      "items": [
+        {
+          "product_id": 2,
+          "name": "Yogurt griego 500g",
+          "quantity": 2,
+          "price": 12000.0,
+          "subtotal": 24000.0
+        }
+      ],
+      "subtotal": 24000.0,
+      "discount": 2400.0,
+      "total": 21600.0,
+      "balance": 0.0,
+      "payment_method": "transfer",
+      "paid": true,
+      "note": null,
+      "created_at": "2026-02-19T02:05:27.276517"
+    },
+    {
+      "id": 782,
+      "business_id": 1,
+      "customer_id": 1,
+      "sale_date": "2026-01-28",
+      "items": [
+        {
+          "product_id": 1,
+          "name": "yogurt griego 1L",
+          "quantity": 3,
+          "price": 20000.0,
+          "subtotal": 60000.0
+        },
+        {
+          "product_id": 2,
+          "name": "Yogurt griego 500g",
+          "quantity": 2,
+          "price": 12000.0,
+          "subtotal": 24000.0
+        }
+      ],
+      "subtotal": 84000.0,
+      "discount": 0.0,
+      "total": 84000.0,
+      "balance": 0.0,
+      "payment_method": "transfer",
+      "paid": true,
+      "note": null,
+      "created_at": "2026-02-19T02:05:27.277464"
+    },
+    {
+      "id": 783,
+      "business_id": 1,
+      "customer_id": 1,
+      "sale_date": "2026-01-28",
+      "items": [
+        {
+          "product_id": 1,
+          "name": "yogurt griego 1L",
+          "quantity": 1,
+          "price": 20000.0,
+          "subtotal": 20000.0
+        },
+        {
+          "product_id": 1,
+          "name": "yogurt griego 1L",
+          "quantity": 1,
+          "price": 20000.0,
+          "subtotal": 20000.0
+        }
+      ],
+      "subtotal": 40000.0,
+      "discount": 0.0,
+      "total": 40000.0,
+      "balance": 0.0,
+      "payment_method": "transfer",
+      "paid": true,
+      "note": null,
+      "created_at": "2026-02-19T02:05:27.278360"
+    },
+    {
+      "id": 784,
+      "business_id": 1,
+      "customer_id": 1,
+      "sale_date": "2026-01-29",
+      "items": [
+        {
+          "product_id": 1,
+          "name": "yogurt griego 1L",
+          "quantity": 1,
+          "price": 20000.0,
+          "subtotal": 20000.0
+        }
+      ],
+      "subtotal": 20000.0,
+      "discount": 0.0,
+      "total": 20000.0,
+      "balance": 0.0,
+      "payment_method": "transfer",
+      "paid": true,
+      "note": null,
+      "created_at": "2026-02-19T02:05:27.279356"
+    },
+    {
+      "id": 785,
+      "business_id": 1,
+      "customer_id": 1,
+      "sale_date": "2026-01-29",
+      "items": [
+        {
+          "product_id": 1,
+          "name": "yogurt griego 1L",
+          "quantity": 2,
+          "price": 20000.0,
+          "subtotal": 40000.0
+        }
+      ],
+      "subtotal": 40000.0,
+      "discount": 0.0,
+      "total": 40000.0,
+      "balance": 0.0,
+      "payment_method": "card",
+      "paid": true,
+      "note": null,
+      "created_at": "2026-02-19T02:05:27.280250"
+    },
+    {
+      "id": 786,
+      "business_id": 1,
+      "customer_id": 1,
+      "sale_date": "2026-01-29",
+      "items": [
+        {
+          "product_id": 1,
+          "name": "yogurt griego 1L",
+          "quantity": 2,
+          "price": 20000.0,
+          "subtotal": 40000.0
+        },
+        {
+          "product_id": 2,
+          "name": "Yogurt griego 500g",
+          "quantity": 1,
+          "price": 12000.0,
+          "subtotal": 12000.0
+        },
+        {
+          "product_id": 1,
+          "name": "yogurt griego 1L",
+          "quantity": 3,
+          "price": 20000.0,
+          "subtotal": 60000.0
+        }
+      ],
+      "subtotal": 112000.0,
+      "discount": 0.0,
+      "total": 112000.0,
+      "balance": 0.0,
+      "payment_method": "transfer",
+      "paid": true,
+      "note": null,
+      "created_at": "2026-02-19T02:05:27.281202"
+    },
+    {
+      "id": 787,
+      "business_id": 1,
+      "customer_id": 1,
+      "sale_date": "2026-01-29",
+      "items": [
+        {
+          "product_id": 1,
+          "name": "yogurt griego 1L",
+          "quantity": 2,
+          "price": 20000.0,
+          "subtotal": 40000.0
+        },
+        {
+          "product_id": 1,
+          "name": "yogurt griego 1L",
+          "quantity": 1,
+          "price": 20000.0,
+          "subtotal": 20000.0
+        }
+      ],
+      "subtotal": 60000.0,
+      "discount": 0.0,
+      "total": 60000.0,
+      "balance": 0.0,
+      "payment_method": "cash",
+      "paid": true,
+      "note": null,
+      "created_at": "2026-02-19T02:05:27.282171"
+    },
+    {
+      "id": 788,
+      "business_id": 1,
+      "customer_id": 1,
+      "sale_date": "2026-01-30",
+      "items": [
+        {
+          "product_id": 1,
+          "name": "yogurt griego 1L",
+          "quantity": 3,
+          "price": 20000.0,
+          "subtotal": 60000.0
+        },
+        {
+          "product_id": 1,
+          "name": "yogurt griego 1L",
+          "quantity": 2,
+          "price": 20000.0,
+          "subtotal": 40000.0
+        },
+        {
+          "product_id": 1,
+          "name": "yogurt griego 1L",
+          "quantity": 2,
+          "price": 20000.0,
+          "subtotal": 40000.0
+        }
+      ],
+      "subtotal": 140000.0,
+      "discount": 0.0,
+      "total": 140000.0,
+      "balance": 0.0,
+      "payment_method": "transfer",
+      "paid": true,
+      "note": null,
+      "created_at": "2026-02-19T02:05:27.283116"
+    },
+    {
+      "id": 789,
+      "business_id": 1,
+      "customer_id": 1,
+      "sale_date": "2026-01-30",
+      "items": [
+        {
+          "product_id": 2,
+          "name": "Yogurt griego 500g",
+          "quantity": 2,
+          "price": 12000.0,
+          "subtotal": 24000.0
+        }
+      ],
+      "subtotal": 24000.0,
+      "discount": 0.0,
+      "total": 24000.0,
+      "balance": 0.0,
+      "payment_method": "card",
+      "paid": true,
+      "note": null,
+      "created_at": "2026-02-19T02:05:27.284306"
+    },
+    {
+      "id": 790,
+      "business_id": 1,
+      "customer_id": 1,
+      "sale_date": "2026-01-30",
+      "items": [
+        {
+          "product_id": 1,
+          "name": "yogurt griego 1L",
+          "quantity": 2,
+          "price": 20000.0,
+          "subtotal": 40000.0
+        },
+        {
+          "product_id": 2,
+          "name": "Yogurt griego 500g",
+          "quantity": 3,
+          "price": 12000.0,
+          "subtotal": 36000.0
+        },
+        {
+          "product_id": 2,
+          "name": "Yogurt griego 500g",
+          "quantity": 2,
+          "price": 12000.0,
+          "subtotal": 24000.0
+        }
+      ],
+      "subtotal": 100000.0,
+      "discount": 0.0,
+      "total": 100000.0,
+      "balance": 0.0,
+      "payment_method": "cash",
+      "paid": true,
+      "note": null,
+      "created_at": "2026-02-19T02:05:27.285269"
+    },
+    {
+      "id": 791,
+      "business_id": 1,
+      "customer_id": 1,
+      "sale_date": "2026-01-31",
+      "items": [
+        {
+          "product_id": 2,
+          "name": "Yogurt griego 500g",
+          "quantity": 2,
+          "price": 12000.0,
+          "subtotal": 24000.0
+        },
+        {
+          "product_id": 2,
+          "name": "Yogurt griego 500g",
+          "quantity": 3,
+          "price": 12000.0,
+          "subtotal": 36000.0
+        },
+        {
+          "product_id": 2,
+          "name": "Yogurt griego 500g",
+          "quantity": 2,
+          "price": 12000.0,
+          "subtotal": 24000.0
+        }
+      ],
+      "subtotal": 84000.0,
+      "discount": 0.0,
+      "total": 84000.0,
+      "balance": 84000.0,
+      "payment_method": "cash",
+      "paid": false,
+      "note": null,
+      "created_at": "2026-02-19T02:05:27.286209"
+    },
+    {
+      "id": 792,
+      "business_id": 1,
+      "customer_id": 1,
+      "sale_date": "2026-01-31",
+      "items": [
+        {
+          "product_id": 1,
+          "name": "yogurt griego 1L",
+          "quantity": 2,
+          "price": 20000.0,
+          "subtotal": 40000.0
+        },
+        {
+          "product_id": 1,
+          "name": "yogurt griego 1L",
+          "quantity": 2,
+          "price": 20000.0,
+          "subtotal": 40000.0
+        },
+        {
+          "product_id": 1,
+          "name": "yogurt griego 1L",
+          "quantity": 3,
+          "price": 20000.0,
+          "subtotal": 60000.0
+        }
+      ],
+      "subtotal": 140000.0,
+      "discount": 0.0,
+      "total": 140000.0,
+      "balance": 0.0,
+      "payment_method": "cash",
+      "paid": true,
+      "note": null,
+      "created_at": "2026-02-19T02:05:27.287830"
+    },
+    {
+      "id": 793,
+      "business_id": 1,
+      "customer_id": 1,
+      "sale_date": "2026-02-01",
+      "items": [
+        {
+          "product_id": 1,
+          "name": "yogurt griego 1L",
+          "quantity": 1,
+          "price": 20000.0,
+          "subtotal": 20000.0
+        },
+        {
+          "product_id": 1,
+          "name": "yogurt griego 1L",
+          "quantity": 3,
+          "price": 20000.0,
+          "subtotal": 60000.0
+        }
+      ],
+      "subtotal": 80000.0,
+      "discount": 0.0,
+      "total": 80000.0,
+      "balance": 0.0,
+      "payment_method": "cash",
+      "paid": true,
+      "note": null,
+      "created_at": "2026-02-19T02:05:27.288726"
+    },
+    {
+      "id": 794,
+      "business_id": 1,
+      "customer_id": 1,
+      "sale_date": "2026-02-01",
+      "items": [
+        {
+          "product_id": 1,
+          "name": "yogurt griego 1L",
+          "quantity": 2,
+          "price": 20000.0,
+          "subtotal": 40000.0
+        },
+        {
+          "product_id": 1,
+          "name": "yogurt griego 1L",
+          "quantity": 3,
+          "price": 20000.0,
+          "subtotal": 60000.0
+        }
+      ],
+      "subtotal": 100000.0,
+      "discount": 0.0,
+      "total": 100000.0,
+      "balance": 100000.0,
+      "payment_method": "card",
+      "paid": false,
+      "note": null,
+      "created_at": "2026-02-19T02:05:27.289608"
+    },
+    {
+      "id": 795,
+      "business_id": 1,
+      "customer_id": 1,
+      "sale_date": "2026-02-02",
+      "items": [
+        {
+          "product_id": 1,
+          "name": "yogurt griego 1L",
+          "quantity": 1,
+          "price": 20000.0,
+          "subtotal": 20000.0
+        }
+      ],
+      "subtotal": 20000.0,
+      "discount": 0.0,
+      "total": 20000.0,
+      "balance": 0.0,
+      "payment_method": "cash",
+      "paid": true,
+      "note": null,
+      "created_at": "2026-02-19T02:05:27.291160"
+    },
+    {
+      "id": 796,
+      "business_id": 1,
+      "customer_id": 1,
+      "sale_date": "2026-02-02",
+      "items": [
+        {
+          "product_id": 1,
+          "name": "yogurt griego 1L",
+          "quantity": 2,
+          "price": 20000.0,
+          "subtotal": 40000.0
+        },
+        {
+          "product_id": 2,
+          "name": "Yogurt griego 500g",
+          "quantity": 1,
+          "price": 12000.0,
+          "subtotal": 12000.0
+        }
+      ],
+      "subtotal": 52000.0,
+      "discount": 0.0,
+      "total": 52000.0,
+      "balance": 0.0,
+      "payment_method": "transfer",
+      "paid": true,
+      "note": null,
+      "created_at": "2026-02-19T02:05:27.292025"
+    },
+    {
+      "id": 797,
+      "business_id": 1,
+      "customer_id": 1,
+      "sale_date": "2026-02-02",
+      "items": [
+        {
+          "product_id": 1,
+          "name": "yogurt griego 1L",
+          "quantity": 2,
+          "price": 20000.0,
+          "subtotal": 40000.0
+        },
+        {
+          "product_id": 1,
+          "name": "yogurt griego 1L",
+          "quantity": 3,
+          "price": 20000.0,
+          "subtotal": 60000.0
+        },
+        {
+          "product_id": 2,
+          "name": "Yogurt griego 500g",
+          "quantity": 2,
+          "price": 12000.0,
+          "subtotal": 24000.0
+        }
+      ],
+      "subtotal": 124000.0,
+      "discount": 12400.0,
+      "total": 111600.0,
+      "balance": 0.0,
+      "payment_method": "transfer",
+      "paid": true,
+      "note": null,
+      "created_at": "2026-02-19T02:05:27.292872"
+    },
+    {
+      "id": 798,
+      "business_id": 1,
+      "customer_id": 1,
+      "sale_date": "2026-02-03",
+      "items": [
+        {
+          "product_id": 1,
+          "name": "yogurt griego 1L",
+          "quantity": 1,
+          "price": 20000.0,
+          "subtotal": 20000.0
+        },
+        {
+          "product_id": 1,
+          "name": "yogurt griego 1L",
+          "quantity": 2,
+          "price": 20000.0,
+          "subtotal": 40000.0
+        }
+      ],
+      "subtotal": 60000.0,
+      "discount": 0.0,
+      "total": 60000.0,
+      "balance": 0.0,
+      "payment_method": "card",
+      "paid": true,
+      "note": null,
+      "created_at": "2026-02-19T02:05:27.293736"
+    },
+    {
+      "id": 799,
+      "business_id": 1,
+      "customer_id": 1,
+      "sale_date": "2026-02-03",
+      "items": [
+        {
+          "product_id": 2,
+          "name": "Yogurt griego 500g",
+          "quantity": 1,
+          "price": 12000.0,
+          "subtotal": 12000.0
+        },
+        {
+          "product_id": 2,
+          "name": "Yogurt griego 500g",
+          "quantity": 3,
+          "price": 12000.0,
+          "subtotal": 36000.0
+        }
+      ],
+      "subtotal": 48000.0,
+      "discount": 0.0,
+      "total": 48000.0,
+      "balance": 0.0,
+      "payment_method": "card",
+      "paid": true,
+      "note": null,
+      "created_at": "2026-02-19T02:05:27.294611"
+    },
+    {
+      "id": 800,
+      "business_id": 1,
+      "customer_id": 1,
+      "sale_date": "2026-02-04",
+      "items": [
+        {
+          "product_id": 2,
+          "name": "Yogurt griego 500g",
+          "quantity": 1,
+          "price": 12000.0,
+          "subtotal": 12000.0
+        }
+      ],
+      "subtotal": 12000.0,
+      "discount": 0.0,
+      "total": 12000.0,
+      "balance": 0.0,
+      "payment_method": "transfer",
+      "paid": true,
+      "note": null,
+      "created_at": "2026-02-19T02:05:27.295554"
+    },
+    {
+      "id": 801,
+      "business_id": 1,
+      "customer_id": 1,
+      "sale_date": "2026-02-04",
+      "items": [
+        {
+          "product_id": 2,
+          "name": "Yogurt griego 500g",
+          "quantity": 2,
+          "price": 12000.0,
+          "subtotal": 24000.0
+        }
+      ],
+      "subtotal": 24000.0,
+      "discount": 0.0,
+      "total": 24000.0,
+      "balance": 0.0,
+      "payment_method": "card",
+      "paid": true,
+      "note": null,
+      "created_at": "2026-02-19T02:05:27.296471"
+    },
+    {
+      "id": 802,
+      "business_id": 1,
+      "customer_id": 1,
+      "sale_date": "2026-02-05",
+      "items": [
+        {
+          "product_id": 1,
+          "name": "yogurt griego 1L",
+          "quantity": 2,
+          "price": 20000.0,
+          "subtotal": 40000.0
+        },
+        {
+          "product_id": 1,
+          "name": "yogurt griego 1L",
+          "quantity": 3,
+          "price": 20000.0,
+          "subtotal": 60000.0
+        }
+      ],
+      "subtotal": 100000.0,
+      "discount": 0.0,
+      "total": 100000.0,
+      "balance": 0.0,
+      "payment_method": "transfer",
+      "paid": true,
+      "note": null,
+      "created_at": "2026-02-19T02:05:27.297366"
+    },
+    {
+      "id": 803,
+      "business_id": 1,
+      "customer_id": 1,
+      "sale_date": "2026-02-05",
+      "items": [
+        {
+          "product_id": 1,
+          "name": "yogurt griego 1L",
+          "quantity": 1,
+          "price": 20000.0,
+          "subtotal": 20000.0
+        }
+      ],
+      "subtotal": 20000.0,
+      "discount": 2000.0,
+      "total": 18000.0,
+      "balance": 0.0,
+      "payment_method": "cash",
+      "paid": true,
+      "note": null,
+      "created_at": "2026-02-19T02:05:27.298248"
+    },
+    {
+      "id": 804,
+      "business_id": 1,
+      "customer_id": 1,
+      "sale_date": "2026-02-05",
+      "items": [
+        {
+          "product_id": 2,
+          "name": "Yogurt griego 500g",
+          "quantity": 2,
+          "price": 12000.0,
+          "subtotal": 24000.0
+        },
+        {
+          "product_id": 2,
+          "name": "Yogurt griego 500g",
+          "quantity": 1,
+          "price": 12000.0,
+          "subtotal": 12000.0
+        }
+      ],
+      "subtotal": 36000.0,
+      "discount": 0.0,
+      "total": 36000.0,
+      "balance": 0.0,
+      "payment_method": "cash",
+      "paid": true,
+      "note": null,
+      "created_at": "2026-02-19T02:05:27.299117"
+    },
+    {
+      "id": 805,
+      "business_id": 1,
+      "customer_id": 1,
+      "sale_date": "2026-02-06",
+      "items": [
+        {
+          "product_id": 2,
+          "name": "Yogurt griego 500g",
+          "quantity": 1,
+          "price": 12000.0,
+          "subtotal": 12000.0
+        }
+      ],
+      "subtotal": 12000.0,
+      "discount": 1200.0,
+      "total": 10800.0,
+      "balance": 0.0,
+      "payment_method": "cash",
+      "paid": true,
+      "note": null,
+      "created_at": "2026-02-19T02:05:27.299988"
+    },
+    {
+      "id": 806,
+      "business_id": 1,
+      "customer_id": 1,
+      "sale_date": "2026-02-06",
+      "items": [
+        {
+          "product_id": 2,
+          "name": "Yogurt griego 500g",
+          "quantity": 3,
+          "price": 12000.0,
+          "subtotal": 36000.0
+        },
+        {
+          "product_id": 2,
+          "name": "Yogurt griego 500g",
+          "quantity": 3,
+          "price": 12000.0,
+          "subtotal": 36000.0
+        }
+      ],
+      "subtotal": 72000.0,
+      "discount": 7200.0,
+      "total": 64800.0,
+      "balance": 0.0,
+      "payment_method": "transfer",
+      "paid": true,
+      "note": null,
+      "created_at": "2026-02-19T02:05:27.300832"
+    },
+    {
+      "id": 807,
+      "business_id": 1,
+      "customer_id": 1,
+      "sale_date": "2026-02-06",
+      "items": [
+        {
+          "product_id": 1,
+          "name": "yogurt griego 1L",
+          "quantity": 2,
+          "price": 20000.0,
+          "subtotal": 40000.0
+        },
+        {
+          "product_id": 2,
+          "name": "Yogurt griego 500g",
+          "quantity": 2,
+          "price": 12000.0,
+          "subtotal": 24000.0
+        },
+        {
+          "product_id": 2,
+          "name": "Yogurt griego 500g",
+          "quantity": 3,
+          "price": 12000.0,
+          "subtotal": 36000.0
+        }
+      ],
+      "subtotal": 100000.0,
+      "discount": 0.0,
+      "total": 100000.0,
+      "balance": 0.0,
+      "payment_method": "transfer",
+      "paid": true,
+      "note": null,
+      "created_at": "2026-02-19T02:05:27.301680"
+    },
+    {
+      "id": 808,
+      "business_id": 1,
+      "customer_id": 1,
+      "sale_date": "2026-02-07",
+      "items": [
+        {
+          "product_id": 2,
+          "name": "Yogurt griego 500g",
+          "quantity": 2,
+          "price": 12000.0,
+          "subtotal": 24000.0
+        },
+        {
+          "product_id": 1,
+          "name": "yogurt griego 1L",
+          "quantity": 3,
+          "price": 20000.0,
+          "subtotal": 60000.0
+        }
+      ],
+      "subtotal": 84000.0,
+      "discount": 8400.0,
+      "total": 75600.0,
+      "balance": 0.0,
+      "payment_method": "transfer",
+      "paid": true,
+      "note": null,
+      "created_at": "2026-02-19T02:05:27.302535"
+    },
+    {
+      "id": 809,
+      "business_id": 1,
+      "customer_id": 1,
+      "sale_date": "2026-02-07",
+      "items": [
+        {
+          "product_id": 1,
+          "name": "yogurt griego 1L",
+          "quantity": 2,
+          "price": 20000.0,
+          "subtotal": 40000.0
+        },
+        {
+          "product_id": 1,
+          "name": "yogurt griego 1L",
+          "quantity": 1,
+          "price": 20000.0,
+          "subtotal": 20000.0
+        }
+      ],
+      "subtotal": 60000.0,
+      "discount": 0.0,
+      "total": 60000.0,
+      "balance": 0.0,
+      "payment_method": "transfer",
+      "paid": true,
+      "note": null,
+      "created_at": "2026-02-19T02:05:27.303367"
+    },
+    {
+      "id": 810,
+      "business_id": 1,
+      "customer_id": 1,
+      "sale_date": "2026-02-07",
+      "items": [
+        {
+          "product_id": 2,
+          "name": "Yogurt griego 500g",
+          "quantity": 3,
+          "price": 12000.0,
+          "subtotal": 36000.0
+        }
+      ],
+      "subtotal": 36000.0,
+      "discount": 0.0,
+      "total": 36000.0,
+      "balance": 0.0,
+      "payment_method": "cash",
+      "paid": true,
+      "note": null,
+      "created_at": "2026-02-19T02:05:27.304211"
+    },
+    {
+      "id": 811,
+      "business_id": 1,
+      "customer_id": 1,
+      "sale_date": "2026-02-08",
+      "items": [
+        {
+          "product_id": 2,
+          "name": "Yogurt griego 500g",
+          "quantity": 3,
+          "price": 12000.0,
+          "subtotal": 36000.0
+        },
+        {
+          "product_id": 2,
+          "name": "Yogurt griego 500g",
+          "quantity": 3,
+          "price": 12000.0,
+          "subtotal": 36000.0
+        },
+        {
+          "product_id": 1,
+          "name": "yogurt griego 1L",
+          "quantity": 2,
+          "price": 20000.0,
+          "subtotal": 40000.0
+        }
+      ],
+      "subtotal": 112000.0,
+      "discount": 0.0,
+      "total": 112000.0,
+      "balance": 0.0,
+      "payment_method": "cash",
+      "paid": true,
+      "note": null,
+      "created_at": "2026-02-19T02:05:27.305061"
+    },
+    {
+      "id": 812,
+      "business_id": 1,
+      "customer_id": 1,
+      "sale_date": "2026-02-09",
+      "items": [
+        {
+          "product_id": 1,
+          "name": "yogurt griego 1L",
+          "quantity": 2,
+          "price": 20000.0,
+          "subtotal": 40000.0
+        },
+        {
+          "product_id": 2,
+          "name": "Yogurt griego 500g",
+          "quantity": 3,
+          "price": 12000.0,
+          "subtotal": 36000.0
+        }
+      ],
+      "subtotal": 76000.0,
+      "discount": 0.0,
+      "total": 76000.0,
+      "balance": 0.0,
+      "payment_method": "cash",
+      "paid": true,
+      "note": null,
+      "created_at": "2026-02-19T02:05:27.305922"
+    },
+    {
+      "id": 813,
+      "business_id": 1,
+      "customer_id": 1,
+      "sale_date": "2026-02-09",
+      "items": [
+        {
+          "product_id": 1,
+          "name": "yogurt griego 1L",
+          "quantity": 3,
+          "price": 20000.0,
+          "subtotal": 60000.0
+        },
+        {
+          "product_id": 2,
+          "name": "Yogurt griego 500g",
+          "quantity": 1,
+          "price": 12000.0,
+          "subtotal": 12000.0
+        },
+        {
+          "product_id": 1,
+          "name": "yogurt griego 1L",
+          "quantity": 2,
+          "price": 20000.0,
+          "subtotal": 40000.0
+        }
+      ],
+      "subtotal": 112000.0,
+      "discount": 0.0,
+      "total": 112000.0,
+      "balance": 0.0,
+      "payment_method": "transfer",
+      "paid": true,
+      "note": null,
+      "created_at": "2026-02-19T02:05:27.306755"
+    },
+    {
+      "id": 814,
+      "business_id": 1,
+      "customer_id": 1,
+      "sale_date": "2026-02-09",
+      "items": [
+        {
+          "product_id": 1,
+          "name": "yogurt griego 1L",
+          "quantity": 3,
+          "price": 20000.0,
+          "subtotal": 60000.0
+        },
+        {
+          "product_id": 2,
+          "name": "Yogurt griego 500g",
+          "quantity": 3,
+          "price": 12000.0,
+          "subtotal": 36000.0
+        }
+      ],
+      "subtotal": 96000.0,
+      "discount": 0.0,
+      "total": 96000.0,
+      "balance": 0.0,
+      "payment_method": "transfer",
+      "paid": true,
+      "note": null,
+      "created_at": "2026-02-19T02:05:27.307596"
+    },
+    {
+      "id": 815,
+      "business_id": 1,
+      "customer_id": 1,
+      "sale_date": "2026-02-09",
+      "items": [
+        {
+          "product_id": 2,
+          "name": "Yogurt griego 500g",
+          "quantity": 2,
+          "price": 12000.0,
+          "subtotal": 24000.0
+        },
+        {
+          "product_id": 1,
+          "name": "yogurt griego 1L",
+          "quantity": 2,
+          "price": 20000.0,
+          "subtotal": 40000.0
+        }
+      ],
+      "subtotal": 64000.0,
+      "discount": 0.0,
+      "total": 64000.0,
+      "balance": 0.0,
+      "payment_method": "card",
+      "paid": true,
+      "note": null,
+      "created_at": "2026-02-19T02:05:27.308426"
+    },
+    {
+      "id": 816,
+      "business_id": 1,
+      "customer_id": 1,
+      "sale_date": "2026-02-09",
+      "items": [
+        {
+          "product_id": 1,
+          "name": "yogurt griego 1L",
+          "quantity": 1,
+          "price": 20000.0,
+          "subtotal": 20000.0
+        },
+        {
+          "product_id": 1,
+          "name": "yogurt griego 1L",
+          "quantity": 2,
+          "price": 20000.0,
+          "subtotal": 40000.0
+        },
+        {
+          "product_id": 2,
+          "name": "Yogurt griego 500g",
+          "quantity": 2,
+          "price": 12000.0,
+          "subtotal": 24000.0
+        }
+      ],
+      "subtotal": 84000.0,
+      "discount": 8400.0,
+      "total": 75600.0,
+      "balance": 0.0,
+      "payment_method": "cash",
+      "paid": true,
+      "note": null,
+      "created_at": "2026-02-19T02:05:27.309257"
+    },
+    {
+      "id": 817,
+      "business_id": 1,
+      "customer_id": 1,
+      "sale_date": "2026-02-10",
+      "items": [
+        {
+          "product_id": 1,
+          "name": "yogurt griego 1L",
+          "quantity": 2,
+          "price": 20000.0,
+          "subtotal": 40000.0
+        }
+      ],
+      "subtotal": 40000.0,
+      "discount": 0.0,
+      "total": 40000.0,
+      "balance": 0.0,
+      "payment_method": "card",
+      "paid": true,
+      "note": null,
+      "created_at": "2026-02-19T02:05:27.310102"
+    },
+    {
+      "id": 818,
+      "business_id": 1,
+      "customer_id": 1,
+      "sale_date": "2026-02-11",
+      "items": [
+        {
+          "product_id": 2,
+          "name": "Yogurt griego 500g",
+          "quantity": 2,
+          "price": 12000.0,
+          "subtotal": 24000.0
+        },
+        {
+          "product_id": 2,
+          "name": "Yogurt griego 500g",
+          "quantity": 2,
+          "price": 12000.0,
+          "subtotal": 24000.0
+        }
+      ],
+      "subtotal": 48000.0,
+      "discount": 4800.0,
+      "total": 43200.0,
+      "balance": 0.0,
+      "payment_method": "card",
+      "paid": true,
+      "note": null,
+      "created_at": "2026-02-19T02:05:27.310981"
+    },
+    {
+      "id": 819,
+      "business_id": 1,
+      "customer_id": 1,
+      "sale_date": "2026-02-11",
+      "items": [
+        {
+          "product_id": 2,
+          "name": "Yogurt griego 500g",
+          "quantity": 3,
+          "price": 12000.0,
+          "subtotal": 36000.0
+        }
+      ],
+      "subtotal": 36000.0,
+      "discount": 0.0,
+      "total": 36000.0,
+      "balance": 0.0,
+      "payment_method": "cash",
+      "paid": true,
+      "note": null,
+      "created_at": "2026-02-19T02:05:27.311989"
+    },
+    {
+      "id": 820,
+      "business_id": 1,
+      "customer_id": 1,
+      "sale_date": "2026-02-11",
+      "items": [
+        {
+          "product_id": 1,
+          "name": "yogurt griego 1L",
+          "quantity": 1,
+          "price": 20000.0,
+          "subtotal": 20000.0
+        },
+        {
+          "product_id": 2,
+          "name": "Yogurt griego 500g",
+          "quantity": 1,
+          "price": 12000.0,
+          "subtotal": 12000.0
+        },
+        {
+          "product_id": 1,
+          "name": "yogurt griego 1L",
+          "quantity": 2,
+          "price": 20000.0,
+          "subtotal": 40000.0
+        }
+      ],
+      "subtotal": 72000.0,
+      "discount": 0.0,
+      "total": 72000.0,
+      "balance": 0.0,
+      "payment_method": "card",
+      "paid": true,
+      "note": null,
+      "created_at": "2026-02-19T02:05:27.312942"
+    },
+    {
+      "id": 821,
+      "business_id": 1,
+      "customer_id": 1,
+      "sale_date": "2026-02-11",
+      "items": [
+        {
+          "product_id": 1,
+          "name": "yogurt griego 1L",
+          "quantity": 2,
+          "price": 20000.0,
+          "subtotal": 40000.0
+        }
+      ],
+      "subtotal": 40000.0,
+      "discount": 0.0,
+      "total": 40000.0,
+      "balance": 0.0,
+      "payment_method": "transfer",
+      "paid": true,
+      "note": null,
+      "created_at": "2026-02-19T02:05:27.313869"
+    },
+    {
+      "id": 822,
+      "business_id": 1,
+      "customer_id": 1,
+      "sale_date": "2026-02-12",
+      "items": [
+        {
+          "product_id": 1,
+          "name": "yogurt griego 1L",
+          "quantity": 2,
+          "price": 20000.0,
+          "subtotal": 40000.0
+        },
+        {
+          "product_id": 1,
+          "name": "yogurt griego 1L",
+          "quantity": 1,
+          "price": 20000.0,
+          "subtotal": 20000.0
+        }
+      ],
+      "subtotal": 60000.0,
+      "discount": 0.0,
+      "total": 60000.0,
+      "balance": 0.0,
+      "payment_method": "card",
+      "paid": true,
+      "note": null,
+      "created_at": "2026-02-19T02:05:27.314802"
+    },
+    {
+      "id": 823,
+      "business_id": 1,
+      "customer_id": 1,
+      "sale_date": "2026-02-12",
+      "items": [
+        {
+          "product_id": 2,
+          "name": "Yogurt griego 500g",
+          "quantity": 2,
+          "price": 12000.0,
+          "subtotal": 24000.0
+        }
+      ],
+      "subtotal": 24000.0,
+      "discount": 0.0,
+      "total": 24000.0,
+      "balance": 0.0,
+      "payment_method": "card",
+      "paid": true,
+      "note": null,
+      "created_at": "2026-02-19T02:05:27.315738"
+    },
+    {
+      "id": 824,
+      "business_id": 1,
+      "customer_id": 1,
+      "sale_date": "2026-02-12",
+      "items": [
+        {
+          "product_id": 2,
+          "name": "Yogurt griego 500g",
+          "quantity": 1,
+          "price": 12000.0,
+          "subtotal": 12000.0
+        },
+        {
+          "product_id": 2,
+          "name": "Yogurt griego 500g",
+          "quantity": 2,
+          "price": 12000.0,
+          "subtotal": 24000.0
+        }
+      ],
+      "subtotal": 36000.0,
+      "discount": 3600.0,
+      "total": 32400.0,
+      "balance": 0.0,
+      "payment_method": "cash",
+      "paid": true,
+      "note": null,
+      "created_at": "2026-02-19T02:05:27.316654"
+    },
+    {
+      "id": 825,
+      "business_id": 1,
+      "customer_id": 1,
+      "sale_date": "2026-02-13",
+      "items": [
+        {
+          "product_id": 1,
+          "name": "yogurt griego 1L",
+          "quantity": 1,
+          "price": 20000.0,
+          "subtotal": 20000.0
+        },
+        {
+          "product_id": 2,
+          "name": "Yogurt griego 500g",
+          "quantity": 2,
+          "price": 12000.0,
+          "subtotal": 24000.0
+        },
+        {
+          "product_id": 2,
+          "name": "Yogurt griego 500g",
+          "quantity": 1,
+          "price": 12000.0,
+          "subtotal": 12000.0
+        }
+      ],
+      "subtotal": 56000.0,
+      "discount": 5600.0,
+      "total": 50400.0,
+      "balance": 0.0,
+      "payment_method": "cash",
+      "paid": true,
+      "note": null,
+      "created_at": "2026-02-19T02:05:27.317560"
+    },
+    {
+      "id": 826,
+      "business_id": 1,
+      "customer_id": 1,
+      "sale_date": "2026-02-13",
+      "items": [
+        {
+          "product_id": 1,
+          "name": "yogurt griego 1L",
+          "quantity": 2,
+          "price": 20000.0,
+          "subtotal": 40000.0
+        }
+      ],
+      "subtotal": 40000.0,
+      "discount": 0.0,
+      "total": 40000.0,
+      "balance": 0.0,
+      "payment_method": "cash",
+      "paid": true,
+      "note": null,
+      "created_at": "2026-02-19T02:05:27.318453"
+    },
+    {
+      "id": 827,
+      "business_id": 1,
+      "customer_id": 1,
+      "sale_date": "2026-02-14",
+      "items": [
+        {
+          "product_id": 2,
+          "name": "Yogurt griego 500g",
+          "quantity": 3,
+          "price": 12000.0,
+          "subtotal": 36000.0
+        },
+        {
+          "product_id": 1,
+          "name": "yogurt griego 1L",
+          "quantity": 3,
+          "price": 20000.0,
+          "subtotal": 60000.0
+        }
+      ],
+      "subtotal": 96000.0,
+      "discount": 9600.0,
+      "total": 86400.0,
+      "balance": 0.0,
+      "payment_method": "cash",
+      "paid": true,
+      "note": null,
+      "created_at": "2026-02-19T02:05:27.319331"
+    },
+    {
+      "id": 828,
+      "business_id": 1,
+      "customer_id": 1,
+      "sale_date": "2026-02-15",
+      "items": [
+        {
+          "product_id": 2,
+          "name": "Yogurt griego 500g",
+          "quantity": 3,
+          "price": 12000.0,
+          "subtotal": 36000.0
+        },
+        {
+          "product_id": 1,
+          "name": "yogurt griego 1L",
+          "quantity": 2,
+          "price": 20000.0,
+          "subtotal": 40000.0
+        },
+        {
+          "product_id": 2,
+          "name": "Yogurt griego 500g",
+          "quantity": 3,
+          "price": 12000.0,
+          "subtotal": 36000.0
+        }
+      ],
+      "subtotal": 112000.0,
+      "discount": 0.0,
+      "total": 112000.0,
+      "balance": 0.0,
+      "payment_method": "cash",
+      "paid": true,
+      "note": null,
+      "created_at": "2026-02-19T02:05:27.320210"
+    },
+    {
+      "id": 829,
+      "business_id": 1,
+      "customer_id": 1,
+      "sale_date": "2026-02-15",
+      "items": [
+        {
+          "product_id": 1,
+          "name": "yogurt griego 1L",
+          "quantity": 3,
+          "price": 20000.0,
+          "subtotal": 60000.0
+        },
+        {
+          "product_id": 1,
+          "name": "yogurt griego 1L",
+          "quantity": 3,
+          "price": 20000.0,
+          "subtotal": 60000.0
+        },
+        {
+          "product_id": 2,
+          "name": "Yogurt griego 500g",
+          "quantity": 2,
+          "price": 12000.0,
+          "subtotal": 24000.0
+        }
+      ],
+      "subtotal": 144000.0,
+      "discount": 0.0,
+      "total": 144000.0,
+      "balance": 0.0,
+      "payment_method": "cash",
+      "paid": true,
+      "note": null,
+      "created_at": "2026-02-19T02:05:27.321092"
+    },
+    {
+      "id": 830,
+      "business_id": 1,
+      "customer_id": 1,
+      "sale_date": "2026-02-15",
+      "items": [
+        {
+          "product_id": 1,
+          "name": "yogurt griego 1L",
+          "quantity": 3,
+          "price": 20000.0,
+          "subtotal": 60000.0
+        }
+      ],
+      "subtotal": 60000.0,
+      "discount": 6000.0,
+      "total": 54000.0,
+      "balance": 0.0,
+      "payment_method": "transfer",
+      "paid": true,
+      "note": null,
+      "created_at": "2026-02-19T02:05:27.321950"
+    },
+    {
+      "id": 831,
+      "business_id": 1,
+      "customer_id": 1,
+      "sale_date": "2026-02-15",
+      "items": [
+        {
+          "product_id": 1,
+          "name": "yogurt griego 1L",
+          "quantity": 3,
+          "price": 20000.0,
+          "subtotal": 60000.0
+        },
+        {
+          "product_id": 2,
+          "name": "Yogurt griego 500g",
+          "quantity": 3,
+          "price": 12000.0,
+          "subtotal": 36000.0
+        },
+        {
+          "product_id": 2,
+          "name": "Yogurt griego 500g",
+          "quantity": 1,
+          "price": 12000.0,
+          "subtotal": 12000.0
+        }
+      ],
+      "subtotal": 108000.0,
+      "discount": 10800.0,
+      "total": 97200.0,
+      "balance": 0.0,
+      "payment_method": "card",
+      "paid": true,
+      "note": null,
+      "created_at": "2026-02-19T02:05:27.322799"
+    },
+    {
+      "id": 832,
+      "business_id": 1,
+      "customer_id": 1,
+      "sale_date": "2026-02-15",
+      "items": [
+        {
+          "product_id": 2,
+          "name": "Yogurt griego 500g",
+          "quantity": 3,
+          "price": 12000.0,
+          "subtotal": 36000.0
+        },
+        {
+          "product_id": 1,
+          "name": "yogurt griego 1L",
+          "quantity": 2,
+          "price": 20000.0,
+          "subtotal": 40000.0
+        }
+      ],
+      "subtotal": 76000.0,
+      "discount": 0.0,
+      "total": 76000.0,
+      "balance": 0.0,
+      "payment_method": "cash",
+      "paid": true,
+      "note": null,
+      "created_at": "2026-02-19T02:05:27.323647"
+    },
+    {
+      "id": 833,
+      "business_id": 1,
+      "customer_id": 1,
+      "sale_date": "2026-02-16",
+      "items": [
+        {
+          "product_id": 1,
+          "name": "yogurt griego 1L",
+          "quantity": 2,
+          "price": 20000.0,
+          "subtotal": 40000.0
+        },
+        {
+          "product_id": 2,
+          "name": "Yogurt griego 500g",
+          "quantity": 3,
+          "price": 12000.0,
+          "subtotal": 36000.0
+        }
+      ],
+      "subtotal": 76000.0,
+      "discount": 7600.0,
+      "total": 68400.0,
+      "balance": 0.0,
+      "payment_method": "transfer",
+      "paid": true,
+      "note": null,
+      "created_at": "2026-02-19T02:05:27.324524"
+    },
+    {
+      "id": 834,
+      "business_id": 1,
+      "customer_id": 1,
+      "sale_date": "2026-02-16",
+      "items": [
+        {
+          "product_id": 1,
+          "name": "yogurt griego 1L",
+          "quantity": 3,
+          "price": 20000.0,
+          "subtotal": 60000.0
+        }
+      ],
+      "subtotal": 60000.0,
+      "discount": 0.0,
+      "total": 60000.0,
+      "balance": 0.0,
+      "payment_method": "card",
+      "paid": true,
+      "note": null,
+      "created_at": "2026-02-19T02:05:27.325446"
+    },
+    {
+      "id": 835,
+      "business_id": 1,
+      "customer_id": 1,
+      "sale_date": "2026-02-17",
+      "items": [
+        {
+          "product_id": 2,
+          "name": "Yogurt griego 500g",
+          "quantity": 1,
+          "price": 12000.0,
+          "subtotal": 12000.0
+        },
+        {
+          "product_id": 2,
+          "name": "Yogurt griego 500g",
+          "quantity": 1,
+          "price": 12000.0,
+          "subtotal": 12000.0
+        }
+      ],
+      "subtotal": 24000.0,
+      "discount": 0.0,
+      "total": 24000.0,
+      "balance": 0.0,
+      "payment_method": "cash",
+      "paid": true,
+      "note": null,
+      "created_at": "2026-02-19T02:05:27.326353"
+    },
+    {
+      "id": 836,
+      "business_id": 1,
+      "customer_id": 1,
+      "sale_date": "2026-02-17",
+      "items": [
+        {
+          "product_id": 1,
+          "name": "yogurt griego 1L",
+          "quantity": 2,
+          "price": 20000.0,
+          "subtotal": 40000.0
+        }
+      ],
+      "subtotal": 40000.0,
+      "discount": 4000.0,
+      "total": 36000.0,
+      "balance": 0.0,
+      "payment_method": "cash",
+      "paid": true,
+      "note": null,
+      "created_at": "2026-02-19T02:05:27.327231"
+    },
+    {
+      "id": 837,
+      "business_id": 1,
+      "customer_id": 1,
+      "sale_date": "2026-02-17",
+      "items": [
+        {
+          "product_id": 1,
+          "name": "yogurt griego 1L",
+          "quantity": 3,
+          "price": 20000.0,
+          "subtotal": 60000.0
+        },
+        {
+          "product_id": 1,
+          "name": "yogurt griego 1L",
+          "quantity": 3,
+          "price": 20000.0,
+          "subtotal": 60000.0
+        }
+      ],
+      "subtotal": 120000.0,
+      "discount": 0.0,
+      "total": 120000.0,
+      "balance": 120000.0,
+      "payment_method": "transfer",
+      "paid": false,
+      "note": null,
+      "created_at": "2026-02-19T02:05:27.328133"
+    },
+    {
+      "id": 838,
+      "business_id": 1,
+      "customer_id": 1,
+      "sale_date": "2026-02-17",
+      "items": [
+        {
+          "product_id": 2,
+          "name": "Yogurt griego 500g",
+          "quantity": 2,
+          "price": 12000.0,
+          "subtotal": 24000.0
+        }
+      ],
+      "subtotal": 24000.0,
+      "discount": 0.0,
+      "total": 24000.0,
+      "balance": 0.0,
+      "payment_method": "card",
+      "paid": true,
+      "note": null,
+      "created_at": "2026-02-19T02:05:27.330029"
+    }
+  ],
+  "expenses": [],
+  "payments": []
+}
