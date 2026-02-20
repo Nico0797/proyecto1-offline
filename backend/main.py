@@ -2713,6 +2713,14 @@ def create_app(config_class=None):
         db.session.commit()
         return jsonify({"ok": True})
 
+    @app.route("/api/admin/seed-rbac", methods=["POST"])
+    @token_required
+    @permission_required('admin.*')
+    def reseed_rbac():
+        from scripts.seed import seed_rbac
+        roles_map = seed_rbac()
+        return jsonify({"ok": True, "roles": list(roles_map.keys())})
+
     # ========== ADMIN DATA MANAGEMENT ==========
     @app.route("/api/admin/data-stats", methods=["GET"])
     @token_required
