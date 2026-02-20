@@ -4824,5 +4824,21 @@
         window.adminEditRole = function(id) { console.log('adminEditRole called', id); if(app && app.showEditRoleModal) app.showEditRoleModal(id); };
         window.adminDeleteRole = function(id) { console.log('adminDeleteRole called', id); if(app && app.deleteRole) app.deleteRole(id); };
     </script>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const emailInput = document.getElementById('login-email');
+            const passwordInput = document.getElementById('login-password');
+            if (emailInput) {
+                emailInput.value = '';
+                emailInput.readOnly = true;
+                emailInput.addEventListener('focus', () => { emailInput.readOnly = false; }, { once: true });
+            }
+            if (passwordInput) {
+                passwordInput.value = '';
+                passwordInput.readOnly = true;
+                passwordInput.addEventListener('focus', () => { passwordInput.readOnly = false; }, { once: true });
+            }
+        });
+    </script>
 </body>
 </html>

@@ -464,6 +464,15 @@
             to { transform: translateX(0); opacity: 1; }
         }
 
+        .sidebar-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.4);
+            z-index: 40;
+            display: none;
+        }
+        .sidebar-overlay.show { display: block; }
+
         @media (max-width: 768px) {
             .sidebar {
                 transform: translateX(-100%);
@@ -525,6 +534,9 @@
                     <div class="sidebar-logo-icon">📒</div>
                     <div class="sidebar-logo-text">Cuaderno</div>
                 </div>
+                <button class="btn btn-secondary md:hidden" style="margin-left:auto" onclick="app.toggleSidebar()">
+                    <i class="ph ph-x"></i>
+                </button>
             </div>
             
             <div class="sidebar-search">
@@ -598,6 +610,7 @@
                 </div>
             </nav>
         </aside>
+        <div id="sidebar-overlay" class="sidebar-overlay" onclick="app.toggleSidebar()"></div>
         
         <!-- Main Content -->
         <main class="main-content">
@@ -623,7 +636,7 @@
                         <div id="user-dropdown" class="dropdown-menu hidden" style="position: absolute; right: 0; top: 100%; margin-top: 8px;">
                             <div class="px-4 py-2 border-b border-white/10">
                                 <div class="font-medium" id="header-user-name">Admin</div>
-                                <div class="text-sm text-white/60" id="header-user-email">admin@cuaderno.app</div>
+                                <div class="text-sm text-white/60" id="header-user-email"></div>
                             </div>
                             <a href="#" onclick="window.location.href='/app'">Mi Perfil</a>
                             <a href="#" onclick="app.logout()" class="text-red-300">Cerrar Sesión</a>
@@ -737,6 +750,14 @@
                     sidebar.classList.add('open');
                 } else {
                     sidebar.classList.remove('open');
+                }
+                const overlay = document.getElementById('sidebar-overlay');
+                if (overlay) {
+                    if (this.sidebarOpen) {
+                        overlay.classList.add('show');
+                    } else {
+                        overlay.classList.remove('show');
+                    }
                 }
             },
             
