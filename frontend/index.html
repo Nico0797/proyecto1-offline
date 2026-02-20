@@ -454,18 +454,38 @@
                 <div id="page-dashboard" class="page fade-in">
                     <h2 class="text-2xl font-bold mb-6">Dashboard</h2>
                     
+                    <!-- Interactive Date Range Selector -->
+                    <div class="glass rounded-xl p-4 mb-6">
+                        <div class="flex flex-wrap gap-4 items-center">
+                            <div class="flex items-center gap-2">
+                                <label class="text-sm text-muted">Rango de Fechas:</label>
+                                <div class="flex gap-1 bg-white/5 rounded-lg p-1">
+                                    <button onclick="app.setDashboardPeriod('today')" class="period-btn px-3 py-2 rounded-md text-sm font-medium transition-all bg-blue-600 text-white" data-period="today">
+                                        Hoy
+                                    </button>
+                                    <button onclick="app.setDashboardPeriod('week')" class="period-btn px-3 py-2 rounded-md text-sm font-medium transition-all text-white/70 hover:text-white" data-period="week">
+                                        Esta Semana
+                                    </button>
+                                    <button onclick="app.setDashboardPeriod('month')" class="period-btn px-3 py-2 rounded-md text-sm font-medium transition-all text-white/70 hover:text-white" data-period="month">
+                                        Este Mes
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
                     <!-- Quick Stats -->
                     <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
                         <div class="stat-card glass rounded-xl p-4">
-                            <p class="text-muted text-sm">Caja Hoy</p>
+                            <p id="label-cash" class="text-muted text-sm">Caja Hoy</p>
                             <p id="stat-cash-today" class="text-xl font-bold money-positive">$0</p>
                         </div>
                         <div class="stat-card glass rounded-xl p-4">
-                            <p class="text-muted text-sm">Ventas Hoy</p>
+                            <p id="label-sales" class="text-muted text-sm">Ventas Hoy</p>
                             <p id="stat-sales-today" class="text-xl font-bold">$0</p>
                         </div>
                         <div class="stat-card glass rounded-xl p-4">
-                            <p class="text-muted text-sm">Gastos Hoy</p>
+                            <p id="label-expenses" class="text-muted text-sm">Gastos Hoy</p>
                             <p id="stat-expenses-today" class="text-xl font-bold money-negative">$0</p>
                         </div>
                         <div class="stat-card glass rounded-xl p-4">
@@ -476,7 +496,7 @@
                     
                     <!-- Monthly Summary -->
                     <div class="glass rounded-xl p-6 mb-6">
-                        <h3 class="text-lg font-semibold mb-4">Resumen del Mes</h3>
+                        <h3 id="label-summary" class="text-lg font-semibold mb-4">Resumen del Mes</h3>
                         <div class="grid grid-cols-3 gap-4">
                             <div>
                                 <p class="text-muted text-sm">Ingresos</p>
@@ -1529,9 +1549,6 @@
                     <div class="mb-4">
                         <label class="block text-sm mb-1">Productos</label>
                         <div id="order-items-container" class="space-y-2 mb-2"></div>
-                        <select id="order-product" class="input w-full px-4 py-2 rounded-xl mb-2">
-                            <option value="">Seleccionar producto...</option>
-                        </select>
                         <button type="button" onclick="app.addOrderItem()" class="text-blue-400 text-sm">+ Agregar producto</button>
                     </div>
                     <div class="flex gap-4 mb-4">
@@ -1956,6 +1973,7 @@
             products: [],
             customers: [],
             currentPage: 'dashboard',
+            currentDashboardPeriod: 'today',
             pricingCycle: 'monthly',
             pricingMonthlyCop: 19900,
             pricingAnnualDiscount: 0.15,
@@ -2802,15 +2820,99 @@
             },
             
             // Dashboard
+            currentDashboardPeriod: 'today',
+            
+            setDashboardPeriod(period) {
+                this.currentDashboardPeriod = period;
+                
+                // Update button styles
+                document.querySelectorAll('.period-btn').forEach(btn => {
+                    btn.classList.remove('bg-blue-600', 'text-white');
+                    btn.classList.add('text-white/70', 'hover:text-white');
+                    if (btn.dataset.period === period) {
+                        btn.classList.add('bg-blue-600', 'text-white');
+                        btn.classList.remove('text-white/70', 'hover:text-white');
+                    }
+                });
+                
+                // Update stat card labels based on period
+                const labels = {
+                    'today': { cash: 'Caja Hoy', sales: 'Ventas Hoy', expenses: 'Gastos Hoy', summary: 'Resumen de Hoy' },
+                    'week': { cash: 'Caja Semana', sales: 'Ventas Semana', expenses: 'Gastos Semana', summary: 'Resumen Semana' },
+                    'month': { cash: 'Caja Mes', sales: 'Ventas Mes', expenses: 'Gastos Mes', summary: 'Resumen del Mes' }
+                };
+                
+                const periodLabels = labels[period] || labels['today'];
+                document.getElementById('label-cash').textContent = periodLabels.cash;
+                document.getElementById('label-sales').textContent = periodLabels.sales;
+                document.getElementById('label-expenses').textContent = periodLabels.expenses;
+                document.getElementById('label-summary').textContent = periodLabels.summary;
+                
+                // Load dashboard with new period
+                this.loadDashboard();
+            },
+            
             async loadDashboard() {
+                // Get filter values
+                const period = this.currentDashboardPeriod || 'today';
+                
+                // Initialize button styles and labels on first load
+                const labels = {
+                    'today': { cash: 'Caja Hoy', sales: 'Ventas Hoy', expenses: 'Gastos Hoy', summary: 'Resumen de Hoy' },
+                    'week': { cash: 'Caja Semana', sales: 'Ventas Semana', expenses: 'Gastos Semana', summary: 'Resumen Semana' },
+                    'month': { cash: 'Caja Mes', sales: 'Ventas Mes', expenses: 'Gastos Mes', summary: 'Resumen del Mes' }
+                };
+                const periodLabels = labels[period] || labels['today'];
+                
+                // Update labels
+                const labelCash = document.getElementById('label-cash');
+                const labelSales = document.getElementById('label-sales');
+                const labelExpenses = document.getElementById('label-expenses');
+                const labelSummary = document.getElementById('label-summary');
+                if (labelCash) labelCash.textContent = periodLabels.cash;
+                if (labelSales) labelSales.textContent = periodLabels.sales;
+                if (labelExpenses) labelExpenses.textContent = periodLabels.expenses;
+                if (labelSummary) labelSummary.textContent = periodLabels.summary;
+                
+                // Update button styles
+                document.querySelectorAll('.period-btn').forEach(btn => {
+                    btn.classList.remove('bg-blue-600', 'text-white');
+                    btn.classList.add('text-white/70', 'hover:text-white');
+                    if (btn.dataset.period === period) {
+                        btn.classList.add('bg-blue-600', 'text-white');
+                        btn.classList.remove('text-white/70', 'hover:text-white');
+                    }
+                });
+                
+                const compare = document.getElementById('dashboard-compare')?.value || 'none';
+                const startDate = document.getElementById('dashboard-start-date')?.value || '';
+                const endDate = document.getElementById('dashboard-end-date')?.value || '';
+                
+                // Show/hide custom date range
+                const customRange = document.getElementById('custom-date-range');
+                if (customRange) {
+                    if (period === 'custom') {
+                        customRange.classList.remove('hidden');
+                    } else {
+                        customRange.classList.add('hidden');
+                    }
+                }
+                
+                // Build query params
+                const params = new URLSearchParams();
+                params.append('period', period);
+                if (startDate) params.append('start_date', startDate);
+                if (endDate) params.append('end_date', endDate);
+                if (compare !== 'none') params.append('compare', compare);
+                
                 // Daily report
-                const daily = await this.api(`/businesses/${this.business.id}/reports/daily`);
+                const daily = await this.api(`/businesses/${this.business.id}/reports/daily?${params.toString()}`);
                 document.getElementById('stat-cash-today').textContent = this.formatMoney(daily.cash_flow.net);
                 document.getElementById('stat-sales-today').textContent = this.formatMoney(daily.sales.total);
                 document.getElementById('stat-expenses-today').textContent = this.formatMoney(daily.expenses.total);
                 
                 // Monthly summary
-                const summary = await this.api(`/businesses/${this.business.id}/reports/summary`);
+                const summary = await this.api(`/businesses/${this.business.id}/reports/summary?${params.toString()}`);
                 document.getElementById('month-income').textContent = this.formatMoney(summary.sales.total);
                 document.getElementById('month-expenses').textContent = this.formatMoney(summary.expenses.total);
                 document.getElementById('month-profit').textContent = this.formatMoney(summary.profit.net);
@@ -3278,6 +3380,44 @@
                 this.loadDashboard();
                 this.loadCustomers(); // Refresh balances
                 alert('¡Listo! Abono registrado y saldo actualizado.');
+            },
+            
+            // Export Dashboard Data
+            async exportDashboardData() {
+                try {
+                    const period = this.currentDashboardPeriod || 'today';
+                    const params = new URLSearchParams();
+                    params.append('period', period);
+                    
+                    // Get the data
+                    const daily = await this.api(`/businesses/${this.business.id}/reports/daily?${params.toString()}`);
+                    const summary = await this.api(`/businesses/${this.business.id}/reports/summary?${params.toString()}`);
+                    
+                    // Create export data
+                    const exportData = {
+                        business_name: this.business.name,
+                        export_date: new Date().toISOString(),
+                        period: period,
+                        daily_report: daily,
+                        summary: summary
+                    };
+                    
+                    // Create and download JSON file
+                    const dataStr = JSON.stringify(exportData, null, 2);
+                    const blob = new Blob([dataStr], { type: 'application/json' });
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = `dashboard_${period}_${new Date().toISOString().split('T')[0]}.json`;
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
+                    URL.revokeObjectURL(url);
+                    
+                    alert('Dashboard exportado correctamente');
+                } catch (e) {
+                    alert('Error al exportar: ' + e.message);
+                }
             },
             
             // Customers

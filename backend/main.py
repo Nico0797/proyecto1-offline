@@ -1261,33 +1261,75 @@ def create_app(config_class=None):
         business = Business.query.filter_by(id=business_id, user_id=g.current_user.id).first()
         if not business:
             return jsonify({"error": "Negocio no encontrado"}), 404
-
-        target_date = date.today()
-        if request.args.get("date"):
+        
+        today = date.today()
+        
+        # Get period parameter: today, week, month
+        period = request.args.get("period", "today")
+        
+        # Calculate date range based on period
+        if period == "week":
+            # Get start of week (Monday)
+            start_date = today - timedelta(days=today.weekday())
+            end_date = today
+        elif period == "month":
+            # Get start of month
+            start_date = today.replace(day=1)
+            end_date = today
+        else:
+            # Default to today
+            start_date = today
+            end_date = today
+        
+        # Allow custom date range override
+        if request.args.get("start_date"):
             try:
-                target_date = datetime.strptime(request.args.get("date"), "%Y-%m-%d").date()
+                start_date = datetime.strptime(request.args.get("start_date"), "%Y-%m-%d").date()
             except:
                 pass
-
-        # Sales for the day
-        sales = Sale.query.filter_by(business_id=business_id, sale_date=target_date).all()
+        
+        if request.args.get("end_date"):
+            try:
+                end_date = datetime.strptime(request.args.get("end_date"), "%Y-%m-%d").date()
+            except:
+                pass
+        
+        target_date = start_date  # For compatibility with existing code
+        
+        # Sales for the period
+        sales = Sale.query.filter(
+            Sale.business_id == business_id,
+            Sale.sale_date >= start_date,
+            Sale.sale_date <= end_date
+        ).all()
         sales_total = sum(s.total for s in sales)
         sales_count = len(sales)
-
-        # Expenses for the day
-        expenses = Expense.query.filter_by(business_id=business_id, expense_date=target_date).all()
+        
+        # Expenses for the period
+        expenses = Expense.query.filter(
+            Expense.business_id == business_id,
+            Expense.expense_date >= start_date,
+            Expense.expense_date <= end_date
+        ).all()
         expenses_total = sum(e.amount for e in expenses)
-
-        # Payments for the day
-        payments = Payment.query.filter_by(business_id=business_id, payment_date=target_date).all()
+        
+        # Payments for the period
+        payments = Payment.query.filter(
+            Payment.business_id == business_id,
+            Payment.payment_date >= start_date,
+            Payment.payment_date <= end_date
+        ).all()
         payments_total = sum(p.amount for p in payments)
-
+        
         # Cash flow
         cash_in = sum(s.total for s in sales if s.payment_method == "cash") + payments_total
         cash_out = expenses_total
-
+        
         return jsonify({
             "date": target_date.isoformat(),
+            "period": period,
+            "start_date": start_date.isoformat(),
+            "end_date": end_date.isoformat(),
             "sales": {
                 "count": sales_count,
                 "total": sales_total
@@ -1319,20 +1361,42 @@ def create_app(config_class=None):
         today = date.today()
         start_of_month = today.replace(day=1)
         
-        start_date = request.args.get("start_date")
-        end_date = request.args.get("end_date")
+        # Get period parameter: today, week, month
+        period = request.args.get("period", "today")
+        
+        # Calculate date range based on period
+        if period == "week":
+            # Get start of week (Monday)
+            start_date = today - timedelta(days=today.weekday())
+            end_date = today
+        elif period == "month":
+            # Get start of month
+            start_date = today.replace(day=1)
+            end_date = today
+        else:
+            # Default to today
+            start_date = today
+            end_date = today
+        
+        # Allow custom date range override
+        start_date_param = request.args.get("start_date")
+        end_date_param = request.args.get("end_date")
 
-        if start_date:
+        if start_date_param:
             try:
-                start_of_month = datetime.strptime(start_date, "%Y-%m-%d").date()
+                start_date = datetime.strptime(start_date_param, "%Y-%m-%d").date()
             except:
                 pass
 
-        if end_date:
+        if end_date_param:
             try:
-                today = datetime.strptime(end_date, "%Y-%m-%d").date()
+                end_date = datetime.strptime(end_date_param, "%Y-%m-%d").date()
             except:
                 pass
+        
+        # Use start_date as the start of the period for backward compatibility
+        start_of_month = start_date
+        today = end_date
 
         # Sales
         sales = Sale.query.filter(
