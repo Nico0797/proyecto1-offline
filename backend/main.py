@@ -2450,6 +2450,26 @@ def create_app(config_class=None):
         db.session.commit()
         return jsonify({"ok": True})
 
+    @app.route("/api/admin/users/by-email", methods=["DELETE"])
+    @token_required
+    @permission_required('admin.users')
+    def delete_user_by_email_admin():
+        data = request.get_json() or {}
+        email = (data.get("email") or "").strip().lower()
+        if not email:
+            return jsonify({"error": "Email requerido"}), 400
+        
+        users = User.query.filter_by(email=email).all()
+        deleted = 0
+        for u in users:
+            if u.id == g.current_user.id:
+                continue
+            db.session.delete(u)
+            deleted += 1
+        
+        db.session.commit()
+        return jsonify({"ok": True, "deleted": deleted})
+
     @app.route("/api/admin/users/<int:user_id>/reset-password", methods=["POST"])
     @token_required
     @permission_required('admin.users')
