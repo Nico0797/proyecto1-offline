@@ -270,10 +270,14 @@ class AuthManager:
             "Este código expira en 10 minutos."
         )
 
-        with smtplib.SMTP(host, int(port)) as server:
-            server.starttls()
-            server.login(user, password)
-            server.send_message(msg)
+        try:
+            with smtplib.SMTP(host, int(port), timeout=10) as server:
+                server.starttls()
+                server.login(user, password)
+                server.send_message(msg)
+        except Exception as e:
+            print(f"[SMTP ERROR] {e}")
+            print(f"[EMAIL OTP] To: {email} | Code: {code}")
 
     @staticmethod
     def register(email, password, name):
