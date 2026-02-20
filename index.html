@@ -1201,17 +1201,17 @@
                         <div class="grid md:grid-cols-3 gap-4">
                             <div class="p-4 bg-green-500/20 rounded-lg">
                                 <p class="text-sm text-muted">Plan Trimestral</p>
-                                <p class="font-bold text-xl text-green-400">$18,308/mes</p>
-                                <p class="text-xs text-muted">$54,924/3 meses</p>
+                                <p class="font-bold text-xl text-green-400">$<span id="dashboard-quarterly-price">0.00</span>/mes</p>
+                                <p class="text-xs text-muted">$<span id="dashboard-quarterly-total">0.00</span>/3 meses</p>
                             </div>
                             <div class="p-4 bg-purple-500/20 rounded-lg">
                                 <p class="text-sm text-muted">Plan Anual</p>
-                                <p class="font-bold text-xl text-purple-400">$16,915/mes</p>
-                                <p class="text-xs text-green-400">Ahorras $35,820</p>
+                                <p class="font-bold text-xl text-purple-400">$<span id="dashboard-annual-price">0.00</span>/mes</p>
+                                <p class="text-xs text-green-400">Ahorra hasta <span id="dashboard-annual-saving">0%</span></p>
                             </div>
                             <div class="p-4 bg-yellow-500/20 rounded-lg">
                                 <p class="text-sm text-muted">Plan Mensual</p>
-                                <p class="font-bold text-xl text-yellow-400">$19,900/mes</p>
+                                <p class="font-bold text-xl text-yellow-400">$<span id="dashboard-monthly-price">5.99</span>/mes</p>
                             </div>
                         </div>
                         <button onclick="app.navigate('upgrade')" class="btn-primary w-full mt-4 py-2 rounded-xl">Actualizar a Pro</button>
@@ -2151,6 +2151,11 @@
                     responseData = await response.json();
                     
                     if (!response.ok) {
+                        if (status === 403 && responseData && responseData.upgrade_url) {
+                            const goPro = await showConfirm((responseData.error || 'Función disponible solo en Pro') + '\n\n¿Quieres actualizar tu plan ahora?');
+                            if (goPro) this.navigate('upgrade');
+                            throw new Error(responseData.error || 'Acceso restringido');
+                        }
                         throw new Error(responseData.error || `Error ${status}: ${responseData.message || 'Error en la solicitud'}`);
                     }
                     
@@ -2778,22 +2783,49 @@
             },
 
             renderPricing() {
-                const monthly = this.pricingMonthlyCop;
-                const annual = Math.round(monthly * 12 * (1 - this.pricingAnnualDiscount));
+                const base = 5.99;
+                const quarterlyDiscount = 0.1;
+                const annualDiscount = 0.3;
+                const quarterlyTotal = base * 3 * (1 - quarterlyDiscount);
+                const annualTotal = base * 12 * (1 - annualDiscount);
+                const quarterlyMonthly = quarterlyTotal / 3;
+                const annualMonthly = annualTotal / 12;
                 const priceEl = document.getElementById('pro-price');
                 const noteEl = document.getElementById('pro-price-note');
                 const monthlyBtn = document.getElementById('pricing-monthly-btn');
+                const quarterlyBtn = document.getElementById('pricing-quarterly-btn');
                 const annualBtn = document.getElementById('pricing-annual-btn');
+                const mDash = document.getElementById('dashboard-monthly-price');
+                const qDash = document.getElementById('dashboard-quarterly-price');
+                const qDashTotal = document.getElementById('dashboard-quarterly-total');
+                const aDash = document.getElementById('dashboard-annual-price');
+                const aDashSaving = document.getElementById('dashboard-annual-saving');
+
+                if (mDash && qDash && qDashTotal && aDash && aDashSaving) {
+                    mDash.textContent = base.toFixed(2);
+                    qDash.textContent = quarterlyMonthly.toFixed(2);
+                    qDashTotal.textContent = quarterlyTotal.toFixed(2);
+                    aDash.textContent = annualMonthly.toFixed(2);
+                    aDashSaving.textContent = '30%';
+                }
 
                 if (this.pricingCycle === 'annual') {
-                    priceEl.textContent = this.formatMoney(annual);
-                    noteEl.textContent = `COP ${annual.toLocaleString('es-CO')} anual (ahorra 15%)`;
+                    priceEl.textContent = `$${annualMonthly.toFixed(2)}`;
+                    noteEl.textContent = `USD ${(annualTotal).toFixed(2)} anual (ahorra 30%)`;
                     monthlyBtn.classList.remove('btn-primary');
+                    quarterlyBtn.classList.remove('btn-primary');
                     annualBtn.classList.add('btn-primary');
-                } else {
-                    priceEl.textContent = this.formatMoney(monthly);
-                    noteEl.textContent = `COP ${monthly.toLocaleString('es-CO')} mensual`;
+                } else if (this.pricingCycle === 'quarterly') {
+                    priceEl.textContent = `$${quarterlyMonthly.toFixed(2)}`;
+                    noteEl.textContent = `USD ${(quarterlyTotal).toFixed(2)} cada 3 meses (ahorra 10%)`;
+                    monthlyBtn.classList.remove('btn-primary');
                     annualBtn.classList.remove('btn-primary');
+                    quarterlyBtn.classList.add('btn-primary');
+                } else {
+                    priceEl.textContent = `$${base.toFixed(2)}`;
+                    noteEl.textContent = `USD ${base.toFixed(2)} mensual`;
+                    annualBtn.classList.remove('btn-primary');
+                    quarterlyBtn.classList.remove('btn-primary');
                     monthlyBtn.classList.add('btn-primary');
                 }
             },

@@ -430,7 +430,7 @@ def create_app(config_class=None):
             if count >= 1:
                 return jsonify({
                     "error": "Plan gratuito limitado a 1 negocio",
-                    "upgrade_url": "/pricing"
+                    "upgrade_url": "/upgrade"
                 }), 403
 
         business = Business(
@@ -549,6 +549,14 @@ def create_app(config_class=None):
         business = Business.query.filter_by(id=business_id, user_id=g.current_user.id).first()
         if not business:
             return jsonify({"error": "Negocio no encontrado"}), 404
+        # Plan FREE: limitar a 5 productos
+        if g.current_user.plan == "free":
+            product_count = Product.query.filter_by(business_id=business_id).count()
+            if product_count >= 5:
+                return jsonify({
+                    "error": "Tu plan gratuito permite hasta 5 productos. Actualiza a Pro para añadir más.",
+                    "upgrade_url": "/upgrade"
+                }), 403
 
         data = request.get_json() or {}
         name = data.get("name", "").strip()
@@ -655,6 +663,14 @@ def create_app(config_class=None):
         business = Business.query.filter_by(id=business_id, user_id=g.current_user.id).first()
         if not business:
             return jsonify({"error": "Negocio no encontrado"}), 404
+        # Plan FREE: limitar a 5 clientes
+        if g.current_user.plan == "free":
+            customer_count = Customer.query.filter_by(business_id=business_id).count()
+            if customer_count >= 5:
+                return jsonify({
+                    "error": "Tu plan gratuito permite hasta 5 clientes. Actualiza a Pro para registrar más.",
+                    "upgrade_url": "/upgrade"
+                }), 403
 
         data = request.get_json() or {}
         name = data.get("name", "").strip()
@@ -833,6 +849,14 @@ def create_app(config_class=None):
         business = Business.query.filter_by(id=business_id, user_id=g.current_user.id).first()
         if not business:
             return jsonify({"error": "Negocio no encontrado"}), 404
+        # Plan FREE: limitar a 20 ventas
+        if g.current_user.plan == "free":
+            sales_count = Sale.query.filter_by(business_id=business_id).count()
+            if sales_count >= 20:
+                return jsonify({
+                    "error": "Tu plan gratuito permite hasta 20 ventas. Actualiza a Pro para seguir registrando.",
+                    "upgrade_url": "/upgrade"
+                }), 403
 
         data = request.get_json() or {}
         items = data.get("items", [])
@@ -1898,6 +1922,12 @@ def create_app(config_class=None):
         business = Business.query.filter_by(id=business_id, user_id=g.current_user.id).first()
         if not business:
             return jsonify({"error": "Negocio no encontrado"}), 404
+        # Plan FREE: sin acceso a exportación
+        if g.current_user.plan == "free":
+            return jsonify({
+                "error": "La exportación está disponible solo en Pro. Actualiza tu plan para usar esta función.",
+                "upgrade_url": "/upgrade"
+            }), 403
 
         from backend.services.export import export_sales_excel
 
@@ -1916,6 +1946,12 @@ def create_app(config_class=None):
         business = Business.query.filter_by(id=business_id, user_id=g.current_user.id).first()
         if not business:
             return jsonify({"error": "Negocio no encontrado"}), 404
+        # Plan FREE: sin acceso a exportación
+        if g.current_user.plan == "free":
+            return jsonify({
+                "error": "La exportación está disponible solo en Pro. Actualiza tu plan para usar esta función.",
+                "upgrade_url": "/upgrade"
+            }), 403
 
         from backend.services.export import export_expenses_excel
 
@@ -1944,6 +1980,12 @@ def create_app(config_class=None):
         business = Business.query.filter_by(id=business_id, user_id=g.current_user.id).first()
         if not business:
             return jsonify({"error": "Negocio no encontrado"}), 404
+        # Plan FREE: sin acceso a exportar backup
+        if g.current_user.plan == "free":
+            return jsonify({
+                "error": "La exportación de backup está disponible solo en Pro. Actualiza tu plan para usar esta función.",
+                "upgrade_url": "/upgrade"
+            }), 403
 
         from backend.services.export import create_backup_json
 
@@ -1959,6 +2001,12 @@ def create_app(config_class=None):
         business = Business.query.filter_by(id=business_id, user_id=g.current_user.id).first()
         if not business:
             return jsonify({"error": "Negocio no encontrado"}), 404
+        # Plan FREE: sin acceso a importar/restore
+        if g.current_user.plan == "free":
+            return jsonify({
+                "error": "La importación está disponible solo en Pro. Actualiza tu plan para usar esta función.",
+                "upgrade_url": "/upgrade"
+            }), 403
 
         data = request.get_json() or {}
         backup_data = data.get("data")
@@ -2906,6 +2954,12 @@ def create_app(config_class=None):
     @permission_required('admin.*')
     def export_data():
         """Export all data"""
+        # Plan FREE: sin acceso a exportación
+        if g.current_user.plan == "free":
+            return jsonify({
+                "error": "La exportación está disponible solo en Pro. Actualiza tu plan para usar esta función.",
+                "upgrade_url": "/upgrade"
+            }), 403
         from backend.models import User, Business, Customer, Product, Sale, Payment, Expense, AuditLog
         import json
         
@@ -2944,6 +2998,12 @@ def create_app(config_class=None):
     @permission_required('admin.*')
     def import_data():
         """Import data from JSON file"""
+        # Plan FREE: sin acceso a importación
+        if g.current_user.plan == "free":
+            return jsonify({
+                "error": "La importación está disponible solo en Pro. Actualiza tu plan para usar esta función.",
+                "upgrade_url": "/upgrade"
+            }), 403
         from backend.models import User, Business, Customer, Product, Sale, Payment, Expense
         
         if 'file' not in request.files:
@@ -3093,6 +3153,34 @@ def create_app(config_class=None):
     def tienda():
         """Public Store - Landing page for customers"""
         return send_from_directory("../frontend", "landing.html")
+    
+    @app.route("/api/contact", methods=["POST"])
+    def contact():
+        data = request.get_json() or {}
+        name = (data.get("name") or "").strip()
+        email = (data.get("email") or "").strip()
+        query_type = (data.get("type") or "").strip()
+        message = (data.get("message") or "").strip()
+        if not name or not email or not message:
+            return jsonify({"error": "Nombre, email y mensaje son requeridos"}), 400
+        subject = "[Landing] Nueva consulta"
+        body_lines = [
+            f"Nombre: {name}",
+            f"Email: {email}",
+            f"Tipo de consulta: {query_type or 'no especificado'}",
+            "",
+            message,
+        ]
+        body = "\n".join(body_lines)
+        try:
+            from backend.auth import AuthManager
+            sent = AuthManager._send_with_mailjet("encajapp@gmail.com", name, subject, body)
+            if not sent:
+                return jsonify({"error": "No se pudo enviar el mensaje, intenta más tarde"}), 500
+        except Exception as e:
+            print(f"[CONTACT] Error enviando mensaje: {e}")
+            return jsonify({"error": "No se pudo enviar el mensaje, intenta más tarde"}), 500
+        return jsonify({"success": True})
     
     # ========== PUBLIC CUSTOMER API ==========
     @app.route("/api/public/register", methods=["POST"])

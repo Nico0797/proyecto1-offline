@@ -2399,11 +2399,16 @@
                 };
                 
                 const res = await fetch(endpoint, { ...options, headers });
+                const data = await res.json().catch(() => ({}));
                 if (!res.ok) {
-                    const data = await res.json();
+                    if (res.status === 403 && data && data.upgrade_url) {
+                        alert((data.error || 'Función disponible solo en Pro') + '\n\nPuedes actualizar tu plan desde la app.');
+                        window.location.href = '/app';
+                        throw new Error(data.error || 'Acceso restringido');
+                    }
                     throw new Error(data.error || 'API Error');
                 }
-                return res.json();
+                return data;
             }
         };
         

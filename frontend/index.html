@@ -2196,6 +2196,11 @@
                     responseData = await response.json();
                     
                     if (!response.ok) {
+                        if (status === 403 && responseData && responseData.upgrade_url) {
+                            const goPro = await showConfirm((responseData.error || 'Función disponible solo en Pro') + '\n\n¿Quieres actualizar tu plan ahora?');
+                            if (goPro) this.navigate('upgrade');
+                            throw new Error(responseData.error || 'Acceso restringido');
+                        }
                         throw new Error(responseData.error || `Error ${status}: ${responseData.message || 'Error en la solicitud'}`);
                     }
                     
