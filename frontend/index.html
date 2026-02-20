@@ -1245,17 +1245,17 @@
                         <div class="grid md:grid-cols-3 gap-4">
                             <div class="p-4 bg-green-500/20 rounded-lg">
                                 <p class="text-sm text-muted">Plan Trimestral</p>
-                                <p class="font-bold text-xl text-green-400">$18,308/mes</p>
-                                <p class="text-xs text-muted">$54,924/3 meses</p>
+                                <p class="font-bold text-xl text-green-400">$5.39/mes (USD)</p>
+                                <p class="text-xs text-muted">$16.17/3 meses</p>
                             </div>
                             <div class="p-4 bg-purple-500/20 rounded-lg">
                                 <p class="text-sm text-muted">Plan Anual</p>
-                                <p class="font-bold text-xl text-purple-400">$16,915/mes</p>
-                                <p class="text-xs text-green-400">Ahorras $35,820</p>
+                                <p class="font-bold text-xl text-purple-400">$4.19/mes (USD)</p>
+                                <p class="text-xs text-green-400">Ahorra 30%</p>
                             </div>
                             <div class="p-4 bg-yellow-500/20 rounded-lg">
                                 <p class="text-sm text-muted">Plan Mensual</p>
-                                <p class="font-bold text-xl text-yellow-400">$19,900/mes</p>
+                                <p class="font-bold text-xl text-yellow-400">$5.99/mes (USD)</p>
                             </div>
                         </div>
                         <button onclick="app.navigate('upgrade')" class="btn-primary w-full mt-4 py-2 rounded-xl">Actualizar a Pro</button>
@@ -1269,8 +1269,8 @@
                     <div class="flex justify-center mb-6">
                         <div class="glass rounded-xl p-4 flex gap-2">
                             <button id="pricing-monthly-btn" class="btn-primary px-4 py-2 rounded-xl" onclick="app.setPricingCycle('monthly')">Mensual</button>
-                            <button id="pricing-quarterly-btn" class="px-4 py-2 rounded-xl" onclick="app.setPricingCycle('quarterly')">Trimestral -8%</button>
-                            <button id="pricing-annual-btn" class="px-4 py-2 rounded-xl" onclick="app.setPricingCycle('annual')">Anual -15%</button>
+                            <button id="pricing-quarterly-btn" class="px-4 py-2 rounded-xl" onclick="app.setPricingCycle('quarterly')">Trimestral -10%</button>
+                            <button id="pricing-annual-btn" class="px-4 py-2 rounded-xl" onclick="app.setPricingCycle('annual')">Anual -30%</button>
                         </div>
                     </div>
                     
@@ -1295,8 +1295,8 @@
                         <div class="glass rounded-xl p-6 border border-yellow-500/50 relative">
                             <div class="absolute -top-3 left-1/2 -translate-x-1/2 bg-yellow-500 text-black px-3 py-1 rounded-full text-sm font-bold">MÁS POPULAR</div>
                             <h3 class="text-xl font-bold mb-2">Pro</h3>
-                            <p class="text-3xl font-bold mb-2"><span id="pro-price">$19.900</span><span class="text-sm font-normal">/mes</span></p>
-                            <p class="text-sm text-muted mb-4" id="pro-price-note">COP 19.900 mensual</p>
+                            <p class="text-3xl font-bold mb-2"><span id="pro-price">$5.99</span><span class="text-sm font-normal">/mes</span></p>
+                            <p class="text-sm text-muted mb-4" id="pro-price-note">USD 5.99 mensual</p>
                             <ul class="space-y-2 text-muted mb-6">
                                 <li>✓ Negocios ilimitados</li>
                                 <li>✓ Productos ilimitados</li>
@@ -2912,22 +2912,36 @@
             },
 
             renderPricing() {
-                const monthly = this.pricingMonthlyCop;
-                const annual = Math.round(monthly * 12 * (1 - this.pricingAnnualDiscount));
+                const base = 5.99;
+                const quarterlyDiscount = 0.1;
+                const annualDiscount = 0.3;
+                const quarterlyTotal = base * 3 * (1 - quarterlyDiscount);
+                const annualTotal = base * 12 * (1 - annualDiscount);
+                const quarterlyMonthly = quarterlyTotal / 3;
+                const annualMonthly = annualTotal / 12;
                 const priceEl = document.getElementById('pro-price');
                 const noteEl = document.getElementById('pro-price-note');
                 const monthlyBtn = document.getElementById('pricing-monthly-btn');
+                const quarterlyBtn = document.getElementById('pricing-quarterly-btn');
                 const annualBtn = document.getElementById('pricing-annual-btn');
 
                 if (this.pricingCycle === 'annual') {
-                    priceEl.textContent = this.formatMoney(annual);
-                    noteEl.textContent = `COP ${annual.toLocaleString('es-CO')} anual (ahorra 15%)`;
+                    priceEl.textContent = `$${annualMonthly.toFixed(2)}`;
+                    noteEl.textContent = `USD ${annualTotal.toFixed(2)} anual (ahorra 30%)`;
                     monthlyBtn.classList.remove('btn-primary');
+                    quarterlyBtn.classList.remove('btn-primary');
                     annualBtn.classList.add('btn-primary');
-                } else {
-                    priceEl.textContent = this.formatMoney(monthly);
-                    noteEl.textContent = `COP ${monthly.toLocaleString('es-CO')} mensual`;
+                } else if (this.pricingCycle === 'quarterly') {
+                    priceEl.textContent = `$${quarterlyMonthly.toFixed(2)}`;
+                    noteEl.textContent = `USD ${quarterlyTotal.toFixed(2)} cada 3 meses (ahorra 10%)`;
+                    monthlyBtn.classList.remove('btn-primary');
                     annualBtn.classList.remove('btn-primary');
+                    quarterlyBtn.classList.add('btn-primary');
+                } else {
+                    priceEl.textContent = `$${base.toFixed(2)}`;
+                    noteEl.textContent = `USD ${base.toFixed(2)} mensual`;
+                    annualBtn.classList.remove('btn-primary');
+                    quarterlyBtn.classList.remove('btn-primary');
                     monthlyBtn.classList.add('btn-primary');
                 }
             },
