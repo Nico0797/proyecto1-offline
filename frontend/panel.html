@@ -504,11 +504,11 @@
                 <div id="login-form">
                     <div class="form-group">
                         <label class="form-label">Email</label>
-                        <input type="email" id="login-email" class="form-input" placeholder="tu@email.com">
+                        <input type="email" id="login-email" class="form-input" placeholder="tu@email.com" autocomplete="off">
                     </div>
                     <div class="form-group">
                         <label class="form-label">Contraseña</label>
-                        <input type="password" id="login-password" class="form-input" placeholder="••••••••">
+                        <input type="password" id="login-password" class="form-input" placeholder="••••••••" autocomplete="new-password">
                     </div>
                     <button onclick="app.login()" class="btn btn-primary w-full py-3 rounded-xl font-semibold">Iniciar Sesión</button>
                 </div>
@@ -713,6 +713,10 @@
             showLogin() {
                 document.getElementById('auth-screen').classList.remove('hidden');
                 document.getElementById('main-app').classList.add('hidden');
+                const emailInput = document.getElementById('login-email');
+                const passwordInput = document.getElementById('login-password');
+                if (emailInput) emailInput.value = '';
+                if (passwordInput) passwordInput.value = '';
             },
             
             showApp() {
