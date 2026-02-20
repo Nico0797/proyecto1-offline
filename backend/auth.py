@@ -278,24 +278,33 @@ class AuthManager:
     @staticmethod
     def register(email, password, name):
         """Registrar nuevo usuario"""
-        # Verificar si email ya existe
-        existing = User.query.filter_by(email=email.lower()).first()
+        from backend.database import db
+        email_lower = email.lower()
+        existing = User.query.filter_by(email=email_lower).first()
         if existing:
+            if not existing.email_verified:
+                verification_code = AuthManager.generate_email_otp()
+                existing.name = name
+                existing.set_password(password)
+                existing.email_verification_code = verification_code
+                existing.email_verification_expires = datetime.utcnow() + timedelta(minutes=10)
+                existing.is_active = True
+                db.session.commit()
+                AuthManager.send_verification_email(existing.email, existing.name, verification_code)
+                return existing, None
             return None, "El email ya está registrado"
 
-        # Crear usuario
         verification_code = AuthManager.generate_email_otp()
         user = User(
-            email=email.lower(),
+            email=email_lower,
             name=name,
-            plan="free",  # Plan inicial gratuito
+            plan="free",
             email_verified=False,
             email_verification_code=verification_code,
             email_verification_expires=datetime.utcnow() + timedelta(minutes=10),
         )
         user.set_password(password)
 
-        from backend.database import db
         db.session.add(user)
         db.session.commit()
 
