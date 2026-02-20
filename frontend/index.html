@@ -2398,10 +2398,12 @@
                     if (logoEl) logoEl.value = logo;
                     // Update logo preview
                     const logoPreview = document.getElementById('business-logo-preview');
-                    if (logo && logo.trim()) {
-                        logoPreview.innerHTML = `<img src="${logo}" class="w-full h-full object-cover" onerror="this.parentElement.innerHTML='<span class=\\''text-3xl\\''>🏪</span>'">`;
-                    } else {
-                        logoPreview.innerHTML = '<span class="text-3xl">🏪</span>';
+                    if (logoPreview) {
+                        if (logo && logo.trim()) {
+                            logoPreview.innerHTML = `<img src="${logo}" class="w-full h-full object-cover" onerror="this.parentElement.innerHTML='<span class=\\''text-3xl\\''>🏪</span>'">`;
+                        } else {
+                            logoPreview.innerHTML = '<span class="text-3xl">🏪</span>';
+                        }
                     }
                     // Update header logo and name
                     this.updateHeader();
@@ -2550,10 +2552,12 @@
                     const logo = settings.logo || '';
                     if (logoEl2) logoEl2.value = logo;
                     const logoPreview = document.getElementById('business-logo-preview');
-                    if (logo && logo.trim()) {
-                        logoPreview.innerHTML = `<img src="${logo}" class="w-full h-full object-cover" onerror="this.parentElement.innerHTML='<span class=\\''text-3xl\\''>🏪</span>'">`;
-                    } else {
-                        logoPreview.innerHTML = '<span class="text-3xl">🏪</span>';
+                    if (logoPreview) {
+                        if (logo && logo.trim()) {
+                            logoPreview.innerHTML = `<img src="${logo}" class="w-full h-full object-cover" onerror="this.parentElement.innerHTML='<span class=\\''text-3xl\\''>🏪</span>'">`;
+                        } else {
+                            logoPreview.innerHTML = '<span class="text-3xl">🏪</span>';
+                        }
                     }
                     this.updateHeader();
                     this.updateBusinessSwitch();
@@ -2608,11 +2612,12 @@
                     if (data.logo_url) {
                         this.business.settings = this.business.settings || {};
                         this.business.settings.logo = data.logo_url;
-                        document.getElementById('business-logo').value = data.logo_url;
+                        const logoEl = document.getElementById('business-logo');
+                        if (logoEl) logoEl.value = data.logo_url;
                         this.updateHeader();
                         // Update preview
                         const logoPreview = document.getElementById('business-logo-preview');
-                        logoPreview.innerHTML = `<img src="${data.logo_url}" class="w-full h-full object-cover">`;
+                        if (logoPreview) logoPreview.innerHTML = `<img src="${data.logo_url}" class="w-full h-full object-cover">`;
                         alert('Logo actualizado');
                     } else if (data.error) {
                         alert(data.error);
