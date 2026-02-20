@@ -19,12 +19,12 @@ def init_db(app):
     db.init_app(app)
     migrate.init_app(app, db)
     
-    # Crear tablas si no existen
+    # Crear tablas automáticamente solo en SQLite (desarrollo / local)
     with app.app_context():
-        db.create_all()
         try:
             engine = db.get_engine()
             if engine.dialect.name == "sqlite":
+                db.create_all()
                 result = db.session.execute(text("PRAGMA table_info(users)"))
                 existing_columns = {row[1] for row in result.fetchall()}
                 pending = []
@@ -38,12 +38,10 @@ def init_db(app):
                     pending.append("ALTER TABLE users ADD COLUMN reset_password_code VARCHAR(20)")
                 if "reset_password_expires" not in existing_columns:
                     pending.append("ALTER TABLE users ADD COLUMN reset_password_expires DATETIME")
-                # Sales balance for credit tracking
                 result = db.session.execute(text("PRAGMA table_info(sales)"))
                 sales_columns = {row[1] for row in result.fetchall()}
                 if "balance" not in sales_columns:
                     pending.append("ALTER TABLE sales ADD COLUMN balance FLOAT DEFAULT 0")
-                # Inventory tracking
                 result = db.session.execute(text("PRAGMA table_info(products)"))
                 product_columns = {row[1] for row in result.fetchall()}
                 if "stock" not in product_columns:
