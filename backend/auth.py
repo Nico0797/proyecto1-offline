@@ -255,6 +255,8 @@ class AuthManager:
         password = os.getenv("SMTP_PASS")
         sender = os.getenv("SMTP_FROM", user or "no-reply@localhost")
 
+        print(f"[SMTP DEBUG] host={host!r} port={port!r} user={user!r} password_set={bool(password)}")
+
         if not host or not port or not user or not password:
             print(f"[EMAIL OTP] To: {email} | Code: {code}")
             return
