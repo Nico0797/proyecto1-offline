@@ -655,6 +655,14 @@
                         <button onclick="app.showExpenseModal()" class="btn-primary px-4 py-2 rounded-xl font-semibold">+ Nuevo Gasto</button>
                     </div>
                     
+                    <!-- Filters -->
+                    <div class="flex flex-wrap gap-2 mb-4 items-center">
+                        <input type="text" id="expenses-search" placeholder="Buscar gasto..." class="input px-4 py-2 rounded-lg flex-1 min-w-48">
+                        <input type="date" id="expenses-start" class="input px-3 py-2 rounded-lg">
+                        <input type="date" id="expenses-end" class="input px-3 py-2 rounded-lg">
+                        <button onclick="app.loadExpenses()" class="btn-primary px-4 py-2 rounded-lg">Filtrar</button>
+                    </div>
+                    
                     <div class="glass rounded-xl overflow-hidden">
                         <table>
                             <thead>
@@ -677,6 +685,14 @@
                     <div class="flex justify-between items-center mb-6">
                         <h2 class="text-2xl font-bold">Pagos y Abonos</h2>
                         <button onclick="app.showPaymentModal()" class="btn-success px-4 py-2 rounded-xl font-semibold">+ Registrar Pago</button>
+                    </div>
+                    
+                    <!-- Filters -->
+                    <div class="flex flex-wrap gap-2 mb-4 items-center">
+                        <input type="text" id="payments-search" placeholder="Buscar pago..." class="input px-4 py-2 rounded-lg flex-1 min-w-48">
+                        <input type="date" id="payments-start" class="input px-3 py-2 rounded-lg">
+                        <input type="date" id="payments-end" class="input px-3 py-2 rounded-lg">
+                        <button onclick="app.loadPayments()" class="btn-primary px-4 py-2 rounded-lg">Filtrar</button>
                     </div>
                     
                     <div class="glass rounded-xl overflow-hidden">
@@ -2699,7 +2715,7 @@
                     document.getElementById('current-password').value = '';
                     document.getElementById('new-password').value = '';
                 } catch (e) {
-                    // Error already shown
+                    alert(e.message || 'Error al cambiar contraseña');
                 }
             },
             
@@ -3107,10 +3123,30 @@
                                     <button onclick="app.shareOnWhatsApp(${s.id}, '${customers[s.customer_id] || ''}')" class="text-green-400 hover:text-green-300 p-1" title="Compartir por WhatsApp">
                                         <i class="ph ph-whatsapp-logo text-lg"></i>
                                     </button>
+                                    <button onclick="app.deleteSale(${s.id})" class="text-red-400 hover:text-red-300 p-1" title="Eliminar venta">
+                                        <i class="ph ph-trash text-lg"></i>
+                                    </button>
                                 </div>
                             </td>
                         </tr>
                     `).join('');
+                }
+            },
+            
+            async deleteSale(saleId) {
+                if (!await showConfirm('¿Estás seguro de que quieres eliminar esta venta?')) {
+                    return;
+                }
+                
+                try {
+                    await this.api(`/businesses/${this.business.id}/sales/${saleId}`, {
+                        method: 'DELETE'
+                    });
+                    alert('Venta eliminada correctamente');
+                    this.loadSales();
+                    this.loadDashboard();
+                } catch (e) {
+                    alert('Error al eliminar venta: ' + e.message);
                 }
             },
             
@@ -3237,7 +3273,18 @@
             
             // Expenses
             async loadExpenses() {
-                const data = await this.api(`/businesses/${this.business.id}/expenses`);
+                const start = document.getElementById('expenses-start').value;
+                const end = document.getElementById('expenses-end').value;
+                const search = document.getElementById('expenses-search').value;
+                
+                let url = `/businesses/${this.business.id}/expenses`;
+                const params = new URLSearchParams();
+                if (start) params.append('start_date', start);
+                if (end) params.append('end_date', end);
+                if (search) params.append('search', search);
+                
+                const queryString = params.toString();
+                const data = await this.api(url + (queryString ? `?${queryString}` : ''));
                 
                 const tbody = document.getElementById('expenses-table');
                 if (data.expenses.length === 0) {
@@ -3259,7 +3306,18 @@
             
             // Payments
             async loadPayments() {
-                const data = await this.api(`/businesses/${this.business.id}/payments`);
+                const start = document.getElementById('payments-start').value;
+                const end = document.getElementById('payments-end').value;
+                const search = document.getElementById('payments-search').value;
+                
+                let url = `/businesses/${this.business.id}/payments`;
+                const params = new URLSearchParams();
+                if (start) params.append('start_date', start);
+                if (end) params.append('end_date', end);
+                if (search) params.append('search', search);
+                
+                const queryString = params.toString();
+                const data = await this.api(url + (queryString ? `?${queryString}` : ''));
                 
                 // Get customers for lookup
                 const customersData = await this.api(`/businesses/${this.business.id}/customers`);
@@ -3598,19 +3656,27 @@
             },
             
             async editProduct(id) {
-                const data = await this.api(`/businesses/${this.business.id}/products/${id}`);
-                if (data.product) {
-                    this.editingProductId = id;
-                    document.getElementById('product-modal-title').textContent = 'Editar Producto';
-                    document.getElementById('product-name').value = data.product.name;
-                    document.getElementById('product-sku').value = data.product.sku || '';
-                    document.getElementById('product-price').value = data.product.price;
-                    document.getElementById('product-cost').value = data.product.cost || '';
-                    document.getElementById('product-unit').value = data.product.unit || 'und';
-                    document.getElementById('product-stock').value = data.product.stock || 0;
-                    document.getElementById('product-low-stock').value = data.product.low_stock_threshold || 5;
-                    document.getElementById('modal-product').classList.remove('hidden');
-                    document.getElementById('modal-overlay').classList.remove('hidden');
+                try {
+                    const data = await this.api(`/businesses/${this.business.id}/products/${id}`);
+                    if (data.product) {
+                        this.editingProductId = id;
+                        document.getElementById('product-modal-title').textContent = 'Editar Producto';
+                        document.getElementById('product-name').value = data.product.name;
+                        document.getElementById('product-sku').value = data.product.sku || '';
+                        document.getElementById('product-price').value = data.product.price;
+                        document.getElementById('product-cost').value = data.product.cost || '';
+                        document.getElementById('product-unit').value = data.product.unit || 'und';
+                        document.getElementById('product-stock').value = data.product.stock || 0;
+                        document.getElementById('product-low-stock').value = data.product.low_stock_threshold || 5;
+                        const modal = document.getElementById('modal-product');
+                        const overlay = document.getElementById('modal-overlay');
+                        modal.classList.remove('hidden');
+                        modal.style.display = 'block';
+                        overlay.classList.remove('hidden');
+                        overlay.style.display = 'flex';
+                    }
+                } catch (e) {
+                    alert('Error al cargar producto: ' + e.message);
                 }
             },
             
@@ -3974,31 +4040,63 @@
             },
             
             async exportSales() {
-                const start = document.getElementById('export-sales-start').value;
-                const end = document.getElementById('export-sales-end').value;
-                
-                let url = `/businesses/${this.business.id}/export/sales`;
-                const params = [];
-                if (start) params.push(`start_date=${start}`);
-                if (end) params.push(`end_date=${end}`);
-                if (params.length) url += '?' + params.join('&');
-                
-                const data = await this.api(url);
-                window.location.href = data.download_url;
+                try {
+                    const start = document.getElementById('export-sales-start').value;
+                    const end = document.getElementById('export-sales-end').value;
+                    
+                    let url = `/api/businesses/${this.business.id}/export/sales`;
+                    const params = [];
+                    if (start) params.push(`start_date=${start}`);
+                    if (end) params.push(`end_date=${end}`);
+                    if (params.length) url += '?' + params.join('&');
+                    
+                    const response = await fetch(url, {
+                        headers: { 
+                            'Authorization': `Bearer ${this.token}`,
+                            'Content-Type': 'application/json'
+                        }
+                    });
+                    
+                    if (!response.ok) {
+                        const err = await response.json();
+                        throw new Error(err.error || 'Error exporting sales');
+                    }
+                    
+                    const data = await response.json();
+                    window.location.href = data.download_url;
+                } catch (e) {
+                    alert('Error al exportar ventas: ' + e.message);
+                }
             },
             
             async exportExpenses() {
-                const start = document.getElementById('export-expenses-start').value;
-                const end = document.getElementById('export-expenses-end').value;
-                
-                let url = `/businesses/${this.business.id}/export/expenses`;
-                const params = [];
-                if (start) params.push(`start_date=${start}`);
-                if (end) params.push(`end_date=${end}`);
-                if (params.length) url += '?' + params.join('&');
-                
-                const data = await this.api(url);
-                window.location.href = data.download_url;
+                try {
+                    const start = document.getElementById('export-expenses-start').value;
+                    const end = document.getElementById('export-expenses-end').value;
+                    
+                    let url = `/api/businesses/${this.business.id}/export/expenses`;
+                    const params = [];
+                    if (start) params.push(`start_date=${start}`);
+                    if (end) params.push(`end_date=${end}`);
+                    if (params.length) url += '?' + params.join('&');
+                    
+                    const response = await fetch(url, {
+                        headers: { 
+                            'Authorization': `Bearer ${this.token}`,
+                            'Content-Type': 'application/json'
+                        }
+                    });
+                    
+                    if (!response.ok) {
+                        const err = await response.json();
+                        throw new Error(err.error || 'Error exporting expenses');
+                    }
+                    
+                    const data = await response.json();
+                    window.location.href = data.download_url;
+                } catch (e) {
+                    alert('Error al exportar gastos: ' + e.message);
+                }
             },
             
             // Upgrade to Pro
@@ -4029,12 +4127,6 @@
                 }
             },
             
-            // Backup
-            async downloadBackup() {
-                const data = await this.api(`/businesses/${this.business.id}/backup`);
-                window.location.href = data.download_url;
-            },
-            
             async importBackup(input) {
                 const file = input.files[0];
                 if (!file) return;
@@ -4054,6 +4146,27 @@
                     }
                 };
                 reader.readAsText(file);
+            },
+            
+            async downloadBackup() {
+                try {
+                    const response = await fetch(`/api/businesses/${this.business.id}/backup`, {
+                        headers: { 
+                            'Authorization': `Bearer ${this.token}`,
+                            'Content-Type': 'application/json'
+                        }
+                    });
+                    
+                    if (!response.ok) {
+                        const err = await response.json();
+                        throw new Error(err.error || 'Error downloading backup');
+                    }
+                    
+                    const data = await response.json();
+                    window.location.href = data.download_url;
+                } catch (e) {
+                    alert('Error al descargar respaldo: ' + e.message);
+                }
             },
             
             // Admin

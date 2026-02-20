@@ -3371,8 +3371,12 @@
                     document.getElementById('product-unit').value = data.product.unit || 'und';
                     document.getElementById('product-stock').value = data.product.stock || 0;
                     document.getElementById('product-low-stock').value = data.product.low_stock_threshold || 5;
-                    document.getElementById('modal-product').classList.remove('hidden');
-                    document.getElementById('modal-overlay').classList.remove('hidden');
+                    const modal = document.getElementById('modal-product');
+                    const overlay = document.getElementById('modal-overlay');
+                    modal.classList.remove('hidden');
+                    modal.style.display = 'block';
+                    overlay.classList.remove('hidden');
+                    overlay.style.display = 'flex';
                 }
             },
             
