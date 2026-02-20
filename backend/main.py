@@ -2392,6 +2392,13 @@ def create_app(config_class=None):
             return jsonify({"error": "Usuario no encontrado"}), 404
         
         data = request.get_json() or {}
+        if "email" in data:
+            new_email = (data["email"] or "").strip().lower()
+            if new_email and new_email != user.email:
+                existing = User.query.filter(User.email == new_email, User.id != user_id).first()
+                if existing:
+                    return jsonify({"error": "El email ya está en uso"}), 400
+                user.email = new_email
         if "name" in data:
             user.name = data["name"].strip()
         if "is_admin" in data:

@@ -1584,7 +1584,7 @@
                             
                             <div class="form-group mb-4">
                                 <label class="form-label">Email</label>
-                                <input type="email" id="edit-user-email" class="form-input" value="${user.email || ''}" disabled>
+                                <input type="email" id="edit-user-email" class="form-input" value="${user.email || ''}">
                             </div>
                             
                             <div class="form-group mb-4">
@@ -1628,6 +1628,7 @@
             
             async saveUser(userId) {
                 const name = document.getElementById('edit-user-name').value;
+                const email = document.getElementById('edit-user-email').value;
                 const plan = document.getElementById('edit-user-plan').value;
                 const isActive = document.getElementById('edit-user-active').value === 'true';
                 const selectedRoles = Array.from(document.getElementById('edit-user-roles').selectedOptions).map(opt => parseInt(opt.value));
@@ -1640,7 +1641,7 @@
                             'Authorization': `Bearer ${this.token}`,
                             'Content-Type': 'application/json'
                         },
-                        body: JSON.stringify({ name, plan, is_active: isActive })
+                        body: JSON.stringify({ name, email, plan, is_active: isActive })
                     });
                     
                     if (!updateRes.ok) {
