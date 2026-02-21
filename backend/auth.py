@@ -10,6 +10,7 @@ import smtplib
 from email.message import EmailMessage
 from datetime import datetime, timedelta
 from functools import wraps
+import requests
 from flask import request, jsonify, g, current_app
 from backend.models import User, Permission, Role, AuditLog, UserRole
 
@@ -325,8 +326,111 @@ class AuthManager:
         """
 
     @staticmethod
+    def _send_mailjet_email(to_email, subject, text, html=None):
+        api_key = os.getenv("MAILJET_API_KEY")
+        api_secret = os.getenv("MAILJET_API_SECRET")
+        sender = os.getenv("MAILJET_SENDER") or os.getenv("SMTP_FROM") or "no-reply@localhost"
+        if not api_key or not api_secret or not sender:
+            print(
+                f"[MAILJET SKIP] missing config "
+                f"api_key={bool(api_key)} secret={bool(api_secret)} sender={bool(sender)}"
+            )
+            return False
+        try:
+            sender_name = os.getenv("MAILJET_SENDER_NAME", "EnCaja")
+            payload = {
+                "Messages": [
+                    {
+                        "From": {
+                            "Email": sender,
+                            "Name": sender_name,
+                        },
+                        "To": [
+                            {
+                                "Email": to_email,
+                            }
+                        ],
+                        "Subject": subject,
+                        "TextPart": text or "",
+                    }
+                ]
+            }
+            if html:
+                payload["Messages"][0]["HTMLPart"] = html
+            response = requests.post(
+                "https://api.mailjet.com/v3.1/send",
+                auth=(api_key, api_secret),
+                json=payload,
+                timeout=10,
+            )
+            if 200 <= response.status_code < 300:
+                return True
+            print(f"[MAILJET ERROR] {response.status_code} {response.text[:200]}")
+            return False
+        except Exception as e:
+            print(f"[MAILJET EXCEPTION] {e}")
+            return False
+
+    @staticmethod
+    def _send_brevo_email(to_email, subject, text, html=None):
+        api_key = os.getenv("BREVO_API_KEY")
+        sender = os.getenv("BREVO_SENDER") or os.getenv("MAILJET_SENDER") or os.getenv("SMTP_FROM")
+        if not api_key or not sender:
+            print(
+                f"[BREVO SKIP] missing config "
+                f"api_key={bool(api_key)} sender={bool(sender)}"
+            )
+            return False
+        try:
+            sender_name = os.getenv("BREVO_SENDER_NAME") or os.getenv("MAILJET_SENDER_NAME") or "EnCaja"
+            payload = {
+                "sender": {
+                    "email": sender,
+                    "name": sender_name,
+                },
+                "to": [
+                    {
+                        "email": to_email,
+                    }
+                ],
+                "subject": subject,
+                "textContent": text or "",
+            }
+            if html:
+                payload["htmlContent"] = html
+            response = requests.post(
+                "https://api.brevo.com/v3/smtp/email",
+                headers={
+                    "api-key": api_key,
+                    "Content-Type": "application/json",
+                },
+                json=payload,
+                timeout=10,
+            )
+            if 200 <= response.status_code < 300:
+                return True
+            print(f"[BREVO ERROR] {response.status_code} {response.text[:200]}")
+            return False
+        except Exception as e:
+            print(f"[BREVO EXCEPTION] {e}")
+            return False
+
+    @staticmethod
     def send_password_reset_email(email, name, code):
         """Enviar email de recuperación de contraseña o log si SMTP no está configurado"""
+        plain = f"Hola {name},\n\nTu código para restablecer contraseña es: {code}\n\nEste código expira en 10 minutos."
+        html = AuthManager._build_html_email("Restablecer contraseña", plain)
+        provider = (os.getenv("EMAIL_PROVIDER") or "").lower()
+        sent = False
+        if provider == "brevo":
+            sent = AuthManager._send_brevo_email(email, "Tu código para restablecer contraseña", plain, html)
+        else:
+            sent = AuthManager._send_mailjet_email(email, "Tu código para restablecer contraseña", plain, html)
+        if sent:
+            return
+        if provider in ("mailjet", "brevo"):
+            print(f"[PASSWORD RESET] To: {email} | Code: {code}")
+            return
         host = os.getenv("SMTP_HOST")
         port = os.getenv("SMTP_PORT")
         user = os.getenv("SMTP_USER")
@@ -341,9 +445,8 @@ class AuthManager:
         msg["Subject"] = "Tu código para restablecer contraseña"
         msg["From"] = sender
         msg["To"] = email
-        plain = f"Hola {name},\n\nTu código para restablecer contraseña es: {code}\n\nEste código expira en 10 minutos."
         msg.set_content(plain)
-        msg.add_alternative(AuthManager._build_html_email("Restablecer contraseña", plain), subtype="html")
+        msg.add_alternative(html, subtype="html")
 
         with smtplib.SMTP(host, int(port)) as server:
             server.starttls()
@@ -353,6 +456,19 @@ class AuthManager:
     @staticmethod
     def send_verification_email(email, name, code):
         """Enviar email de verificación o log si SMTP no está configurado"""
+        plain = f"Hola {name},\n\nTu código de verificación es: {code}\n\nEste código expira en 10 minutos."
+        html = AuthManager._build_html_email("Verificación de correo", plain)
+        provider = (os.getenv("EMAIL_PROVIDER") or "").lower()
+        sent = False
+        if provider == "brevo":
+            sent = AuthManager._send_brevo_email(email, "Tu código de verificación", plain, html)
+        else:
+            sent = AuthManager._send_mailjet_email(email, "Tu código de verificación", plain, html)
+        if sent:
+            return
+        if provider in ("mailjet", "brevo"):
+            print(f"[EMAIL OTP] To: {email} | Code: {code}")
+            return
         host = os.getenv("SMTP_HOST")
         port = os.getenv("SMTP_PORT")
         user = os.getenv("SMTP_USER")
@@ -369,9 +485,8 @@ class AuthManager:
         msg["Subject"] = "Tu código de verificación"
         msg["From"] = sender
         msg["To"] = email
-        plain = f"Hola {name},\n\nTu código de verificación es: {code}\n\nEste código expira en 10 minutos."
         msg.set_content(plain)
-        msg.add_alternative(AuthManager._build_html_email("Verificación de correo", plain), subtype="html")
+        msg.add_alternative(html, subtype="html")
 
         try:
             with smtplib.SMTP(host, int(port), timeout=10) as server:
@@ -384,6 +499,17 @@ class AuthManager:
 
     @staticmethod
     def send_plain_email(to_email, subject, text):
+        provider = (os.getenv("EMAIL_PROVIDER") or "").lower()
+        sent = False
+        if provider == "brevo":
+            sent = AuthManager._send_brevo_email(to_email, subject, text, None)
+        else:
+            sent = AuthManager._send_mailjet_email(to_email, subject, text, None)
+        if sent:
+            return True
+        if provider in ("mailjet", "brevo"):
+            print(f"[EMAIL PLAIN] To: {to_email} | Subject: {subject} | Body: {text}")
+            return False
         host = os.getenv("SMTP_HOST")
         port = os.getenv("SMTP_PORT")
         user = os.getenv("SMTP_USER")
