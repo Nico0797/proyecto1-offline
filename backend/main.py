@@ -3188,7 +3188,7 @@ def create_app(config_class=None):
         body = "\n".join(body_lines)
         try:
             from backend.auth import AuthManager
-            sent = AuthManager._send_with_mailjet("encajapp@gmail.com", name, subject, body)
+            sent = AuthManager.send_plain_email("encajapp@gmail.com", subject, body)
             if not sent:
                 return jsonify({"error": "No se pudo enviar el mensaje, intenta más tarde"}), 500
         except Exception as e:

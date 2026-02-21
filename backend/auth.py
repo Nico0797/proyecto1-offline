@@ -13,12 +13,6 @@ from functools import wraps
 from flask import request, jsonify, g, current_app
 from backend.models import User, Permission, Role, AuditLog, UserRole
 
-try:
-    import requests
-    HAS_REQUESTS = True
-except ImportError:
-    HAS_REQUESTS = False
-
 
 def create_token(user_id, token_type="access"):
     """Crear token JWT"""
@@ -249,7 +243,7 @@ class AuthManager:
     @staticmethod
     def _build_html_email(subject, text):
         """Plantilla HTML básica con branding EnCaja"""
-        base_url = os.getenv("PUBLIC_BASE_URL") or os.getenv("APP_BASE_URL") or "https://app.encaja.co"
+        base_url = os.getenv("PUBLIC_BASE_URL") or os.getenv("APP_BASE_URL") or "https://encajapp.site"
         logo_url = f"{base_url.rstrip('/')}/public/assets/logo.png"
         theme = (os.getenv("EMAIL_THEME") or "light").lower()
         is_dark = theme == "dark"
@@ -281,7 +275,7 @@ class AuthManager:
                 <div style="font-weight:600;margin-bottom:6px;color:{text_color}">¿Necesitas ayuda?</div>
                 <div>WhatsApp: +57 319 242 6874</div>
                 <div>Email: encajapp@gmail.com</div>
-                <div>Web: app.encaja.co</div>
+                <div>Web: encajapp.site</div>
             </div>
         """
         return f"""
@@ -333,15 +327,6 @@ class AuthManager:
     @staticmethod
     def send_password_reset_email(email, name, code):
         """Enviar email de recuperación de contraseña o log si SMTP no está configurado"""
-        if os.getenv("EMAIL_PROVIDER", "").lower() == "mailjet":
-            if AuthManager._send_with_mailjet(
-                email=email,
-                name=name,
-                subject="Tu código para restablecer contraseña",
-                text=f"Hola {name},\n\nTu código para restablecer contraseña es: {code}\n\nEste código expira en 10 minutos.",
-            ):
-                return
-
         host = os.getenv("SMTP_HOST")
         port = os.getenv("SMTP_PORT")
         user = os.getenv("SMTP_USER")
@@ -368,15 +353,6 @@ class AuthManager:
     @staticmethod
     def send_verification_email(email, name, code):
         """Enviar email de verificación o log si SMTP no está configurado"""
-        if os.getenv("EMAIL_PROVIDER", "").lower() == "mailjet":
-            if AuthManager._send_with_mailjet(
-                email=email,
-                name=name,
-                subject="Tu código de verificación",
-                text=f"Hola {name},\n\nTu código de verificación es: {code}\n\nEste código expira en 10 minutos.",
-            ):
-                return
-
         host = os.getenv("SMTP_HOST")
         port = os.getenv("SMTP_PORT")
         user = os.getenv("SMTP_USER")
@@ -407,58 +383,33 @@ class AuthManager:
             print(f"[EMAIL OTP] To: {email} | Code: {code}")
 
     @staticmethod
-    def _send_with_mailjet(email, name, subject, text):
-        """Enviar email usando Mailjet. Devuelve True si se envió correctamente."""
-        if not HAS_REQUESTS:
-            print("[MAILJET] 'requests' no está instalado, usando fallback.")
-            print(f"[MAILJET FALLBACK] To: {email} | Subject: {subject} | Body: {text}")
+    def send_plain_email(to_email, subject, text):
+        host = os.getenv("SMTP_HOST")
+        port = os.getenv("SMTP_PORT")
+        user = os.getenv("SMTP_USER")
+        password = os.getenv("SMTP_PASS")
+        sender = os.getenv("SMTP_FROM", user or "no-reply@localhost")
+
+        if not host or not port or not user or not password:
+            print(f"[EMAIL PLAIN] To: {to_email} | Subject: {subject} | Body: {text}")
             return False
 
-        api_key = (os.getenv("MAILJET_API_KEY") or os.getenv("MJ_APIKEY_PUBLIC") or os.getenv("MAILJET_APIKEY_PUBLIC") or "").strip()
-        api_secret = (os.getenv("MAILJET_API_SECRET") or os.getenv("MJ_APIKEY_PRIVATE") or os.getenv("MAILJET_APIKEY_PRIVATE") or "").strip()
-        sender = (os.getenv("MAILJET_SENDER") or os.getenv("MJ_SENDER") or os.getenv("SMTP_FROM") or "no-reply@localhost").strip()
-
-        if not api_key or not api_secret or not sender:
-            print("[MAILJET] Configuración incompleta, usando fallback.")
-            print(f"[MAILJET DEBUG] api_key_len={len(api_key)} api_secret_len={len(api_secret)} sender_set={bool(sender)}")
-            print(f"[MAILJET FALLBACK] To: {email} | Subject: {subject} | Body: {text}")
-            return False
-
-        url = "https://api.mailjet.com/v3.1/send"
-        html = AuthManager._build_html_email(subject, text or "")
-        payload = {
-            "Messages": [
-                {
-                    "From": {
-                        "Email": sender,
-                        "Name": "EnCaja"
-                    },
-                    "To": [
-                        {
-                            "Email": email,
-                            "Name": name or ""
-                        }
-                    ],
-                    "Subject": subject,
-                    "TextPart": text,
-                    "HTMLPart": html,
-                }
-            ]
-        }
+        msg = EmailMessage()
+        msg["Subject"] = subject
+        msg["From"] = sender
+        msg["To"] = to_email
+        msg.set_content(text)
 
         try:
-            response = requests.post(url, json=payload, auth=(api_key, api_secret), timeout=10)
-            if response.status_code >= 200 and response.status_code < 300:
-                print(f"[MAILJET] Email enviado a {email}")
-                return True
-            print(f"[MAILJET] Error {response.status_code}: {response.text}")
-            if response.status_code == 401:
-                print("[MAILJET DEBUG] Autenticación fallida. Verifica claves (sin espacios ni comillas) y remitente verificado.")
+            with smtplib.SMTP(host, int(port), timeout=10) as server:
+                server.starttls()
+                server.login(user, password)
+                server.send_message(msg)
+            return True
         except Exception as e:
-            print(f"[MAILJET] Excepción al enviar: {e}")
-
-        print(f"[MAILJET FALLBACK] To: {email} | Subject: {subject} | Body: {text}")
-        return False
+            print(f"[SMTP ERROR PLAIN] {e}")
+            print(f"[EMAIL PLAIN] To: {to_email} | Subject: {subject} | Body: {text}")
+            return False
 
     @staticmethod
     def register(email, password, name):
