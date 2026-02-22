@@ -26,6 +26,8 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Copy application code
 COPY backend/ ./backend/
 COPY frontend/ ./frontend/
+COPY assets/ ./assets/
+COPY public/ ./public/
 
 # Create necessary directories
 RUN mkdir -p /app/exports /app/backups
