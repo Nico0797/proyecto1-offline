@@ -3132,19 +3132,29 @@ def create_app(config_class=None):
     @app.route("/assets/<path:filename>")
     def serve_assets(filename):
         import os
-        base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-        public_assets = os.path.join(base_dir, "public", "assets")
-        project_assets = os.path.join(base_dir, "assets")
-        frontend_assets = os.path.join(base_dir, "frontend", "assets")
-        public_path = os.path.join(public_assets, filename)
-        project_path = os.path.join(project_assets, filename)
-        frontend_path = os.path.join(frontend_assets, filename)
-        if os.path.exists(public_path):
-            return send_from_directory(public_assets, filename)
-        if os.path.exists(project_path):
-            return send_from_directory(project_assets, filename)
-        if os.path.exists(frontend_path):
-            return send_from_directory(frontend_assets, filename)
+        roots = []
+        env_root = os.environ.get("CUADERNO_ROOT")
+        if env_root:
+            roots.append(env_root)
+        roots.append(os.getcwd())
+        roots.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+        seen = set()
+        for root in roots:
+            if not root or root in seen:
+                continue
+            seen.add(root)
+            public_assets = os.path.join(root, "public", "assets")
+            project_assets = os.path.join(root, "assets")
+            frontend_assets = os.path.join(root, "frontend", "assets")
+            public_path = os.path.join(public_assets, filename)
+            project_path = os.path.join(project_assets, filename)
+            frontend_path = os.path.join(frontend_assets, filename)
+            if os.path.exists(public_path):
+                return send_from_directory(public_assets, filename)
+            if os.path.exists(project_path):
+                return send_from_directory(project_assets, filename)
+            if os.path.exists(frontend_path):
+                return send_from_directory(frontend_assets, filename)
         return jsonify({"error": "Not found"}), 404
 
     @app.route("/public/assets/<path:filename>")
