@@ -138,19 +138,58 @@ def create_app(config_class=None):
     def create_checkout():
         data = request.get_json() or {}
         plan = data.get("plan", "pro_monthly")
-        payment_method = data.get("payment_method", "card")
+        payment_method = (data.get("payment_method") or "card").lower()
 
         if plan not in {"pro_monthly", "pro_annual"}:
             return jsonify({"error": "Plan inválido"}), 400
 
-        if payment_method not in {"nequi", "card"}:
+        if payment_method not in {"nequi", "card", "bancolombia", "pse"}:
             return jsonify({"error": "Método de pago inválido"}), 400
 
         monthly = app.config["PRO_MONTHLY_PRICE_COP"]
         discount = app.config["PRO_ANNUAL_DISCOUNT"]
         annual = int(round(monthly * 12 * (1 - discount)))
-
         amount = monthly if plan == "pro_monthly" else annual
+
+        wompi_pk = os.getenv("WOMPI_PUBLIC_KEY") or app.config.get("WOMPI_PUBLIC_KEY")
+        wompi_sk = os.getenv("WOMPI_PRIVATE_KEY") or app.config.get("WOMPI_PRIVATE_KEY")
+        wompi_env = (os.getenv("WOMPI_ENV") or app.config.get("WOMPI_ENV") or "prod").lower()
+        wompi_base = "https://production.wompi.co" if wompi_env == "prod" else "https://sandbox.wompi.co"
+
+        if wompi_pk and wompi_sk:
+            try:
+                import requests, uuid
+                mresp = requests.get(f"{wompi_base}/v1/merchants/{wompi_pk}", timeout=10)
+                mresp.raise_for_status()
+                acceptance_token = mresp.json()["data"]["presigned_acceptance"]["acceptance_token"]
+                reference = f"sub-{plan}-{uuid.uuid4().hex[:10]}"
+                payload = {
+                    "name": f"EnCaja {('Anual' if plan=='pro_annual' else 'Mensual')}",
+                    "description": f"Suscripción {plan}",
+                    "amount_in_cents": int(amount * 100),
+                    "currency": "COP",
+                    "reference": reference,
+                    "redirect_url": (os.getenv("MP_SUCCESS_URL") or app.config.get("MP_SUCCESS_URL") or "https://app.encaja.co"),
+                    "accepted_payment_methods": ["CARD", "NEQUI", "PSE"],
+                    "collect_shipping_address": False
+                }
+                h = {"Authorization": f"Bearer {wompi_sk}", "Content-Type": "application/json"}
+                presp = requests.post(f"{wompi_base}/v1/payment_links", json=payload, headers=h, timeout=15)
+                presp.raise_for_status()
+                pdata = presp.json()["data"]
+                checkout = {
+                    "provider": "wompi",
+                    "payment_method": payment_method,
+                    "plan": plan,
+                    "currency": "COP",
+                    "amount": amount,
+                    "init_point": pdata["url"],
+                    "reference": reference,
+                    "status": "ready"
+                }
+                return jsonify({"checkout": checkout})
+            except Exception as e:
+                pass
 
         checkout_placeholder = {
             "provider": "mercadopago",
@@ -159,10 +198,9 @@ def create_app(config_class=None):
             "currency": "COP",
             "amount": amount,
             "init_point": "https://www.mercadopago.com.co/checkout/v1/redirect-placeholder",
-            "public_key": app.config["MERCADOPAGO_PUBLIC_KEY"],
+            "public_key": app.config.get("MERCADOPAGO_PUBLIC_KEY"),
             "status": "placeholder"
         }
-
         return jsonify({"checkout": checkout_placeholder})
 
     @app.route("/api/upgrade-to-pro", methods=["POST"])
