@@ -222,22 +222,22 @@ def customer_balance(conn, customer_id: int):
 # ---------------- Static: index, assets, favicon ----------------
 @app.get("/")
 def root():
-    return send_from_directory(".", "index.html")
+    return send_from_directory("public", "index.html")
 
 
 @app.get("/index.html")
 def root2():
-    return send_from_directory(".", "index.html")
+    return send_from_directory("public", "index.html")
 
 
 @app.get("/assets/<path:filename>")
 def assets(filename):
-    return send_from_directory("assets", filename)
+    return send_from_directory("public/assets", filename)
 
 
 @app.get("/favicon.ico")
 def favicon():
-    return send_from_directory(".", "favicon.ico")
+    return send_from_directory("public", "favicon.ico")
 
 
 # ---------------- API: Transactions ----------------
