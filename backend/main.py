@@ -3135,11 +3135,17 @@ def create_app(config_class=None):
         base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
         public_assets = os.path.join(base_dir, "public", "assets")
         project_assets = os.path.join(base_dir, "assets")
+        frontend_assets = os.path.join(base_dir, "frontend", "assets")
         public_path = os.path.join(public_assets, filename)
         project_path = os.path.join(project_assets, filename)
+        frontend_path = os.path.join(frontend_assets, filename)
         if os.path.exists(public_path):
             return send_from_directory(public_assets, filename)
-        return send_from_directory(project_assets, filename)
+        if os.path.exists(project_path):
+            return send_from_directory(project_assets, filename)
+        if os.path.exists(frontend_path):
+            return send_from_directory(frontend_assets, filename)
+        return jsonify({"error": "Not found"}), 404
 
     @app.route("/public/assets/<path:filename>")
     def serve_public_assets(filename):
