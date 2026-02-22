@@ -3163,7 +3163,26 @@ def create_app(config_class=None):
 
     @app.route("/favicon.ico")
     def favicon():
-        return send_from_directory("../public", "favicon.ico")
+        import os
+        roots = []
+        env_root = os.environ.get("CUADERNO_ROOT")
+        if env_root:
+            roots.append(env_root)
+        roots.append(os.getcwd())
+        roots.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+        seen = set()
+        for root in roots:
+            if not root or root in seen:
+                continue
+            seen.add(root)
+            public_dir = os.path.join(root, "public")
+            root_file = os.path.join(root, "favicon.ico")
+            public_file = os.path.join(public_dir, "favicon.ico")
+            if os.path.exists(public_file):
+                return send_from_directory(public_dir, "favicon.ico")
+            if os.path.exists(root_file):
+                return send_from_directory(root, "favicon.ico")
+        return jsonify({"error": "Not found"}), 404
 
     @app.route("/")
     def index():
