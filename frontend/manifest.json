@@ -1,11 +1,14 @@
 {
   "name": "EnCaja",
   "short_name": "EnCaja",
+  "description": "Tu contabilidad en el bolsillo. Gestiona ventas, gastos y clientes de tu negocio de forma fácil y rápida.",
+  "id": "/",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#0b1220",
   "theme_color": "#0b1220",
   "orientation": "portrait-primary",
+  "categories": ["business", "finance", "productivity"],
   "icons": [
     {
       "src": "/static/icons/icon-192x192.png",
@@ -17,5 +20,27 @@
       "sizes": "512x512",
       "type": "image/png"
     }
-  ]
+  ],
+  "screenshots": [
+    {
+      "src": "/static/screenshots/mobile-1.png",
+      "sizes": "1080x1920",
+      "type": "image/png",
+      "form_factor": "narrow"
+    },
+    {
+      "src": "/static/screenshots/desktop-1.png",
+      "sizes": "1920x1080",
+      "type": "image/png",
+      "form_factor": "wide"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Ir al Panel",
+      "url": "/panel.html",
+      "icons": [{ "src": "/static/icons/icon-192x192.png", "sizes": "192x192" }]
+    }
+  ],
+  "prefer_related_applications": false
 }
