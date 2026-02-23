@@ -133,6 +133,22 @@ def create_app(config_class=None):
             return jsonify({"error": str(e)}), 500
 
     # ========== BILLING / CHECKOUT ==========
+    def get_usd_cop_rate():
+        """Obtiene la tasa de cambio USD -> COP actual"""
+        try:
+            import requests
+            # API gratuita, actualiza una vez al día
+            resp = requests.get("https://api.exchangerate-api.com/v4/latest/USD", timeout=5)
+            if resp.status_code == 200:
+                data = resp.json()
+                rate = data.get("rates", {}).get("COP", 4200)
+                return rate
+        except Exception as e:
+            print(f"Error obteniendo tasa de cambio: {e}")
+        
+        # Fallback si falla la API
+        return 4200
+
     @app.route("/api/billing/checkout", methods=["POST"])
     @token_required
     def create_checkout():
@@ -146,11 +162,30 @@ def create_app(config_class=None):
         if payment_method not in {"nequi", "card", "bancolombia", "pse"}:
             return jsonify({"error": "Método de pago inválido"}), 400
 
-        monthly = app.config["PRO_MONTHLY_PRICE_COP"]
-        quarterly_discount = app.config.get("PRO_QUARTERLY_DISCOUNT", 0.1)
-        annual_discount = app.config["PRO_ANNUAL_DISCOUNT"]
-        quarterly = int(round(monthly * 3 * (1 - quarterly_discount)))
-        annual = int(round(monthly * 12 * (1 - annual_discount)))
+        # Obtener tasa de cambio
+        usd_cop_rate = get_usd_cop_rate()
+        app.logger.info(f"Using USD/COP Rate: {usd_cop_rate}")
+
+        monthly_usd = app.config.get("PRO_MONTHLY_PRICE_USD", 5.99)
+        quarterly_discount = app.config.get("PRO_QUARTERLY_DISCOUNT", 0.10)
+        annual_discount = app.config.get("PRO_ANNUAL_DISCOUNT", 0.30)
+        
+        # Calcular precios en USD con descuento
+        monthly_total_usd = monthly_usd
+        quarterly_total_usd = monthly_usd * 3 * (1 - quarterly_discount)
+        annual_total_usd = monthly_usd * 12 * (1 - annual_discount)
+
+        # Convertir a COP y redondear a la centena más cercana
+        def to_cop(usd_val):
+            val = usd_val * usd_cop_rate
+            return int(round(val / 100.0) * 100)
+
+        monthly = to_cop(monthly_total_usd)
+        quarterly = to_cop(quarterly_total_usd)
+        annual = to_cop(annual_total_usd)
+
+        app.logger.info(f"Calculated Prices (COP): Monthly={monthly}, Quarterly={quarterly}, Annual={annual}")
+
         if plan == "pro_monthly":
             amount = monthly
         elif plan == "pro_quarterly":

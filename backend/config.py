@@ -57,7 +57,9 @@ class Config:
 
     # Pricing (COP)
     PRO_MONTHLY_PRICE_COP = int(os.getenv("PRO_MONTHLY_PRICE_COP", "19900"))
-    PRO_ANNUAL_DISCOUNT = float(os.getenv("PRO_ANNUAL_DISCOUNT", "0.15"))
+    PRO_MONTHLY_PRICE_USD = float(os.getenv("PRO_MONTHLY_PRICE_USD", "5.99"))
+    PRO_ANNUAL_DISCOUNT = float(os.getenv("PRO_ANNUAL_DISCOUNT", "0.30"))
+    PRO_QUARTERLY_DISCOUNT = float(os.getenv("PRO_QUARTERLY_DISCOUNT", "0.10"))
 
     # Mercado Pago
     MERCADOPAGO_ACCESS_TOKEN = os.getenv("MERCADOPAGO_ACCESS_TOKEN", "")
