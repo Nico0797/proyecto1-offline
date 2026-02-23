@@ -240,10 +240,17 @@ def create_app(config_class=None):
 
             pdata = presp.json().get("data")
             if not pdata or "url" not in pdata:
-                 app.logger.error(f"Invalid Wompi response format: {presp.text}")
+                 # Log full response for debugging
+                 try:
+                     resp_text = presp.text
+                 except:
+                     resp_text = "No text content"
+                     
+                 app.logger.error(f"Invalid Wompi response format. Status: {presp.status_code}. Body: {resp_text}")
+                 
                  return jsonify({
                     "error": "Respuesta inesperada de Wompi",
-                    "details": f"Wompi respondió: {presp.text}"
+                    "details": f"Wompi respondió (Status {presp.status_code}): {resp_text}"
                 }), 502
                 
             init_point = pdata["url"]
