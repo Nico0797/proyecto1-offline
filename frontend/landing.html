@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>EnCaja</title>
     <meta name="description" content="Descarga Cuaderno App - La mejor aplicación de contabilidad móvil. Gestiona tus finanzas de forma simple y profesional.">
-    <link rel="icon" href="/favicon.ico">
+    <link rel="icon" type="image/png" href="/static/icons/icon-192x192.png">
     <link rel="manifest" href="/manifest.json">
     <script>
         if ('serviceWorker' in navigator) {
@@ -57,7 +57,7 @@
         }
         
         .gradient-hero {
-            background: linear-gradient(135deg, #fff1f2 0%, #ffe4e6 50%, #fff7ed 100%);
+            background: linear-gradient(135deg, #ecfdf5 0%, #f0fdf4 50%, #f8fafc 100%);
             position: relative;
             overflow: hidden;
         }
@@ -69,7 +69,7 @@
             right: -20%;
             width: 600px;
             height: 600px;
-            background: radial-gradient(circle, rgba(248, 113, 113, 0.12) 0%, transparent 70%);
+            background: radial-gradient(circle, rgba(34, 197, 94, 0.12) 0%, transparent 70%);
             border-radius: 50%;
         }
         
@@ -120,12 +120,12 @@
         .btn-primary {
             background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
             color: white;
-            box-shadow: 0 4px 14px rgba(239, 68, 68, 0.35);
+            box-shadow: 0 4px 14px rgba(22, 163, 74, 0.35);
         }
         
         .btn-primary:hover {
             transform: translateY(-2px);
-            box-shadow: 0 8px 25px rgba(239, 68, 68, 0.45);
+            box-shadow: 0 8px 25px rgba(22, 163, 74, 0.45);
         }
         
         .btn-secondary {
@@ -353,11 +353,11 @@
     <!-- Navigation -->
     <nav class="fixed top-0 left-0 right-0 bg-white/80 backdrop-blur-lg z-50 border-b border-gray-100">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="flex justify-between items-center h-16 md:h-20">
+            <div class="flex justify-between items-center py-2 md:py-4">
                 <!-- Logo -->
                 <div class="flex items-center">
-                    <div class="w-16 h-16 md:w-20 md:h-20 overflow-hidden rounded-2xl logo-glass">
-                        <img src="/assets/logo.png" alt="EnCaja" class="w-full h-full object-cover scale-150" onerror="this.parentElement.innerHTML='<span class=&quot;text-2xl font-bold encaja-gradient&quot;>EC</span>'">
+                    <div class="w-20 h-20 md:w-32 md:h-32 overflow-hidden rounded-2xl logo-glass shadow-lg">
+                        <img src="/assets/logo.png" alt="EnCaja" class="w-full h-full object-cover scale-150" onerror="this.parentElement.innerHTML='<span class=&quot;text-3xl font-bold encaja-gradient&quot;>EC</span>'">
                     </div>
                 </div>
                 
@@ -400,7 +400,7 @@
     </nav>
 
     <!-- Hero Section -->
-    <section class="gradient-hero min-h-screen pt-24 pb-16 md:pt-32 md:pb-24 relative">
+    <section class="gradient-hero min-h-screen pt-32 pb-16 md:pt-48 md:pb-24 relative">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="grid lg:grid-cols-2 gap-12 items-center">
                 <!-- Hero Content -->
