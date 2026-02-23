@@ -242,8 +242,8 @@ def create_app(config_class=None):
             if not pdata or "url" not in pdata:
                  app.logger.error(f"Invalid Wompi response format: {presp.text}")
                  return jsonify({
-                    "error": "Respuesta inválida de Wompi",
-                    "details": "No se recibió la URL de pago"
+                    "error": "Respuesta inesperada de Wompi",
+                    "details": f"Wompi respondió: {presp.text}"
                 }), 502
                 
             init_point = pdata["url"]
