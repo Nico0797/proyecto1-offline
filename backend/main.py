@@ -198,7 +198,18 @@ def create_app(config_class=None):
                 except Exception:
                     msg = presp.text
                 app.logger.error("Error creando payment_link Wompi: %s", msg)
-                return jsonify({"error": "No se pudo iniciar el pago con Wompi. Revisa tus credenciales o intenta de nuevo."}), 502
+                
+                # Devolver el error real de Wompi al frontend para facilitar el diagnóstico
+                error_detail = "Error desconocido de Wompi"
+                if isinstance(msg, dict):
+                    error_detail = msg.get("error", {}).get("reason") or msg.get("message") or str(msg)
+                else:
+                    error_detail = str(msg)
+                    
+                return jsonify({
+                    "error": "No se pudo iniciar el pago con Wompi.",
+                    "details": error_detail
+                }), 502
 
             pdata = presp.json()["data"]
             init_point = pdata["url"]

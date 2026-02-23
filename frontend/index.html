@@ -3158,7 +3158,8 @@
                     if (contentType.includes('application/json')) {
                         const data = await response.json();
                         if (!response.ok) {
-                            throw new Error(data.error || data.message || `Error ${response.status} al iniciar el pago`);
+                            const errorMsg = data.details ? `${data.error} (${data.details})` : (data.error || data.message || `Error ${response.status} al iniciar el pago`);
+                            throw new Error(errorMsg);
                         }
                         const checkoutUrl = data.checkout?.init_point || data.checkout?.url || data.checkout_url;
                         if (checkoutUrl) {
@@ -3178,10 +3179,7 @@
                     alert('No se pudo iniciar el pago. Verifica que el backend esté ejecutándose en el mismo dominio y puerto que la app.');
                 } catch (error) {
                     console.error('Error en checkout:', error);
-                    let msg = error && error.message ? error.message : 'Error al iniciar el pago';
-                    if (msg.toLowerCase().includes('wompi') || msg.toLowerCase().includes('client error')) {
-                        msg = 'No se pudo iniciar el pago con Wompi. Verifica las llaves de Wompi en el backend o inténtalo de nuevo en unos minutos.';
-                    }
+                    let msg = error.message || 'Error al iniciar el pago';
                     alert(msg);
                 }
             },
