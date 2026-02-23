@@ -20,6 +20,10 @@ android {
         release {
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+            // En CI (GitHub Actions) firmar con debug para poder generar AAB sin keystore real
+            if (System.getenv("CI") == "true") {
+                signingConfig signingConfigs.debug
+            }
         }
     }
 }
