@@ -160,96 +160,63 @@ def create_app(config_class=None):
 
         wompi_pk = os.getenv("WOMPI_PUBLIC_KEY") or app.config.get("WOMPI_PUBLIC_KEY")
         wompi_sk = os.getenv("WOMPI_PRIVATE_KEY") or app.config.get("WOMPI_PRIVATE_KEY")
-        
-        # Determine environment based on key prefix or explicit env var
         wompi_env_var = (os.getenv("WOMPI_ENV") or app.config.get("WOMPI_ENV") or "prod").lower()
-        
         if wompi_pk and "pub_test" in wompi_pk:
             wompi_env = "test"
         else:
             wompi_env = wompi_env_var
-            
         wompi_base = "https://production.wompi.co" if wompi_env == "prod" else "https://sandbox.wompi.co"
 
-        if True:
+        if not wompi_pk:
+            return jsonify({"error": "No está configurada la llave pública de Wompi (WOMPI_PUBLIC_KEY)"}), 500
+        if not wompi_sk:
+            return jsonify({"error": "No está configurada la llave privada de Wompi (WOMPI_PRIVATE_KEY)"}), 500
+
+        try:
+            import requests, uuid
+
+            reference = f"sub-{plan}-{uuid.uuid4().hex[:10]}"
+            redirect_url = (os.getenv("MP_SUCCESS_URL") or app.config.get("MP_SUCCESS_URL") or "http://localhost:5000")
+            amount_cents = int(amount * 100)
+
+            payload = {
+                "name": f"EnCaja {'Mensual' if plan=='pro_monthly' else 'Trimestral' if plan=='pro_quarterly' else 'Anual'}",
+                "description": f"Suscripción {plan}",
+                "single_use": False,
+                "collect_shipping": False,
+                "currency": "COP",
+                "amount_in_cents": amount_cents,
+                "redirect_url": redirect_url
+            }
+            h = {"Authorization": f"Bearer {wompi_sk}", "Content-Type": "application/json"}
+            presp = requests.post(f"{wompi_base}/v1/payment_links", json=payload, headers=h, timeout=15)
             try:
-                import requests, uuid
-                
-                # Use hardcoded test keys if env vars are missing
-                if not wompi_pk:
-                    wompi_pk = "pub_test_Q5yDA9xoKdePzhSGeVe9HAez74obny5l"
-                    wompi_env = "test"
-                    wompi_base = "https://sandbox.wompi.co"
-                    
-                # We need a private key to create payment links via API
-                # If not available, we can't create dynamic links, but we can return a constructed URL 
-                # for standard integration if we had a way to sign it.
-                # For now, let's try to use the public key to simulate a "ready" state or use a default link
-                
-                reference = f"sub-{plan}-{uuid.uuid4().hex[:10]}"
-                redirect_url = (os.getenv("MP_SUCCESS_URL") or app.config.get("MP_SUCCESS_URL") or "http://localhost:5000")
-                
-                # Construct Wompi Checkout URL directly (Standard Integration)
-                # This avoids needing the private key to create a link via API
-                # https://docs.wompi.co/en/docs/wompi-checkout/
-                
-                amount_cents = int(amount * 100)
-                checkout_url = f"{wompi_base}/v1/checkout/"
-                
-                # We return the necessary data for the frontend to open the widget or redirect
-                # Since we can't generate a full link without private key API call, 
-                # we will fallback to a constructed URL with query params if possible, 
-                # or just fail gracefully if we really can't do anything.
-                
-                # BUT, since the user wants Wompi, let's try to fix the logic:
-                # The previous code fell back to MercadoPago because wompi_pk OR wompi_sk were missing.
-                # If we want to force Wompi, we need at least the Public Key.
-                
-                if not wompi_pk:
-                     return jsonify({"error": "Wompi Public Key not configured"}), 500
+                presp.raise_for_status()
+            except Exception:
+                try:
+                    msg = presp.json()
+                except Exception:
+                    msg = presp.text
+                app.logger.error("Error creando payment_link Wompi: %s", msg)
+                return jsonify({"error": "No se pudo iniciar el pago con Wompi. Revisa tus credenciales o intenta de nuevo."}), 502
 
-                # If we have private key, we use the API to create the link (Better UX)
-                if wompi_sk:
-                    mresp = requests.get(f"{wompi_base}/v1/merchants/{wompi_pk}", timeout=10)
-                    mresp.raise_for_status()
-                    acceptance_token = mresp.json()["data"]["presigned_acceptance"]["acceptance_token"]
-                    
-                    payload = {
-                        "name": f"EnCaja {'Mensual' if plan=='pro_monthly' else 'Trimestral' if plan=='pro_quarterly' else 'Anual'}",
-                        "description": f"Suscripción {plan}",
-                        "amount_in_cents": amount_cents,
-                        "currency": "COP",
-                        "reference": reference,
-                        "redirect_url": redirect_url,
-                        "accepted_payment_methods": ["CARD", "NEQUI", "PSE"],
-                        "collect_shipping_address": False
-                    }
-                    h = {"Authorization": f"Bearer {wompi_sk}", "Content-Type": "application/json"}
-                    presp = requests.post(f"{wompi_base}/v1/payment_links", json=payload, headers=h, timeout=15)
-                    presp.raise_for_status()
-                    pdata = presp.json()["data"]
-                    init_point = pdata["url"]
-                else:
-                    # If NO private key, we can't create a dynamic link via API.
-                    # We have to rely on the frontend widget or a pre-generated link.
-                    # For this fix, let's assume we MUST have the keys.
-                    # If the user is seeing MercadoPago, it's because keys are missing.
-                    # We will force an error if keys are missing instead of falling back.
-                    return jsonify({"error": "Faltan las credenciales de Wompi (WOMPI_PUBLIC_KEY / WOMPI_PRIVATE_KEY)"}), 500
+            pdata = presp.json()["data"]
+            init_point = pdata["url"]
 
-                checkout = {
-                    "provider": "wompi",
-                    "payment_method": payment_method,
-                    "plan": plan,
-                    "currency": "COP",
-                    "amount": amount,
-                    "init_point": init_point,
-                    "reference": reference,
-                    "status": "ready"
-                }
-                return jsonify({"checkout": checkout})
-            except Exception as e:
-                return jsonify({"error": f"Error creando pago Wompi: {str(e)}"}), 500
+            checkout = {
+                "provider": "wompi",
+                "payment_method": payment_method,
+                "plan": plan,
+                "currency": "COP",
+                "amount": amount,
+                "init_point": init_point,
+                "reference": reference,
+                "status": "ready"
+            }
+            return jsonify({"checkout": checkout})
+        except Exception as e:
+            app.logger.error("Error inesperado creando pago Wompi: %s", str(e))
+            return jsonify({"error": "Ocurrió un error al iniciar el pago con Wompi."}), 502
 
     @app.route("/api/billing/confirm-wompi", methods=["POST"])
     @token_required
@@ -2262,21 +2229,27 @@ def create_app(config_class=None):
             SubscriptionPayment.payment_date.desc()
         ).limit(10).all()
         
-        # Users by plan for chart
+        pro_quarterly_payments = SubscriptionPayment.query.filter(
+            SubscriptionPayment.plan == "pro_quarterly",
+            SubscriptionPayment.status == "completed"
+        ).count()
+        pro_quarterly_income = db.session.query(db.func.sum(SubscriptionPayment.amount)).filter(
+            SubscriptionPayment.plan == "pro_quarterly",
+            SubscriptionPayment.status == "completed"
+        ).scalar() or 0
+
         users_by_plan = {
             "free": free_users,
             "pro": pro_users
         }
-        
-        # Payments by plan for chart
         payments_by_plan = {
             "pro_monthly": pro_monthly_payments,
+            "pro_quarterly": pro_quarterly_payments,
             "pro_annual": pro_annual_payments
         }
-        
-        # Revenue by plan
         revenue_by_plan = {
             "pro_monthly": pro_monthly_income,
+            "pro_quarterly": pro_quarterly_income,
             "pro_annual": pro_annual_income
         }
         
@@ -2288,8 +2261,10 @@ def create_app(config_class=None):
             "total_membership_payments": total_membership_payments,
             "total_membership_income": total_membership_income,
             "pro_monthly_payments": pro_monthly_payments,
+            "pro_quarterly_payments": pro_quarterly_payments,
             "pro_annual_payments": pro_annual_payments,
             "pro_monthly_income": pro_monthly_income,
+            "pro_quarterly_income": pro_quarterly_income,
             "pro_annual_income": pro_annual_income,
             "users_by_plan": users_by_plan,
             "payments_by_plan": payments_by_plan,

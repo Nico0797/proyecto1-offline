@@ -1416,6 +1416,13 @@
                                         <div id="admin-pro-monthly-bar" class="bg-green-500 h-2 rounded-full" style="width: 0%"></div>
                                     </div>
                                     <div class="flex justify-between items-center">
+                                        <span class="text-muted">Pro Trimestral</span>
+                                        <span id="admin-pro-quarterly-count" class="font-bold">0</span>
+                                    </div>
+                                    <div class="w-full bg-white/10 rounded-full h-2">
+                                        <div id="admin-pro-quarterly-bar" class="bg-emerald-500 h-2 rounded-full" style="width: 0%"></div>
+                                    </div>
+                                    <div class="flex justify-between items-center">
                                         <span class="text-muted">Pro Anual</span>
                                         <span id="admin-pro-annual-count" class="font-bold">0</span>
                                     </div>
@@ -1434,6 +1441,10 @@
                                     <div class="flex justify-between">
                                         <span class="text-muted">Ingresos Pro Mensual</span>
                                         <span id="admin-pro-monthly-income" class="font-bold money-positive">$0</span>
+                                    </div>
+                                    <div class="flex justify-between">
+                                        <span class="text-muted">Ingresos Pro Trimestral</span>
+                                        <span id="admin-pro-quarterly-income" class="font-bold money-positive">$0</span>
                                     </div>
                                     <div class="flex justify-between">
                                         <span class="text-muted">Ingresos Pro Anual</span>
@@ -3167,7 +3178,11 @@
                     alert('No se pudo iniciar el pago. Verifica que el backend esté ejecutándose en el mismo dominio y puerto que la app.');
                 } catch (error) {
                     console.error('Error en checkout:', error);
-                    alert(error.message || 'Error al iniciar el pago');
+                    let msg = error && error.message ? error.message : 'Error al iniciar el pago';
+                    if (msg.toLowerCase().includes('wompi') || msg.toLowerCase().includes('client error')) {
+                        msg = 'No se pudo iniciar el pago con Wompi. Verifica las llaves de Wompi en el backend o inténtalo de nuevo en unos minutos.';
+                    }
+                    alert(msg);
                 }
             },
             
@@ -4606,28 +4621,34 @@
                     document.getElementById('admin-membership-income').textContent = this.formatMoney(stats.total_membership_income);
                     document.getElementById('admin-total-membership-income').textContent = this.formatMoney(stats.total_membership_income);
                     
-                    // Payments by plan
-                    const totalPayments = (stats.pro_monthly_payments || 0) + (stats.pro_annual_payments || 0);
+                    const totalPayments = (stats.pro_monthly_payments || 0) + (stats.pro_quarterly_payments || 0) + (stats.pro_annual_payments || 0);
                     document.getElementById('admin-pro-monthly-count').textContent = stats.pro_monthly_payments || 0;
+                    document.getElementById('admin-pro-quarterly-count').textContent = stats.pro_quarterly_payments || 0;
                     document.getElementById('admin-pro-annual-count').textContent = stats.pro_annual_payments || 0;
                     document.getElementById('admin-total-payments').textContent = stats.total_membership_payments || 0;
                     
-                    // Calculate percentages for membership popularity
-                    const totalPlans = (stats.pro_monthly_payments || 0) + (stats.pro_annual_payments || 0) || 1;
+                    const totalPlans = (stats.pro_monthly_payments || 0) + (stats.pro_quarterly_payments || 0) + (stats.pro_annual_payments || 0) || 1;
                     document.getElementById('admin-pro-monthly-bar').style.width = ((stats.pro_monthly_payments || 0) / totalPlans * 100) + '%';
+                    document.getElementById('admin-pro-quarterly-bar').style.width = ((stats.pro_quarterly_payments || 0) / totalPlans * 100) + '%';
                     document.getElementById('admin-pro-annual-bar').style.width = ((stats.pro_annual_payments || 0) / totalPlans * 100) + '%';
                     
-                    // Revenue by plan
                     document.getElementById('admin-pro-monthly-income').textContent = this.formatMoney(stats.pro_monthly_income || 0);
+                    document.getElementById('admin-pro-quarterly-income').textContent = this.formatMoney(stats.pro_quarterly_income || 0);
                     document.getElementById('admin-pro-annual-income').textContent = this.formatMoney(stats.pro_annual_income || 0);
                     
                     // Recent payments table
                     const paymentsTable = document.getElementById('admin-recent-payments-table');
                     paymentsTable.innerHTML = '';
-                    if (stats.recent_payments && stats.recent_payments.length > 0) {
+                            if (stats.recent_payments && stats.recent_payments.length > 0) {
                         for (const p of stats.recent_payments) {
-                            const planName = p.plan === 'pro_monthly' ? 'Pro Mensual' : 'Pro Anual';
-                            const planClass = p.plan === 'pro_monthly' ? 'bg-green-500/20 text-green-400' : 'bg-purple-500/20 text-purple-400';
+                            let planName = 'Pro';
+                            if (p.plan === 'pro_monthly') planName = 'Pro Mensual';
+                            else if (p.plan === 'pro_quarterly') planName = 'Pro Trimestral';
+                            else if (p.plan === 'pro_annual') planName = 'Pro Anual';
+                            let planClass = 'bg-yellow-500/20 text-yellow-400';
+                            if (p.plan === 'pro_monthly') planClass = 'bg-green-500/20 text-green-400';
+                            else if (p.plan === 'pro_quarterly') planClass = 'bg-emerald-500/20 text-emerald-400';
+                            else if (p.plan === 'pro_annual') planClass = 'bg-purple-500/20 text-purple-400';
                             paymentsTable.innerHTML += `
                                 <tr>
                                     <td>Usuario #${p.user_id}</td>

@@ -11,16 +11,16 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <style>
         :root {
-            --primary: #ef4444;
-            --primary-dark: #dc2626;
-            --primary-light: #f87171;
-            --secondary: #f87171;
-            --accent: #fb7185;
+            --primary: #16a34a;
+            --primary-dark: #166534;
+            --primary-light: #22c55e;
+            --secondary: #22c55e;
+            --accent: #22c55e;
             --dark: #0f172a;
             --light: #f8fafc;
             --gray: #64748b;
-            --encaja-start: #ef4444;
-            --encaja-end: #f87171;
+            --encaja-start: #16a34a;
+            --encaja-end: #22c55e;
         }
         
         * {
@@ -66,7 +66,7 @@
             left: -10%;
             width: 400px;
             height: 400px;
-            background: radial-gradient(circle, rgba(239, 68, 68, 0.12) 0%, transparent 70%);
+            background: radial-gradient(circle, rgba(22, 163, 74, 0.12) 0%, transparent 70%);
             border-radius: 50%;
         }
         
@@ -341,9 +341,10 @@
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="flex justify-between items-center h-16 md:h-20">
                 <!-- Logo -->
-                <div class="flex items-center gap-3">
-                    <img src="/assets/logo.png" alt="EnCaja" class="w-16 h-16 object-contain" onerror="this.parentElement.innerHTML='<span class=&quot;text-2xl font-bold encaja-gradient&quot;>EnCaja</span>'">
-                    <span class="text-xl md:text-2xl font-bold encaja-gradient">EnCaja</span>
+                <div class="flex items-center">
+                    <div class="w-16 h-16 md:w-20 md:h-20 overflow-hidden rounded-2xl logo-glass">
+                        <img src="/assets/logo.png" alt="EnCaja" class="w-full h-full object-cover scale-150" onerror="this.parentElement.innerHTML='<span class=&quot;text-2xl font-bold encaja-gradient&quot;>EC</span>'">
+                    </div>
                 </div>
                 
                 <!-- Desktop Menu -->
