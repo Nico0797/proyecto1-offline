@@ -35,8 +35,20 @@ jobs:
       - name: Install dependencies
         run: npm install
 
+      - name: Build Web Assets
+        run: npm run build
+
       - name: Sync Capacitor
         run: npx cap sync android
+
+      - name: Add Android Platform (if not exists)
+        run: |
+          if [ ! -d "android" ]; then
+            echo "Directory 'android' not found. Adding Android platform..."
+            npx cap add android
+          else
+            echo "Directory 'android' found."
+          fi
 
       - name: List Android directory contents
         run: ls -la ./android
@@ -44,20 +56,15 @@ jobs:
       - name: Make gradlew executable
         run: chmod +x ./android/gradlew
 
-      - name: Build Debug APK (with Debug Logging)
+      - name: List available Gradle tasks
         working-directory: ./android
-        run: ./gradlew assembleDebug --no-daemon --stacktrace --debug > build_log.txt 2>&1 || true
+        run: ./gradlew tasks --all
 
-      - name: Upload Build Log
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: debug-build-log
-          path: android/build_log.txt
+      - name: Build Debug APK
+        working-directory: ./android
+        run: ./gradlew assembleDebug --no-daemon --stacktrace
           
       - name: Upload APK (Debug)
-        # This step will only run if the APK was successfully built.
-        # We check for the file's existence before attempting to upload.
         uses: actions/upload-artifact@v4
         with:
           name: app-debug.apk
