@@ -906,6 +906,7 @@
                     const stats = res.ok ? await res.json() : {};
                     
                     content.innerHTML = `
+                        <h4 class="text-white/60 text-sm font-semibold uppercase tracking-wider mb-3">Métricas de Usuarios</h4>
                         <div class="stats-grid">
                             <div class="stat-card">
                                 <div class="stat-label">Total Usuarios</div>
@@ -913,25 +914,59 @@
                                 <div class="stat-change text-white/50">Free: ${stats.free_users} | Pro: ${stats.pro_users}</div>
                             </div>
                             <div class="stat-card">
-                                <div class="stat-label">Ingresos Totales (App)</div>
+                                <div class="stat-label">Nuevos (30 días)</div>
+                                <div class="stat-value">${stats.new_users_30d || 0}</div>
+                                <div class="stat-change text-green-400">Crecimiento reciente</div>
+                            </div>
+                            <div class="stat-card">
+                                <div class="stat-label">Activos (30 días)</div>
+                                <div class="stat-value">${stats.active_users_30d || 0}</div>
+                                <div class="stat-change text-blue-400">Sesiones recientes</div>
+                            </div>
+                        </div>
+
+                        <h4 class="text-white/60 text-sm font-semibold uppercase tracking-wider mb-3 mt-6">Finanzas App</h4>
+                        <div class="stats-grid">
+                            <div class="stat-card">
+                                <div class="stat-label">Ingresos Totales (Histórico)</div>
                                 <div class="stat-value">$${this.formatNumber(stats.total_membership_income || 0)}</div>
-                                <div class="stat-change positive">Pagos procesados: ${stats.total_membership_payments}</div>
+                                <div class="stat-change text-white/50">Total pagos: ${stats.total_membership_payments}</div>
                             </div>
                             <div class="stat-card">
-                                <div class="stat-label">Plan Mensual</div>
-                                <div class="stat-value">$${this.formatNumber(stats.pro_monthly_income || 0)}</div>
-                                <div class="stat-change text-white/50">${stats.pro_monthly_payments} pagos</div>
+                                <div class="stat-label">Ingresos Mes Actual</div>
+                                <div class="stat-value">$${this.formatNumber(stats.income_this_month || 0)}</div>
+                                <div class="stat-change ${stats.income_growth >= 0 ? 'positive' : 'negative'}">
+                                    ${stats.income_growth >= 0 ? '↑' : '↓'} ${Math.abs(stats.income_growth || 0).toFixed(1)}% vs mes anterior
+                                </div>
                             </div>
                             <div class="stat-card">
-                                <div class="stat-label">Plan Anual</div>
-                                <div class="stat-value">$${this.formatNumber(stats.pro_annual_income || 0)}</div>
-                                <div class="stat-change text-white/50">${stats.pro_annual_payments} pagos</div>
+                                <div class="stat-label">Distribución Planes</div>
+                                <div class="flex flex-col gap-1 mt-2 text-sm text-white/70">
+                                    <div class="flex justify-between"><span>Mensual:</span> <span>$${this.formatNumber(stats.pro_monthly_income || 0)}</span></div>
+                                    <div class="flex justify-between"><span>Anual:</span> <span>$${this.formatNumber(stats.pro_annual_income || 0)}</span></div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <h4 class="text-white/60 text-sm font-semibold uppercase tracking-wider mb-3 mt-6">Métricas de Plataforma</h4>
+                        <div class="stats-grid">
+                            <div class="stat-card">
+                                <div class="stat-label">Negocios Creados</div>
+                                <div class="stat-value">${stats.total_businesses || 0}</div>
+                            </div>
+                            <div class="stat-card">
+                                <div class="stat-label">Clientes Globales</div>
+                                <div class="stat-value">${stats.total_customers_global || 0}</div>
+                            </div>
+                            <div class="stat-card">
+                                <div class="stat-label">Productos Globales</div>
+                                <div class="stat-value">${stats.total_products_global || 0}</div>
                             </div>
                         </div>
                         
-                        <div class="card">
+                        <div class="card mt-6">
                             <div class="card-header">
-                                <h3 class="card-title">Actividad Reciente</h3>
+                                <h3 class="card-title">Actividad Reciente del Sistema</h3>
                             </div>
                             <div class="table-container">
                                 <table>
@@ -969,8 +1004,8 @@
                             tbody.innerHTML = data.logs.map(log => `
                                 <tr>
                                     <td>${log.user_email || 'Sistema'}</td>
-                                    <td>${log.action}</td>
-                                    <td>${new Date(log.created_at).toLocaleString()}</td>
+                                    <td><span class="badge badge-info">${log.action}</span></td>
+                                    <td>${new Date(log.timestamp).toLocaleString()}</td>
                                 </tr>
                             `).join('');
                         } else {
@@ -1042,11 +1077,12 @@
                                         <th>Email</th>
                                         <th>Teléfono</th>
                                         <th>Negocio</th>
+                                        <th>Usuario (Dueño)</th>
                                         <th>Total Deuda</th>
                                     </tr>
                                 </thead>
                                 <tbody id="customers-table">
-                                    <tr><td colspan="5" class="text-center text-white/60">Cargando...</td></tr>
+                                    <tr><td colspan="6" class="text-center text-white/60">Cargando...</td></tr>
                                 </tbody>
                             </table>
                         </div>
@@ -1070,16 +1106,17 @@
                                     <td>${c.name}</td>
                                     <td>${c.email || '-'}</td>
                                     <td>${c.phone || '-'}</td>
-                                    <td>${c.business_name || '-'}</td>
-                                    <td>${c.balance || 0}</td>
+                                    <td><span class="badge badge-secondary">${c.business_name || '-'}</span></td>
+                                    <td>${c.user_name || '-'}</td>
+                                    <td>$${this.formatNumber(c.total_debt || 0)}</td>
                                 </tr>
                             `).join('');
                         } else {
-                            tbody.innerHTML = '<tr><td colspan="5" class="text-center text-white/60">No hay clientes</td></tr>';
+                            tbody.innerHTML = '<tr><td colspan="6" class="text-center text-white/60">No hay clientes</td></tr>';
                         }
                     }
                 } catch (e) {
-                    document.getElementById('customers-table').innerHTML = '<tr><td colspan="5" class="text-center text-red-400">Error al cargar</td></tr>';
+                    document.getElementById('customers-table').innerHTML = '<tr><td colspan="6" class="text-center text-red-400">Error al cargar</td></tr>';
                 }
             },
             
@@ -1107,10 +1144,11 @@
                                         <th>Costo</th>
                                         <th>Stock</th>
                                         <th>Negocio</th>
+                                        <th>Usuario (Dueño)</th>
                                     </tr>
                                 </thead>
                                 <tbody id="products-table">
-                                    <tr><td colspan="6" class="text-center text-white/60">Cargando...</td></tr>
+                                    <tr><td colspan="7" class="text-center text-white/60">Cargando...</td></tr>
                                 </tbody>
                             </table>
                         </div>
@@ -1133,18 +1171,19 @@
                                 <tr>
                                     <td>${p.name}</td>
                                     <td>${p.sku || '-'}</td>
-                                    <td>${p.price}</td>
-                                    <td>${p.cost || 0}</td>
+                                    <td>$${this.formatNumber(p.price)}</td>
+                                    <td>$${this.formatNumber(p.cost || 0)}</td>
                                     <td>${p.stock}</td>
-                                    <td>${p.business_name || '-'}</td>
+                                    <td><span class="badge badge-secondary">${p.business_name || '-'}</span></td>
+                                    <td>${p.user_name || '-'}</td>
                                 </tr>
                             `).join('');
                         } else {
-                            tbody.innerHTML = '<tr><td colspan="6" class="text-center text-white/60">No hay productos</td></tr>';
+                            tbody.innerHTML = '<tr><td colspan="7" class="text-center text-white/60">No hay productos</td></tr>';
                         }
                     }
                 } catch (e) {
-                    document.getElementById('products-table').innerHTML = '<tr><td colspan="6" class="text-center text-red-400">Error al cargar</td></tr>';
+                    document.getElementById('products-table').innerHTML = '<tr><td colspan="7" class="text-center text-red-400">Error al cargar</td></tr>';
                 }
             },
             

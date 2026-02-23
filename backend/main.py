@@ -2298,14 +2298,45 @@ def create_app(config_class=None):
         free_users = User.query.filter_by(plan="free").count()
         pro_users = User.query.filter_by(plan="pro").count()
         
-        # Total businesses (for reference)
+        # Activity stats
+        thirty_days_ago = datetime.utcnow() - timedelta(days=30)
+        new_users_30d = User.query.filter(User.created_at >= thirty_days_ago).count()
+        active_users_30d = User.query.filter(User.last_login >= thirty_days_ago).count()
+        
+        # Global platform stats
         total_businesses = Business.query.count()
+        total_products_global = Product.query.count()
+        total_customers_global = Customer.query.count()
         
         # Membership payment statistics
         total_membership_payments = SubscriptionPayment.query.count()
         total_membership_income = db.session.query(db.func.sum(SubscriptionPayment.amount)).filter(
             SubscriptionPayment.status == "completed"
         ).scalar() or 0
+        
+        # Income growth (Current Month vs Last Month)
+        now = datetime.utcnow()
+        first_day_this_month = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+        # Calculate first day of last month
+        if now.month == 1:
+            first_day_last_month = now.replace(year=now.year-1, month=12, day=1, hour=0, minute=0, second=0)
+        else:
+            first_day_last_month = now.replace(month=now.month-1, day=1, hour=0, minute=0, second=0)
+            
+        income_this_month = db.session.query(db.func.sum(SubscriptionPayment.amount)).filter(
+            SubscriptionPayment.status == "completed",
+            SubscriptionPayment.payment_date >= first_day_this_month
+        ).scalar() or 0
+        
+        income_last_month = db.session.query(db.func.sum(SubscriptionPayment.amount)).filter(
+            SubscriptionPayment.status == "completed",
+            SubscriptionPayment.payment_date >= first_day_last_month,
+            SubscriptionPayment.payment_date < first_day_this_month
+        ).scalar() or 0
+        
+        income_growth = 0
+        if income_last_month > 0:
+            income_growth = ((income_this_month - income_last_month) / income_last_month) * 100
         
         # Payments by plan type
         pro_monthly_payments = SubscriptionPayment.query.filter_by(plan="pro_monthly", status="completed").count()
@@ -2319,11 +2350,6 @@ def create_app(config_class=None):
             SubscriptionPayment.status == "completed"
         ).scalar() or 0
         
-        # Recent payments
-        recent_payments = SubscriptionPayment.query.filter_by(status="completed").order_by(
-            SubscriptionPayment.payment_date.desc()
-        ).limit(10).all()
-        
         pro_quarterly_payments = SubscriptionPayment.query.filter(
             SubscriptionPayment.plan == "pro_quarterly",
             SubscriptionPayment.status == "completed"
@@ -2333,38 +2359,25 @@ def create_app(config_class=None):
             SubscriptionPayment.status == "completed"
         ).scalar() or 0
 
-        users_by_plan = {
-            "free": free_users,
-            "pro": pro_users
-        }
-        payments_by_plan = {
-            "pro_monthly": pro_monthly_payments,
-            "pro_quarterly": pro_quarterly_payments,
-            "pro_annual": pro_annual_payments
-        }
-        revenue_by_plan = {
-            "pro_monthly": pro_monthly_income,
-            "pro_quarterly": pro_quarterly_income,
-            "pro_annual": pro_annual_income
-        }
-        
         return jsonify({
             "total_users": total_users,
             "free_users": free_users,
             "pro_users": pro_users,
+            "new_users_30d": new_users_30d,
+            "active_users_30d": active_users_30d,
             "total_businesses": total_businesses,
+            "total_products_global": total_products_global,
+            "total_customers_global": total_customers_global,
             "total_membership_payments": total_membership_payments,
             "total_membership_income": total_membership_income,
+            "income_this_month": income_this_month,
+            "income_growth": income_growth,
             "pro_monthly_payments": pro_monthly_payments,
             "pro_quarterly_payments": pro_quarterly_payments,
             "pro_annual_payments": pro_annual_payments,
             "pro_monthly_income": pro_monthly_income,
             "pro_quarterly_income": pro_quarterly_income,
-            "pro_annual_income": pro_annual_income,
-            "users_by_plan": users_by_plan,
-            "payments_by_plan": payments_by_plan,
-            "revenue_by_plan": revenue_by_plan,
-            "recent_payments": [p.to_dict() for p in recent_payments]
+            "pro_annual_income": pro_annual_income
         })
 
     @app.route("/api/admin/businesses", methods=["GET"])
@@ -2394,12 +2407,13 @@ def create_app(config_class=None):
     def get_all_customers_admin():
         """Get all customers from all businesses"""
         customers = db.session.query(
-            Customer, Business.name
-        ).join(Business, Customer.business_id == Business.id).all()
+            Customer, Business.name, User.name
+        ).join(Business, Customer.business_id == Business.id).join(User, Business.user_id == User.id).all()
         result = []
-        for customer, business_name in customers:
+        for customer, business_name, user_name in customers:
             c = customer.to_dict()
             c['business_name'] = business_name
+            c['user_name'] = user_name
             result.append(c)
         return jsonify({"customers": result})
 
@@ -2409,12 +2423,13 @@ def create_app(config_class=None):
     def get_all_products_admin():
         """Get all products from all businesses"""
         products = db.session.query(
-            Product, Business.name
-        ).join(Business, Product.business_id == Business.id).all()
+            Product, Business.name, User.name
+        ).join(Business, Product.business_id == Business.id).join(User, Business.user_id == User.id).all()
         result = []
-        for product, business_name in products:
+        for product, business_name, user_name in products:
             p = product.to_dict()
             p['business_name'] = business_name
+            p['user_name'] = user_name
             result.append(p)
         return jsonify({"products": result})
 
