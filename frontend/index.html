@@ -4412,7 +4412,7 @@
                 try {
                     // In a real app, this would redirect to a payment processor
                     // For now, we'll just update the user's plan
-                    const data = await this.api('/api/upgrade-to-pro', { method: 'POST' });
+                    const data = await this.api('/upgrade-to-pro', { method: 'POST' });
                     
                     if (data.success) {
                         this.user.plan = 'pro';
