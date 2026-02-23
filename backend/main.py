@@ -49,8 +49,12 @@ def create_app(config_class=None):
     app.config["EXPORT_DIR"] = export_dir
     app.config["BACKUP_DIR"] = backup_dir
     
-    # CORS
-    CORS(app, resources={r"/api/*": {"origins": app.config["CORS_ORIGINS"]}}, supports_credentials=True)
+    # CORS: incluir orígenes para la app móvil (Capacitor) para evitar "Failed to fetch"
+    cors_origins = list(app.config.get("CORS_ORIGINS", []))
+    for origin in ["capacitor://localhost", "https://localhost", "http://localhost", "https://app.encaja.co", "http://app.encaja.co"]:
+        if origin not in cors_origins:
+            cors_origins.append(origin)
+    CORS(app, resources={r"/api/*": {"origins": cors_origins}}, supports_credentials=True)
 
     # Error handlers for JSON responses
     @app.errorhandler(400)
