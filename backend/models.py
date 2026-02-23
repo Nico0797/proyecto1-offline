@@ -28,6 +28,10 @@ class User(db.Model):
     # RBAC fields
     last_login = db.Column(db.DateTime)
     is_active = db.Column(db.Boolean, default=True)
+    membership_plan = db.Column(db.String(20))
+    membership_start = db.Column(db.DateTime)
+    membership_end = db.Column(db.DateTime)
+    membership_auto_renew = db.Column(db.Boolean, default=True)
 
     # Relationships
     businesses = db.relationship("Business", backref="user", lazy="dynamic", cascade="all, delete-orphan")
@@ -58,6 +62,10 @@ class User(db.Model):
             "last_login": self.last_login.isoformat() if self.last_login else None,
             "is_active": self.is_active,
             "created_at": self.created_at.isoformat() if self.created_at else None,
+            "membership_plan": self.membership_plan,
+            "membership_start": self.membership_start.isoformat() if self.membership_start else None,
+            "membership_end": self.membership_end.isoformat() if self.membership_end else None,
+            "membership_auto_renew": self.membership_auto_renew,
         }
 
     def __repr__(self):

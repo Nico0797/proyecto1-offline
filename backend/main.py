@@ -140,16 +140,23 @@ def create_app(config_class=None):
         plan = data.get("plan", "pro_monthly")
         payment_method = (data.get("payment_method") or "card").lower()
 
-        if plan not in {"pro_monthly", "pro_annual"}:
+        if plan not in {"pro_monthly", "pro_quarterly", "pro_annual"}:
             return jsonify({"error": "Plan inválido"}), 400
 
         if payment_method not in {"nequi", "card", "bancolombia", "pse"}:
             return jsonify({"error": "Método de pago inválido"}), 400
 
         monthly = app.config["PRO_MONTHLY_PRICE_COP"]
-        discount = app.config["PRO_ANNUAL_DISCOUNT"]
-        annual = int(round(monthly * 12 * (1 - discount)))
-        amount = monthly if plan == "pro_monthly" else annual
+        quarterly_discount = app.config.get("PRO_QUARTERLY_DISCOUNT", 0.1)
+        annual_discount = app.config["PRO_ANNUAL_DISCOUNT"]
+        quarterly = int(round(monthly * 3 * (1 - quarterly_discount)))
+        annual = int(round(monthly * 12 * (1 - annual_discount)))
+        if plan == "pro_monthly":
+            amount = monthly
+        elif plan == "pro_quarterly":
+            amount = quarterly
+        else:
+            amount = annual
 
         wompi_pk = os.getenv("WOMPI_PUBLIC_KEY") or app.config.get("WOMPI_PUBLIC_KEY")
         wompi_sk = os.getenv("WOMPI_PRIVATE_KEY") or app.config.get("WOMPI_PRIVATE_KEY")
@@ -164,7 +171,7 @@ def create_app(config_class=None):
             
         wompi_base = "https://production.wompi.co" if wompi_env == "prod" else "https://sandbox.wompi.co"
 
-        if True:  # Force Wompi even if keys are missing (for now, to avoid fallback to MP)
+        if True:
             try:
                 import requests, uuid
                 
@@ -208,7 +215,7 @@ def create_app(config_class=None):
                     acceptance_token = mresp.json()["data"]["presigned_acceptance"]["acceptance_token"]
                     
                     payload = {
-                        "name": f"EnCaja {('Anual' if plan=='pro_annual' else 'Mensual')}",
+                        "name": f"EnCaja {'Mensual' if plan=='pro_monthly' else 'Trimestral' if plan=='pro_quarterly' else 'Anual'}",
                         "description": f"Suscripción {plan}",
                         "amount_in_cents": amount_cents,
                         "currency": "COP",
@@ -247,7 +254,6 @@ def create_app(config_class=None):
     @app.route("/api/billing/confirm-wompi", methods=["POST"])
     @token_required
     def confirm_wompi_transaction():
-        """Verify Wompi transaction and upgrade user"""
         data = request.get_json() or {}
         tx_id = data.get("id")
         
@@ -255,8 +261,6 @@ def create_app(config_class=None):
             return jsonify({"error": "Transaction ID required"}), 400
 
         wompi_pk = os.getenv("WOMPI_PUBLIC_KEY") or app.config.get("WOMPI_PUBLIC_KEY")
-        
-        # Determine environment based on key prefix or explicit env var
         wompi_env_var = (os.getenv("WOMPI_ENV") or app.config.get("WOMPI_ENV") or "prod").lower()
         
         if wompi_pk and "pub_test" in wompi_pk:
@@ -268,7 +272,6 @@ def create_app(config_class=None):
         
         try:
             import requests
-            # Verify transaction with Wompi API
             resp = requests.get(f"{wompi_base}/v1/transactions/{tx_id}")
             if resp.status_code == 404:
                 return jsonify({"error": "Transacción no encontrada"}), 404
@@ -277,22 +280,61 @@ def create_app(config_class=None):
             tx_data = resp.json().get("data", {})
             
             status = tx_data.get("status")
-            reference = tx_data.get("reference", "")
+            reference = tx_data.get("reference", "") or ""
+            amount_in_cents = tx_data.get("amount_in_cents") or 0
+            currency = tx_data.get("currency") or "COP"
+            payment_method_info = tx_data.get("payment_method") or {}
+            payment_method = payment_method_info.get("type")
             
             if status == "APPROVED":
-                # Extract plan from reference (sub-pro_monthly-...)
                 plan = "pro_monthly"
                 if "pro_annual" in reference:
                     plan = "pro_annual"
-                    
+                elif "pro_quarterly" in reference:
+                    plan = "pro_quarterly"
+                
+                duration_days = 30
+                if plan == "pro_quarterly":
+                    duration_days = 90
+                elif plan == "pro_annual":
+                    duration_days = 365
+                
                 user = g.current_user
-                user.plan = 'pro'
+                now = datetime.utcnow()
+                base_start = now
+                if user.membership_end and user.membership_end > now:
+                    base_start = user.membership_end
+                membership_end = base_start + timedelta(days=duration_days)
+                
+                user.plan = "pro"
+                user.membership_plan = plan
+                user.membership_start = now
+                user.membership_end = membership_end
+                user.membership_auto_renew = True
+                
+                payment = SubscriptionPayment(
+                    user_id=user.id,
+                    plan=plan,
+                    amount=(amount_in_cents or 0) / 100.0,
+                    currency=currency,
+                    payment_method=payment_method,
+                    payment_date=now,
+                    status="completed",
+                    transaction_id=tx_id,
+                )
+                db.session.add(payment)
                 db.session.commit()
                 
                 return jsonify({
                     "success": True, 
                     "message": "Pago aprobado. ¡Ahora eres PRO!",
-                    "plan": user.plan
+                    "plan": user.plan,
+                    "membership": {
+                        "plan": user.membership_plan,
+                        "start": user.membership_start.isoformat() if user.membership_start else None,
+                        "end": user.membership_end.isoformat() if user.membership_end else None,
+                        "auto_renew": user.membership_auto_renew,
+                    }
                 })
             elif status == "DECLINED":
                  return jsonify({"error": "El pago fue rechazado"}), 400
@@ -309,11 +351,8 @@ def create_app(config_class=None):
     @app.route("/api/upgrade-to-pro", methods=["POST"])
     @token_required
     def upgrade_to_pro():
-        """Upgrade user to PRO plan"""
-        # In a real app, this would process payment
-        # For now, we just update the user's plan
         user = g.current_user
-        user.plan = 'pro'
+        user.plan = "pro"
         db.session.commit()
         
         return jsonify({
@@ -527,6 +566,11 @@ def create_app(config_class=None):
     @token_required
     def get_current_user():
         user = g.current_user
+        try:
+            from backend.membership import ensure_membership_active
+            ensure_membership_active(user)
+        except Exception:
+            pass
         user_data = user.to_dict()
         # Add permissions
         from backend.auth import has_permission
@@ -548,6 +592,20 @@ def create_app(config_class=None):
             'payments_read': has_permission(user, 'payments.read'),
         }
         return jsonify({"user": user_data})
+
+    @app.route("/api/membership/cancel", methods=["POST"])
+    @token_required
+    def cancel_membership():
+        user = g.current_user
+        if not getattr(user, "membership_plan", None) or not getattr(user, "membership_end", None):
+            return jsonify({"error": "No tienes una membresía activa"}), 400
+        user.membership_auto_renew = False
+        db.session.commit()
+        return jsonify({
+            "success": True,
+            "message": "La renovación automática de tu membresía ha sido cancelada.",
+            "membership_auto_renew": user.membership_auto_renew
+        })
 
     # ========== BUSINESS ROUTES ==========
     @app.route("/api/businesses", methods=["GET"])

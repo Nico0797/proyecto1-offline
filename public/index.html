@@ -2881,7 +2881,12 @@
             },
 
             async startCheckout() {
-                const plan = this.pricingCycle === 'annual' ? 'pro_annual' : 'pro_monthly';
+                let plan = 'pro_monthly';
+                if (this.pricingCycle === 'annual') {
+                    plan = 'pro_annual';
+                } else if (this.pricingCycle === 'quarterly') {
+                    plan = 'pro_quarterly';
+                }
                 const url = '/api/billing/checkout';
                 const headers = {
                     'Content-Type': 'application/json'
@@ -4866,7 +4871,7 @@
                         this.user = userData.user;
 
                         // Verify Wompi transaction if present
-                        if (wompiId) {
+                                if (wompiId) {
                             try {
                                 const verify = await this.api('/billing/confirm-wompi', {
                                     method: 'POST',
@@ -4875,9 +4880,14 @@
                                 
                                 if (verify.success) {
                                     this.user.plan = verify.plan;
+                                    if (verify.membership) {
+                                        this.user.membership_plan = verify.membership.plan;
+                                        this.user.membership_start = verify.membership.start;
+                                        this.user.membership_end = verify.membership.end;
+                                        this.user.membership_auto_renew = verify.membership.auto_renew;
+                                    }
                                     localStorage.setItem('user', JSON.stringify(this.user));
                                     alert(verify.message);
-                                    // Remove id from URL
                                     window.history.replaceState({}, document.title, window.location.pathname);
                                 }
                             } catch (e) {

@@ -1249,8 +1249,10 @@
                     <div class="glass rounded-xl p-6">
                         <h3 class="font-semibold mb-4">Tu Plan</h3>
                         <div id="plan-info" class="p-4 bg-blue-500/20 rounded-lg mb-4">
-                            <p class="font-bold text-lg">Plan Free - Prueba</p>
-                            <p class="text-sm text-muted mt-1">Solo para pruebas. Limite: 5 productos, 5 clientes, 5 ventas</p>
+                            <p id="plan-title" class="font-bold text-lg">Plan Free</p>
+                            <p id="plan-description" class="text-sm text-muted mt-1">Límite: 1 negocio, 5 clientes, 5 productos, 20 ventas</p>
+                            <p id="plan-expiration" class="text-sm text-muted mt-1 hidden"></p>
+                            <p id="plan-renewal" class="text-sm text-muted mt-1 hidden"></p>
                         </div>
                         <div class="grid md:grid-cols-3 gap-4">
                             <div class="p-4 bg-green-500/20 rounded-lg">
@@ -1268,7 +1270,10 @@
                                 <p class="font-bold text-xl text-yellow-400">$5.99/mes (USD)</p>
                             </div>
                         </div>
-                        <button onclick="app.navigate('upgrade')" class="btn-primary w-full mt-4 py-2 rounded-xl">Actualizar a Pro</button>
+                        <div class="mt-4 space-y-2">
+                            <button onclick="app.navigate('upgrade')" class="btn-primary w-full py-2 rounded-xl">Actualizar a Pro</button>
+                            <button id="cancel-auto-renew-btn" onclick="app.cancelAutoRenew()" class="w-full py-2 rounded-xl border border-red-500 text-red-400 hover:bg-red-500/10 hidden">Cancelar renovación automática</button>
+                        </div>
                     </div>
                 </div>
                 
@@ -2567,10 +2572,11 @@
                 document.getElementById('main-app').classList.remove('hidden');
                 document.getElementById('header-user-name').textContent = this.user.name;
                 
-                // Show upgrade tab for free users
                 if (this.user.plan === 'free') {
                     document.getElementById('nav-upgrade').classList.remove('hidden');
                 }
+                
+                this.updatePlanInfo();
                 
                 // Load businesses
                 await this.loadBusinesses();
@@ -2948,6 +2954,60 @@
                 this.loadPageData(page);
             },
             
+            updatePlanInfo() {
+                const planInfo = document.getElementById('plan-info');
+                const titleEl = document.getElementById('plan-title');
+                const descEl = document.getElementById('plan-description');
+                const expEl = document.getElementById('plan-expiration');
+                const renewEl = document.getElementById('plan-renewal');
+                const cancelBtn = document.getElementById('cancel-auto-renew-btn');
+                if (!planInfo || !titleEl || !descEl || !expEl || !renewEl || !cancelBtn) {
+                    return;
+                }
+                const plan = this.user.plan || 'free';
+                const membershipPlan = this.user.membership_plan;
+                const membershipStart = this.user.membership_start;
+                const membershipEnd = this.user.membership_end;
+                const autoRenew = this.user.membership_auto_renew;
+                if (plan === 'pro') {
+                    let label = 'Plan PRO';
+                    if (membershipPlan === 'pro_monthly') label = 'Plan PRO Mensual';
+                    if (membershipPlan === 'pro_quarterly') label = 'Plan PRO Trimestral';
+                    if (membershipPlan === 'pro_annual') label = 'Plan PRO Anual';
+                    titleEl.textContent = label;
+                    let desc = 'Acceso completo a todas las funciones.';
+                    if (membershipStart) {
+                        const start = new Date(membershipStart);
+                        desc += ' Inicio: ' + start.toLocaleDateString();
+                    }
+                    descEl.textContent = desc;
+                    if (membershipEnd) {
+                        const end = new Date(membershipEnd);
+                        expEl.textContent = 'Vence el ' + end.toLocaleDateString();
+                        expEl.classList.remove('hidden');
+                    } else {
+                        expEl.classList.add('hidden');
+                    }
+                    if (autoRenew) {
+                        renewEl.textContent = 'Renovación automática activa.';
+                        renewEl.classList.remove('hidden');
+                        cancelBtn.classList.remove('hidden');
+                    } else {
+                        renewEl.textContent = 'Renovación automática desactivada. Cuando termine el periodo puedes renovar manualmente.';
+                        renewEl.classList.remove('hidden');
+                        cancelBtn.classList.add('hidden');
+                    }
+                    planInfo.className = 'p-4 bg-green-500/20 rounded-lg mb-4';
+                } else {
+                    titleEl.textContent = 'Plan Free';
+                    descEl.textContent = 'Límite: 1 negocio, 5 clientes, 5 productos, 20 ventas.';
+                    expEl.classList.add('hidden');
+                    renewEl.classList.add('hidden');
+                    cancelBtn.classList.add('hidden');
+                    planInfo.className = 'p-4 bg-blue-500/20 rounded-lg mb-4';
+                }
+            },
+
             async loadPageData(page) {
                 switch(page) {
                     case 'dashboard':
@@ -3038,8 +3098,32 @@
                 document.getElementById('pay-method-nequi').classList.toggle('btn-primary', method === 'nequi');
             },
 
+            async cancelAutoRenew() {
+                try {
+                    if (!await showConfirm('¿Seguro que quieres desactivar la renovación automática de tu membresía?')) {
+                        return;
+                    }
+                    const res = await this.api('/membership/cancel', {
+                        method: 'POST'
+                    });
+                    if (res.success) {
+                        this.user.membership_auto_renew = false;
+                        localStorage.setItem('user', JSON.stringify(this.user));
+                        this.updatePlanInfo();
+                        alert(res.message || 'Renovación automática desactivada.');
+                    }
+                } catch (e) {
+                    alert(e.message || 'Error al cancelar la renovación automática');
+                }
+            },
+
             async startCheckout() {
-                const plan = this.pricingCycle === 'annual' ? 'pro_annual' : 'pro_monthly';
+                let plan = 'pro_monthly';
+                if (this.pricingCycle === 'annual') {
+                    plan = 'pro_annual';
+                } else if (this.pricingCycle === 'quarterly') {
+                    plan = 'pro_quarterly';
+                }
                 const url = '/api/billing/checkout';
                 const headers = {
                     'Content-Type': 'application/json'
@@ -5238,7 +5322,6 @@
                         const userData = await this.api('/auth/me');
                         this.user = userData.user;
 
-                        // Verify Wompi transaction if present
                         if (wompiId) {
                             try {
                                 const verify = await this.api('/billing/confirm-wompi', {
@@ -5248,9 +5331,14 @@
                                 
                                 if (verify.success) {
                                     this.user.plan = verify.plan;
+                                    if (verify.membership) {
+                                        this.user.membership_plan = verify.membership.plan;
+                                        this.user.membership_start = verify.membership.start;
+                                        this.user.membership_end = verify.membership.end;
+                                        this.user.membership_auto_renew = verify.membership.auto_renew;
+                                    }
                                     localStorage.setItem('user', JSON.stringify(this.user));
                                     alert(verify.message);
-                                    // Remove id from URL
                                     window.history.replaceState({}, document.title, window.location.pathname);
                                 }
                             } catch (e) {
