@@ -41,17 +41,26 @@ jobs:
       - name: Make gradlew executable
         run: chmod +x ./android/gradlew
 
-      - name: Build Android App
+      - name: Build Android App (with Debug Logging)
         working-directory: ./android
-        run: ./gradlew clean assembleDebug bundleRelease --no-daemon --stacktrace
-          
+        run: ./gradlew clean assembleDebug bundleRelease --no-daemon --stacktrace --debug > build_log.txt 2>&1 || true
+
+      - name: Upload Build Log
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: gradle-build-log
+          path: android/build_log.txt
+
       - name: Upload AAB (Release)
+        if: success()
         uses: actions/upload-artifact@v4
         with:
           name: app-release.aab
           path: android/app/build/outputs/bundle/release/app-release.aab
           
       - name: Upload APK (Debug - Para pruebas)
+        if: success()
         uses: actions/upload-artifact@v4
         with:
           name: app-debug.apk
