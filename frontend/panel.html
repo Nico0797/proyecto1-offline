@@ -540,7 +540,7 @@
         <div class="w-full max-w-md">
             <div class="text-center mb-8">
                 <div class="mx-auto mb-4 w-64 h-64 flex items-center justify-center">
-                    <img src="/assets/logo.png" alt="Logo" class="w-64 h-64 object-cover scale-150 transform-gpu">
+                    <img src="/assets/logo.png" alt="Logo" class="w-64 h-64 object-cover scale-150 transform-gpu" onerror="this.onerror=null; this.src='/static/icons/icon-192x192.png';">
                 </div>
                 <p class="text-white/60 mt-2">Panel de Administración</p>
                 <p class="text-white/60 mt-1">orden para soñar en grande.</p>
@@ -568,7 +568,7 @@
         <aside class="sidebar">
         <div class="sidebar-header">
             <div class="sidebar-logo justify-center">
-                <div class="sidebar-logo-icon"><img src="/assets/logo.png" alt="Logo" class="w-32 h-32 object-cover scale-150 transform-gpu"></div>
+                <div class="sidebar-logo-icon"><img src="/assets/logo.png" alt="Logo" class="w-32 h-32 object-cover scale-150 transform-gpu" onerror="this.onerror=null; this.src='/static/icons/icon-192x192.png';"></div>
             </div>
             <button class="btn btn-secondary md:hidden" style="margin-left:auto" onclick="app.toggleSidebar()">
                     <i class="ph ph-x"></i>
@@ -693,7 +693,10 @@
 
     <script>
         // Configuración para Capacitor / Híbrido
-        const isCapacitor = window.location.protocol === 'file:';
+        // Configuración para Capacitor / Híbrido (app móvil)
+        const isCapacitor = !!(window.Capacitor && typeof window.Capacitor.isNativePlatform === 'function' && window.Capacitor.isNativePlatform())
+            || window.location.protocol === 'capacitor:'
+            || (window.location.hostname === 'localhost' && window.location.port !== '5000' && window.location.port !== '8000');
         const API_BASE_URL = isCapacitor ? 'https://app.encaja.co' : '';
 
         // Panel Application
@@ -738,7 +741,7 @@
                 try {
                     const res = await fetch(API_BASE_URL + '/api/auth/login', {
                         method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
+                        headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
                         body: JSON.stringify({ email, password })
                     });
                     
@@ -2531,6 +2534,7 @@
             async api(endpoint, options = {}) {
                 const headers = {
                     'Content-Type': 'application/json',
+                    'Accept': 'application/json',
                     ...(this.token ? { 'Authorization': `Bearer ${this.token}` } : {}),
                     ...options.headers
                 };

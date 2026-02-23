@@ -400,7 +400,7 @@
                 <div class="glass rounded-2xl p-8 w-full max-w-md">
                     <div class="text-center mb-8">
                         <div class="flex items-center justify-center gap-3 mb-3">
-                            <img src="/assets/logo.png" alt="Logo" class="w-64 h-64 object-cover transform-gpu">
+                            <img src="/assets/logo.png" alt="Logo" class="w-64 h-64 object-cover transform-gpu" onerror="this.onerror=null; this.src='/static/icons/icon-192x192.png';">
                         </div>
                         <p class="text-muted"></p>
                         <p class="text-muted mt-1">orden para soñar en grande.</p>
@@ -520,7 +520,7 @@
                     <div class="relative">
                         <div class="w-full text-left">
                             <div class="flex items-center justify-center gap-3">
-                                <img src="/assets/logo.png" alt="Logo" class="w-32 h-32 object-cover scale-150 transform-gpu">
+                                <img src="/assets/logo.png" alt="Logo" class="w-32 h-32 object-cover scale-150 transform-gpu" onerror="this.onerror=null; this.src='/static/icons/icon-192x192.png';">
                             </div>
                         </div>
                         <div id="business-switch-dropdown" class="dropdown-menu hidden"></div>
@@ -2168,8 +2168,11 @@
             return showCustomPrompt(message, defaultValue || '');
         };
 
-        // Configuración para Capacitor / Híbrido
-        const isCapacitor = window.location.protocol === 'file:';
+        // Configuración para Capacitor / Híbrido (app móvil)
+        // En Android/iOS la app carga con capacitor:// o http://localhost, no file: — hay que detectar nativo
+        const isCapacitor = !!(window.Capacitor && typeof window.Capacitor.isNativePlatform === 'function' && window.Capacitor.isNativePlatform())
+            || window.location.protocol === 'capacitor:'
+            || (window.location.hostname === 'localhost' && window.location.port !== '5000' && window.location.port !== '8000');
         // URL del backend en producción para la app móvil
         const API_BASE_URL = isCapacitor ? 'https://app.encaja.co' : '';
 
@@ -2302,6 +2305,7 @@
                 const url = (endpoint.startsWith('http') ? endpoint : (API_BASE_URL + '/api' + endpoint));
                 const headers = {
                     'Content-Type': 'application/json',
+                    'Accept': 'application/json',
                     ...options.headers
                 };
                 

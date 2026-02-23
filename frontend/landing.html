@@ -370,7 +370,7 @@
                 <!-- Logo -->
                 <div class="flex items-center">
                     <div class="w-20 h-20 md:w-32 md:h-32 overflow-hidden rounded-2xl logo-glass shadow-lg">
-                        <img src="/assets/logo.png" alt="EnCaja" class="w-full h-full object-cover scale-150" onerror="this.parentElement.innerHTML='<span class=&quot;text-3xl font-bold encaja-gradient&quot;>EC</span>'">
+                        <img src="/assets/logo.png" alt="EnCaja" class="w-full h-full object-cover scale-150" onerror="this.onerror=null; this.src='/static/icons/icon-192x192.png'; if(!this.complete) this.parentElement.innerHTML='<span class=&quot;text-3xl font-bold encaja-gradient&quot;>EC</span>';">
                     </div>
                 </div>
                 
@@ -473,7 +473,7 @@
                             <div class="bg-white h-full p-4">
                                 <div class="flex justify-between items-center mb-6">
                                     <div class="flex items-center gap-2">
-                                        <img src="/assets/logo.png" alt="EnCaja" class="w-8 h-8 object-contain" onerror="this.parentElement.innerHTML='<span class=&quot;text-sm font-bold encaja-gradient&quot;>EnCaja</span>'">
+                                        <img src="/assets/logo.png" alt="EnCaja" class="w-8 h-8 object-contain" onerror="this.onerror=null; this.src='/static/icons/icon-192x192.png'; if(!this.complete) this.parentElement.innerHTML='<span class=&quot;text-sm font-bold encaja-gradient&quot;>EnCaja</span>';">
                                         <span class="font-bold encaja-gradient text-sm">EnCaja</span>
                                     </div>
                                     <div class="w-6 h-6 bg-gray-200 rounded-full"></div>
@@ -1342,7 +1342,10 @@
         });
         
         const contactForm = document.getElementById('contact-form');
-        const isCapacitor = window.location.protocol === 'file:';
+        // Configuración para Capacitor / Híbrido (app móvil)
+        const isCapacitor = !!(window.Capacitor && typeof window.Capacitor.isNativePlatform === 'function' && window.Capacitor.isNativePlatform())
+            || window.location.protocol === 'capacitor:'
+            || (window.location.hostname === 'localhost' && window.location.port !== '5000' && window.location.port !== '8000');
         const API_BASE_URL = isCapacitor ? 'https://app.encaja.co' : '';
 
         if (contactForm) {
