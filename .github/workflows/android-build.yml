@@ -34,12 +34,18 @@ jobs:
           chmod +x android/gradlew
           sed -i 's/\r$//' android/gradlew
 
-      - name: Build Android APK
+      - name: Build Android Artifacts
         run: |
           cd android
-          ./gradlew assembleDebug --stacktrace
+          ./gradlew bundleRelease assembleDebug --stacktrace
 
-      - name: Upload APK
+      - name: Upload AAB (Release)
+        uses: actions/upload-artifact@v3
+        with:
+          name: app-release.aab
+          path: android/app/build/outputs/bundle/release/app-release.aab
+          
+      - name: Upload APK (Debug - Para pruebas)
         uses: actions/upload-artifact@v3
         with:
           name: app-debug.apk
