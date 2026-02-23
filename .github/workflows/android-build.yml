@@ -35,8 +35,9 @@ jobs:
           sed -i 's/\r$//' android/gradlew
 
       - name: Build Android APK
-        cd android
-        run: ./gradlew assembleDebug --stacktrace
+        run: |
+          cd android
+          ./gradlew assembleDebug --stacktrace
 
       - name: Upload APK
         uses: actions/upload-artifact@v3
