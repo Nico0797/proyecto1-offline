@@ -585,23 +585,23 @@
             <nav class="sidebar-nav">
                 <div class="nav-section">
                     <div class="nav-section-title">Principal</div>
-                    <a href="#" onclick="app.navigate('summary')" class="nav-item" data-page="summary">
+                    <a href="#" onclick="app.navigate('summary'); app.toggleSidebar();" class="nav-item" data-page="summary">
                         <i class="ph ph-chart-pie-slice"></i> Resumen
                     </a>
-                    <a href="#" onclick="app.navigate('analytics')" class="nav-item" data-page="analytics">
+                    <a href="#" onclick="app.navigate('analytics'); app.toggleSidebar();" class="nav-item" data-page="analytics">
                         <i class="ph ph-chart-line-up"></i> Analíticas
                     </a>
                 </div>
                 
                 <div class="nav-section">
                     <div class="nav-section-title">Gestión</div>
-                    <a href="#" onclick="app.navigate('users')" class="nav-item" data-page="users">
+                    <a href="#" onclick="app.navigate('users'); app.toggleSidebar();" class="nav-item" data-page="users">
                         <i class="ph ph-users"></i> Usuarios
                     </a>
-                    <a href="#" onclick="app.navigate('customers')" class="nav-item" data-page="customers">
+                    <a href="#" onclick="app.navigate('customers'); app.toggleSidebar();" class="nav-item" data-page="customers">
                         <i class="ph ph-user-circle"></i> Clientes
                     </a>
-                    <a href="#" onclick="app.navigate('products')" class="nav-item" data-page="products">
+                    <a href="#" onclick="app.navigate('products'); app.toggleSidebar();" class="nav-item" data-page="products">
                         <i class="ph ph-package"></i> Productos
                     </a>
                 </div>
