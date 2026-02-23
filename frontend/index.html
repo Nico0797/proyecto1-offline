@@ -602,7 +602,7 @@
                     </div>
                     
                     <!-- Quick Stats -->
-                    <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+                    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4 mb-6">
                         <div class="stat-card glass rounded-xl p-4">
                             <p id="label-cash" class="text-muted text-sm">Caja Hoy</p>
                             <p id="stat-cash-today" class="text-xl font-bold money-positive">$0</p>
@@ -624,7 +624,7 @@
                     <!-- Monthly Summary -->
                     <div class="glass rounded-xl p-6 mb-6">
                         <h3 id="label-summary" class="text-lg font-semibold mb-4">Resumen del Mes</h3>
-                        <div class="grid grid-cols-3 gap-4">
+                        <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
                             <div>
                                 <p class="text-muted text-sm">Ingresos</p>
                                 <p id="month-income" class="text-xl font-bold money-positive">$0</p>
@@ -756,16 +756,16 @@
                     </div>
                     
                     <div class="glass rounded-xl overflow-x-auto">
-                        <table>
+                        <table class="min-w-full text-sm">
                             <thead>
                                 <tr>
-                                    <th>Fecha</th>
+                                    <th class="whitespace-nowrap">Fecha</th>
                                     <th>Cliente</th>
-                                    <th>Items</th>
+                                    <th class="hidden md:table-cell">Items</th>
                                     <th>Total</th>
-                                    <th>Saldo</th>
-                                    <th>Método</th>
-                                    <th>Estado</th>
+                                    <th class="hidden sm:table-cell">Saldo</th>
+                                    <th class="hidden lg:table-cell">Método</th>
+                                    <th class="hidden sm:table-cell">Estado</th>
                                     <th>Acciones</th>
                                 </tr>
                             </thead>
@@ -954,7 +954,7 @@
                     </div>
                 </div>
                 
-                <!-- Orders Page -->
+                    <!-- Orders Page -->
                 <div id="page-orders" class="page hidden fade-in">
                     <div class="flex justify-between items-center mb-6">
                         <h2 class="text-2xl font-bold">Pedidos</h2>
@@ -964,7 +964,7 @@
                     </div>
                     
                     <!-- Stats Cards -->
-                    <div class="grid grid-cols-2 md:grid-cols-5 gap-4 mb-6">
+                    <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-5 gap-4 mb-6">
                         <div class="glass rounded-xl p-4">
                             <p class="text-muted text-sm">Total</p>
                             <p id="orders-total" class="text-xl font-bold">0</p>
@@ -1323,10 +1323,10 @@
                             <div class="space-y-3">
                                 <div>
                                     <label class="block text-sm mb-1">Método de Pago</label>
-                                    <div class="flex gap-2">
-                                        <button id="pay-method-card" class="btn-primary px-3 py-2 rounded-xl" onclick="app.selectPaymentMethod('card')"><i class="ph ph-credit-card ph-icon"></i> Tarjeta</button>
-                                        <button id="pay-method-nequi" class="px-3 py-2 rounded-xl" onclick="app.selectPaymentMethod('nequi')"><i class="ph ph-device-mobile ph-icon"></i> Nequi</button>
-                                        <button id="pay-method-bancolombia" class="px-3 py-2 rounded-xl" onclick="app.selectPaymentMethod('bancolombia')"><i class="ph ph-bank ph-icon"></i> Bancolombia</button>
+                                    <div class="flex flex-col sm:flex-row gap-2 w-full">
+                                        <button id="pay-method-card" class="btn-primary flex items-center justify-center gap-2 w-full sm:w-auto px-4 py-3 rounded-xl text-sm sm:text-base" onclick="app.selectPaymentMethod('card')"><i class="ph ph-credit-card ph-icon"></i> Tarjeta</button>
+                                        <button id="pay-method-nequi" class="flex items-center justify-center gap-2 w-full sm:w-auto px-4 py-3 rounded-xl text-sm sm:text-base" onclick="app.selectPaymentMethod('nequi')"><i class="ph ph-device-mobile ph-icon"></i> Nequi</button>
+                                        <button id="pay-method-bancolombia" class="flex items-center justify-center gap-2 w-full sm:w-auto px-4 py-3 rounded-xl text-sm sm:text-base" onclick="app.selectPaymentMethod('bancolombia')"><i class="ph ph-bank ph-icon"></i> Bancolombia</button>
                                     </div>
                                 </div>
                                 <button class="btn-success w-full py-2 rounded-xl" onclick="app.startCheckout()">Continuar con Pago</button>
@@ -3255,13 +3255,13 @@
                 } else {
                     tbody.innerHTML = sales.map(s => `
                         <tr>
-                            <td>${s.sale_date}</td>
+                            <td class="whitespace-nowrap">${s.sale_date}</td>
                             <td>${customers[s.customer_id] || '-'}</td>
-                            <td>${s.items.length}</td>
+                            <td class="hidden md:table-cell">${s.items.length}</td>
                             <td class="font-bold">${this.formatMoney(s.total)}</td>
-                            <td class="${(s.balance || 0) > 0 ? 'money-negative' : 'money-positive'}">${this.formatMoney(s.balance || 0)}</td>
-                            <td>${s.payment_method === 'cash' ? 'Efectivo' : s.payment_method === 'transfer' ? 'Transferencia' : s.payment_method === 'card' ? 'Tarjeta' : 'Fiado'}</td>
-                            <td>${s.paid ? '<span class="text-green-400">Pagado</span>' : '<span class="text-red-400">Pendiente</span>'}</td>
+                            <td class="hidden sm:table-cell ${(s.balance || 0) > 0 ? 'money-negative' : 'money-positive'}">${this.formatMoney(s.balance || 0)}</td>
+                            <td class="hidden lg:table-cell">${s.payment_method === 'cash' ? 'Efectivo' : s.payment_method === 'transfer' ? 'Transferencia' : s.payment_method === 'card' ? 'Tarjeta' : 'Fiado'}</td>
+                            <td class="hidden sm:table-cell">${s.paid ? '<span class="text-green-400">Pagado</span>' : '<span class="text-red-400">Pendiente</span>'}</td>
                             <td>
                                 <div class="flex gap-1">
                                     <button onclick="app.generateReceipt(${s.id})" class="text-blue-400 hover:text-blue-300 p-1" title="Ver recibo">
