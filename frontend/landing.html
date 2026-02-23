@@ -24,6 +24,17 @@
     <script src="https://unpkg.com/@phosphor-icons/web"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <style>
+        /* Fix mobile width overflow */
+        html, body {
+            overflow-x: hidden;
+            width: 100%;
+            max-width: 100vw;
+        }
+        
+        * {
+            box-sizing: border-box;
+        }
+
         :root {
             --primary: #16a34a;
             --primary-dark: #166534;
@@ -1329,6 +1340,9 @@
         });
         
         const contactForm = document.getElementById('contact-form');
+        const isCapacitor = window.location.protocol === 'file:';
+        const API_BASE_URL = isCapacitor ? 'https://app.encaja.co' : '';
+
         if (contactForm) {
             contactForm.addEventListener('submit', async (e) => {
                 e.preventDefault();
@@ -1341,7 +1355,7 @@
                     return;
                 }
                 try {
-                    const res = await fetch('/api/contact', {
+                    const res = await fetch(API_BASE_URL + '/api/contact', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({ name, email, type, message })

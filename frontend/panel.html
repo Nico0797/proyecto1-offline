@@ -23,6 +23,17 @@
     <script src="https://unpkg.com/@phosphor-icons/web"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <style>
+        /* Fix mobile width overflow */
+        html, body {
+            overflow-x: hidden;
+            width: 100%;
+            max-width: 100vw;
+        }
+        
+        * {
+            box-sizing: border-box;
+        }
+
         :root {
             --bg-dark: #0b1220;
             --bg-sidebar: #0f172a;
@@ -681,6 +692,10 @@
     <div class="toast-container" id="toast-container"></div>
 
     <script>
+        // Configuración para Capacitor / Híbrido
+        const isCapacitor = window.location.protocol === 'file:';
+        const API_BASE_URL = isCapacitor ? 'https://app.encaja.co' : '';
+
         // Panel Application
         const app = {
             user: null,
@@ -701,7 +716,7 @@
             // Auth
             async checkAuth() {
                 try {
-                    const res = await fetch('/api/auth/me', {
+                    const res = await fetch(API_BASE_URL + '/api/auth/me', {
                         headers: { 'Authorization': `Bearer ${this.token}` }
                     });
                     if (res.ok) {
@@ -721,7 +736,7 @@
                 const password = document.getElementById('login-password').value;
                 
                 try {
-                    const res = await fetch('/api/auth/login', {
+                    const res = await fetch(API_BASE_URL + '/api/auth/login', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({ email, password })
@@ -2520,7 +2535,10 @@
                     ...options.headers
                 };
                 
-                const res = await fetch(endpoint, { ...options, headers });
+                // Si estamos en Capacitor, agregar la URL base
+                const url = endpoint.startsWith('http') ? endpoint : (API_BASE_URL + endpoint);
+                
+                const res = await fetch(url, { ...options, headers });
                 const data = await res.json().catch(() => ({}));
                 if (!res.ok) {
                     if (res.status === 403 && data && data.upgrade_url) {

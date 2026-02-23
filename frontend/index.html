@@ -43,6 +43,23 @@
             background-attachment: fixed;
             position: relative;
             overflow-x: hidden;
+            width: 100%;
+            max-width: 100vw;
+        }
+
+        /* Fix mobile width overflow */
+        html {
+            overflow-x: hidden;
+            max-width: 100vw;
+        }
+        
+        * {
+            box-sizing: border-box;
+        }
+        
+        img {
+            max-width: 100%;
+            height: auto;
         }
         
         body::before,
@@ -383,7 +400,7 @@
                 <div class="glass rounded-2xl p-8 w-full max-w-md">
                     <div class="text-center mb-8">
                         <div class="flex items-center justify-center gap-3 mb-3">
-                            <img src="/assets/logo.png" alt="Logo" class="w-64 h-64 object-cover scale-150 transform-gpu">
+                            <img src="/assets/logo.png" alt="Logo" class="w-64 h-64 object-cover transform-gpu">
                         </div>
                         <p class="text-muted"></p>
                         <p class="text-muted mt-1">orden para soñar en grande.</p>
@@ -2151,6 +2168,11 @@
             return showCustomPrompt(message, defaultValue || '');
         };
 
+        // Configuración para Capacitor / Híbrido
+        const isCapacitor = window.location.protocol === 'file:';
+        // URL del backend en producción para la app móvil
+        const API_BASE_URL = isCapacitor ? 'https://app.encaja.co' : '';
+
         // Cuaderno App
         const app = {
             // State
@@ -2276,7 +2298,8 @@
             
             // API helpers
             async api(endpoint, options = {}) {
-                const url = '/api' + endpoint;
+                // Si estamos en Capacitor, agregar la URL base. Si es local, endpoint relativo
+                const url = (endpoint.startsWith('http') ? endpoint : (API_BASE_URL + '/api' + endpoint));
                 const headers = {
                     'Content-Type': 'application/json',
                     ...options.headers

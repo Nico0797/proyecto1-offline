@@ -1,0 +1,29 @@
+{
+  "name": "proyecto1",
+  "version": "1.0.0",
+  "description": "1. [Descripción del Producto](#descripción-del-producto)\r 2. [Arquitectura Técnica](#arquitectura-técnica)\r 3. [Estructura del Proyecto](#estructura-del-proyecto)\r 4. [Mapa de Pantallas UI](#mapa-de-pantallas-ui)\r 5. [Mapa de Endpoints REST](#mapa-de-endpoints-rest)\r 6. [Modelo de Datos](#modelo-de-datos)\r 7. [Autenticación y Seguridad](#autenticación-y-seguridad)\r 8. [Monetización y Planes](#monetización-y-planes)\r 9. [Guía de Instalación](#guía-de-instalación)\r 10. [Guía de Deploy](#guía-de-deploy)",
+  "main": "index.js",
+  "directories": {
+    "test": "tests"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Nico0797/Cuaderno-Contable.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/Nico0797/Cuaderno-Contable/issues"
+  },
+  "homepage": "https://github.com/Nico0797/Cuaderno-Contable#readme",
+  "dependencies": {
+    "@capacitor/android": "^8.1.0",
+    "@capacitor/cli": "^8.1.0",
+    "@capacitor/core": "^8.1.0"
+  }
+}
