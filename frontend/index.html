@@ -1254,7 +1254,7 @@
                             <p id="plan-expiration" class="text-sm text-muted mt-1 hidden"></p>
                             <p id="plan-renewal" class="text-sm text-muted mt-1 hidden"></p>
                         </div>
-                        <div class="grid md:grid-cols-3 gap-4">
+                        <div class="grid md:grid-cols-3 gap-4" id="plan-pricing-cards">
                             <div class="p-4 bg-green-500/20 rounded-lg">
                                 <p class="text-sm text-muted">Plan Trimestral</p>
                                 <p class="font-bold text-xl text-green-400">$5.39/mes (USD)</p>
@@ -2977,6 +2977,7 @@
                 const renewEl = document.getElementById('plan-renewal');
                 const cancelBtn = document.getElementById('cancel-auto-renew-btn');
                 const upgradeBtn = document.getElementById('btn-upgrade-settings');
+                const pricingCards = document.getElementById('plan-pricing-cards');
                 
                 if (!planInfo || !titleEl || !descEl || !expEl || !renewEl || !cancelBtn) {
                     return;
@@ -3017,6 +3018,7 @@
                     }
                     planInfo.className = 'p-4 bg-green-500/20 rounded-lg mb-4';
                     if (upgradeBtn) upgradeBtn.classList.add('hidden');
+                    if (pricingCards) pricingCards.classList.add('hidden');
                 } else {
                     titleEl.textContent = 'Plan Free';
                     descEl.textContent = 'Límite: 1 negocio, 5 clientes, 5 productos, 20 ventas.';
@@ -3025,6 +3027,7 @@
                     cancelBtn.classList.add('hidden');
                     planInfo.className = 'p-4 bg-blue-500/20 rounded-lg mb-4';
                     if (upgradeBtn) upgradeBtn.classList.remove('hidden');
+                    if (pricingCards) pricingCards.classList.remove('hidden');
                 }
             },
 
