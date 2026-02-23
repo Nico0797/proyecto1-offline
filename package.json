@@ -7,6 +7,7 @@
     "test": "tests"
   },
   "scripts": {
+    "build": "echo \"Usando assets estáticos existentes en 'frontend', no se requiere build.\"",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "repository": {
