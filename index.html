@@ -4013,29 +4013,23 @@
             
             // Upgrade to Pro
             async upgradeToPro(plan = 'pro_monthly') {
-                if (!await showConfirm('¿Deseas actualizar a Plan PRO? Obtendrás acceso a todas las funciones avanzadas.')) {
+                if (!await showConfirm('¿Deseas ir a la pasarela de pago para adquirir el Plan PRO?')) {
                     return;
                 }
                 
                 try {
-                    // In a real app, this would redirect to a payment processor
-                    // For now, we'll just update the user's plan
-                    const data = await this.api('/upgrade-to-pro', { method: 'POST' });
+                    const data = await this.api('/billing/checkout', {
+                        method: 'POST',
+                        body: JSON.stringify({ plan })
+                    });
                     
-                    if (data.success) {
-                        this.user.plan = 'pro';
-                        localStorage.setItem('user', JSON.stringify(this.user));
-                        
-                        // Hide upgrade tab
-                        document.getElementById('nav-upgrade').classList.add('hidden');
-                        
-                        alert('¡Felicidades! Ahora tienes Plan PRO');
-                        this.navigate('dashboard');
+                    if (data.checkout && data.checkout.init_point) {
+                        window.location.href = data.checkout.init_point;
                     } else {
-                        alert(data.message || 'Error al actualizar a PRO');
+                        alert('No se pudo generar el enlace de pago. Por favor intenta más tarde o contacta soporte.');
                     }
                 } catch (err) {
-                    alert('Error al actualizar a PRO: ' + err.message);
+                    alert('Error al iniciar pago: ' + err.message);
                 }
             },
             
@@ -4831,11 +4825,36 @@
             
             // Init
             async init() {
+                // Check for Wompi transaction ID in URL
+                const urlParams = new URLSearchParams(window.location.search);
+                const wompiId = urlParams.get('id');
+
                 // Check auth
                 if (this.loadAuth()) {
                     try {
                         const userData = await this.api('/auth/me');
                         this.user = userData.user;
+
+                        // Verify Wompi transaction if present
+                        if (wompiId) {
+                            try {
+                                const verify = await this.api('/billing/confirm-wompi', {
+                                    method: 'POST',
+                                    body: JSON.stringify({ id: wompiId })
+                                });
+                                
+                                if (verify.success) {
+                                    this.user.plan = verify.plan;
+                                    localStorage.setItem('user', JSON.stringify(this.user));
+                                    alert(verify.message);
+                                    // Remove id from URL
+                                    window.history.replaceState({}, document.title, window.location.pathname);
+                                }
+                            } catch (e) {
+                                alert('Error verificando pago: ' + e.message);
+                            }
+                        }
+
                         await this.afterLogin();
                         return;
                     } catch (e) {

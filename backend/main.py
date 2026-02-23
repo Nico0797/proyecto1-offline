@@ -203,6 +203,60 @@ def create_app(config_class=None):
         }
         return jsonify({"checkout": checkout_placeholder})
 
+    @app.route("/api/billing/confirm-wompi", methods=["POST"])
+    @token_required
+    def confirm_wompi_transaction():
+        """Verify Wompi transaction and upgrade user"""
+        data = request.get_json() or {}
+        tx_id = data.get("id")
+        
+        if not tx_id:
+            return jsonify({"error": "Transaction ID required"}), 400
+
+        wompi_pk = os.getenv("WOMPI_PUBLIC_KEY") or app.config.get("WOMPI_PUBLIC_KEY")
+        wompi_env = (os.getenv("WOMPI_ENV") or app.config.get("WOMPI_ENV") or "prod").lower()
+        wompi_base = "https://production.wompi.co" if wompi_env == "prod" else "https://sandbox.wompi.co"
+        
+        try:
+            import requests
+            # Verify transaction with Wompi API
+            resp = requests.get(f"{wompi_base}/v1/transactions/{tx_id}")
+            if resp.status_code == 404:
+                return jsonify({"error": "Transacción no encontrada"}), 404
+            
+            resp.raise_for_status()
+            tx_data = resp.json().get("data", {})
+            
+            status = tx_data.get("status")
+            reference = tx_data.get("reference", "")
+            
+            if status == "APPROVED":
+                # Extract plan from reference (sub-pro_monthly-...)
+                plan = "pro_monthly"
+                if "pro_annual" in reference:
+                    plan = "pro_annual"
+                    
+                user = g.current_user
+                user.plan = 'pro'
+                db.session.commit()
+                
+                return jsonify({
+                    "success": True, 
+                    "message": "Pago aprobado. ¡Ahora eres PRO!",
+                    "plan": user.plan
+                })
+            elif status == "DECLINED":
+                 return jsonify({"error": "El pago fue rechazado"}), 400
+            elif status == "VOIDED":
+                 return jsonify({"error": "El pago fue anulado"}), 400
+            elif status == "ERROR":
+                 return jsonify({"error": "Error en la transacción"}), 400
+            else:
+                 return jsonify({"message": f"Estado del pago: {status}", "status": status})
+                 
+        except Exception as e:
+            return jsonify({"error": f"Error verificando pago: {str(e)}"}), 500
+
     @app.route("/api/upgrade-to-pro", methods=["POST"])
     @token_required
     def upgrade_to_pro():
