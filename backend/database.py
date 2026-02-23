@@ -64,9 +64,18 @@ def init_db(app):
                     pending.append(f"ALTER TABLE users ADD COLUMN membership_auto_renew {type_bool} DEFAULT {default_true}")
 
                 # Execute users updates
-                for statement in pending:
-                    db.session.execute(text(statement))
+                # Use individual try/except blocks to avoid failing if one column exists but not others
+                # or race conditions in distributed environments
                 if pending:
+                    for statement in pending:
+                        try:
+                            # Use nested transaction to isolate failures
+                            with db.session.begin_nested():
+                                db.session.execute(text(statement))
+                        except Exception as e:
+                            # Ignore "duplicate column" errors gracefully
+                            app.logger.info(f"Skipping migration step: {statement}. Reason: {str(e)}")
+                    
                     db.session.commit()
 
             # Verificar columnas en 'sales'
