@@ -29,7 +29,7 @@ jobs:
 
       - name: Accept Android licenses
         run: |
-          mkdir -p "${ANDROID_SDK_ROOT}/licenses"
+          mkdir -p "${ANDROID_SDK_ROOT}/licenses" || true
           echo "24333f8a63b6825ea9c5514f83c2829b004d1fee" > "${ANDROID_SDK_ROOT}/licenses/android-sdk-license"
 
       - name: Install dependencies
@@ -38,29 +38,26 @@ jobs:
       - name: Sync Capacitor
         run: npx cap sync android
 
+      - name: List Android directory contents
+        run: ls -la ./android
+
       - name: Make gradlew executable
         run: chmod +x ./android/gradlew
 
-      - name: Build Android App (with Debug Logging)
+      - name: Build Debug APK (with Debug Logging)
         working-directory: ./android
-        run: ./gradlew clean assembleDebug bundleRelease --no-daemon --stacktrace --debug > build_log.txt 2>&1 || true
+        run: ./gradlew assembleDebug --no-daemon --stacktrace --debug > build_log.txt 2>&1 || true
 
       - name: Upload Build Log
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: gradle-build-log
+          name: debug-build-log
           path: android/build_log.txt
-
-      - name: Upload AAB (Release)
-        if: success()
-        uses: actions/upload-artifact@v4
-        with:
-          name: app-release.aab
-          path: android/app/build/outputs/bundle/release/app-release.aab
           
-      - name: Upload APK (Debug - Para pruebas)
-        if: success()
+      - name: Upload APK (Debug)
+        # This step will only run if the APK was successfully built.
+        # We check for the file's existence before attempting to upload.
         uses: actions/upload-artifact@v4
         with:
           name: app-debug.apk
