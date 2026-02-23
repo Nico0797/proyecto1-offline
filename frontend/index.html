@@ -1271,7 +1271,7 @@
                             </div>
                         </div>
                         <div class="mt-4 space-y-2">
-                            <button onclick="app.navigate('upgrade')" class="btn-primary w-full py-2 rounded-xl">Actualizar a Pro</button>
+                            <button id="btn-upgrade-settings" onclick="app.navigate('upgrade')" class="btn-primary w-full py-2 rounded-xl">Actualizar a Pro</button>
                             <button id="cancel-auto-renew-btn" onclick="app.cancelAutoRenew()" class="w-full py-2 rounded-xl border border-red-500 text-red-400 hover:bg-red-500/10 hidden">Cancelar renovación automática</button>
                         </div>
                     </div>
@@ -2583,8 +2583,12 @@
                 document.getElementById('main-app').classList.remove('hidden');
                 document.getElementById('header-user-name').textContent = this.user.name;
                 
-                if (this.user.plan === 'free') {
-                    document.getElementById('nav-upgrade').classList.remove('hidden');
+                // Show upgrade button only for free users
+                const navUpgrade = document.getElementById('nav-upgrade');
+                if (!this.user.plan || this.user.plan === 'free') {
+                    navUpgrade.classList.remove('hidden');
+                } else {
+                    navUpgrade.classList.add('hidden');
                 }
                 
                 this.updatePlanInfo();
@@ -2972,6 +2976,8 @@
                 const expEl = document.getElementById('plan-expiration');
                 const renewEl = document.getElementById('plan-renewal');
                 const cancelBtn = document.getElementById('cancel-auto-renew-btn');
+                const upgradeBtn = document.getElementById('btn-upgrade-settings');
+                
                 if (!planInfo || !titleEl || !descEl || !expEl || !renewEl || !cancelBtn) {
                     return;
                 }
@@ -2980,7 +2986,8 @@
                 const membershipStart = this.user.membership_start;
                 const membershipEnd = this.user.membership_end;
                 const autoRenew = this.user.membership_auto_renew;
-                if (plan === 'pro') {
+                
+                if (plan === 'pro' || plan.startsWith('pro_')) {
                     let label = 'Plan PRO';
                     if (membershipPlan === 'pro_monthly') label = 'Plan PRO Mensual';
                     if (membershipPlan === 'pro_quarterly') label = 'Plan PRO Trimestral';
@@ -3009,6 +3016,7 @@
                         cancelBtn.classList.add('hidden');
                     }
                     planInfo.className = 'p-4 bg-green-500/20 rounded-lg mb-4';
+                    if (upgradeBtn) upgradeBtn.classList.add('hidden');
                 } else {
                     titleEl.textContent = 'Plan Free';
                     descEl.textContent = 'Límite: 1 negocio, 5 clientes, 5 productos, 20 ventas.';
@@ -3016,6 +3024,7 @@
                     renewEl.classList.add('hidden');
                     cancelBtn.classList.add('hidden');
                     planInfo.className = 'p-4 bg-blue-500/20 rounded-lg mb-4';
+                    if (upgradeBtn) upgradeBtn.classList.remove('hidden');
                 }
             },
 
