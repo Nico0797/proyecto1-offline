@@ -32,15 +32,13 @@ jobs:
           npx cap add android || true
           npx cap sync android
 
-      - name: Make gradlew executable
-        run: |
-          chmod +x android/gradlew
-          sed -i 's/\r$//' android/gradlew
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: 8.12
 
       - name: Build Android Artifacts
-        run: |
-          cd android
-          ./gradlew bundleRelease assembleDebug --stacktrace
+        run: gradle -p android bundleRelease assembleDebug --stacktrace
 
       - name: Upload AAB (Release)
         uses: actions/upload-artifact@v4
