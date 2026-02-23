@@ -22,30 +22,28 @@ jobs:
         uses: actions/setup-java@v4
         with:
           distribution: 'zulu'
-          java-version: '21'
+          java-version: '17' # Using Java 17 for better compatibility with Android tooling
 
       - name: Setup Android SDK
         uses: android-actions/setup-android@v3
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v3
 
       - name: Install dependencies
         run: npm install
 
       - name: Sync Capacitor
-        run: |
-          npm install @capacitor/android
-          npx cap add android || true
-          npx cap sync android
+        run: npx cap sync android
 
       - name: Make gradlew executable
         run: chmod +x ./android/gradlew
 
-      - name: Clean and Build Android Artifacts
+      - name: Build Android App
+        working-directory: ./android
         env:
           GRADLE_OPTS: -Dorg.gradle.jvmargs="-Xmx2048m"
-        run: |
-          cd ./android
-          ./gradlew clean
-          ./gradlew bundleRelease assembleDebug --stacktrace
+        run: ./gradlew clean assembleDebug bundleRelease --no-daemon --stacktrace --info
           
       - name: Upload AAB (Release)
         uses: actions/upload-artifact@v4
