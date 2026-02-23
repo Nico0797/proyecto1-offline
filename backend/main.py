@@ -156,52 +156,85 @@ def create_app(config_class=None):
         wompi_env = (os.getenv("WOMPI_ENV") or app.config.get("WOMPI_ENV") or "prod").lower()
         wompi_base = "https://production.wompi.co" if wompi_env == "prod" else "https://sandbox.wompi.co"
 
-        if wompi_pk and wompi_sk:
+        if True:  # Force Wompi even if keys are missing (for now, to avoid fallback to MP)
             try:
                 import requests, uuid
-                mresp = requests.get(f"{wompi_base}/v1/merchants/{wompi_pk}", timeout=10)
-                mresp.raise_for_status()
-                acceptance_token = mresp.json()["data"]["presigned_acceptance"]["acceptance_token"]
+                
+                # Use hardcoded test keys if env vars are missing
+                if not wompi_pk:
+                    wompi_pk = "pub_test_Q5yDA9xoKdePzhSGeVe9HAez74obny5l"
+                    wompi_env = "test"
+                    wompi_base = "https://sandbox.wompi.co"
+                    
+                # We need a private key to create payment links via API
+                # If not available, we can't create dynamic links, but we can return a constructed URL 
+                # for standard integration if we had a way to sign it.
+                # For now, let's try to use the public key to simulate a "ready" state or use a default link
+                
                 reference = f"sub-{plan}-{uuid.uuid4().hex[:10]}"
-                payload = {
-                    "name": f"EnCaja {('Anual' if plan=='pro_annual' else 'Mensual')}",
-                    "description": f"Suscripción {plan}",
-                    "amount_in_cents": int(amount * 100),
-                    "currency": "COP",
-                    "reference": reference,
-                    "redirect_url": (os.getenv("MP_SUCCESS_URL") or app.config.get("MP_SUCCESS_URL") or "https://app.encaja.co"),
-                    "accepted_payment_methods": ["CARD", "NEQUI", "PSE"],
-                    "collect_shipping_address": False
-                }
-                h = {"Authorization": f"Bearer {wompi_sk}", "Content-Type": "application/json"}
-                presp = requests.post(f"{wompi_base}/v1/payment_links", json=payload, headers=h, timeout=15)
-                presp.raise_for_status()
-                pdata = presp.json()["data"]
+                redirect_url = (os.getenv("MP_SUCCESS_URL") or app.config.get("MP_SUCCESS_URL") or "http://localhost:5000")
+                
+                # Construct Wompi Checkout URL directly (Standard Integration)
+                # This avoids needing the private key to create a link via API
+                # https://docs.wompi.co/en/docs/wompi-checkout/
+                
+                amount_cents = int(amount * 100)
+                checkout_url = f"{wompi_base}/v1/checkout/"
+                
+                # We return the necessary data for the frontend to open the widget or redirect
+                # Since we can't generate a full link without private key API call, 
+                # we will fallback to a constructed URL with query params if possible, 
+                # or just fail gracefully if we really can't do anything.
+                
+                # BUT, since the user wants Wompi, let's try to fix the logic:
+                # The previous code fell back to MercadoPago because wompi_pk OR wompi_sk were missing.
+                # If we want to force Wompi, we need at least the Public Key.
+                
+                if not wompi_pk:
+                     return jsonify({"error": "Wompi Public Key not configured"}), 500
+
+                # If we have private key, we use the API to create the link (Better UX)
+                if wompi_sk:
+                    mresp = requests.get(f"{wompi_base}/v1/merchants/{wompi_pk}", timeout=10)
+                    mresp.raise_for_status()
+                    acceptance_token = mresp.json()["data"]["presigned_acceptance"]["acceptance_token"]
+                    
+                    payload = {
+                        "name": f"EnCaja {('Anual' if plan=='pro_annual' else 'Mensual')}",
+                        "description": f"Suscripción {plan}",
+                        "amount_in_cents": amount_cents,
+                        "currency": "COP",
+                        "reference": reference,
+                        "redirect_url": redirect_url,
+                        "accepted_payment_methods": ["CARD", "NEQUI", "PSE"],
+                        "collect_shipping_address": False
+                    }
+                    h = {"Authorization": f"Bearer {wompi_sk}", "Content-Type": "application/json"}
+                    presp = requests.post(f"{wompi_base}/v1/payment_links", json=payload, headers=h, timeout=15)
+                    presp.raise_for_status()
+                    pdata = presp.json()["data"]
+                    init_point = pdata["url"]
+                else:
+                    # If NO private key, we can't create a dynamic link via API.
+                    # We have to rely on the frontend widget or a pre-generated link.
+                    # For this fix, let's assume we MUST have the keys.
+                    # If the user is seeing MercadoPago, it's because keys are missing.
+                    # We will force an error if keys are missing instead of falling back.
+                    return jsonify({"error": "Faltan las credenciales de Wompi (WOMPI_PUBLIC_KEY / WOMPI_PRIVATE_KEY)"}), 500
+
                 checkout = {
                     "provider": "wompi",
                     "payment_method": payment_method,
                     "plan": plan,
                     "currency": "COP",
                     "amount": amount,
-                    "init_point": pdata["url"],
+                    "init_point": init_point,
                     "reference": reference,
                     "status": "ready"
                 }
                 return jsonify({"checkout": checkout})
             except Exception as e:
-                pass
-
-        checkout_placeholder = {
-            "provider": "mercadopago",
-            "payment_method": payment_method,
-            "plan": plan,
-            "currency": "COP",
-            "amount": amount,
-            "init_point": "https://www.mercadopago.com.co/checkout/v1/redirect-placeholder",
-            "public_key": app.config.get("MERCADOPAGO_PUBLIC_KEY"),
-            "status": "placeholder"
-        }
-        return jsonify({"checkout": checkout_placeholder})
+                return jsonify({"error": f"Error creando pago Wompi: {str(e)}"}), 500
 
     @app.route("/api/billing/confirm-wompi", methods=["POST"])
     @token_required
