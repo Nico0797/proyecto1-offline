@@ -4,21 +4,27 @@
   "description": "Tu contabilidad en el bolsillo. Gestiona ventas, gastos y clientes de tu negocio de forma fácil y rápida.",
   "id": "/",
   "start_url": "/",
+  "scope": "/",
+  "lang": "es-CO",
+  "dir": "ltr",
   "display": "standalone",
+  "display_override": ["window-controls-overlay", "standalone", "minimal-ui"],
   "background_color": "#0b1220",
   "theme_color": "#0b1220",
   "orientation": "portrait-primary",
-  "categories": ["business", "finance", "productivity"],
+  "categories": ["business", "finance", "productivity", "utilities"],
   "icons": [
     {
       "src": "/static/icons/icon-192x192.png",
       "sizes": "192x192",
-      "type": "image/png"
+      "type": "image/png",
+      "purpose": "any"
     },
     {
       "src": "/static/icons/icon-512x512.png",
       "sizes": "512x512",
-      "type": "image/png"
+      "type": "image/png",
+      "purpose": "any maskable"
     }
   ],
   "screenshots": [
@@ -26,21 +32,37 @@
       "src": "/static/screenshots/mobile-1.png",
       "sizes": "1080x1920",
       "type": "image/png",
-      "form_factor": "narrow"
+      "form_factor": "narrow",
+      "label": "Vista móvil de EnCaja"
     },
     {
       "src": "/static/screenshots/desktop-1.png",
       "sizes": "1920x1080",
       "type": "image/png",
-      "form_factor": "wide"
+      "form_factor": "wide",
+      "label": "Panel de administración en escritorio"
     }
   ],
   "shortcuts": [
     {
       "name": "Ir al Panel",
       "url": "/panel.html",
-      "icons": [{ "src": "/static/icons/icon-192x192.png", "sizes": "192x192" }]
+      "description": "Acceso directo a tu panel de control",
+      "icons": [{ "src": "/static/icons/icon-192x192.png", "sizes": "192x192", "type": "image/png" }]
+    },
+    {
+      "name": "Nueva Venta",
+      "url": "/panel.html#nueva-venta",
+      "description": "Registrar una venta rápidamente",
+      "icons": [{ "src": "/static/icons/icon-192x192.png", "sizes": "192x192", "type": "image/png" }]
     }
   ],
-  "prefer_related_applications": false
+  "launch_handler": {
+    "client_mode": ["focus-existing", "auto"]
+  },
+  "edge_side_panel": {
+    "preferred_width": 400
+  },
+  "prefer_related_applications": false,
+  "related_applications": []
 }

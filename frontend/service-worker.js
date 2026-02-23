@@ -52,3 +52,32 @@ self.addEventListener('fetch', (event) => {
       })
   );
 });
+
+// Background Sync
+self.addEventListener('sync', (event) => {
+  if (event.tag === 'sync-data') {
+    event.waitUntil(
+      // Implementación futura de sincronización
+      Promise.resolve()
+    );
+  }
+});
+
+// Push Notifications
+self.addEventListener('push', (event) => {
+  const data = event.data ? event.data.text() : 'Nueva notificación';
+  event.waitUntil(
+    self.registration.showNotification('EnCaja', {
+      body: data,
+      icon: '/static/icons/icon-192x192.png',
+      badge: '/static/icons/icon-192x192.png'
+    })
+  );
+});
+
+self.addEventListener('notificationclick', (event) => {
+  event.notification.close();
+  event.waitUntil(
+    clients.openWindow('/panel.html')
+  );
+});
