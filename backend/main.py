@@ -210,29 +210,42 @@ def create_app(config_class=None):
             # Log payload for debugging (masking sensitive info if any)
             app.logger.info(f"Wompi Request Payload: {payload}")
             
-            presp = requests.post(f"{wompi_base}/v1/payment_links", json=payload, headers=h, timeout=15)
             try:
+                presp = requests.post(f"{wompi_base}/v1/payment_links", json=payload, headers=h, timeout=30)
                 presp.raise_for_status()
-            except Exception:
-                try:
-                    msg = presp.json()
-                except Exception:
-                    msg = presp.text
-                app.logger.error("Error creando payment_link Wompi: %s", msg)
+            except requests.exceptions.RequestException as req_err:
+                # Capture detailed request error (timeout, connection, 4xx/5xx)
+                app.logger.error(f"Wompi Request Error: {str(req_err)}")
                 
-                # Devolver el error real de Wompi al frontend para facilitar el diagnóstico
-                error_detail = "Error desconocido de Wompi"
-                if isinstance(msg, dict):
-                    error_detail = msg.get("error", {}).get("reason") or msg.get("message") or str(msg)
-                else:
-                    error_detail = str(msg)
-                    
+                error_detail = "Error de conexión con Wompi"
+                try:
+                    if presp is not None:
+                        # Try to get JSON error from response if available
+                        error_json = presp.json()
+                        error_detail = error_json.get("error", {}).get("reason") or error_json.get("message") or str(error_json)
+                        app.logger.error(f"Wompi API Response: {presp.text}")
+                    else:
+                        error_detail = str(req_err)
+                except Exception:
+                    # Fallback if JSON parsing fails or presp is None
+                    if presp is not None:
+                        error_detail = f"Status {presp.status_code}: {presp.text}"
+                    else:
+                        error_detail = str(req_err)
+
                 return jsonify({
                     "error": "No se pudo iniciar el pago con Wompi.",
                     "details": error_detail
                 }), 502
 
-            pdata = presp.json()["data"]
+            pdata = presp.json().get("data")
+            if not pdata or "url" not in pdata:
+                 app.logger.error(f"Invalid Wompi response format: {presp.text}")
+                 return jsonify({
+                    "error": "Respuesta inválida de Wompi",
+                    "details": "No se recibió la URL de pago"
+                }), 502
+                
             init_point = pdata["url"]
 
             checkout = {
