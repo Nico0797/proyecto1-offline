@@ -153,7 +153,15 @@ def create_app(config_class=None):
 
         wompi_pk = os.getenv("WOMPI_PUBLIC_KEY") or app.config.get("WOMPI_PUBLIC_KEY")
         wompi_sk = os.getenv("WOMPI_PRIVATE_KEY") or app.config.get("WOMPI_PRIVATE_KEY")
-        wompi_env = (os.getenv("WOMPI_ENV") or app.config.get("WOMPI_ENV") or "prod").lower()
+        
+        # Determine environment based on key prefix or explicit env var
+        wompi_env_var = (os.getenv("WOMPI_ENV") or app.config.get("WOMPI_ENV") or "prod").lower()
+        
+        if wompi_pk and "pub_test" in wompi_pk:
+            wompi_env = "test"
+        else:
+            wompi_env = wompi_env_var
+            
         wompi_base = "https://production.wompi.co" if wompi_env == "prod" else "https://sandbox.wompi.co"
 
         if True:  # Force Wompi even if keys are missing (for now, to avoid fallback to MP)
@@ -247,7 +255,15 @@ def create_app(config_class=None):
             return jsonify({"error": "Transaction ID required"}), 400
 
         wompi_pk = os.getenv("WOMPI_PUBLIC_KEY") or app.config.get("WOMPI_PUBLIC_KEY")
-        wompi_env = (os.getenv("WOMPI_ENV") or app.config.get("WOMPI_ENV") or "prod").lower()
+        
+        # Determine environment based on key prefix or explicit env var
+        wompi_env_var = (os.getenv("WOMPI_ENV") or app.config.get("WOMPI_ENV") or "prod").lower()
+        
+        if wompi_pk and "pub_test" in wompi_pk:
+            wompi_env = "test"
+        else:
+            wompi_env = wompi_env_var
+            
         wompi_base = "https://production.wompi.co" if wompi_env == "prod" else "https://sandbox.wompi.co"
         
         try:
