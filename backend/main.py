@@ -158,9 +158,9 @@ def create_app(config_class=None):
         else:
             amount = annual
 
-        wompi_pk = os.getenv("WOMPI_PUBLIC_KEY") or app.config.get("WOMPI_PUBLIC_KEY")
-        wompi_sk = os.getenv("WOMPI_PRIVATE_KEY") or app.config.get("WOMPI_PRIVATE_KEY")
-        wompi_env_var = (os.getenv("WOMPI_ENV") or app.config.get("WOMPI_ENV") or "prod").lower()
+        wompi_pk = (os.getenv("WOMPI_PUBLIC_KEY") or app.config.get("WOMPI_PUBLIC_KEY") or "").strip()
+        wompi_sk = (os.getenv("WOMPI_PRIVATE_KEY") or app.config.get("WOMPI_PRIVATE_KEY") or "").strip()
+        wompi_env_var = (os.getenv("WOMPI_ENV") or app.config.get("WOMPI_ENV") or "prod").lower().strip()
         if wompi_pk and "pub_test" in wompi_pk:
             wompi_env = "test"
         else:
@@ -207,7 +207,8 @@ def create_app(config_class=None):
                 "redirect_url": redirect_url
             }
             
-            # Log payload for debugging (masking sensitive info if any)
+            # Log critical info for debugging
+            app.logger.info(f"Wompi Env: {wompi_env}, Base: {wompi_base}, Amount: {amount_cents}")
             app.logger.info(f"Wompi Request Payload: {payload}")
             
             try:
@@ -225,19 +226,24 @@ def create_app(config_class=None):
                 if presp.status_code not in [200, 201]:
                     app.logger.error(f"Wompi Error Status: {presp.status_code}. Body: {presp.text}")
                     return jsonify({
-                        "error": "Error de Wompi",
+                        "error": f"Error Wompi ({presp.status_code}): {presp.text}",
                         "details": f"Status {presp.status_code}: {presp.text}"
                     }), 502
 
                 pdata = presp.json().get("data")
-                if not pdata or "url" not in pdata:
+                
+                # Try to get URL directly, or construct it from ID
+                if pdata and "url" in pdata:
+                    init_point = pdata["url"]
+                elif pdata and "id" in pdata:
+                    # Fallback: Construct URL using ID
+                    init_point = f"https://checkout.wompi.co/l/{pdata['id']}"
+                else:
                      app.logger.error(f"Invalid Wompi response format: {presp.text}")
                      return jsonify({
-                        "error": "Respuesta inesperada de Wompi",
+                        "error": f"Respuesta inesperada de Wompi (JSON inválido): {presp.text}",
                         "details": f"Wompi respondió: {presp.text}"
                     }), 502
-                    
-                init_point = pdata["url"]
                 
             except Exception as e:
                 # Catch-all for ANY error during the request (timeout, connection, ssl, parsing)
