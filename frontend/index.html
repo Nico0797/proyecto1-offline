@@ -756,16 +756,16 @@
                     </div>
                     
                     <div class="glass rounded-xl overflow-x-auto">
-                        <table class="min-w-full text-sm">
+                        <table id="sales-table-container" class="min-w-full text-sm">
                             <thead>
                                 <tr>
-                                    <th class="whitespace-nowrap">Fecha</th>
-                                    <th>Cliente</th>
-                                    <th class="hidden md:table-cell">Items</th>
-                                    <th>Total</th>
-                                    <th class="hidden sm:table-cell">Saldo</th>
-                                    <th class="hidden lg:table-cell">Método</th>
-                                    <th class="hidden sm:table-cell">Estado</th>
+                                    <th class="whitespace-nowrap cursor-pointer select-none" onclick="app.sortTable('sales-table-container', 0, 'date')">Fecha</th>
+                                    <th class="cursor-pointer select-none" onclick="app.sortTable('sales-table-container', 1, 'string')">Cliente</th>
+                                    <th class="hidden md:table-cell cursor-pointer select-none" onclick="app.sortTable('sales-table-container', 2, 'number')">Items</th>
+                                    <th class="cursor-pointer select-none" onclick="app.sortTable('sales-table-container', 3, 'number')">Total</th>
+                                    <th class="hidden sm:table-cell cursor-pointer select-none" onclick="app.sortTable('sales-table-container', 4, 'number')">Saldo</th>
+                                    <th class="hidden lg:table-cell cursor-pointer select-none" onclick="app.sortTable('sales-table-container', 5, 'string')">Método</th>
+                                    <th class="hidden sm:table-cell cursor-pointer select-none" onclick="app.sortTable('sales-table-container', 6, 'string')">Estado</th>
                                     <th>Acciones</th>
                                 </tr>
                             </thead>
@@ -791,13 +791,13 @@
                     </div>
                     
                     <div class="glass rounded-xl overflow-x-auto">
-                        <table>
+                        <table id="expenses-table-container">
                             <thead>
                                 <tr>
-                                    <th>Fecha</th>
-                                    <th>Categoría</th>
-                                    <th>Monto</th>
-                                    <th>Descripción</th>
+                                    <th class="cursor-pointer select-none" onclick="app.sortTable('expenses-table-container', 0, 'date')">Fecha</th>
+                                    <th class="cursor-pointer select-none" onclick="app.sortTable('expenses-table-container', 1, 'string')">Categoría</th>
+                                    <th class="cursor-pointer select-none" onclick="app.sortTable('expenses-table-container', 2, 'number')">Monto</th>
+                                    <th class="cursor-pointer select-none" onclick="app.sortTable('expenses-table-container', 3, 'string')">Descripción</th>
                                     <th></th>
                                 </tr>
                             </thead>
@@ -823,14 +823,14 @@
                     </div>
                     
                     <div class="glass rounded-xl overflow-x-auto">
-                        <table>
+                        <table id="payments-table-container">
                             <thead>
                                 <tr>
-                                    <th>Fecha</th>
-                                    <th>Cliente</th>
-                                    <th>Monto</th>
-                                    <th>Método</th>
-                                    <th>Nota</th>
+                                    <th class="cursor-pointer select-none" onclick="app.sortTable('payments-table-container', 0, 'date')">Fecha</th>
+                                    <th class="cursor-pointer select-none" onclick="app.sortTable('payments-table-container', 1, 'string')">Cliente</th>
+                                    <th class="cursor-pointer select-none" onclick="app.sortTable('payments-table-container', 2, 'number')">Monto</th>
+                                    <th class="cursor-pointer select-none" onclick="app.sortTable('payments-table-container', 3, 'string')">Método</th>
+                                    <th class="cursor-pointer select-none" onclick="app.sortTable('payments-table-container', 4, 'string')">Nota</th>
                                 </tr>
                             </thead>
                             <tbody id="payments-table">
@@ -865,13 +865,13 @@
                     </div>
                     
                     <div class="glass rounded-xl overflow-x-auto">
-                        <table>
+                        <table id="customers-table-container">
                             <thead>
                                 <tr>
-                                    <th>Nombre</th>
-                                    <th>Teléfono</th>
-                                    <th>Saldo</th>
-                                    <th>Estado</th>
+                                    <th class="cursor-pointer select-none" onclick="app.sortTable('customers-table-container', 0, 'string')">Nombre</th>
+                                    <th class="cursor-pointer select-none" onclick="app.sortTable('customers-table-container', 1, 'string')">Teléfono</th>
+                                    <th class="cursor-pointer select-none" onclick="app.sortTable('customers-table-container', 2, 'number')">Saldo</th>
+                                    <th class="cursor-pointer select-none" onclick="app.sortTable('customers-table-container', 3, 'string')">Estado</th>
                                     <th></th>
                                 </tr>
                             </thead>
@@ -905,14 +905,14 @@
                     </div>
                     
                     <div class="glass rounded-xl overflow-x-auto">
-                        <table>
+                        <table id="products-table-container">
                             <thead>
                                 <tr>
-                                    <th>Nombre</th>
-                                    <th>SKU</th>
-                                    <th>Precio</th>
-                                    <th>Costo</th>
-                                    <th>Inventario</th>
+                                    <th class="cursor-pointer select-none" onclick="app.sortTable('products-table-container', 0, 'string')">Nombre</th>
+                                    <th class="cursor-pointer select-none" onclick="app.sortTable('products-table-container', 1, 'string')">SKU</th>
+                                    <th class="cursor-pointer select-none" onclick="app.sortTable('products-table-container', 2, 'number')">Precio</th>
+                                    <th class="cursor-pointer select-none" onclick="app.sortTable('products-table-container', 3, 'number')">Costo</th>
+                                    <th class="cursor-pointer select-none" onclick="app.sortTable('products-table-container', 4, 'number')">Inventario</th>
                                     <th></th>
                                 </tr>
                             </thead>
@@ -964,26 +964,26 @@
                     </div>
                     
                     <!-- Stats Cards -->
-                    <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-5 gap-4 mb-6">
-                        <div class="glass rounded-xl p-4">
-                            <p class="text-muted text-sm">Total</p>
-                            <p id="orders-total" class="text-xl font-bold">0</p>
+                    <div class="grid grid-cols-2 md:grid-cols-5 gap-3 mb-4">
+                        <div class="glass rounded-xl p-3 md:p-4">
+                            <p class="text-muted text-xs md:text-sm">Total</p>
+                            <p id="orders-total" class="text-lg md:text-xl font-bold">0</p>
                         </div>
-                        <div class="glass rounded-xl p-4 border-l-2 border-yellow-500">
-                            <p class="text-muted text-sm">Pendientes</p>
-                            <p id="orders-pending" class="text-xl font-bold text-yellow-400">0</p>
+                        <div class="glass rounded-xl p-3 md:p-4 border-l-2 border-yellow-500">
+                            <p class="text-muted text-xs md:text-sm">Pendientes</p>
+                            <p id="orders-pending" class="text-lg md:text-xl font-bold text-yellow-400">0</p>
                         </div>
-                        <div class="glass rounded-xl p-4 border-l-2 border-blue-500">
-                            <p class="text-muted text-sm">En Proceso</p>
-                            <p id="orders-in-progress" class="text-xl font-bold text-blue-400">0</p>
+                        <div class="glass rounded-xl p-3 md:p-4 border-l-2 border-blue-500">
+                            <p class="text-muted text-xs md:text-sm">En Proceso</p>
+                            <p id="orders-in-progress" class="text-lg md:text-xl font-bold text-blue-400">0</p>
                         </div>
-                        <div class="glass rounded-xl p-4 border-l-2 border-green-500">
-                            <p class="text-muted text-sm">Completados</p>
-                            <p id="orders-completed" class="text-xl font-bold text-green-400">0</p>
+                        <div class="glass rounded-xl p-3 md:p-4 border-l-2 border-green-500">
+                            <p class="text-muted text-xs md:text-sm">Completados</p>
+                            <p id="orders-completed" class="text-lg md:text-xl font-bold text-green-400">0</p>
                         </div>
-                        <div class="glass rounded-xl p-4 border-l-2 border-red-500">
-                            <p class="text-muted text-sm">Cancelados</p>
-                            <p id="orders-cancelled" class="text-xl font-bold text-red-400">0</p>
+                        <div class="glass rounded-xl p-3 md:p-4 border-l-2 border-red-500">
+                            <p class="text-muted text-xs md:text-sm">Cancelados</p>
+                            <p id="orders-cancelled" class="text-lg md:text-xl font-bold text-red-400">0</p>
                         </div>
                     </div>
                     
@@ -1011,14 +1011,14 @@
                     
                     <!-- Orders Table -->
                     <div class="glass rounded-xl overflow-x-auto">
-                        <table class="w-full">
+                        <table id="orders-table-container" class="w-full">
                             <thead class="bg-white/5">
                                 <tr>
-                                    <th class="px-4 py-3 text-left text-sm font-medium">Pedido</th>
-                                    <th class="px-4 py-3 text-left text-sm font-medium">Cliente</th>
-                                    <th class="px-4 py-3 text-left text-sm font-medium">Fecha</th>
-                                    <th class="px-4 py-3 text-left text-sm font-medium">Estado</th>
-                                    <th class="px-4 py-3 text-left text-sm font-medium">Total</th>
+                                    <th class="px-4 py-3 text-left text-sm font-medium cursor-pointer select-none" onclick="app.sortTable('orders-table-container', 0, 'string')">Pedido</th>
+                                    <th class="px-4 py-3 text-left text-sm font-medium cursor-pointer select-none" onclick="app.sortTable('orders-table-container', 1, 'string')">Cliente</th>
+                                    <th class="px-4 py-3 text-left text-sm font-medium cursor-pointer select-none" onclick="app.sortTable('orders-table-container', 2, 'date')">Fecha</th>
+                                    <th class="px-4 py-3 text-left text-sm font-medium cursor-pointer select-none" onclick="app.sortTable('orders-table-container', 3, 'string')">Estado</th>
+                                    <th class="px-4 py-3 text-left text-sm font-medium cursor-pointer select-none" onclick="app.sortTable('orders-table-container', 4, 'number')">Total</th>
                                     <th class="px-4 py-3 text-left text-sm font-medium">Acciones</th>
                                 </tr>
                             </thead>
@@ -2116,6 +2116,7 @@
             token: null,
             products: [],
             customers: [],
+            tableSortState: {},
             currentPage: 'dashboard',
             currentDashboardPeriod: 'today',
             pricingCycle: 'monthly',
@@ -2172,6 +2173,61 @@
                     currency: this.business?.currency || 'COP',
                     minimumFractionDigits: 0
                 }).format(amount);
+            },
+            
+            sortTable(tableId, columnIndex, type) {
+                const table = document.getElementById(tableId);
+                if (!table) return;
+                const tbody = table.tBodies[0];
+                if (!tbody) return;
+                const rows = Array.from(tbody.querySelectorAll('tr'));
+                if (!rows.length) return;
+                
+                if (!this.tableSortState) this.tableSortState = {};
+                const key = tableId + '-' + columnIndex;
+                const current = this.tableSortState[key] || 'desc';
+                const next = current === 'asc' ? 'desc' : 'asc';
+                this.tableSortState[key] = next;
+                
+                const headerRow = table.tHead?.rows[0];
+                if (headerRow) {
+                    Array.from(headerRow.cells).forEach((th, index) => {
+                        const baseLabel = th.dataset.label || th.textContent.trim().replace(/[▲▼]\s*$/, '');
+                        th.dataset.label = baseLabel;
+                        if (index === columnIndex) {
+                            const arrow = next === 'asc' ? ' ▲' : ' ▼';
+                            th.textContent = baseLabel + arrow;
+                        } else {
+                            th.textContent = baseLabel;
+                        }
+                    });
+                }
+                
+                const parseValue = (text) => {
+                    if (type === 'number') {
+                        const num = parseFloat(text.replace(/[^\d.-]/g, ''));
+                        return isNaN(num) ? 0 : num;
+                    }
+                    if (type === 'date') {
+                        const time = new Date(text).getTime();
+                        return isNaN(time) ? 0 : time;
+                    }
+                    return text.toLowerCase();
+                };
+                
+                rows.sort((a, b) => {
+                    const aCell = a.children[columnIndex];
+                    const bCell = b.children[columnIndex];
+                    const aText = aCell ? aCell.textContent.trim() : '';
+                    const bText = bCell ? bCell.textContent.trim() : '';
+                    const aVal = parseValue(aText);
+                    const bVal = parseValue(bText);
+                    if (aVal < bVal) return next === 'asc' ? -1 : 1;
+                    if (aVal > bVal) return next === 'asc' ? 1 : -1;
+                    return 0;
+                });
+                
+                rows.forEach(row => tbody.appendChild(row));
             },
             
             // API helpers
@@ -2866,6 +2922,11 @@
                     el.classList.add('hidden');
                 });
                 document.getElementById('page-' + page)?.classList.remove('hidden');
+
+                const businessHeader = document.getElementById('business-header');
+                if (businessHeader) {
+                    businessHeader.classList.toggle('hidden', page !== 'dashboard');
+                }
 
                 if (page === 'admin') {
                     history.pushState({}, '', '/admin');
