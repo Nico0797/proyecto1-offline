@@ -3025,18 +3025,28 @@
                     if (membershipPlan === 'pro_annual') label = 'Plan PRO Anual';
                     titleEl.textContent = label;
                     let desc = 'Acceso completo a todas las funciones.';
+                    
+                    // Mostrar fechas siempre para PRO
+                    let dateInfo = '';
                     if (membershipStart) {
                         const start = new Date(membershipStart);
-                        desc += ' Inicio: ' + start.toLocaleDateString();
+                        dateInfo += 'Inicio: ' + start.toLocaleDateString();
                     }
                     descEl.textContent = desc;
+                    
                     if (membershipEnd) {
                         const end = new Date(membershipEnd);
-                        expEl.textContent = 'Vence el ' + end.toLocaleDateString();
+                        // Calcular días restantes
+                        const diffTime = end - new Date();
+                        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)); 
+                        
+                        expEl.innerHTML = `Vence el <strong>${end.toLocaleDateString()}</strong> (${diffDays > 0 ? diffDays + ' días restantes' : 'Vencido'})`;
                         expEl.classList.remove('hidden');
                     } else {
-                        expEl.classList.add('hidden');
+                        expEl.textContent = 'Membresía activa';
+                        expEl.classList.remove('hidden');
                     }
+                    
                     if (autoRenew) {
                         renewEl.textContent = 'Renovación automática activa.';
                         renewEl.classList.remove('hidden');

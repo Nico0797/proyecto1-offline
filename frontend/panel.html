@@ -821,6 +821,29 @@
                 this.loadPage(page);
             },
             
+            // Utility: Filter Table
+            filterTable(tableId, query) {
+                const table = document.getElementById(tableId);
+                if (!table) return;
+                const tr = table.getElementsByTagName('tr');
+                const filter = query.toUpperCase();
+                
+                for (let i = 0; i < tr.length; i++) {
+                    const td = tr[i].getElementsByTagName('td');
+                    if (td.length > 0) {
+                        let txtValue = '';
+                        for(let j=0; j < td.length; j++) {
+                             txtValue += (td[j].textContent || td[j].innerText) + ' ';
+                        }
+                        if (txtValue.toUpperCase().indexOf(filter) > -1) {
+                            tr[i].style.display = "";
+                        } else {
+                            tr[i].style.display = "none";
+                        }
+                    }
+                }
+            },
+            
             async loadPage(page) {
                 const content = document.getElementById('content');
                 content.innerHTML = '<div class="loading">Cargando...</div>';
@@ -887,20 +910,22 @@
                             <div class="stat-card">
                                 <div class="stat-label">Total Usuarios</div>
                                 <div class="stat-value">${stats.total_users || 0}</div>
-                                <div class="stat-change positive">↑ 12% vs mes anterior</div>
+                                <div class="stat-change text-white/50">Free: ${stats.free_users} | Pro: ${stats.pro_users}</div>
                             </div>
                             <div class="stat-card">
-                                <div class="stat-label">Negocios Activos</div>
-                                <div class="stat-value">${stats.total_businesses || 0}</div>
-                                <div class="stat-change positive">↑ 8% vs mes anterior</div>
+                                <div class="stat-label">Ingresos Totales (App)</div>
+                                <div class="stat-value">$${this.formatNumber(stats.total_membership_income || 0)}</div>
+                                <div class="stat-change positive">Pagos procesados: ${stats.total_membership_payments}</div>
                             </div>
                             <div class="stat-card">
-                                <div class="stat-label">Ventas del Mes</div>
-                                <div class="stat-value">${stats.total_sales || 0}</div>
+                                <div class="stat-label">Plan Mensual</div>
+                                <div class="stat-value">$${this.formatNumber(stats.pro_monthly_income || 0)}</div>
+                                <div class="stat-change text-white/50">${stats.pro_monthly_payments} pagos</div>
                             </div>
                             <div class="stat-card">
-                                <div class="stat-label">Ingresos</div>
-                                <div class="stat-value">$${this.formatNumber(stats.total_revenue || 0)}</div>
+                                <div class="stat-label">Plan Anual</div>
+                                <div class="stat-value">$${this.formatNumber(stats.pro_annual_income || 0)}</div>
+                                <div class="stat-change text-white/50">${stats.pro_annual_payments} pagos</div>
                             </div>
                         </div>
                         
@@ -968,20 +993,24 @@
                                 <i class="ph ph-plus"></i> Nuevo Usuario
                             </button>
                         </div>
+                        
+                        <div class="mb-4">
+                            <input type="text" id="users-search" class="bg-slate-800 border border-slate-700 rounded px-3 py-2 text-white w-full max-w-md" placeholder="Buscar por nombre, email o plan..." onkeyup="app.filterTable('users-table', this.value)">
+                        </div>
+
                         <div class="table-container">
                             <table>
                                 <thead>
                                     <tr>
-                                        <th>Nombre</th>
-                                        <th>Email</th>
-                                        <th>Plan</th>
+                                        <th>Usuario</th>
+                                        <th>Plan / Vencimiento</th>
                                         <th>Estado</th>
                                         <th>Último Login</th>
                                         <th>Acciones</th>
                                     </tr>
                                 </thead>
                                 <tbody id="users-table">
-                                    <tr><td colspan="6" class="text-center text-white/60">Cargando...</td></tr>
+                                    <tr><td colspan="5" class="text-center text-white/60">Cargando...</td></tr>
                                 </tbody>
                             </table>
                         </div>
@@ -1000,6 +1029,11 @@
                             <h3 class="card-title">Clientes Globales</h3>
                         </div>
                         <p class="text-white/60 mb-4">Todos los clientes de todos los negocios</p>
+                        
+                        <div class="mb-4">
+                            <input type="text" id="customers-search" class="bg-slate-800 border border-slate-700 rounded px-3 py-2 text-white w-full max-w-md" placeholder="Buscar clientes..." onkeyup="app.filterTable('customers-table', this.value)">
+                        </div>
+
                         <div class="table-container">
                             <table>
                                 <thead>
@@ -1058,6 +1092,11 @@
                             <h3 class="card-title">Productos Globales</h3>
                         </div>
                         <p class="text-white/60 mb-4">Todos los productos de todos los negocios</p>
+                        
+                        <div class="mb-4">
+                            <input type="text" id="products-search" class="bg-slate-800 border border-slate-700 rounded px-3 py-2 text-white w-full max-w-md" placeholder="Buscar productos o SKU..." onkeyup="app.filterTable('products-table', this.value)">
+                        </div>
+
                         <div class="table-container">
                             <table>
                                 <thead>
@@ -1599,29 +1638,43 @@
                         const data = await res.json();
                         const tbody = document.getElementById('users-table');
                         if (data.users && data.users.length > 0) {
-                            tbody.innerHTML = data.users.map(user => `
+                            tbody.innerHTML = data.users.map(user => {
+                                let planDates = '';
+                                if (user.membership_end) {
+                                    const end = new Date(user.membership_end);
+                                    planDates = `<br><span class="text-xs text-white/50">Vence: ${end.toLocaleDateString()}</span>`;
+                                }
+                                
+                                return `
                                 <tr>
-                                    <td>${user.name}</td>
-                                    <td>${user.email}</td>
-                                    <td><span class="badge badge-info">${user.plan || 'free'}</span></td>
+                                    <td>
+                                        <div class="font-medium">${user.name}</div>
+                                        <div class="text-xs text-white/50">${user.email}</div>
+                                    </td>
+                                    <td>
+                                        <span class="badge ${user.plan === 'pro' || (user.plan && user.plan.startsWith('pro')) ? 'badge-info' : 'badge-secondary'}">${user.membership_plan || user.plan || 'free'}</span>
+                                        ${planDates}
+                                    </td>
                                     <td>${user.is_active ? '<span class="badge badge-success">Activo</span>' : '<span class="badge badge-danger">Inactivo</span>'}</td>
                                     <td>${user.last_login ? new Date(user.last_login).toLocaleString() : '-'}</td>
                                     <td>
-                                        <button class="text-blue-400 hover:text-blue-300" onclick="app.editUser(${user.id})">
-                                            <i class="ph ph-pencil"></i>
-                                        </button>
-                                        <button class="text-red-400 hover:text-red-300 ml-2" onclick="app.deleteUser(${user.id})">
-                                            <i class="ph ph-trash"></i>
-                                        </button>
+                                        <div class="flex items-center gap-2">
+                                            <button class="text-blue-400 hover:text-blue-300" onclick="app.editUser(${user.id})">
+                                                <i class="ph ph-pencil"></i>
+                                            </button>
+                                            <button class="text-red-400 hover:text-red-300" onclick="app.deleteUser(${user.id})">
+                                                <i class="ph ph-trash"></i>
+                                            </button>
+                                        </div>
                                     </td>
                                 </tr>
-                            `).join('');
+                            `}).join('');
                         } else {
-                            tbody.innerHTML = '<tr><td colspan="6" class="text-center text-white/60">No hay usuarios</td></tr>';
+                            tbody.innerHTML = '<tr><td colspan="5" class="text-center text-white/60">No hay usuarios</td></tr>';
                         }
                     }
                 } catch (e) {
-                    document.getElementById('users-table').innerHTML = '<tr><td colspan="6" class="text-center text-red-400">Error al cargar</td></tr>';
+                    document.getElementById('users-table').innerHTML = '<tr><td colspan="5" class="text-center text-red-400">Error al cargar</td></tr>';
                 }
             },
             
@@ -1865,6 +1918,11 @@
                         <div class="card-header">
                             <h3 class="card-title">Negocios</h3>
                         </div>
+                        
+                        <div class="mb-4">
+                            <input type="text" id="businesses-search" class="bg-slate-800 border border-slate-700 rounded px-3 py-2 text-white w-full max-w-md" placeholder="Buscar negocios..." onkeyup="app.filterTable('businesses-table', this.value)">
+                        </div>
+
                         <div class="table-container">
                             <table>
                                 <thead>
