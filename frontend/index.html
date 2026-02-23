@@ -1747,46 +1747,64 @@
             </div>
             
             <!-- Sale Modal -->
-            <div id="modal-sale" class="glass rounded-2xl p-6 w-full max-w-lg hidden">
+            <div id="modal-sale" class="glass rounded-2xl p-6 w-full max-w-lg hidden z-[100000]">
                 <h3 class="text-xl font-bold mb-4">Nueva Venta</h3>
-                <div class="space-y-4">
-                    <div>
-                        <label class="block text-sm mb-1">Cliente (opcional)</label>
-                        <select id="sale-customer" class="input w-full px-4 py-2 rounded-xl">
-                            <option value="">Sin cliente</option>
-                        </select>
-                    </div>
-                    <div>
-                        <label class="block text-sm mb-1">Fecha</label>
-                        <input type="date" id="sale-date" class="input w-full px-4 py-2 rounded-xl">
-                    </div>
-                    <div>
-                        <label class="block text-sm mb-1">Productos</label>
-                        <div id="sale-items" class="space-y-2 mb-2"></div>
-                        <button onclick="app.addSaleItem()" class="text-blue-400 text-sm">+ Agregar producto</button>
-                    </div>
-                    <div class="flex gap-4">
-                        <div class="flex-1">
-                            <label class="block text-sm mb-1">Método de Pago</label>
-                            <select id="sale-method" class="input w-full px-4 py-2 rounded-xl">
-                                <option value="cash">Efectivo</option>
-                                <option value="transfer">Transferencia</option>
-                                <option value="credit">Fiado (Crédito)</option>
+                <form id="sale-form" onsubmit="event.preventDefault(); app.saveSale();">
+                    <div class="space-y-4">
+                        <div>
+                            <label class="block text-sm mb-1">Cliente (opcional)</label>
+                            <select id="sale-customer" class="input w-full px-4 py-2 rounded-xl">
+                                <option value="">Sin cliente</option>
                             </select>
                         </div>
-                    </div>
-                    <div>
-                        <label class="block text-sm mb-1">Nota</label>
-                        <input type="text" id="sale-note" class="input w-full px-4 py-2 rounded-xl">
-                    </div>
-                    <div class="flex justify-between items-center pt-4">
-                        <p class="text-xl font-bold">Total: $<span id="sale-total">0</span></p>
-                        <div class="flex gap-2">
-                            <button onclick="app.closeModal()" class="px-4 py-2 rounded-xl">Cancelar</button>
-                            <button onclick="app.saveSale()" class="btn-success px-6 py-2 rounded-xl">Guardar</button>
+                        <div>
+                            <label class="block text-sm mb-1">Fecha</label>
+                            <input type="date" id="sale-date" class="input w-full px-4 py-2 rounded-xl">
+                        </div>
+                        
+                        <div>
+                            <label class="block text-sm mb-1">Productos</label>
+                            <div id="sale-items-container" class="space-y-2 mb-2 max-h-60 overflow-y-auto pr-2"></div>
+                            <button type="button" onclick="app.addSaleItem()" class="text-blue-400 text-sm hover:text-blue-300 flex items-center gap-1">
+                                <i class="ph ph-plus-circle"></i> Agregar producto
+                            </button>
+                        </div>
+
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-sm mb-1">Subtotal</label>
+                                <input type="text" id="sale-subtotal" class="input w-full px-4 py-2 rounded-xl bg-slate-800/50 text-right" readonly value="$0">
+                            </div>
+                            <div>
+                                <label class="block text-sm mb-1">Descuento</label>
+                                <input type="number" id="sale-discount" class="input w-full px-4 py-2 rounded-xl text-right" placeholder="0" min="0" onchange="app.calculateSaleTotal()">
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-sm mb-1">Método de Pago</label>
+                                <select id="sale-method" class="input w-full px-4 py-2 rounded-xl">
+                                    <option value="cash">Efectivo</option>
+                                    <option value="transfer">Transferencia</option>
+                                    <option value="credit">Fiado (Crédito)</option>
+                                </select>
+                            </div>
+                             <div>
+                                <label class="block text-sm mb-1 font-bold">Total</label>
+                                <input type="text" id="sale-total-display" class="input w-full px-4 py-2 rounded-xl bg-slate-800/50 font-bold text-lg text-right text-green-400" readonly value="$0">
+                            </div>
+                        </div>
+                        <div>
+                            <label class="block text-sm mb-1">Nota</label>
+                            <input type="text" id="sale-note" class="input w-full px-4 py-2 rounded-xl">
+                        </div>
+                        <div class="flex justify-end gap-2 pt-4">
+                            <button type="button" onclick="app.closeModal('modal-sale')" class="px-4 py-2 rounded-xl hover:bg-white/10 transition-colors">Cancelar</button>
+                            <button type="submit" class="btn-success px-6 py-2 rounded-xl shadow-lg shadow-green-500/20">Guardar Venta</button>
                         </div>
                     </div>
-                </div>
+                </form>
             </div>
             
             <!-- Expense Modal -->
@@ -2343,6 +2361,7 @@
                     
                     this.user = data.user;
                     this.token = data.access_token;
+                    this.refreshToken = data.refresh_token;
                     this.saveAuth();
                     this.afterLogin();
                 } catch (e) {
@@ -2404,6 +2423,7 @@
 
                     this.user = data.user;
                     this.token = data.access_token;
+                    this.refreshToken = data.refresh_token;
                     this.saveAuth();
                     this.afterLogin();
                 } catch (e) {
@@ -2505,7 +2525,8 @@
             saveAuth() {
                 this.storage.set('cuaderno_auth', {
                     user: this.user,
-                    token: this.token
+                    token: this.token,
+                    refreshToken: this.refreshToken
                 });
             },
             
@@ -2514,6 +2535,7 @@
                 if (saved) {
                     this.user = saved.user;
                     this.token = saved.token;
+                    this.refreshToken = saved.refreshToken;
                     return true;
                 }
                 return false;
@@ -3551,75 +3573,110 @@
                 }
             },
             
-            showSaleModal() {
-                this.loadProductsForSelect();
-                this.loadCustomersForSelect();
+            async showSaleModal() {
+                // Clear form
+                document.getElementById('sale-form').reset();
+                document.getElementById('sale-items-container').innerHTML = '';
+                document.getElementById('sale-total-display').value = '$0';
+                document.getElementById('sale-subtotal').value = '$0';
                 document.getElementById('sale-date').value = new Date().toISOString().split('T')[0];
+
+                // Load data
+                await Promise.all([
+                    this.loadProductsForSelect(),
+                    this.loadCustomersForSelect()
+                ]);
+                
+                // Add first item
+                this.addSaleItem();
+
+                // Show modal
                 const modal = document.getElementById('modal-sale');
                 const overlay = document.getElementById('modal-overlay');
                 modal.classList.remove('hidden');
                 modal.style.display = 'block';
                 overlay.classList.remove('hidden');
                 overlay.style.display = 'flex';
-                this.saleItems = [];
-                this.renderSaleItems();
             },
             
             async loadProductsForSelect() {
-                const data = await this.api(`/businesses/${this.business.id}/products`);
-                this.products = data.products;
+                try {
+                    const data = await this.api(`/businesses/${this.business.id}/products`);
+                    this.products = Array.isArray(data) ? data : (data.products || []);
+                    // Cache options HTML for performance
+                    this._saleProductOptions = '<option value="">Seleccionar producto</option>' + 
+                        this.products.map(p => `<option value="${p.id}" data-price="${p.price}" data-name="${p.name}">${p.name} - ${this.formatMoney(p.price)}</option>`).join('');
+                } catch (e) {
+                    console.error("Error loading products", e);
+                    this.products = [];
+                    this._saleProductOptions = '<option value="">Error cargando productos</option>';
+                }
             },
             
             async loadCustomersForSelect() {
-                const data = await this.api(`/businesses/${this.business.id}/customers`);
-                this.customers = data.customers;
-                
-                const select = document.getElementById('sale-customer');
-                select.innerHTML = '<option value="">Sin cliente</option>' + 
-                    data.customers.map(c => `<option value="${c.id}">${c.name}</option>`).join('');
+                try {
+                    const data = await this.api(`/businesses/${this.business.id}/customers`);
+                    const customers = Array.isArray(data) ? data : (data.customers || []);
+                    const select = document.getElementById('sale-customer');
+                    select.innerHTML = '<option value="">Sin cliente</option>' + 
+                        customers.map(c => `<option value="${c.id}">${c.name}</option>`).join('');
+                } catch (e) {
+                    console.error("Error loading customers", e);
+                }
             },
             
             addSaleItem() {
-                const select = document.createElement('select');
-                select.className = 'input w-full px-3 py-2 rounded-lg mb-2 sale-item-select';
-                select.innerHTML = '<option value="">Seleccionar producto</option>' + 
-                    this.products.map(p => `<option value="${p.id}" data-price="${p.price}" data-name="${p.name}">${p.name} - ${this.formatMoney(p.price)}</option>`).join('');
+                const container = document.getElementById('sale-items-container');
+                const itemId = Date.now();
+                const options = this._saleProductOptions || '<option value="">Cargando...</option>';
                 
-                const qtyInput = document.createElement('input');
-                qtyInput.type = 'number';
-                qtyInput.value = '1';
-                qtyInput.min = '1';
-                qtyInput.className = 'input w-20 px-3 py-2 rounded-lg';
-                qtyInput.onchange = () => this.updateSaleTotal();
-                
-                const container = document.createElement('div');
-                container.className = 'flex gap-2 items-center';
-                container.appendChild(select);
-                container.appendChild(qtyInput);
-                
-                document.getElementById('sale-items').appendChild(container);
-                
-                select.onchange = () => this.updateSaleTotal();
-                qtyInput.oninput = () => this.updateSaleTotal();
+                const html = `
+                    <div class="sale-item flex gap-2 items-center mb-2 p-2 bg-slate-800/30 rounded-lg border border-slate-700/50" data-id="${itemId}">
+                        <div class="flex-1">
+                            <select class="sale-item-product input w-full px-2 py-1 text-sm bg-slate-900 border-slate-700" onchange="app.onSaleProductChange(this)">
+                                ${options}
+                            </select>
+                        </div>
+                        <div class="w-20">
+                            <input type="number" class="sale-item-qty input w-full px-2 py-1 text-sm bg-slate-900 border-slate-700 text-center" value="1" min="1" onchange="app.calculateSaleTotal()" oninput="app.calculateSaleTotal()">
+                        </div>
+                        <div class="w-24 relative">
+                            <span class="absolute left-2 top-1.5 text-xs text-white/40">$</span>
+                            <input type="number" class="sale-item-price input w-full pl-5 pr-2 py-1 text-sm bg-slate-900 border-slate-700 text-right" value="0" step="0.01" onchange="app.calculateSaleTotal()" oninput="app.calculateSaleTotal()">
+                        </div>
+                        <div class="w-8 flex justify-center">
+                            <button type="button" onclick="this.closest('.sale-item').remove(); app.calculateSaleTotal();" class="text-red-400 hover:text-red-300 p-1 rounded hover:bg-red-500/10">
+                                <i class="ph ph-trash"></i>
+                            </button>
+                        </div>
+                    </div>
+                `;
+                container.insertAdjacentHTML('beforeend', html);
             },
             
-            updateSaleTotal() {
-                let total = 0;
-                const containers = document.querySelectorAll('#sale-items > div');
-                containers.forEach(div => {
-                    const select = div.querySelector('select');
-                    const qty = div.querySelector('input').value;
-                    const option = select?.selectedOptions[0];
-                    if (option && option.dataset.price) {
-                        total += parseFloat(option.dataset.price) * parseInt(qty || 0);
-                    }
+            onSaleProductChange(select) {
+                const option = select.selectedOptions[0];
+                const price = parseFloat(option.dataset.price || 0);
+                const itemRow = select.closest('.sale-item');
+                // Update price input
+                const priceInput = itemRow.querySelector('.sale-item-price');
+                priceInput.value = price;
+                this.calculateSaleTotal();
+            },
+            
+            calculateSaleTotal() {
+                let subtotal = 0;
+                document.querySelectorAll('.sale-item').forEach(item => {
+                    const qty = parseFloat(item.querySelector('.sale-item-qty').value) || 0;
+                    const price = parseFloat(item.querySelector('.sale-item-price').value) || 0;
+                    subtotal += qty * price;
                 });
-                document.getElementById('sale-total').textContent = total.toLocaleString();
-            },
-            
-            renderSaleItems() {
-                document.getElementById('sale-items').innerHTML = '';
-                this.addSaleItem();
+                
+                const discount = parseFloat(document.getElementById('sale-discount').value) || 0;
+                const total = Math.max(0, subtotal - discount);
+                
+                document.getElementById('sale-subtotal').value = this.formatMoney(subtotal);
+                document.getElementById('sale-total-display').value = this.formatMoney(total);
             },
             
             async saveSale() {
@@ -3627,49 +3684,65 @@
                 const saleDate = document.getElementById('sale-date').value;
                 const paymentMethod = document.getElementById('sale-method').value;
                 const note = document.getElementById('sale-note').value;
+                const discount = parseFloat(document.getElementById('sale-discount').value) || 0;
                 
-                // Build items
+                // Collect items
                 const items = [];
-                const containers = document.querySelectorAll('#sale-items > div');
-                containers.forEach(div => {
-                    const select = div.querySelector('select');
-                    const qty = parseInt(div.querySelector('input').value) || 1;
-                    const option = select?.selectedOptions[0];
-                    if (option && option.dataset.price) {
+                let subtotal = 0;
+                
+                const itemRows = document.querySelectorAll('.sale-item');
+                for (const row of itemRows) {
+                    const select = row.querySelector('.sale-item-product');
+                    const productId = select.value;
+                    
+                    if (!productId) continue;
+                    
+                    const qty = parseFloat(row.querySelector('.sale-item-qty').value) || 0;
+                    const price = parseFloat(row.querySelector('.sale-item-price').value) || 0;
+                    const option = select.selectedOptions[0];
+                    const name = option.dataset.name || option.text;
+                    
+                    if (qty > 0) {
                         items.push({
-                            product_id: parseInt(select.value),
-                            name: option.dataset.name,
-                            qty: qty,
-                            unit_price: parseFloat(option.dataset.price),
-                            total: parseFloat(option.dataset.price) * qty
+                            product_id: parseInt(productId),
+                            product_name: name,
+                            quantity: qty,
+                            unit_price: price,
+                            total: qty * price
                         });
+                        subtotal += qty * price;
                     }
-                });
+                }
                 
                 if (items.length === 0) {
-                    alert('Agrega al menos un producto');
+                    showCustomAlert('Agrega al menos un producto válido', 'warning');
                     return;
                 }
                 
-                const subtotal = items.reduce((sum, i) => sum + i.total, 0);
+                const total = Math.max(0, subtotal - discount);
                 
-                await this.api(`/businesses/${this.business.id}/sales`, {
-                    method: 'POST',
-                    body: JSON.stringify({
-                        customer_id: customerId || null,
-                        sale_date: saleDate,
-                        items: items,
-                        subtotal: subtotal,
-                        discount: 0,
-                        total: subtotal,
-                        payment_method: paymentMethod,
-                        note: note
-                    })
-                });
-                
-                this.closeModal();
-                this.loadSales();
-                this.loadDashboard();
+                try {
+                    await this.api(`/businesses/${this.business.id}/sales`, {
+                        method: 'POST',
+                        body: JSON.stringify({
+                            customer_id: customerId || null,
+                            sale_date: saleDate,
+                            items: items,
+                            subtotal: subtotal,
+                            discount: discount,
+                            total: total,
+                            payment_method: paymentMethod,
+                            note: note
+                        })
+                    });
+                    
+                    this.closeModal('modal-sale');
+                    showCustomAlert('Venta guardada exitosamente', 'success');
+                    this.loadSales();
+                    this.loadDashboard();
+                } catch (e) {
+                    showCustomAlert('Error al guardar venta: ' + e.message, 'error');
+                }
             },
             
             // Expenses
@@ -5349,6 +5422,70 @@
                 }
             },
             
+            // Activity Tracker & Refresh
+            lastActivity: Date.now(),
+            
+            initActivityTracker() {
+                ['mousemove', 'mousedown', 'keypress', 'touchmove', 'scroll'].forEach(evt => {
+                    document.addEventListener(evt, () => {
+                        this.lastActivity = Date.now();
+                    }, { passive: true });
+                });
+                
+                // Check every minute
+                setInterval(() => this.checkTokenRefresh(), 60 * 1000);
+            },
+            
+            async checkTokenRefresh() {
+                if (!this.token) return;
+                
+                const now = Date.now();
+                const timeSinceActivity = now - this.lastActivity;
+                
+                // If user has been active in the last 15 minutes
+                if (timeSinceActivity < 15 * 60 * 1000) {
+                     try {
+                         // Decode token to check expiration
+                         const payload = JSON.parse(atob(this.token.split('.')[1]));
+                         const exp = payload.exp * 1000;
+                         const timeRemaining = exp - now;
+                         
+                         // If less than 5 mins remaining, refresh
+                         if (timeRemaining < 5 * 60 * 1000 && timeRemaining > 0) {
+                             console.log('Refreshing token due to activity...');
+                             await this.doRefreshToken();
+                         }
+                     } catch(e) {
+                         console.error("Error checking token exp", e);
+                     }
+                }
+            },
+            
+            async doRefreshToken() {
+                 try {
+                     if (!this.refreshToken) return;
+                     
+                     const res = await fetch('/api/auth/refresh', {
+                         method: 'POST',
+                         headers: {
+                             'Authorization': `Bearer ${this.refreshToken}`, // Send refresh token as Bearer
+                             'Content-Type': 'application/json'
+                         }
+                     });
+                     
+                     if (res.ok) {
+                         const data = await res.json();
+                         if (data.access_token) {
+                             this.token = data.access_token;
+                             this.saveAuth();
+                             console.log('Token refreshed successfully');
+                         }
+                     }
+                 } catch(e) {
+                     console.error("Failed to refresh token", e);
+                 }
+            },
+
             // Modal helpers
             closeModal(modalId = null) {
                 if (modalId) {
@@ -5383,6 +5520,9 @@
             
             // Init
             async init() {
+                // Init Activity Tracker
+                this.initActivityTracker();
+                
                 // Check for Wompi transaction ID in URL
                 const urlParams = new URLSearchParams(window.location.search);
                 const wompiId = urlParams.get('id');
