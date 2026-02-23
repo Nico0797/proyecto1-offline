@@ -227,7 +227,12 @@ def create_app(config_class=None):
             return jsonify({"checkout": checkout})
         except Exception as e:
             app.logger.error("Error inesperado creando pago Wompi: %s", str(e))
-            return jsonify({"error": "Ocurrió un error al iniciar el pago con Wompi."}), 502
+            import traceback
+            app.logger.error(traceback.format_exc())
+            return jsonify({
+                "error": "Ocurrió un error al iniciar el pago con Wompi.",
+                "details": str(e)
+            }), 502
 
     @app.route("/api/billing/confirm-wompi", methods=["POST"])
     @token_required
