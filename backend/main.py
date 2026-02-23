@@ -189,6 +189,27 @@ def create_app(config_class=None):
                 "redirect_url": redirect_url
             }
             h = {"Authorization": f"Bearer {wompi_sk}", "Content-Type": "application/json"}
+            
+            # Wompi API v1 requires amount in cents to be integer
+            # Ensure redirect_url is valid
+            if not redirect_url or "localhost" in redirect_url:
+                # Fallback for dev environment or missing config
+                # In production this should be set to the real domain
+                redirect_url = "https://app.encaja.co" 
+                
+            payload = {
+                "name": f"EnCaja {'Mensual' if plan=='pro_monthly' else 'Trimestral' if plan=='pro_quarterly' else 'Anual'}",
+                "description": f"Suscripción {plan}",
+                "single_use": False,
+                "collect_shipping": False,
+                "currency": "COP",
+                "amount_in_cents": amount_cents,
+                "redirect_url": redirect_url
+            }
+            
+            # Log payload for debugging (masking sensitive info if any)
+            app.logger.info(f"Wompi Request Payload: {payload}")
+            
             presp = requests.post(f"{wompi_base}/v1/payment_links", json=payload, headers=h, timeout=15)
             try:
                 presp.raise_for_status()
