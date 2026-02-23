@@ -2161,6 +2161,14 @@
                     return responseData;
                 } catch (error) {
                     console.error('API Error:', error);
+                    
+                    // Manejo específico de token expirado
+                    if (error.message === "Inicio de sesión expirado" || error.code === "TOKEN_EXPIRED") {
+                        alert("Tu sesión ha expirado. Por favor inicia sesión nuevamente.");
+                        this.logout();
+                        return;
+                    }
+                    
                     alert(error.message);
                     throw error;
                 }

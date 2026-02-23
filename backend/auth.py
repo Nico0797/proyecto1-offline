@@ -18,19 +18,27 @@ from backend.models import User, Permission, Role, AuditLog, UserRole
 def create_token(user_id, token_type="access"):
     """Crear token JWT"""
     if token_type == "access":
-        expires = int(os.getenv("JWT_ACCESS_TOKEN_EXPIRES", "900"))
+        # Usar la configuración de la app en lugar de leer directamente de env para respetar los cambios en config.py
+        expires = current_app.config.get("JWT_ACCESS_TOKEN_EXPIRES", 86400)
     else:
-        expires = int(os.getenv("JWT_REFRESH_TOKEN_EXPIRES", "604800"))
+        expires = current_app.config.get("JWT_REFRESH_TOKEN_EXPIRES", 2592000)
 
+    # Convertir a datetime directamente para el payload
+    expiration_time = datetime.utcnow() + timedelta(seconds=expires)
+    
     payload = {
         "user_id": user_id,
         "type": token_type,
-        "exp": datetime.utcnow() + timedelta(seconds=expires),
+        "exp": expiration_time,
         "iat": datetime.utcnow(),
     }
 
     secret = current_app.config["JWT_SECRET_KEY"]
-    return jwt.encode(payload, secret, algorithm="HS256")
+    # jwt.encode devuelve bytes en versiones viejas y str en nuevas, nos aseguramos compatibilidad
+    token = jwt.encode(payload, secret, algorithm="HS256")
+    if isinstance(token, bytes):
+        token = token.decode('utf-8')
+    return token
 
 
 def decode_token(token):
@@ -199,26 +207,38 @@ def token_required(f):
     """Decorator para requerir autenticación"""
     @wraps(f)
     def decorated(*args, **kwargs):
-        user = get_user_from_token()
-        
-        if not user:
-            return jsonify({"error": "Token inválido o expirado"}), 401
-        
-        # Verificar si el usuario está activo
-        if hasattr(user, 'is_active') and not user.is_active:
-            return jsonify({"error": "Usuario inactivo"}), 403
-        
-        # Actualizar last_login
-        try:
-            from backend.database import db
-            user.last_login = datetime.utcnow()
-            db.session.commit()
-        except Exception as e:
-            print(f"[AUTH] Error updating last_login: {e}")
-        
-        g.current_user = user
-        return f(*args, **kwargs)
+        # 1. Obtener token
+        auth_header = request.headers.get("Authorization")
+        if not auth_header:
+            return jsonify({"error": "Token requerido"}), 401
 
+        try:
+            # Formato: "Bearer <token>"
+            parts = auth_header.split()
+            if len(parts) != 2 or parts[0] != "Bearer":
+                return jsonify({"error": "Formato de token inválido"}), 401
+            
+            token = parts[1]
+            payload = decode_token(token)
+            
+            if not payload:
+                # Mensaje personalizado para el frontend
+                return jsonify({"error": "Inicio de sesión expirado", "code": "TOKEN_EXPIRED"}), 401
+                
+            user_id = payload.get("user_id")
+            user = User.query.get(user_id)
+            
+            if not user:
+                return jsonify({"error": "Usuario no encontrado"}), 401
+                
+            # Asignar usuario al contexto global de Flask
+            g.current_user = user
+            
+        except Exception as e:
+            return jsonify({"error": "Error de autenticación", "details": str(e)}), 401
+
+        return f(*args, **kwargs)
+    
     return decorated
 
 

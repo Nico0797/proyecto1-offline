@@ -2298,12 +2298,28 @@
                             if (goPro) this.navigate('upgrade');
                             throw new Error(responseData.error || 'Acceso restringido');
                         }
+                        
+                        // Detectar token expirado o inválido desde el backend
+                        if (status === 401) {
+                            const errorMsg = responseData.error || '';
+                            if (errorMsg === 'Inicio de sesión expirado' || responseData.code === 'TOKEN_EXPIRED') {
+                                throw new Error('Inicio de sesión expirado');
+                            }
+                        }
+                        
                         throw new Error(responseData.error || `Error ${status}: ${responseData.message || 'Error en la solicitud'}`);
                     }
                     
                     return responseData;
                 } catch (error) {
                     console.error('API Error:', error);
+                    
+                    if (error.message === 'Inicio de sesión expirado') {
+                        alert('Tu sesión ha expirado. Por favor inicia sesión nuevamente.');
+                        this.logout();
+                        return null; // Stop execution
+                    }
+                    
                     alert(error.message);
                     throw error;
                 }
