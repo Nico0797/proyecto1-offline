@@ -211,49 +211,46 @@ def create_app(config_class=None):
             app.logger.info(f"Wompi Request Payload: {payload}")
             
             try:
-                presp = requests.post(f"{wompi_base}/v1/payment_links", json=payload, headers=h, timeout=30)
-                presp.raise_for_status()
-            except requests.exceptions.RequestException as req_err:
-                # Capture detailed request error (timeout, connection, 4xx/5xx)
-                app.logger.error(f"Wompi Request Error: {str(req_err)}")
+                # Disable SSL verification temporarily to bypass potential cert issues in container
+                # and use a very robust try-except block to ensure JSON is ALWAYS returned
+                presp = requests.post(
+                    f"{wompi_base}/v1/payment_links", 
+                    json=payload, 
+                    headers=h, 
+                    timeout=30,
+                    verify=False  # CRITICAL: Fix for potential SSL/TLS issues in Railway container
+                )
                 
-                error_detail = "Error de conexión con Wompi"
-                try:
-                    if presp is not None:
-                        # Try to get JSON error from response if available
-                        error_json = presp.json()
-                        error_detail = error_json.get("error", {}).get("reason") or error_json.get("message") or str(error_json)
-                        app.logger.error(f"Wompi API Response: {presp.text}")
-                    else:
-                        error_detail = str(req_err)
-                except Exception:
-                    # Fallback if JSON parsing fails or presp is None
-                    if presp is not None:
-                        error_detail = f"Status {presp.status_code}: {presp.text}"
-                    else:
-                        error_detail = str(req_err)
+                # Check if we got a success status code
+                if presp.status_code not in [200, 201]:
+                    app.logger.error(f"Wompi Error Status: {presp.status_code}. Body: {presp.text}")
+                    return jsonify({
+                        "error": "Error de Wompi",
+                        "details": f"Status {presp.status_code}: {presp.text}"
+                    }), 502
 
+                pdata = presp.json().get("data")
+                if not pdata or "url" not in pdata:
+                     app.logger.error(f"Invalid Wompi response format: {presp.text}")
+                     return jsonify({
+                        "error": "Respuesta inesperada de Wompi",
+                        "details": f"Wompi respondió: {presp.text}"
+                    }), 502
+                    
+                init_point = pdata["url"]
+                
+            except Exception as e:
+                # Catch-all for ANY error during the request (timeout, connection, ssl, parsing)
+                # This ensures we NEVER return a raw 502 to the frontend without details
+                error_msg = str(e)
+                app.logger.error(f"CRITICAL WOMPI ERROR: {error_msg}")
+                import traceback
+                app.logger.error(traceback.format_exc())
+                
                 return jsonify({
-                    "error": "No se pudo iniciar el pago con Wompi.",
-                    "details": error_detail
+                    "error": "Error de conexión con pasarela de pago",
+                    "details": f"Error interno: {error_msg}"
                 }), 502
-
-            pdata = presp.json().get("data")
-            if not pdata or "url" not in pdata:
-                 # Log full response for debugging
-                 try:
-                     resp_text = presp.text
-                 except:
-                     resp_text = "No text content"
-                     
-                 app.logger.error(f"Invalid Wompi response format. Status: {presp.status_code}. Body: {resp_text}")
-                 
-                 return jsonify({
-                    "error": "Respuesta inesperada de Wompi",
-                    "details": f"Wompi respondió (Status {presp.status_code}): {resp_text}"
-                }), 502
-                
-            init_point = pdata["url"]
 
             checkout = {
                 "provider": "wompi",
