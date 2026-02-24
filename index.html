@@ -4063,16 +4063,16 @@
                     throw new Error(errText || 'Error descargando ventas');
                 }
                 const blob = await fileRes.blob();
-                const dlUrl = URL.createObjectURL(blob);
+                const blobUrl = URL.createObjectURL(blob);
                 const a = document.createElement('a');
                 const cd = fileRes.headers.get('content-disposition') || '';
                 const m = cd.match(/filename="?([^"]+)"?/i);
                 a.download = m ? m[1] : `ventas_${new Date().toISOString().split('T')[0]}.xlsx`;
-                a.href = dlUrl;
+                a.href = blobUrl;
                 document.body.appendChild(a);
                 a.click();
                 document.body.removeChild(a);
-                URL.revokeObjectURL(dlUrl);
+                URL.revokeObjectURL(blobUrl);
             },
             
             async exportExpenses() {
@@ -4102,16 +4102,16 @@
                     throw new Error(errText || 'Error descargando gastos');
                 }
                 const blob = await fileRes.blob();
-                const dlUrl = URL.createObjectURL(blob);
+                const blobUrl = URL.createObjectURL(blob);
                 const a = document.createElement('a');
                 const cd = fileRes.headers.get('content-disposition') || '';
                 const m = cd.match(/filename="?([^"]+)"?/i);
                 a.download = m ? m[1] : `gastos_${new Date().toISOString().split('T')[0]}.xlsx`;
-                a.href = dlUrl;
+                a.href = blobUrl;
                 document.body.appendChild(a);
                 a.click();
                 document.body.removeChild(a);
-                URL.revokeObjectURL(dlUrl);
+                URL.revokeObjectURL(blobUrl);
             },
             
             // Upgrade to Pro
@@ -4155,16 +4155,16 @@
                     throw new Error(errText || 'Error descargando respaldo');
                 }
                 const blob = await fileRes.blob();
-                const dlUrl = URL.createObjectURL(blob);
+                const blobUrl = URL.createObjectURL(blob);
                 const a = document.createElement('a');
                 const cd = fileRes.headers.get('content-disposition') || '';
                 const m = cd.match(/filename="?([^"]+)"?/i);
                 a.download = m ? m[1] : `respaldo_${new Date().toISOString().split('T')[0]}.json`;
-                a.href = dlUrl;
+                a.href = blobUrl;
                 document.body.appendChild(a);
                 a.click();
                 document.body.removeChild(a);
-                URL.revokeObjectURL(dlUrl);
+                URL.revokeObjectURL(blobUrl);
             },
             
             async importBackup(input) {
