@@ -525,7 +525,17 @@ def create_app(config_class=None):
     @app.route("/api/auth/login", methods=["POST"])
     def login():
         try:
-            data = request.get_json(silent=True) or {}
+            # Force JSON parsing or fail gracefully
+            if not request.is_json:
+                # Try to parse anyway if content-type is missing but body exists
+                try:
+                    data = request.get_json(force=True)
+                except:
+                    return jsonify({"error": "Content-Type must be application/json"}), 400
+            else:
+                data = request.get_json()
+                
+            data = data or {}
             email = data.get("email", "").strip().lower()
             password = data.get("password", "")
 
@@ -543,7 +553,8 @@ def create_app(config_class=None):
             })
         except Exception as e:
             app.logger.error(f"Login error: {str(e)}")
-            return jsonify({"error": "Error en el servidor"}), 500
+            # Ensure 500 errors are returned as JSON
+            return jsonify({"error": "Error interno del servidor", "details": str(e)}), 500
 
     @app.route("/api/auth/refresh", methods=["POST"])
     def refresh():
