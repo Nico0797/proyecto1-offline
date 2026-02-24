@@ -476,7 +476,7 @@
                     <div class="relative">
                         <div class="w-full text-left">
                             <h1 class="text-xl font-bold flex items-center gap-2">
-                                <span id="header-business-name">Progresa</span>
+                                <img src="assets/logo.png" alt="Encaja" class="h-10 w-auto">
                             </h1>
                         </div>
                         <div id="business-switch-dropdown" class="dropdown-menu hidden"></div>
@@ -703,8 +703,8 @@
                     </div>
                     
                     <div class="glass rounded-xl p-4 mb-4">
-                        <div class="flex gap-2 mb-2">
-                            <input type="text" id="sales-search" placeholder="Buscar venta..." class="input px-4 py-2 rounded-lg flex-1">
+                        <div class="flex items-center gap-2 mb-2 w-full">
+                            <input type="text" id="sales-search" placeholder="Buscar venta..." class="input px-4 py-2 rounded-lg flex-1 min-w-0">
                             <button onclick="app.toggleFilters('sales-filters')" class="btn-primary w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0">
                                 <i class="ph ph-funnel text-xl"></i>
                             </button>
@@ -841,8 +841,8 @@
                     
                     <!-- Filters -->
                     <div class="glass rounded-xl p-4 mb-4">
-                        <div class="flex gap-2 mb-2">
-                            <input type="text" id="customer-search" placeholder="Buscar cliente..." class="input px-4 py-2 rounded-lg flex-1" oninput="app.filterCustomers()">
+                        <div class="flex items-center gap-2 mb-2 w-full">
+                            <input type="text" id="customer-search" placeholder="Buscar cliente..." class="input px-4 py-2 rounded-lg flex-1 min-w-0" oninput="app.filterCustomers()">
                             <button onclick="app.toggleFilters('customer-filters')" class="btn-primary w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0">
                                 <i class="ph ph-funnel text-xl"></i>
                             </button>
@@ -891,8 +891,8 @@
                     
                     <!-- Filters -->
                     <div class="glass rounded-xl p-4 mb-4">
-                        <div class="flex gap-2 mb-2">
-                            <input type="text" id="product-search" placeholder="Buscar producto..." class="input px-4 py-2 rounded-lg flex-1" oninput="app.filterProducts()">
+                        <div class="flex items-center gap-2 mb-2 w-full">
+                            <input type="text" id="product-search" placeholder="Buscar producto..." class="input px-4 py-2 rounded-lg flex-1 min-w-0" oninput="app.filterProducts()">
                             <button onclick="app.toggleFilters('product-filters')" class="btn-primary w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0">
                                 <i class="ph ph-funnel text-xl"></i>
                             </button>
@@ -1118,14 +1118,14 @@
                     <div class="max-w-4xl mx-auto grid md:grid-cols-3 gap-6">
                         <!-- Quarterly Plan -->
                         <div class="glass rounded-2xl p-8 border-2 border-green-500/50 relative overflow-hidden">
-                            <div class="absolute top-0 right-0 bg-green-500 text-white text-xs font-bold px-4 py-1 rounded-bl-lg">AHORRA 8%</div>
+                            <div class="absolute top-0 right-0 bg-green-500 text-white text-xs font-bold px-4 py-1 rounded-bl-lg">AHORRA 10%</div>
                             <div class="text-center mb-6">
                                 <p class="text-muted mb-2">Plan PRO Trimestral</p>
                                 <div class="flex items-baseline justify-center gap-1">
-                                    <span class="text-4xl font-bold text-green-400">$18,308</span>
+                                    <span class="text-4xl font-bold text-green-400">$5.39</span>
                                     <span class="text-muted">/mes</span>
                                 </div>
-                                <p class="text-sm text-muted mt-2">$54,924 cada 3 meses</p>
+                                <p class="text-sm text-muted mt-2">$16.17 cada 3 meses</p>
                             </div>
                             <ul class="space-y-3 mb-8">
                                 <li class="flex items-center gap-3"><i class="ph ph-check-circle text-green-400"></i> Todas las funcionalidades</li>
@@ -1145,10 +1145,10 @@
                             <div class="text-center mb-6">
                                 <p class="text-muted mb-2">Plan PRO Anual</p>
                                 <div class="flex items-baseline justify-center gap-1">
-                                    <span class="text-4xl font-bold text-purple-400">$16,915</span>
+                                    <span class="text-4xl font-bold text-purple-400">$4.19</span>
                                     <span class="text-muted">/mes</span>
                                 </div>
-                                <p class="text-sm text-green-400 mt-2">Ahorras $35,820 al año</p>
+                                <p class="text-sm text-green-400 mt-2">Ahorras 30% ($50.32 total)</p>
                             </div>
                             <ul class="space-y-3 mb-8">
                                 <li class="flex items-center gap-3"><i class="ph ph-check-circle text-green-400"></i> Todas las funcionalidades</li>
@@ -1168,7 +1168,7 @@
                             <div class="text-center mb-6">
                                 <p class="text-muted mb-2">Plan PRO Mensual</p>
                                 <div class="flex items-baseline justify-center gap-1">
-                                    <span class="text-4xl font-bold text-yellow-400">$19,900</span>
+                                    <span class="text-4xl font-bold text-yellow-400">$5.99</span>
                                     <span class="text-muted">/mes</span>
                                 </div>
                             </div>
@@ -1234,7 +1234,23 @@
                                     <option value="VES">VES - Bolívar Venezolano</option>
                                 </select>
                             </div>
-                            <button onclick="app.saveBusiness()" class="btn-primary px-6 py-2 rounded-xl">Guardar</button>
+                            <!-- Logo URL (Hidden or Visible if needed) -->
+                            <div class="hidden">
+                                <input type="text" id="business-logo" class="input w-full">
+                            </div>
+                            <div class="mt-4">
+                                <label class="block text-sm mb-1">Logo del Negocio</label>
+                                <div class="flex items-center gap-4">
+                                    <div id="business-logo-preview" class="w-16 h-16 rounded-lg bg-white/10 flex items-center justify-center overflow-hidden border border-white/20">
+                                        <span class="text-3xl">🏪</span>
+                                    </div>
+                                    <label class="btn-primary px-4 py-2 rounded-xl cursor-pointer text-sm">
+                                        Subir Logo
+                                        <input type="file" onchange="app.uploadLogo(this)" accept="image/*" class="hidden">
+                                    </label>
+                                </div>
+                            </div>
+                            <button onclick="app.saveBusiness()" class="btn-primary px-6 py-2 rounded-xl mt-4">Guardar</button>
                         </div>
                     </div>
                     
@@ -2788,42 +2804,30 @@
             },
             
             updateBusinessSwitch() {
-                const dropdown = document.getElementById('business-switch-dropdown');
-                if (!dropdown) return;
-                
-                dropdown.innerHTML = this.businesses.map(b => `
-                    <a href="#" onclick="app.switchBusiness(${b.id})" class="${b.id === this.business.id ? 'bg-white/10' : ''}">
-                        <span class="flex items-center gap-2">
-                            ${b.id === this.business.id ? '<i class="ph ph-check-circle text-green-400"></i>' : '<i class="ph ph-storefront text-white/50"></i>'}
-                            ${b.name}
-                        </span>
+                const itemsHtml = this.businesses.map(b => `
+                    <a href="#" onclick="app.switchBusiness(${b.id})" class="${b.id === this.business.id ? 'bg-white/10' : ''} flex items-center gap-2 px-4 py-2 hover:bg-white/5 transition-colors">
+                        ${b.id === this.business.id ? '<i class="ph ph-check-circle text-green-400"></i>' : '<i class="ph ph-storefront text-white/50"></i>'}
+                        <span class="truncate">${b.name}</span>
                     </a>
                 `).join('');
                 
-                // Add "Agregar Negocio" option
                 const addBusinessHtml = `
-                    <hr class="border-white/10 my-1">
-                    <a href="#" onclick="app.showAddBusinessModal()" class="text-green-400">
-                        <span class="flex items-center gap-2">
-                            <i class="ph ph-plus-circle"></i> Agregar Negocio
-                        </span>
-                    </a>
+                    <div class="border-t border-white/10 mt-2 pt-2">
+                        <a href="#" onclick="app.showAddBusinessModal()" class="flex items-center gap-2 px-4 py-2 text-blue-400 hover:text-blue-300">
+                            <i class="ph ph-plus-circle"></i> Nuevo Negocio
+                        </a>
+                    </div>
                 `;
                 
-                if (dropdown) dropdown.innerHTML += addBusinessHtml;
+                const fullHtml = itemsHtml + addBusinessHtml;
                 
-                // Update main dropdown as well
+                // Update Sidebar Dropdown
+                const dropdown = document.getElementById('business-switch-dropdown');
+                if (dropdown) dropdown.innerHTML = fullHtml;
+                
+                // Update Main Header Dropdown (Fix for 'Cambiar Negocio' button)
                 const mainDropdown = document.getElementById('main-business-switch-dropdown');
-                if (mainDropdown) {
-                    mainDropdown.innerHTML = this.businesses.map(b => `
-                        <a href="#" onclick="app.switchBusiness(${b.id})" class="${b.id === this.business.id ? 'bg-white/10' : ''}">
-                            <span class="flex items-center gap-2">
-                                ${b.id === this.business.id ? '<i class="ph ph-check-circle text-green-400"></i>' : '<i class="ph ph-storefront text-white/50"></i>'}
-                                ${b.name}
-                            </span>
-                        </a>
-                    `).join('') + addBusinessHtml;
-                }
+                if (mainDropdown) mainDropdown.innerHTML = fullHtml;
             },
             
             updateHeader() {
@@ -2832,7 +2836,9 @@
                 const name = this.business.name || 'Mi Negocio';
                 
                 const headerName = document.getElementById('header-business-name');
-                if (headerName) headerName.innerHTML = 'Progresa';
+                if (headerName) {
+                    // Do not update header-business-name here as it contains the static app logo
+                }
                 
                 // Update center business header
                 const centerBusinessName = document.getElementById('center-business-name');
