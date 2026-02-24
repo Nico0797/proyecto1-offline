@@ -104,7 +104,7 @@
             border: 1px solid rgba(255,255,255,0.12);
             border-radius: 12px;
             box-shadow: 0 12px 30px rgba(0,0,0,0.35);
-            z-index: 60;
+            z-index: 1000;
         }
 
         .dropdown-menu a {
@@ -2327,6 +2327,7 @@
                 const passwordInput = document.getElementById('login-password');
                 if (emailInput) emailInput.value = '';
                 if (passwordInput) passwordInput.value = '';
+                this.storage.remove('password_reset_flow');
             },
             
             showRegister() {
@@ -2377,6 +2378,7 @@
                         body: JSON.stringify({ email })
                     });
                     alert('Te enviamos un código para restablecer tu contraseña.');
+                    this.storage.set('password_reset_flow', { email });
                     this.showResetPassword();
                     document.getElementById('reset-email').value = email;
                 } catch (e) {
@@ -2399,6 +2401,7 @@
                         body: JSON.stringify({ email, code, new_password })
                     });
                     alert('Contraseña restablecida. Ya puedes iniciar sesión.');
+                    this.storage.remove('password_reset_flow');
                     this.showLogin();
                 } catch (e) {
                     // Error already shown
@@ -4867,9 +4870,17 @@
                     } catch (e) {
                         this.logout();
                     }
-                }
+                }       
                 
                 this.showAuth();
+                const resetState = this.storage.get('password_reset_flow');
+                if (resetState && resetState.email) {
+                    this.showResetPassword();
+                    const resetEmailInput = document.getElementById('reset-email');
+                    if (resetEmailInput) resetEmailInput.value = resetState.email;
+                } else {
+                    this.showLogin();
+                }
             }
         };
         

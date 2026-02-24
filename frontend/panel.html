@@ -514,17 +514,20 @@
             .card {
                 padding: 16px;
             }
-        .encaja-gradient {
-            background: linear-gradient(135deg, #ef4444, #f87171);
-            -webkit-background-clip: text;
-            background-clip: text;
-            color: transparent;
-        }
-        .logo-glass {
-            background: linear-gradient(135deg, rgba(255,255,255,0.7), rgba(255,255,255,0.5));
-            backdrop-filter: blur(8px);
-            border-radius: 16px;
-        }
+            .header {
+                padding-top: 44px;
+            }
+            .encaja-gradient {
+                background: linear-gradient(135deg, #ef4444, #f87171);
+                -webkit-background-clip: text;
+                background-clip: text;
+                color: transparent;
+            }
+            .logo-glass {
+                background: linear-gradient(135deg, rgba(255,255,255,0.7), rgba(255,255,255,0.5));
+                backdrop-filter: blur(8px);
+                border-radius: 16px;
+            }
             .header-title {
                 font-size: 18px;
             }
@@ -1048,7 +1051,7 @@
                         </div>
                         
                         <div class="mb-4">
-                            <input type="text" id="users-search" class="bg-slate-800 border border-slate-700 rounded px-3 py-2 text-white w-full max-w-md" placeholder="Buscar por nombre, email o plan..." onkeyup="app.filterTable('users-table', this.value)">
+                            <input type="text" id="users-search" class="bg-slate-800 border border-slate-700 rounded px-3 py-2 text-white w-full max-w-md" placeholder="Buscar por nombre, email, plan o estado de membresía..." onkeyup="app.filterTable('users-table', this.value)">
                         </div>
 
                         <div class="table-container">
@@ -1056,7 +1059,10 @@
                                 <thead>
                                     <tr>
                                         <th>Usuario</th>
-                                        <th>Plan / Vencimiento</th>
+                                        <th>Plan</th>
+                                        <th>Inicio Membresía</th>
+                                        <th>Vencimiento</th>
+                                        <th>Días Restantes</th>
                                         <th>Estado</th>
                                         <th>Último Login</th>
                                         <th>Acciones</th>
@@ -1696,11 +1702,37 @@
                         const tbody = document.getElementById('users-table');
                         if (data.users && data.users.length > 0) {
                             tbody.innerHTML = data.users.map(user => {
-                                let planDates = '';
+                                let membershipStart = '-';
+                                let membershipEnd = '-';
+                                let daysRemaining = '-';
+                                let membershipStatus = '';
+                                
+                                if (user.membership_start) {
+                                    const start = new Date(user.membership_start);
+                                    membershipStart = start.toLocaleDateString();
+                                }
+                                
                                 if (user.membership_end) {
                                     const end = new Date(user.membership_end);
-                                    planDates = `<br><span class="text-xs text-white/50">Vence: ${end.toLocaleDateString()}</span>`;
+                                    membershipEnd = end.toLocaleDateString();
+                                    
+                                    // Calcular días restantes
+                                    const today = new Date();
+                                    const timeDiff = end - today;
+                                    const daysDiff = Math.ceil(timeDiff / (1000 * 3600 * 24));
+                                    
+                                    if (daysDiff > 0) {
+                                        daysRemaining = `<span class="text-green-400">${daysDiff} días</span>`;
+                                    } else if (daysDiff === 0) {
+                                        daysRemaining = `<span class="text-yellow-400">Vence hoy</span>`;
+                                    } else {
+                                        daysRemaining = `<span class="text-red-400">Vencido</span>`;
+                                    }
                                 }
+                                
+                                // Estado de la membresía
+                                const isActive = user.is_active && (!user.membership_end || new Date(user.membership_end) > new Date());
+                                membershipStatus = isActive ? '<span class="badge badge-success">Activo</span>' : '<span class="badge badge-danger">Inactivo</span>';
                                 
                                 return `
                                 <tr>
@@ -1710,9 +1742,11 @@
                                     </td>
                                     <td>
                                         <span class="badge ${user.plan === 'pro' || (user.plan && user.plan.startsWith('pro')) ? 'badge-info' : 'badge-secondary'}">${user.membership_plan || user.plan || 'free'}</span>
-                                        ${planDates}
                                     </td>
-                                    <td>${user.is_active ? '<span class="badge badge-success">Activo</span>' : '<span class="badge badge-danger">Inactivo</span>'}</td>
+                                    <td>${membershipStart}</td>
+                                    <td>${membershipEnd}</td>
+                                    <td>${daysRemaining}</td>
+                                    <td>${membershipStatus}</td>
                                     <td>${user.last_login ? new Date(user.last_login).toLocaleString() : '-'}</td>
                                     <td>
                                         <div class="flex items-center gap-2">
@@ -1727,11 +1761,11 @@
                                 </tr>
                             `}).join('');
                         } else {
-                            tbody.innerHTML = '<tr><td colspan="5" class="text-center text-white/60">No hay usuarios</td></tr>';
+                            tbody.innerHTML = '<tr><td colspan="8" class="text-center text-white/60">No hay usuarios</td></tr>';
                         }
                     }
                 } catch (e) {
-                    document.getElementById('users-table').innerHTML = '<tr><td colspan="5" class="text-center text-red-400">Error al cargar</td></tr>';
+                    document.getElementById('users-table').innerHTML = '<tr><td colspan="8" class="text-center text-red-400">Error al cargar</td></tr>';
                 }
             },
             
@@ -2212,33 +2246,85 @@
                 }
             },
             
-            showCreateRoleModal() {
-                const modal = document.createElement('div');
-                modal.id = 'create-role-modal';
-                modal.className = 'fixed inset-0 bg-black/50 flex items-center justify-center z-50';
-                modal.innerHTML = `
-                    <div class="bg-slate-800 rounded-xl p-6 w-full max-w-md border border-white/10">
-                        <h3 class="text-xl font-semibold mb-4">Crear Nuevo Rol</h3>
-                        <div class="form-group mb-4">
-                            <label class="form-label">Nombre del Rol</label>
-                            <input type="text" id="role-name" class="form-input" placeholder="Ej: Gerente">
+            async showCreateRoleModal() {
+                try {
+                    // Cargar permisos disponibles
+                    const permsRes = await fetch('/api/admin/permissions', {
+                        headers: { 'Authorization': `Bearer ${this.token}` }
+                    });
+                    
+                    if (!permsRes.ok) {
+                        this.showToast('Error al cargar permisos', 'error');
+                        return;
+                    }
+                    
+                    const allPerms = await permsRes.json();
+                    
+                    // Agrupar permisos por categoría
+                    const groupedPerms = {};
+                    allPerms.permissions.forEach(p => {
+                        const cat = p.category || 'Otro';
+                        if (!groupedPerms[cat]) groupedPerms[cat] = [];
+                        groupedPerms[cat].push(p);
+                    });
+                    
+                    // Generar HTML de permisos
+                    let permissionsHtml = '';
+                    for (const [category, perms] of Object.entries(groupedPerms)) {
+                        permissionsHtml += `
+                            <div class="mb-4">
+                                <h4 class="text-sm font-semibold text-white/80 mb-2">${category}</h4>
+                                <div class="grid grid-cols-2 gap-2">
+                                    ${perms.map(p => `
+                                        <label class="flex items-center gap-2 text-sm">
+                                            <input type="checkbox" name="permission" value="${p.name}" 
+                                                class="rounded bg-slate-700 border-slate-600">
+                                            <span class="text-white/70">${p.name}</span>
+                                        </label>
+                                    `).join('')}
+                                </div>
+                            </div>
+                        `;
+                    }
+                    
+                    const modal = document.createElement('div');
+                    modal.id = 'create-role-modal';
+                    modal.className = 'fixed inset-0 bg-black/50 flex items-center justify-center z-50';
+                    modal.innerHTML = `
+                        <div class="bg-slate-800 rounded-xl p-6 w-full max-w-lg border border-white/10 max-h-[80vh] overflow-y-auto">
+                            <h3 class="text-xl font-semibold mb-4">Crear Nuevo Rol</h3>
+                            <div class="form-group mb-4">
+                                <label class="form-label">Nombre del Rol</label>
+                                <input type="text" id="role-name" class="form-input" placeholder="Ej: Gerente">
+                            </div>
+                            <div class="form-group mb-4">
+                                <label class="form-label">Descripción</label>
+                                <textarea id="role-description" class="form-input" rows="3" placeholder="Descripción del rol"></textarea>
+                            </div>
+                            <div class="mb-4">
+                                <h4 class="form-label mb-2">Permisos</h4>
+                                <div class="max-h-60 overflow-y-auto border border-slate-700 rounded-lg p-3">
+                                    ${permissionsHtml}
+                                </div>
+                            </div>
+                            <div class="flex gap-3">
+                                <button onclick="app.createRole()" class="btn btn-primary flex-1">Crear</button>
+                                <button onclick="this.closest('.fixed').remove()" class="btn btn-secondary flex-1">Cancelar</button>
+                            </div>
                         </div>
-                        <div class="form-group mb-4">
-                            <label class="form-label">Descripción</label>
-                            <textarea id="role-description" class="form-input" rows="3" placeholder="Descripción del rol"></textarea>
-                        </div>
-                        <div class="flex gap-3">
-                            <button onclick="app.createRole()" class="btn btn-primary flex-1">Crear</button>
-                            <button onclick="this.closest('.fixed').remove()" class="btn btn-secondary flex-1">Cancelar</button>
-                        </div>
-                    </div>
-                `;
-                document.body.appendChild(modal);
+                    `;
+                    document.body.appendChild(modal);
+                    
+                } catch (e) {
+                    console.error(e);
+                    this.showToast('Error al cargar permisos', 'error');
+                }
             },
             
             async createRole() {
                 const name = document.getElementById('role-name').value.trim();
                 const description = document.getElementById('role-description').value.trim();
+                const selectedPerms = Array.from(document.querySelectorAll('input[name="permission"]:checked')).map(cb => cb.value);
                 
                 if (!name) {
                     this.showToast('El nombre es requerido', 'error');
@@ -2246,6 +2332,7 @@
                 }
                 
                 try {
+                    // Crear el rol primero
                     const res = await fetch('/api/admin/roles', {
                         method: 'POST',
                         headers: {
@@ -2255,15 +2342,39 @@
                         body: JSON.stringify({ name, description })
                     });
                     
-                    if (res.ok) {
-                        this.showToast('Rol creado exitosamente', 'success');
-                        document.getElementById('create-role-modal').remove();
-                        this.loadRoles();
-                    } else {
+                    if (!res.ok) {
                         const data = await res.json();
                         this.showToast(data.error || 'Error al crear rol', 'error');
+                        return;
                     }
+                    
+                    const roleData = await res.json();
+                    const roleId = roleData.role.id;
+                    
+                    // Si hay permisos seleccionados, asignarlos al rol
+                    if (selectedPerms.length > 0) {
+                        const permsRes = await fetch(`/api/admin/roles/${roleId}/permissions`, {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'Authorization': `Bearer ${this.token}`
+                            },
+                            body: JSON.stringify({ permissions: selectedPerms })
+                        });
+                        
+                        if (!permsRes.ok) {
+                            const err = await permsRes.json();
+                            this.showToast(err.error || 'Error al asignar permisos al rol', 'error');
+                            return;
+                        }
+                    }
+                    
+                    this.showToast('Rol creado exitosamente', 'success');
+                    document.getElementById('create-role-modal').remove();
+                    this.loadRoles();
+                    
                 } catch (e) {
+                    console.error(e);
                     this.showToast('Error de conexión', 'error');
                 }
             },
