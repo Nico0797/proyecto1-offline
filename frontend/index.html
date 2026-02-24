@@ -2099,6 +2099,12 @@
             return showCustomPrompt(message, defaultValue || '');
         };
 
+        // Configuración para Capacitor / Híbrido (app móvil)
+        const isCapacitor = !!(window.Capacitor && typeof window.Capacitor.isNativePlatform === 'function' && window.Capacitor.isNativePlatform())
+            || window.location.protocol === 'capacitor:'
+            || (window.location.hostname === 'localhost' && window.location.port !== '5000' && window.location.port !== '8000');
+        const API_BASE_URL = isCapacitor ? 'https://app.encaja.co' : '';
+
         // Cuaderno App
         const app = {
             // State
@@ -2167,7 +2173,8 @@
             
             // API helpers
             async api(endpoint, options = {}) {
-                const url = '/api' + endpoint;
+                // Si estamos en Capacitor, agregar la URL base
+                const url = endpoint.startsWith('http') ? endpoint : (API_BASE_URL + '/api' + endpoint);
                 const headers = {
                     'Content-Type': 'application/json',
                     ...options.headers
@@ -2575,7 +2582,7 @@
             // Receipt Profile
             async loadReceiptProfile() {
                 try {
-                    const data = await fetch('/api/business_profile').then(r => r.json());
+                    const data = await this.api('/business_profile');
                     if (data && !data.error) {
                         document.getElementById('receipt-business-name').value = data.business_name || '';
                         document.getElementById('receipt-phone').value = data.phone || '';
@@ -2598,11 +2605,11 @@
                 };
                 
                 try {
-                    const data = await fetch('/api/business_profile', {
+                    const data = await this.api('/business_profile', {
                         method: 'PUT',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify(profile)
-                    }).then(r => r.json());
+                    });
                     
                     if (data.success) {
                         alert('✅ Perfil guardado correctamente');
@@ -2620,8 +2627,7 @@
             
             shareOnWhatsApp(saleId, customerName) {
                 // Get sale data
-                fetch(`/api/sales?id=${saleId}`)
-                    .then(r => r.json())
+                this.api(`/sales?id=${saleId}`)
                     .then(data => {
                         if (data.sales && data.sales.length > 0) {
                             const sale = data.sales[0];
@@ -2637,7 +2643,7 @@
                             if (balance > 0) {
                                 message += `%0A*Saldo pendiente:* ${balance.toLocaleString()}`;
                             }
-                            message += `%0A%0APuedes ver el comprobante completo aquí:%0A${window.location.origin}/api/receipt?sale_id=${saleId}&format=png`;
+                            message += `%0A%0APuedes ver el comprobante completo aquí:%0A${API_BASE_URL || window.location.origin}/api/receipt?sale_id=${saleId}&format=png`;
                             
                             window.open(`https://wa.me/?text=${message}`, '_blank');
                         }
@@ -4048,7 +4054,8 @@
                 if (params.length) url += '?' + params.join('&');
                 
                 const data = await this.api(url);
-                const fileRes = await fetch(data.download_url, {
+                const dlUrl = data.download_url.startsWith('http') ? data.download_url : (API_BASE_URL + data.download_url);
+                const fileRes = await fetch(dlUrl, {
                     headers: { 'Authorization': `Bearer ${this.token}` }
                 });
                 if (!fileRes.ok) {
@@ -4086,7 +4093,8 @@
                 if (params.length) url += '?' + params.join('&');
                 
                 const data = await this.api(url);
-                const fileRes = await fetch(data.download_url, {
+                const dlUrl = data.download_url.startsWith('http') ? data.download_url : (API_BASE_URL + data.download_url);
+                const fileRes = await fetch(dlUrl, {
                     headers: { 'Authorization': `Bearer ${this.token}` }
                 });
                 if (!fileRes.ok) {
@@ -4138,7 +4146,8 @@
                     }
                 }
                 const data = await this.api(`/businesses/${this.business.id}/backup`);
-                const fileRes = await fetch(data.download_url, {
+                const dlUrl = data.download_url.startsWith('http') ? data.download_url : (API_BASE_URL + data.download_url);
+                const fileRes = await fetch(dlUrl, {
                     headers: { 'Authorization': `Bearer ${this.token}` }
                 });
                 if (!fileRes.ok) {
