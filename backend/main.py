@@ -3619,12 +3619,17 @@ def create_app(config_class=None):
 
     @app.route("/<path:path>")
     def serve_static(path):
-        # Skip API routes
+        # Skip API routes - MUST return JSON error
         if path.startswith("api/"):
-            return jsonify({"error": "Not found"}), 404
+            return jsonify({"error": "Endpoint not found"}), 404
+            
         try:
             return send_from_directory("../frontend", path)
         except:
+            # For SPA navigation (frontend routes), return index.html
+            # BUT make sure we don't accidentally return HTML for API calls
+            if path.startswith("api/") or path.endswith(".json"):
+                return jsonify({"error": "Resource not found"}), 404
             return send_from_directory("../frontend", "index.html")
 
     with app.app_context():
