@@ -263,81 +263,96 @@ class AuthManager:
 
     @staticmethod
     def _build_html_email(subject, text):
-        """Plantilla HTML básica con branding EnCaja"""
-        base_url = os.getenv("PUBLIC_BASE_URL") or os.getenv("APP_BASE_URL") or "https://encajapp.site"
-        logo_url = f"{base_url.rstrip('/')}/public/assets/logo.png"
-        theme = (os.getenv("EMAIL_THEME") or "light").lower()
-        is_dark = theme == "dark"
-        body_bg = "#0b1220" if is_dark else "#f8fafc"
-        card_bg = "#0f172a" if is_dark else "#ffffff"
-        border_color = "#1f2937" if is_dark else "#e5e7eb"
-        text_color = "#e5e7eb" if is_dark else "#334155"
-        footer_bg = "#0b0f1a" if is_dark else "#fafafa"
-        footer_text = "#94a3b8"
-        code_bg = "#1f2937" if is_dark else "#fff1f2"
-        code_border = "#374151" if is_dark else "#fecdd3"
-        code_label = "#fda4af" if is_dark else "#ef4444"
-        code_value = "#fca5a5" if is_dark else "#dc2626"
+        """Plantilla HTML con branding EnCaja (Dark Theme)"""
+        base_url = os.getenv("PUBLIC_BASE_URL") or os.getenv("APP_BASE_URL") or "https://app.encaja.co"
+        # Ensure we use the correct path to the logo
+        logo_url = f"{base_url.rstrip('/')}/assets/logo.png"
+        
+        # App Color Palette (Dark Theme)
+        body_bg = "#020617"      # Dark background
+        card_bg = "#1e293b"      # Slate 800
+        border_color = "#334155" # Slate 700
+        text_color = "#f8fafc"   # Slate 50
+        text_muted = "#94a3b8"   # Slate 400
+        accent_color = "#3b82f6" # Blue 500
+        
+        # Code block colors
+        code_bg = "#0f172a"      # Slate 900
+        code_border = "#334155"  # Slate 700
+        code_label = "#60a5fa"   # Blue 400
+        code_value = "#ffffff"   # White
+        
         import re
         code_match = re.search(r"\b(\d{6})\b", text or "")
         code = code_match.group(1) if code_match else ""
+        
         paragraphs = "".join(
-            f"<p style=\"margin:0 0 12px;color:{text_color};font-size:14px;line-height:1.6\">{line}</p>"
+            f"<p style=\"margin:0 0 16px;color:{text_color};font-size:16px;line-height:1.6\">{line}</p>"
             for line in (text or "").split("\n") if line.strip()
         )
+        
         code_block = f"""
-            <div style="margin:16px 0;padding:16px;border-radius:12px;background:{code_bg};border:1px solid {code_border};text-align:center">
-                <div style="font-size:12px;color:{code_label};margin-bottom:8px">Tu código</div>
-                <div style="font-size:28px;font-weight:700;color:{code_value};letter-spacing:6px">{code}</div>
+            <div style="margin:24px 0;padding:20px;border-radius:12px;background:{code_bg};border:1px solid {code_border};text-align:center">
+                <div style="font-size:14px;color:{code_label};margin-bottom:8px;text-transform:uppercase;letter-spacing:1px;font-weight:600">Tu código de seguridad</div>
+                <div style="font-size:36px;font-weight:700;color:{code_value};letter-spacing:8px;font-family:monospace">{code}</div>
             </div>
         """ if code else ""
+        
         support_block = f"""
-            <div style="margin-top:12px;padding:12px;border-radius:12px;background:{footer_bg};color:{footer_text}">
-                <div style="font-weight:600;margin-bottom:6px;color:{text_color}">¿Necesitas ayuda?</div>
-                <div>WhatsApp: +57 319 242 6874</div>
-                <div>Email: encajapp@gmail.com</div>
-                <div>Web: encajapp.site</div>
+            <div style="margin-top:24px;padding-top:24px;border-top:1px solid {border_color};text-align:center;color:{text_muted}">
+                <div style="font-size:14px;margin-bottom:8px">¿Necesitas ayuda?</div>
+                <div style="font-size:14px">
+                    <a href="https://wa.me/573192426874" style="color:{accent_color};text-decoration:none;margin:0 10px">WhatsApp</a>
+                    <a href="mailto:encajapp@gmail.com" style="color:{accent_color};text-decoration:none;margin:0 10px">Email</a>
+                </div>
             </div>
         """
+        
         return f"""
+        <!DOCTYPE html>
         <html>
-        <body style="margin:0;padding:0;background:{body_bg}">
-            <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background:{body_bg}">
+        <head>
+            <meta charset="utf-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        </head>
+        <body style="margin:0;padding:0;background-color:{body_bg};font-family:'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;">
+            <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background-color:{body_bg};min-height:100vh;">
                 <tr>
-                    <td align="center" style="padding:24px">
-                        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:640px;background:{card_bg};border-radius:16px;overflow:hidden;border:1px solid {border_color}">
+                    <td align="center" style="padding:40px 20px;">
+                        <!-- Logo Header -->
+                        <div style="margin-bottom:30px;text-align:center;">
+                            <img src="{logo_url}" alt="EnCaja Logo" width="120" style="display:block;margin:0 auto;max-width:100%;height:auto;" />
+                        </div>
+                        
+                        <!-- Main Card -->
+                        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:600px;background-color:{card_bg};border-radius:16px;overflow:hidden;box-shadow:0 10px 40px rgba(0,0,0,0.4);border:1px solid {border_color}">
+                            <!-- Header Gradient Strip -->
                             <tr>
-                                <td style="padding:24px;background:linear-gradient(135deg,#ef4444,#f87171);color:#ffffff">
-                                    <div style="display:flex;align-items:center;gap:12px">
-                                        <img src="{logo_url}" alt="EnCaja" width="36" height="36" style="border-radius:8px;display:block" />
-                                        <div style="font-size:20px;font-weight:800">EnCaja</div>
-                                    </div>
-                                    <div style="font-size:14px;opacity:.9;margin-top:4px">{subject}</div>
-                                    <div style="font-size:12px;opacity:.9;margin-top:6px">orden para soñar en grande.</div>
-                                </td>
+                                <td style="height:6px;background:linear-gradient(90deg, #22c55e, #3b82f6);"></td>
                             </tr>
+                            
+                            <!-- Content -->
                             <tr>
-                                <td style="padding:24px">
+                                <td style="padding:40px 30px;">
+                                    <h1 style="margin:0 0 20px;color:#ffffff;font-size:24px;font-weight:700;text-align:center;">{subject}</h1>
+                                    
                                     {paragraphs}
                                     {code_block}
-                                    <p style="margin:0 0 12px;color:{text_color};font-size:13px;line-height:1.6">
-                                        Ingresa el código en la aplicación para continuar. Si no solicitaste este correo, puedes ignorarlo.
+                                    
+                                    <p style="margin:20px 0 0;color:{text_muted};font-size:14px;text-align:center;">
+                                        Este código expira en 10 minutos. Si no solicitaste este correo, puedes ignorarlo de forma segura.
                                     </p>
-                                    <div style="margin-top:12px">
-                                        <a href="{base_url}" style="display:inline-block;padding:10px 16px;border-radius:10px;background:#ef4444;color:#ffffff;text-decoration:none;font-weight:600">
-                                            Abrir EnCaja
-                                        </a>
-                                    </div>
+                                    
                                     {support_block}
                                 </td>
                             </tr>
-                            <tr>
-                                <td style="padding:16px 24px;background:{footer_bg};color:{footer_text};font-size:12px">
-                                    Este código expira en 10 minutos.
-                                </td>
-                            </tr>
                         </table>
-                        <div style="margin-top:12px;color:#94a3b8;font-size:12px">© {datetime.utcnow().year} EnCaja</div>
+                        
+                        <!-- Footer -->
+                        <div style="margin-top:24px;color:{text_muted};font-size:12px;text-align:center;">
+                            <p style="margin:0">© {datetime.utcnow().year} EnCaja. Todos los derechos reservados.</p>
+                            <p style="margin:5px 0 0">Orden para soñar en grande.</p>
+                        </div>
                     </td>
                 </tr>
             </table>

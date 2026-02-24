@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Cuaderno - Tu Contabilidad Simple</title>
     <link rel="icon" href="/favicon.ico">
     <script src="https://cdn.tailwindcss.com"></script>
@@ -528,7 +528,7 @@
             <!-- Main Content -->
             <main class="flex-1 p-4 md:p-6 overflow-auto">
                 <!-- Mobile Header -->
-                <div class="mobile-menu-btn flex items-center justify-between mb-4">
+                <div class="mobile-menu-btn flex items-center justify-between mb-4 mt-8">
                     <button onclick="app.toggleSidebar()" class="p-2 glass rounded-lg">
                         <i class="ph ph-list ph-icon"></i>
                     </button>
@@ -542,16 +542,19 @@
                 </div>
                 
                 <!-- Business Header - Center of page -->
-                <div id="business-header" class="glass rounded-xl p-4 mb-4 flex items-center justify-between">
+                <div id="business-header" class="glass rounded-xl p-4 mb-4 flex items-center justify-between relative z-50">
                     <div class="flex items-center gap-3">
                         <div>
                             <p class="text-muted text-xs">Negocio Actual</p>
                             <h3 id="center-business-name" class="text-lg font-bold">Mi Negocio</h3>
                         </div>
                     </div>
-                    <button onclick="app.toggleBusinessMenu()" class="btn btn-primary text-sm py-2">
-                        <i class="ph ph-arrows-left-right"></i> Cambiar
-                    </button>
+                    <div class="relative">
+                        <button onclick="app.toggleMainBusinessMenu()" class="btn btn-primary text-sm py-2">
+                            <i class="ph ph-arrows-left-right"></i> Cambiar
+                        </button>
+                        <div id="main-business-switch-dropdown" class="dropdown-menu hidden right-0 top-full mt-2 w-64 max-h-80 overflow-y-auto z-50"></div>
+                    </div>
                 </div>
                 
                 <!-- Dashboard Page -->
@@ -685,35 +688,43 @@
                 
                 <!-- Sales Page -->
                 <div id="page-sales" class="page hidden fade-in">
-                    <div class="flex justify-between items-center mb-6">
+                    <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
                         <h2 class="text-2xl font-bold">Ventas</h2>
-                        <button onclick="app.showSaleModal()" class="btn-success px-4 py-2 rounded-xl font-semibold">+ Nueva Venta</button>
+                        <button onclick="app.showSaleModal()" class="btn-success w-full md:w-auto px-4 py-2 rounded-xl font-semibold">+ Nueva Venta</button>
                     </div>
                     
                     <div class="glass rounded-xl p-4 mb-4">
-                        <div class="flex flex-wrap gap-4 items-center">
-                            <input type="text" id="sales-search" placeholder="Buscar venta..." class="input px-4 py-2 rounded-lg flex-1 min-w-48">
-                            <input type="date" id="sales-start" class="input px-3 py-2 rounded-lg">
-                            <input type="date" id="sales-end" class="input px-3 py-2 rounded-lg">
-                            <select id="sales-status-filter" class="input px-3 py-2 rounded-lg">
-                                <option value="">Todos los estados</option>
-                                <option value="completed">Completado</option>
-                                <option value="pending">Pendiente</option>
-                                <option value="cancelled">Cancelado</option>
-                            </select>
-                            <select id="sales-payment-filter" class="input px-3 py-2 rounded-lg">
-                                <option value="">Todos los métodos</option>
-                                <option value="cash">Efectivo</option>
-                                <option value="card">Tarjeta</option>
-                                <option value="transfer">Transferencia</option>
-                                <option value="credit">Crédito</option>
-                            </select>
-                            <button onclick="app.loadSales()" class="btn-primary px-4 py-2 rounded-lg">Filtrar</button>
+                        <div class="flex gap-2 mb-2">
+                            <input type="text" id="sales-search" placeholder="Buscar venta..." class="input px-4 py-2 rounded-lg flex-1">
+                            <button onclick="app.toggleFilters('sales-filters')" class="btn-primary px-3 py-2 rounded-lg flex items-center justify-center">
+                                <i class="ph ph-funnel text-xl"></i>
+                            </button>
+                        </div>
+                        
+                        <div id="sales-filters" class="hidden mt-4 space-y-4">
+                            <div class="grid grid-cols-2 md:grid-cols-4 gap-2">
+                                <input type="date" id="sales-start" class="input px-3 py-2 rounded-lg w-full">
+                                <input type="date" id="sales-end" class="input px-3 py-2 rounded-lg w-full">
+                                <select id="sales-status-filter" class="input px-3 py-2 rounded-lg w-full">
+                                    <option value="">Todos los estados</option>
+                                    <option value="completed">Completado</option>
+                                    <option value="pending">Pendiente</option>
+                                    <option value="cancelled">Cancelado</option>
+                                </select>
+                                <select id="sales-payment-filter" class="input px-3 py-2 rounded-lg w-full">
+                                    <option value="">Todos los métodos</option>
+                                    <option value="cash">Efectivo</option>
+                                    <option value="card">Tarjeta</option>
+                                    <option value="transfer">Transferencia</option>
+                                    <option value="credit">Crédito</option>
+                                </select>
+                            </div>
+                            <button onclick="app.loadSales()" class="btn-primary w-full py-2 rounded-lg">Aplicar Filtros</button>
                         </div>
                     </div>
                     
-                    <div class="glass rounded-xl overflow-hidden">
-                        <table>
+                    <div class="glass rounded-xl overflow-hidden overflow-x-auto">
+                        <table class="w-full">
                             <thead>
                                 <tr>
                                     <th>Fecha</th>
@@ -734,13 +745,13 @@
                 
                 <!-- Expenses Page -->
                 <div id="page-expenses" class="page hidden fade-in">
-                    <div class="flex justify-between items-center mb-6">
+                    <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
                         <h2 class="text-2xl font-bold">Gastos</h2>
-                        <button onclick="app.showExpenseModal()" class="btn-primary px-4 py-2 rounded-xl font-semibold">+ Nuevo Gasto</button>
+                        <button onclick="app.showExpenseModal()" class="btn-primary w-full md:w-auto px-4 py-2 rounded-xl font-semibold">+ Nuevo Gasto</button>
                     </div>
                     
-                    <div class="glass rounded-xl overflow-hidden">
-                        <table>
+                    <div class="glass rounded-xl overflow-hidden overflow-x-auto">
+                        <table class="w-full">
                             <thead>
                                 <tr>
                                     <th>Fecha</th>
@@ -758,13 +769,13 @@
                 
                 <!-- Payments Page -->
                 <div id="page-payments" class="page hidden fade-in">
-                    <div class="flex justify-between items-center mb-6">
+                    <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
                         <h2 class="text-2xl font-bold">Pagos y Abonos</h2>
-                        <button onclick="app.showPaymentModal()" class="btn-success px-4 py-2 rounded-xl font-semibold">+ Registrar Pago</button>
+                        <button onclick="app.showPaymentModal()" class="btn-success w-full md:w-auto px-4 py-2 rounded-xl font-semibold">+ Registrar Pago</button>
                     </div>
                     
-                    <div class="glass rounded-xl overflow-hidden">
-                        <table>
+                    <div class="glass rounded-xl overflow-hidden overflow-x-auto">
+                        <table class="w-full">
                             <thead>
                                 <tr>
                                     <th>Fecha</th>
@@ -782,31 +793,39 @@
                 
                 <!-- Customers Page -->
                 <div id="page-customers" class="page hidden fade-in">
-                    <div class="flex justify-between items-center mb-6">
+                    <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
                         <h2 class="text-2xl font-bold">Clientes</h2>
-                        <button onclick="app.showCustomerModal()" class="btn-primary px-4 py-2 rounded-xl font-semibold">+ Nuevo Cliente</button>
+                        <button onclick="app.showCustomerModal()" class="btn-primary w-full md:w-auto px-4 py-2 rounded-xl font-semibold">+ Nuevo Cliente</button>
                     </div>
                     
                     <!-- Filters -->
                     <div class="glass rounded-xl p-4 mb-4">
-                        <div class="flex flex-wrap gap-4 items-center">
-                            <input type="text" id="customer-search" placeholder="Buscar cliente..." class="input px-4 py-2 rounded-lg flex-1 min-w-48" oninput="app.filterCustomers()">
-                            <select id="customer-status-filter" class="input px-4 py-2 rounded-lg" onchange="app.filterCustomers()">
-                                <option value="">Todos los estados</option>
-                                <option value="active">Activo</option>
-                                <option value="inactive">Inactivo</option>
-                            </select>
-                            <select id="customer-balance-filter" class="input px-4 py-2 rounded-lg" onchange="app.filterCustomers()">
-                                <option value="">Cualquier saldo</option>
-                                <option value="positive">Con saldo</option>
-                                <option value="negative">Saldo negativo</option>
-                                <option value="zero">Sin saldo</option>
-                            </select>
+                        <div class="flex gap-2 mb-2">
+                            <input type="text" id="customer-search" placeholder="Buscar cliente..." class="input px-4 py-2 rounded-lg flex-1" oninput="app.filterCustomers()">
+                            <button onclick="app.toggleFilters('customer-filters')" class="btn-primary px-3 py-2 rounded-lg flex items-center justify-center">
+                                <i class="ph ph-funnel text-xl"></i>
+                            </button>
+                        </div>
+                        
+                        <div id="customer-filters" class="hidden mt-4 space-y-4">
+                            <div class="grid grid-cols-2 gap-2">
+                                <select id="customer-status-filter" class="input px-4 py-2 rounded-lg w-full" onchange="app.filterCustomers()">
+                                    <option value="">Todos los estados</option>
+                                    <option value="active">Activo</option>
+                                    <option value="inactive">Inactivo</option>
+                                </select>
+                                <select id="customer-balance-filter" class="input px-4 py-2 rounded-lg w-full" onchange="app.filterCustomers()">
+                                    <option value="">Cualquier saldo</option>
+                                    <option value="positive">Con saldo</option>
+                                    <option value="negative">Saldo negativo</option>
+                                    <option value="zero">Sin saldo</option>
+                                </select>
+                            </div>
                         </div>
                     </div>
                     
-                    <div class="glass rounded-xl overflow-hidden">
-                        <table>
+                    <div class="glass rounded-xl overflow-hidden overflow-x-auto">
+                        <table class="w-full">
                             <thead>
                                 <tr>
                                     <th>Nombre</th>
@@ -824,29 +843,37 @@
                 
                 <!-- Products Page -->
                 <div id="page-products" class="page hidden fade-in">
-                    <div class="flex justify-between items-center mb-6">
+                    <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
                         <h2 class="text-2xl font-bold">Productos</h2>
-                        <button onclick="app.showProductModal()" class="btn-primary px-4 py-2 rounded-xl font-semibold">+ Nuevo Producto</button>
+                        <button onclick="app.showProductModal()" class="btn-primary w-full md:w-auto px-4 py-2 rounded-xl font-semibold">+ Nuevo Producto</button>
                     </div>
                     
                     <!-- Filters -->
                     <div class="glass rounded-xl p-4 mb-4">
-                        <div class="flex flex-wrap gap-4 items-center">
-                            <input type="text" id="product-search" placeholder="Buscar producto..." class="input px-4 py-2 rounded-lg flex-1 min-w-48" oninput="app.filterProducts()">
-                            <select id="product-category-filter" class="input px-4 py-2 rounded-lg" onchange="app.filterProducts()">
-                                <option value="">Todas las categorías</option>
-                            </select>
-                            <select id="product-stock-filter" class="input px-4 py-2 rounded-lg" onchange="app.filterProducts()">
-                                <option value="">Cualquier inventario</option>
-                                <option value="in_stock">Con inventario</option>
-                                <option value="out_of_stock">Sin inventario</option>
-                                <option value="low_stock">Inventario bajo</option>
-                            </select>
+                        <div class="flex gap-2 mb-2">
+                            <input type="text" id="product-search" placeholder="Buscar producto..." class="input px-4 py-2 rounded-lg flex-1" oninput="app.filterProducts()">
+                            <button onclick="app.toggleFilters('product-filters')" class="btn-primary px-3 py-2 rounded-lg flex items-center justify-center">
+                                <i class="ph ph-funnel text-xl"></i>
+                            </button>
+                        </div>
+                        
+                        <div id="product-filters" class="hidden mt-4 space-y-4">
+                            <div class="grid grid-cols-2 gap-2">
+                                <select id="product-category-filter" class="input px-4 py-2 rounded-lg w-full" onchange="app.filterProducts()">
+                                    <option value="">Todas las categorías</option>
+                                </select>
+                                <select id="product-stock-filter" class="input px-4 py-2 rounded-lg w-full" onchange="app.filterProducts()">
+                                    <option value="">Cualquier inventario</option>
+                                    <option value="in_stock">Con inventario</option>
+                                    <option value="out_of_stock">Sin inventario</option>
+                                    <option value="low_stock">Inventario bajo</option>
+                                </select>
+                            </div>
                         </div>
                     </div>
                     
-                    <div class="glass rounded-xl overflow-hidden">
-                        <table>
+                    <div class="glass rounded-xl overflow-hidden overflow-x-auto">
+                        <table class="w-full">
                             <thead>
                                 <tr>
                                     <th>Nombre</th>
@@ -867,23 +894,40 @@
                 <div id="page-reports" class="page hidden fade-in">
                     <h2 class="text-2xl font-bold mb-6">Reportes</h2>
                     
-                    <div class="grid md:grid-cols-2 gap-4 mb-6">
-                        <div class="glass rounded-xl p-6">
-                            <h3 class="font-semibold mb-4">Exportar Ventas</h3>
-                            <div class="flex gap-2">
-                                <input type="date" id="export-sales-start" class="input px-3 py-2 rounded-lg">
-                                <input type="date" id="export-sales-end" class="input px-3 py-2 rounded-lg">
-                            </div>
-                            <button onclick="app.exportSales()" class="btn-primary w-full mt-4 py-2 rounded-lg">Descargar Excel</button>
+                    <div class="glass rounded-xl p-4 mb-6">
+                        <div class="flex justify-between items-center cursor-pointer" onclick="app.toggleFilters('export-options')">
+                            <h3 class="font-semibold flex items-center gap-2">
+                                <i class="ph ph-download-simple"></i> Exportar Datos
+                            </h3>
+                            <button class="btn-primary px-3 py-2 rounded-lg flex items-center justify-center">
+                                <i class="ph ph-caret-down text-xl"></i>
+                            </button>
                         </div>
                         
-                        <div class="glass rounded-xl p-6">
-                            <h3 class="font-semibold mb-4">Exportar Gastos</h3>
-                            <div class="flex gap-2">
-                                <input type="date" id="export-expenses-start" class="input px-3 py-2 rounded-lg">
-                                <input type="date" id="export-expenses-end" class="input px-3 py-2 rounded-lg">
+                        <div id="export-options" class="hidden mt-4 space-y-6 border-t border-white/10 pt-4">
+                            <!-- Export Sales -->
+                            <div>
+                                <h4 class="text-sm font-medium mb-2 text-green-400">Ventas</h4>
+                                <div class="grid grid-cols-2 gap-2 mb-2">
+                                    <input type="date" id="export-sales-start" class="input px-3 py-2 rounded-lg w-full">
+                                    <input type="date" id="export-sales-end" class="input px-3 py-2 rounded-lg w-full">
+                                </div>
+                                <button onclick="app.exportSales()" class="btn-primary w-full py-2 rounded-lg flex items-center justify-center gap-2">
+                                    <i class="ph ph-file-xls"></i> Descargar Excel
+                                </button>
                             </div>
-                            <button onclick="app.exportExpenses()" class="btn-primary w-full mt-4 py-2 rounded-lg">Descargar Excel</button>
+                            
+                            <!-- Export Expenses -->
+                            <div>
+                                <h4 class="text-sm font-medium mb-2 text-red-400">Gastos</h4>
+                                <div class="grid grid-cols-2 gap-2 mb-2">
+                                    <input type="date" id="export-expenses-start" class="input px-3 py-2 rounded-lg w-full">
+                                    <input type="date" id="export-expenses-end" class="input px-3 py-2 rounded-lg w-full">
+                                </div>
+                                <button onclick="app.exportExpenses()" class="btn-primary w-full py-2 rounded-lg flex items-center justify-center gap-2">
+                                    <i class="ph ph-file-xls"></i> Descargar Excel
+                                </button>
+                            </div>
                         </div>
                     </div>
                     
@@ -897,9 +941,9 @@
                 
                 <!-- Orders Page -->
                 <div id="page-orders" class="page hidden fade-in">
-                    <div class="flex justify-between items-center mb-6">
+                    <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
                         <h2 class="text-2xl font-bold">Pedidos</h2>
-                        <button onclick="app.showOrderModal()" class="btn-primary px-4 py-2 rounded-xl flex items-center gap-2">
+                        <button onclick="app.showOrderModal()" class="btn-primary w-full md:w-auto px-4 py-2 rounded-xl flex items-center justify-center gap-2">
                             <i class="ph ph-plus"></i> Nuevo Pedido
                         </button>
                     </div>
@@ -930,28 +974,36 @@
                     
                     <!-- Filters -->
                     <div class="glass rounded-xl p-4 mb-6">
-                        <div class="flex flex-wrap gap-4 items-center">
-                            <input type="text" id="orders-search" placeholder="Buscar pedido..." class="input px-4 py-2 rounded-lg flex-1 min-w-48" oninput="app.filterOrders()">
-                            <select id="orders-status-filter" class="input px-4 py-2 rounded-lg" onchange="app.filterOrders()">
-                                <option value="">Todos los estados</option>
-                                <option value="pending">Pendiente</option>
-                                <option value="in_progress">En Proceso</option>
-                                <option value="completed">Completado</option>
-                                <option value="cancelled">Cancelado</option>
-                            </select>
-                            <input type="date" id="orders-date-from" class="input px-4 py-2 rounded-lg" onchange="app.filterOrders()">
-                            <input type="date" id="orders-date-to" class="input px-4 py-2 rounded-lg" onchange="app.filterOrders()">
-                            <select id="orders-sort" class="input px-4 py-2 rounded-lg" onchange="app.filterOrders()">
-                                <option value="newest">Más reciente</option>
-                                <option value="oldest">Más antiguo</option>
-                                <option value="highest">Mayor valor</option>
-                                <option value="lowest">Menor valor</option>
-                            </select>
+                        <div class="flex gap-2 mb-2">
+                            <input type="text" id="orders-search" placeholder="Buscar pedido..." class="input px-4 py-2 rounded-lg flex-1" oninput="app.filterOrders()">
+                            <button onclick="app.toggleFilters('orders-filters')" class="btn-primary px-3 py-2 rounded-lg flex items-center justify-center">
+                                <i class="ph ph-funnel text-xl"></i>
+                            </button>
+                        </div>
+                        
+                        <div id="orders-filters" class="hidden mt-4 space-y-4">
+                            <div class="grid grid-cols-2 md:grid-cols-4 gap-2">
+                                <select id="orders-status-filter" class="input px-4 py-2 rounded-lg w-full" onchange="app.filterOrders()">
+                                    <option value="">Todos los estados</option>
+                                    <option value="pending">Pendiente</option>
+                                    <option value="in_progress">En Proceso</option>
+                                    <option value="completed">Completado</option>
+                                    <option value="cancelled">Cancelado</option>
+                                </select>
+                                <select id="orders-sort" class="input px-4 py-2 rounded-lg w-full" onchange="app.filterOrders()">
+                                    <option value="newest">Más reciente</option>
+                                    <option value="oldest">Más antiguo</option>
+                                    <option value="highest">Mayor valor</option>
+                                    <option value="lowest">Menor valor</option>
+                                </select>
+                                <input type="date" id="orders-date-from" class="input px-4 py-2 rounded-lg w-full" onchange="app.filterOrders()">
+                                <input type="date" id="orders-date-to" class="input px-4 py-2 rounded-lg w-full" onchange="app.filterOrders()">
+                            </div>
                         </div>
                     </div>
                     
                     <!-- Orders Table -->
-                    <div class="glass rounded-xl overflow-hidden">
+                    <div class="glass rounded-xl overflow-hidden overflow-x-auto">
                         <table class="w-full">
                             <thead class="bg-white/5">
                                 <tr>
@@ -2270,7 +2322,12 @@
 
             toggleBusinessMenu() {
                 const menu = document.getElementById('business-switch-dropdown');
-                menu.classList.toggle('hidden');
+                if (menu) menu.classList.toggle('hidden');
+            },
+            
+            toggleMainBusinessMenu() {
+                const menu = document.getElementById('main-business-switch-dropdown');
+                if (menu) menu.classList.toggle('hidden');
             },
             
             toggleSettingsMenu() {
@@ -2283,6 +2340,13 @@
                 sidebar.classList.toggle('open');
                 if (overlay) {
                     overlay.classList.toggle('show');
+                }
+            },
+
+            toggleFilters(id) {
+                const el = document.getElementById(id);
+                if (el) {
+                    el.classList.toggle('hidden');
                 }
             },
             
@@ -2686,7 +2750,7 @@
                 `).join('');
                 
                 // Add "Agregar Negocio" option
-                dropdown.innerHTML += `
+                const addBusinessHtml = `
                     <hr class="border-white/10 my-1">
                     <a href="#" onclick="app.showAddBusinessModal()" class="text-green-400">
                         <span class="flex items-center gap-2">
@@ -2694,6 +2758,21 @@
                         </span>
                     </a>
                 `;
+                
+                if (dropdown) dropdown.innerHTML += addBusinessHtml;
+                
+                // Update main dropdown as well
+                const mainDropdown = document.getElementById('main-business-switch-dropdown');
+                if (mainDropdown) {
+                    mainDropdown.innerHTML = this.businesses.map(b => `
+                        <a href="#" onclick="app.switchBusiness(${b.id})" class="${b.id === this.business.id ? 'bg-white/10' : ''}">
+                            <span class="flex items-center gap-2">
+                                ${b.id === this.business.id ? '<i class="ph ph-check-circle text-green-400"></i>' : '<i class="ph ph-storefront text-white/50"></i>'}
+                                ${b.name}
+                            </span>
+                        </a>
+                    `).join('') + addBusinessHtml;
+                }
             },
             
             updateHeader() {
@@ -2734,6 +2813,12 @@
             
             // Navigation
             navigate(page) {
+                // Close sidebar if open (mobile)
+                const sidebar = document.getElementById('sidebar');
+                if (sidebar && sidebar.classList.contains('open')) {
+                    this.toggleSidebar();
+                }
+                
                 this.currentPage = page;
                 
                 // Update nav
