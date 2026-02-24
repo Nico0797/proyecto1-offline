@@ -758,6 +758,22 @@
                         <h2 class="text-2xl font-bold">Gastos</h2>
                         <button onclick="app.showExpenseModal()" class="btn-primary w-full md:w-auto px-4 py-2 rounded-xl font-semibold">+ Nuevo Gasto</button>
                     </div>
+
+                    <div class="glass rounded-xl p-4 mb-4">
+                        <div class="flex items-center gap-2 mb-2 w-full">
+                            <input type="text" id="expenses-search" placeholder="Buscar gasto..." class="input px-4 py-2 rounded-lg flex-1 min-w-0" oninput="app.loadExpenses()">
+                            <button onclick="app.toggleFilters('expenses-filters')" class="btn-primary w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0">
+                                <i class="ph ph-funnel text-xl"></i>
+                            </button>
+                        </div>
+                        
+                        <div id="expenses-filters" class="hidden mt-4 space-y-4">
+                            <div class="grid grid-cols-2 gap-2">
+                                <input type="date" id="expenses-start" class="input px-3 py-2 rounded-lg w-full" onchange="app.loadExpenses()">
+                                <input type="date" id="expenses-end" class="input px-3 py-2 rounded-lg w-full" onchange="app.loadExpenses()">
+                            </div>
+                        </div>
+                    </div>
                     
                     <div class="glass rounded-xl overflow-hidden overflow-x-auto">
                         <table class="w-full">
@@ -781,6 +797,22 @@
                     <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
                         <h2 class="text-2xl font-bold">Pagos y Abonos</h2>
                         <button onclick="app.showPaymentModal()" class="btn-success w-full md:w-auto px-4 py-2 rounded-xl font-semibold">+ Registrar Pago</button>
+                    </div>
+
+                    <div class="glass rounded-xl p-4 mb-4">
+                        <div class="flex items-center gap-2 mb-2 w-full">
+                            <input type="text" id="payments-search" placeholder="Buscar pago..." class="input px-4 py-2 rounded-lg flex-1 min-w-0" oninput="app.loadPayments()">
+                            <button onclick="app.toggleFilters('payments-filters')" class="btn-primary w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0">
+                                <i class="ph ph-funnel text-xl"></i>
+                            </button>
+                        </div>
+                        
+                        <div id="payments-filters" class="hidden mt-4 space-y-4">
+                            <div class="grid grid-cols-2 gap-2">
+                                <input type="date" id="payments-start" class="input px-3 py-2 rounded-lg w-full" onchange="app.loadPayments()">
+                                <input type="date" id="payments-end" class="input px-3 py-2 rounded-lg w-full" onchange="app.loadPayments()">
+                            </div>
+                        </div>
                     </div>
                     
                     <div class="glass rounded-xl overflow-hidden overflow-x-auto">
@@ -1257,13 +1289,13 @@
                         <div class="grid md:grid-cols-3 gap-4">
                             <div class="p-4 bg-green-500/20 rounded-lg">
                                 <p class="text-sm text-muted">Plan Trimestral</p>
-                                <p class="font-bold text-xl text-green-400">$<span id="dashboard-quarterly-price">0.00</span>/mes</p>
-                                <p class="text-xs text-muted">$<span id="dashboard-quarterly-total">0.00</span>/3 meses</p>
+                                <p class="font-bold text-xl text-green-400">$<span id="dashboard-quarterly-price">5.39</span>/mes</p>
+                                <p class="text-xs text-muted">$<span id="dashboard-quarterly-total">16.17</span>/3 meses</p>
                             </div>
                             <div class="p-4 bg-purple-500/20 rounded-lg">
                                 <p class="text-sm text-muted">Plan Anual</p>
-                                <p class="font-bold text-xl text-purple-400">$<span id="dashboard-annual-price">0.00</span>/mes</p>
-                                <p class="text-xs text-green-400">Ahorra hasta <span id="dashboard-annual-saving">0%</span></p>
+                                <p class="font-bold text-xl text-purple-400">$<span id="dashboard-annual-price">4.19</span>/mes</p>
+                                <p class="text-xs text-green-400">Ahorra hasta <span id="dashboard-annual-saving">30%</span></p>
                             </div>
                             <div class="p-4 bg-yellow-500/20 rounded-lg">
                                 <p class="text-sm text-muted">Plan Mensual</p>
@@ -1307,8 +1339,8 @@
                         <div class="glass rounded-xl p-6 border border-yellow-500/50 relative">
                             <div class="absolute -top-3 left-1/2 -translate-x-1/2 bg-yellow-500 text-black px-3 py-1 rounded-full text-sm font-bold">MÁS POPULAR</div>
                             <h3 class="text-xl font-bold mb-2">Pro</h3>
-                            <p class="text-3xl font-bold mb-2"><span id="pro-price">$19.900</span><span class="text-sm font-normal">/mes</span></p>
-                            <p class="text-sm text-muted mb-4" id="pro-price-note">COP 19.900 mensual</p>
+                            <p class="text-3xl font-bold mb-2"><span id="pro-price">$5.99</span><span class="text-sm font-normal">/mes</span></p>
+                            <p class="text-sm text-muted mb-4" id="pro-price-note">USD 5.99 mensual</p>
                             <ul class="space-y-2 text-muted mb-6">
                                 <li>✓ Negocios ilimitados</li>
                                 <li>✓ Productos ilimitados</li>
@@ -1410,6 +1442,13 @@
                                     </div>
                                     <div class="w-full bg-white/10 rounded-full h-2">
                                         <div id="admin-pro-monthly-bar" class="bg-green-500 h-2 rounded-full" style="width: 0%"></div>
+                                    </div>
+                                    <div class="flex justify-between items-center">
+                                        <span class="text-muted">Pro Trimestral</span>
+                                        <span id="admin-pro-quarterly-count" class="font-bold">0</span>
+                                    </div>
+                                    <div class="w-full bg-white/10 rounded-full h-2">
+                                        <div id="admin-pro-quarterly-bar" class="bg-blue-500 h-2 rounded-full" style="width: 0%"></div>
                                     </div>
                                     <div class="flex justify-between items-center">
                                         <span class="text-muted">Pro Anual</span>
@@ -2825,11 +2864,8 @@
             
             // Navigation
             navigate(page) {
-                // Close sidebar if open (mobile)
-                const sidebar = document.getElementById('sidebar');
-                if (sidebar && sidebar.classList.contains('open')) {
-                    this.closeSidebar();
-                }
+                // Force close sidebar (mobile)
+                this.closeSidebar();
                 
                 this.currentPage = page;
                 
@@ -3013,6 +3049,9 @@
             },
 
             async loadDashboard() {
+                // Ensure prices are rendered correctly
+                this.renderPricing();
+
                 // Update UI buttons
                 ['today', 'week', 'month', 'year'].forEach(p => {
                     const btn = document.getElementById(`period-${p}`);
@@ -3375,7 +3414,18 @@
             
             // Expenses
             async loadExpenses() {
-                const data = await this.api(`/businesses/${this.business.id}/expenses`);
+                const search = document.getElementById('expenses-search')?.value || '';
+                const start = document.getElementById('expenses-start')?.value || '';
+                const end = document.getElementById('expenses-end')?.value || '';
+
+                let url = `/businesses/${this.business.id}/expenses`;
+                const params = [];
+                if (start) params.push(`start_date=${start}`);
+                if (end) params.push(`end_date=${end}`);
+                if (search) params.push(`search=${encodeURIComponent(search)}`);
+                if (params.length) url += '?' + params.join('&');
+
+                const data = await this.api(url);
                 
                 const tbody = document.getElementById('expenses-table');
                 if (data.expenses.length === 0) {
@@ -3397,7 +3447,18 @@
             
             // Payments
             async loadPayments() {
-                const data = await this.api(`/businesses/${this.business.id}/payments`);
+                const search = document.getElementById('payments-search')?.value || '';
+                const start = document.getElementById('payments-start')?.value || '';
+                const end = document.getElementById('payments-end')?.value || '';
+
+                let url = `/businesses/${this.business.id}/payments`;
+                const params = [];
+                if (start) params.push(`start_date=${start}`);
+                if (end) params.push(`end_date=${end}`);
+                if (search) params.push(`search=${encodeURIComponent(search)}`);
+                if (params.length) url += '?' + params.join('&');
+
+                const data = await this.api(url);
                 
                 // Get customers for lookup
                 const customersData = await this.api(`/businesses/${this.business.id}/customers`);
@@ -4264,14 +4325,16 @@
                     document.getElementById('admin-total-membership-income').textContent = this.formatMoney(stats.total_membership_income);
                     
                     // Payments by plan
-                    const totalPayments = (stats.pro_monthly_payments || 0) + (stats.pro_annual_payments || 0);
+                    const totalPayments = (stats.pro_monthly_payments || 0) + (stats.pro_quarterly_payments || 0) + (stats.pro_annual_payments || 0);
                     document.getElementById('admin-pro-monthly-count').textContent = stats.pro_monthly_payments || 0;
+                    document.getElementById('admin-pro-quarterly-count').textContent = stats.pro_quarterly_payments || 0;
                     document.getElementById('admin-pro-annual-count').textContent = stats.pro_annual_payments || 0;
                     document.getElementById('admin-total-payments').textContent = stats.total_membership_payments || 0;
                     
                     // Calculate percentages for membership popularity
-                    const totalPlans = (stats.pro_monthly_payments || 0) + (stats.pro_annual_payments || 0) || 1;
+                    const totalPlans = totalPayments || 1;
                     document.getElementById('admin-pro-monthly-bar').style.width = ((stats.pro_monthly_payments || 0) / totalPlans * 100) + '%';
+                    document.getElementById('admin-pro-quarterly-bar').style.width = ((stats.pro_quarterly_payments || 0) / totalPlans * 100) + '%';
                     document.getElementById('admin-pro-annual-bar').style.width = ((stats.pro_annual_payments || 0) / totalPlans * 100) + '%';
                     
                     // Revenue by plan
@@ -4283,8 +4346,8 @@
                     paymentsTable.innerHTML = '';
                     if (stats.recent_payments && stats.recent_payments.length > 0) {
                         for (const p of stats.recent_payments) {
-                            const planName = p.plan === 'pro_monthly' ? 'Pro Mensual' : 'Pro Anual';
-                            const planClass = p.plan === 'pro_monthly' ? 'bg-green-500/20 text-green-400' : 'bg-purple-500/20 text-purple-400';
+                            const planName = p.plan === 'pro_monthly' ? 'Pro Mensual' : (p.plan === 'pro_quarterly' ? 'Pro Trimestral' : 'Pro Anual');
+                            const planClass = p.plan === 'pro_monthly' ? 'bg-green-500/20 text-green-400' : (p.plan === 'pro_quarterly' ? 'bg-blue-500/20 text-blue-400' : 'bg-purple-500/20 text-purple-400');
                             paymentsTable.innerHTML += `
                                 <tr>
                                     <td>Usuario #${p.user_id}</td>
