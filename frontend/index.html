@@ -472,9 +472,6 @@
             
             <!-- Sidebar -->
             <aside id="sidebar" class="sidebar w-64 glass border-r border-white/10 p-4 flex flex-col">
-                <button class="sidebar-close-btn" onclick="app.closeSidebar()">
-                    <i class="ph ph-x"></i>
-                </button>
                 <div class="mb-6" id="app-header">
                     <div class="relative">
                         <div class="w-full text-left">
@@ -2831,7 +2828,7 @@
                 // Close sidebar if open (mobile)
                 const sidebar = document.getElementById('sidebar');
                 if (sidebar && sidebar.classList.contains('open')) {
-                    this.toggleSidebar();
+                    this.closeSidebar();
                 }
                 
                 this.currentPage = page;
