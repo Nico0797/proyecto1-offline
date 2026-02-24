@@ -59,15 +59,22 @@ def create_app(config_class=None):
     # Error handlers for JSON responses
     @app.errorhandler(400)
     def bad_request(e):
-        return jsonify({"error": "Bad request"}), 400
-    
+        if request.path.startswith("/api/") or request.accept_mimetypes.accept_json:
+            return jsonify({"error": "Bad request"}), 400
+        return e
+
     @app.errorhandler(404)
     def not_found(e):
-        return jsonify({"error": "Not found"}), 404
-    
+        if request.path.startswith("/api/") or request.accept_mimetypes.accept_json:
+            return jsonify({"error": "Not found"}), 404
+        # For non-API routes, let the catch-all handle it or return default
+        return e
+
     @app.errorhandler(500)
     def internal_error(e):
-        return jsonify({"error": "Internal server error"}), 500
+        if request.path.startswith("/api/") or request.accept_mimetypes.accept_json:
+            return jsonify({"error": "Internal server error"}), 500
+        return e
 
     # Crear directorios necesarios
     os.makedirs(app.config.get("EXPORT_DIR"), exist_ok=True)
