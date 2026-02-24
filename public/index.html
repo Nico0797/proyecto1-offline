@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Cuaderno - Tu Contabilidad Simple</title>
     <link rel="icon" href="/favicon.ico">
     <script src="https://cdn.tailwindcss.com"></script>
@@ -104,7 +104,7 @@
             border: 1px solid rgba(255,255,255,0.12);
             border-radius: 12px;
             box-shadow: 0 12px 30px rgba(0,0,0,0.35);
-            z-index: 60;
+            z-index: 1000;
         }
 
         .dropdown-menu a {
@@ -528,7 +528,7 @@
             <!-- Main Content -->
             <main class="flex-1 p-4 md:p-6 overflow-auto">
                 <!-- Mobile Header -->
-                <div class="mobile-menu-btn flex items-center justify-between mb-4">
+                <div class="mobile-menu-btn flex items-center justify-between mb-4 mt-8">
                     <button onclick="app.toggleSidebar()" class="p-2 glass rounded-lg">
                         <i class="ph ph-list ph-icon"></i>
                     </button>
@@ -542,16 +542,19 @@
                 </div>
                 
                 <!-- Business Header - Center of page -->
-                <div id="business-header" class="glass rounded-xl p-4 mb-4 flex items-center justify-between">
+                <div id="business-header" class="glass rounded-xl p-4 mb-4 flex items-center justify-between relative z-50">
                     <div class="flex items-center gap-3">
                         <div>
                             <p class="text-muted text-xs">Negocio Actual</p>
                             <h3 id="center-business-name" class="text-lg font-bold">Mi Negocio</h3>
                         </div>
                     </div>
-                    <button onclick="app.toggleBusinessMenu()" class="btn btn-primary text-sm py-2">
-                        <i class="ph ph-arrows-left-right"></i> Cambiar
-                    </button>
+                    <div class="relative">
+                        <button onclick="app.toggleMainBusinessMenu()" class="btn btn-primary text-sm py-2">
+                            <i class="ph ph-arrows-left-right"></i> Cambiar
+                        </button>
+                        <div id="main-business-switch-dropdown" class="dropdown-menu hidden right-0 top-full mt-2 w-64 max-h-80 overflow-y-auto z-50"></div>
+                    </div>
                 </div>
                 
                 <!-- Dashboard Page -->
@@ -559,7 +562,7 @@
                     <h2 class="text-2xl font-bold mb-6">Dashboard</h2>
                     
                     <!-- Quick Stats -->
-                    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4 mb-6">
+                    <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
                         <div class="stat-card glass rounded-xl p-4">
                             <p class="text-muted text-sm">Caja Hoy</p>
                             <p id="stat-cash-today" class="text-xl font-bold money-positive">$0</p>
@@ -581,7 +584,7 @@
                     <!-- Monthly Summary -->
                     <div class="glass rounded-xl p-6 mb-6">
                         <h3 class="text-lg font-semibold mb-4">Resumen del Mes</h3>
-                        <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                        <div class="grid grid-cols-3 gap-4">
                             <div>
                                 <p class="text-muted text-sm">Ingresos</p>
                                 <p id="month-income" class="text-xl font-bold money-positive">$0</p>
@@ -685,44 +688,52 @@
                 
                 <!-- Sales Page -->
                 <div id="page-sales" class="page hidden fade-in">
-                    <div class="flex justify-between items-center mb-6">
+                    <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
                         <h2 class="text-2xl font-bold">Ventas</h2>
-                        <button onclick="app.showSaleModal()" class="btn-success px-4 py-2 rounded-xl font-semibold">+ Nueva Venta</button>
+                        <button onclick="app.showSaleModal()" class="btn-success w-full md:w-auto px-4 py-2 rounded-xl font-semibold">+ Nueva Venta</button>
                     </div>
                     
                     <div class="glass rounded-xl p-4 mb-4">
-                        <div class="flex flex-wrap gap-4 items-center">
-                            <input type="text" id="sales-search" placeholder="Buscar venta..." class="input px-4 py-2 rounded-lg flex-1 min-w-48">
-                            <input type="date" id="sales-start" class="input px-3 py-2 rounded-lg">
-                            <input type="date" id="sales-end" class="input px-3 py-2 rounded-lg">
-                            <select id="sales-status-filter" class="input px-3 py-2 rounded-lg">
-                                <option value="">Todos los estados</option>
-                                <option value="completed">Completado</option>
-                                <option value="pending">Pendiente</option>
-                                <option value="cancelled">Cancelado</option>
-                            </select>
-                            <select id="sales-payment-filter" class="input px-3 py-2 rounded-lg">
-                                <option value="">Todos los métodos</option>
-                                <option value="cash">Efectivo</option>
-                                <option value="card">Tarjeta</option>
-                                <option value="transfer">Transferencia</option>
-                                <option value="credit">Crédito</option>
-                            </select>
-                            <button onclick="app.loadSales()" class="btn-primary px-4 py-2 rounded-lg">Filtrar</button>
+                        <div class="flex gap-2 mb-2">
+                            <input type="text" id="sales-search" placeholder="Buscar venta..." class="input px-4 py-2 rounded-lg flex-1">
+                            <button onclick="app.toggleFilters('sales-filters')" class="btn-primary px-3 py-2 rounded-lg flex items-center justify-center">
+                                <i class="ph ph-funnel text-xl"></i>
+                            </button>
+                        </div>
+                        
+                        <div id="sales-filters" class="hidden mt-4 space-y-4">
+                            <div class="grid grid-cols-2 md:grid-cols-4 gap-2">
+                                <input type="date" id="sales-start" class="input px-3 py-2 rounded-lg w-full">
+                                <input type="date" id="sales-end" class="input px-3 py-2 rounded-lg w-full">
+                                <select id="sales-status-filter" class="input px-3 py-2 rounded-lg w-full">
+                                    <option value="">Todos los estados</option>
+                                    <option value="completed">Completado</option>
+                                    <option value="pending">Pendiente</option>
+                                    <option value="cancelled">Cancelado</option>
+                                </select>
+                                <select id="sales-payment-filter" class="input px-3 py-2 rounded-lg w-full">
+                                    <option value="">Todos los métodos</option>
+                                    <option value="cash">Efectivo</option>
+                                    <option value="card">Tarjeta</option>
+                                    <option value="transfer">Transferencia</option>
+                                    <option value="credit">Crédito</option>
+                                </select>
+                            </div>
+                            <button onclick="app.loadSales()" class="btn-primary w-full py-2 rounded-lg">Aplicar Filtros</button>
                         </div>
                     </div>
                     
-                    <div class="glass rounded-xl overflow-hidden">
-                        <table id="sales-table-container" class="min-w-full text-sm">
+                    <div class="glass rounded-xl overflow-hidden overflow-x-auto">
+                        <table class="w-full">
                             <thead>
                                 <tr>
-                                    <th class="whitespace-nowrap cursor-pointer select-none" onclick="app.sortTable('sales-table-container', 0, 'date')">Fecha</th>
-                                    <th class="cursor-pointer select-none" onclick="app.sortTable('sales-table-container', 1, 'string')">Cliente</th>
-                                    <th class="hidden md:table-cell cursor-pointer select-none" onclick="app.sortTable('sales-table-container', 2, 'number')">Items</th>
-                                    <th class="cursor-pointer select-none" onclick="app.sortTable('sales-table-container', 3, 'number')">Total</th>
-                                    <th class="hidden sm:table-cell cursor-pointer select-none" onclick="app.sortTable('sales-table-container', 4, 'number')">Saldo</th>
-                                    <th class="hidden lg:table-cell cursor-pointer select-none" onclick="app.sortTable('sales-table-container', 5, 'string')">Método</th>
-                                    <th class="hidden sm:table-cell cursor-pointer select-none" onclick="app.sortTable('sales-table-container', 6, 'string')">Estado</th>
+                                    <th>Fecha</th>
+                                    <th>Cliente</th>
+                                    <th>Items</th>
+                                    <th>Total</th>
+                                    <th>Saldo</th>
+                                    <th>Método</th>
+                                    <th>Estado</th>
                                     <th>Acciones</th>
                                 </tr>
                             </thead>
@@ -734,19 +745,19 @@
                 
                 <!-- Expenses Page -->
                 <div id="page-expenses" class="page hidden fade-in">
-                    <div class="flex justify-between items-center mb-6">
+                    <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
                         <h2 class="text-2xl font-bold">Gastos</h2>
-                        <button onclick="app.showExpenseModal()" class="btn-primary px-4 py-2 rounded-xl font-semibold">+ Nuevo Gasto</button>
+                        <button onclick="app.showExpenseModal()" class="btn-primary w-full md:w-auto px-4 py-2 rounded-xl font-semibold">+ Nuevo Gasto</button>
                     </div>
                     
-                    <div class="glass rounded-xl overflow-hidden">
-                        <table id="expenses-table-container">
+                    <div class="glass rounded-xl overflow-hidden overflow-x-auto">
+                        <table class="w-full">
                             <thead>
                                 <tr>
-                                    <th class="cursor-pointer select-none" onclick="app.sortTable('expenses-table-container', 0, 'date')">Fecha</th>
-                                    <th class="cursor-pointer select-none" onclick="app.sortTable('expenses-table-container', 1, 'string')">Categoría</th>
-                                    <th class="cursor-pointer select-none" onclick="app.sortTable('expenses-table-container', 2, 'number')">Monto</th>
-                                    <th class="cursor-pointer select-none" onclick="app.sortTable('expenses-table-container', 3, 'string')">Descripción</th>
+                                    <th>Fecha</th>
+                                    <th>Categoría</th>
+                                    <th>Monto</th>
+                                    <th>Descripción</th>
                                     <th></th>
                                 </tr>
                             </thead>
@@ -758,20 +769,20 @@
                 
                 <!-- Payments Page -->
                 <div id="page-payments" class="page hidden fade-in">
-                    <div class="flex justify-between items-center mb-6">
+                    <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
                         <h2 class="text-2xl font-bold">Pagos y Abonos</h2>
-                        <button onclick="app.showPaymentModal()" class="btn-success px-4 py-2 rounded-xl font-semibold">+ Registrar Pago</button>
+                        <button onclick="app.showPaymentModal()" class="btn-success w-full md:w-auto px-4 py-2 rounded-xl font-semibold">+ Registrar Pago</button>
                     </div>
                     
-                    <div class="glass rounded-xl overflow-hidden">
-                        <table id="payments-table-container">
+                    <div class="glass rounded-xl overflow-hidden overflow-x-auto">
+                        <table class="w-full">
                             <thead>
                                 <tr>
-                                    <th class="cursor-pointer select-none" onclick="app.sortTable('payments-table-container', 0, 'date')">Fecha</th>
-                                    <th class="cursor-pointer select-none" onclick="app.sortTable('payments-table-container', 1, 'string')">Cliente</th>
-                                    <th class="cursor-pointer select-none" onclick="app.sortTable('payments-table-container', 2, 'number')">Monto</th>
-                                    <th class="cursor-pointer select-none" onclick="app.sortTable('payments-table-container', 3, 'string')">Método</th>
-                                    <th class="cursor-pointer select-none" onclick="app.sortTable('payments-table-container', 4, 'string')">Nota</th>
+                                    <th>Fecha</th>
+                                    <th>Cliente</th>
+                                    <th>Monto</th>
+                                    <th>Método</th>
+                                    <th>Nota</th>
                                 </tr>
                             </thead>
                             <tbody id="payments-table">
@@ -782,37 +793,45 @@
                 
                 <!-- Customers Page -->
                 <div id="page-customers" class="page hidden fade-in">
-                    <div class="flex justify-between items-center mb-6">
+                    <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
                         <h2 class="text-2xl font-bold">Clientes</h2>
-                        <button onclick="app.showCustomerModal()" class="btn-primary px-4 py-2 rounded-xl font-semibold">+ Nuevo Cliente</button>
+                        <button onclick="app.showCustomerModal()" class="btn-primary w-full md:w-auto px-4 py-2 rounded-xl font-semibold">+ Nuevo Cliente</button>
                     </div>
                     
                     <!-- Filters -->
                     <div class="glass rounded-xl p-4 mb-4">
-                        <div class="flex flex-wrap gap-4 items-center">
-                            <input type="text" id="customer-search" placeholder="Buscar cliente..." class="input px-4 py-2 rounded-lg flex-1 min-w-48" oninput="app.filterCustomers()">
-                            <select id="customer-status-filter" class="input px-4 py-2 rounded-lg" onchange="app.filterCustomers()">
-                                <option value="">Todos los estados</option>
-                                <option value="active">Activo</option>
-                                <option value="inactive">Inactivo</option>
-                            </select>
-                            <select id="customer-balance-filter" class="input px-4 py-2 rounded-lg" onchange="app.filterCustomers()">
-                                <option value="">Cualquier saldo</option>
-                                <option value="positive">Con saldo</option>
-                                <option value="negative">Saldo negativo</option>
-                                <option value="zero">Sin saldo</option>
-                            </select>
+                        <div class="flex gap-2 mb-2">
+                            <input type="text" id="customer-search" placeholder="Buscar cliente..." class="input px-4 py-2 rounded-lg flex-1" oninput="app.filterCustomers()">
+                            <button onclick="app.toggleFilters('customer-filters')" class="btn-primary px-3 py-2 rounded-lg flex items-center justify-center">
+                                <i class="ph ph-funnel text-xl"></i>
+                            </button>
+                        </div>
+                        
+                        <div id="customer-filters" class="hidden mt-4 space-y-4">
+                            <div class="grid grid-cols-2 gap-2">
+                                <select id="customer-status-filter" class="input px-4 py-2 rounded-lg w-full" onchange="app.filterCustomers()">
+                                    <option value="">Todos los estados</option>
+                                    <option value="active">Activo</option>
+                                    <option value="inactive">Inactivo</option>
+                                </select>
+                                <select id="customer-balance-filter" class="input px-4 py-2 rounded-lg w-full" onchange="app.filterCustomers()">
+                                    <option value="">Cualquier saldo</option>
+                                    <option value="positive">Con saldo</option>
+                                    <option value="negative">Saldo negativo</option>
+                                    <option value="zero">Sin saldo</option>
+                                </select>
+                            </div>
                         </div>
                     </div>
                     
-                    <div class="glass rounded-xl overflow-hidden">
-                        <table id="customers-table-container">
+                    <div class="glass rounded-xl overflow-hidden overflow-x-auto">
+                        <table class="w-full">
                             <thead>
                                 <tr>
-                                    <th class="cursor-pointer select-none" onclick="app.sortTable('customers-table-container', 0, 'string')">Nombre</th>
-                                    <th class="cursor-pointer select-none" onclick="app.sortTable('customers-table-container', 1, 'string')">Teléfono</th>
-                                    <th class="cursor-pointer select-none" onclick="app.sortTable('customers-table-container', 2, 'number')">Saldo</th>
-                                    <th class="cursor-pointer select-none" onclick="app.sortTable('customers-table-container', 3, 'string')">Estado</th>
+                                    <th>Nombre</th>
+                                    <th>Teléfono</th>
+                                    <th>Saldo</th>
+                                    <th>Estado</th>
                                     <th></th>
                                 </tr>
                             </thead>
@@ -824,36 +843,44 @@
                 
                 <!-- Products Page -->
                 <div id="page-products" class="page hidden fade-in">
-                    <div class="flex justify-between items-center mb-6">
+                    <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
                         <h2 class="text-2xl font-bold">Productos</h2>
-                        <button onclick="app.showProductModal()" class="btn-primary px-4 py-2 rounded-xl font-semibold">+ Nuevo Producto</button>
+                        <button onclick="app.showProductModal()" class="btn-primary w-full md:w-auto px-4 py-2 rounded-xl font-semibold">+ Nuevo Producto</button>
                     </div>
                     
                     <!-- Filters -->
                     <div class="glass rounded-xl p-4 mb-4">
-                        <div class="flex flex-wrap gap-4 items-center">
-                            <input type="text" id="product-search" placeholder="Buscar producto..." class="input px-4 py-2 rounded-lg flex-1 min-w-48" oninput="app.filterProducts()">
-                            <select id="product-category-filter" class="input px-4 py-2 rounded-lg" onchange="app.filterProducts()">
-                                <option value="">Todas las categorías</option>
-                            </select>
-                            <select id="product-stock-filter" class="input px-4 py-2 rounded-lg" onchange="app.filterProducts()">
-                                <option value="">Cualquier inventario</option>
-                                <option value="in_stock">Con inventario</option>
-                                <option value="out_of_stock">Sin inventario</option>
-                                <option value="low_stock">Inventario bajo</option>
-                            </select>
+                        <div class="flex gap-2 mb-2">
+                            <input type="text" id="product-search" placeholder="Buscar producto..." class="input px-4 py-2 rounded-lg flex-1" oninput="app.filterProducts()">
+                            <button onclick="app.toggleFilters('product-filters')" class="btn-primary px-3 py-2 rounded-lg flex items-center justify-center">
+                                <i class="ph ph-funnel text-xl"></i>
+                            </button>
+                        </div>
+                        
+                        <div id="product-filters" class="hidden mt-4 space-y-4">
+                            <div class="grid grid-cols-2 gap-2">
+                                <select id="product-category-filter" class="input px-4 py-2 rounded-lg w-full" onchange="app.filterProducts()">
+                                    <option value="">Todas las categorías</option>
+                                </select>
+                                <select id="product-stock-filter" class="input px-4 py-2 rounded-lg w-full" onchange="app.filterProducts()">
+                                    <option value="">Cualquier inventario</option>
+                                    <option value="in_stock">Con inventario</option>
+                                    <option value="out_of_stock">Sin inventario</option>
+                                    <option value="low_stock">Inventario bajo</option>
+                                </select>
+                            </div>
                         </div>
                     </div>
                     
-                    <div class="glass rounded-xl overflow-hidden">
-                        <table id="products-table-container">
+                    <div class="glass rounded-xl overflow-hidden overflow-x-auto">
+                        <table class="w-full">
                             <thead>
                                 <tr>
-                                    <th class="cursor-pointer select-none" onclick="app.sortTable('products-table-container', 0, 'string')">Nombre</th>
-                                    <th class="cursor-pointer select-none" onclick="app.sortTable('products-table-container', 1, 'string')">SKU</th>
-                                    <th class="cursor-pointer select-none" onclick="app.sortTable('products-table-container', 2, 'number')">Precio</th>
-                                    <th class="cursor-pointer select-none" onclick="app.sortTable('products-table-container', 3, 'number')">Costo</th>
-                                    <th class="cursor-pointer select-none" onclick="app.sortTable('products-table-container', 4, 'number')">Inventario</th>
+                                    <th>Nombre</th>
+                                    <th>SKU</th>
+                                    <th>Precio</th>
+                                    <th>Costo</th>
+                                    <th>Inventario</th>
                                     <th></th>
                                 </tr>
                             </thead>
@@ -867,23 +894,40 @@
                 <div id="page-reports" class="page hidden fade-in">
                     <h2 class="text-2xl font-bold mb-6">Reportes</h2>
                     
-                    <div class="grid md:grid-cols-2 gap-4 mb-6">
-                        <div class="glass rounded-xl p-6">
-                            <h3 class="font-semibold mb-4">Exportar Ventas</h3>
-                            <div class="flex gap-2">
-                                <input type="date" id="export-sales-start" class="input px-3 py-2 rounded-lg">
-                                <input type="date" id="export-sales-end" class="input px-3 py-2 rounded-lg">
-                            </div>
-                            <button onclick="app.exportSales()" class="btn-primary w-full mt-4 py-2 rounded-lg">Descargar Excel</button>
+                    <div class="glass rounded-xl p-4 mb-6">
+                        <div class="flex justify-between items-center cursor-pointer" onclick="app.toggleFilters('export-options')">
+                            <h3 class="font-semibold flex items-center gap-2">
+                                <i class="ph ph-download-simple"></i> Exportar Datos
+                            </h3>
+                            <button class="btn-primary px-3 py-2 rounded-lg flex items-center justify-center">
+                                <i class="ph ph-caret-down text-xl"></i>
+                            </button>
                         </div>
                         
-                        <div class="glass rounded-xl p-6">
-                            <h3 class="font-semibold mb-4">Exportar Gastos</h3>
-                            <div class="flex gap-2">
-                                <input type="date" id="export-expenses-start" class="input px-3 py-2 rounded-lg">
-                                <input type="date" id="export-expenses-end" class="input px-3 py-2 rounded-lg">
+                        <div id="export-options" class="hidden mt-4 space-y-6 border-t border-white/10 pt-4">
+                            <!-- Export Sales -->
+                            <div>
+                                <h4 class="text-sm font-medium mb-2 text-green-400">Ventas</h4>
+                                <div class="grid grid-cols-2 gap-2 mb-2">
+                                    <input type="date" id="export-sales-start" class="input px-3 py-2 rounded-lg w-full">
+                                    <input type="date" id="export-sales-end" class="input px-3 py-2 rounded-lg w-full">
+                                </div>
+                                <button onclick="app.exportSales()" class="btn-primary w-full py-2 rounded-lg flex items-center justify-center gap-2">
+                                    <i class="ph ph-file-xls"></i> Descargar Excel
+                                </button>
                             </div>
-                            <button onclick="app.exportExpenses()" class="btn-primary w-full mt-4 py-2 rounded-lg">Descargar Excel</button>
+                            
+                            <!-- Export Expenses -->
+                            <div>
+                                <h4 class="text-sm font-medium mb-2 text-red-400">Gastos</h4>
+                                <div class="grid grid-cols-2 gap-2 mb-2">
+                                    <input type="date" id="export-expenses-start" class="input px-3 py-2 rounded-lg w-full">
+                                    <input type="date" id="export-expenses-end" class="input px-3 py-2 rounded-lg w-full">
+                                </div>
+                                <button onclick="app.exportExpenses()" class="btn-primary w-full py-2 rounded-lg flex items-center justify-center gap-2">
+                                    <i class="ph ph-file-xls"></i> Descargar Excel
+                                </button>
+                            </div>
                         </div>
                     </div>
                     
@@ -895,71 +939,79 @@
                     </div>
                 </div>
                 
-                    <!-- Orders Page -->
+                <!-- Orders Page -->
                 <div id="page-orders" class="page hidden fade-in">
-                    <div class="flex justify-between items-center mb-6">
+                    <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
                         <h2 class="text-2xl font-bold">Pedidos</h2>
-                        <button onclick="app.showOrderModal()" class="btn-primary px-4 py-2 rounded-xl flex items-center gap-2">
+                        <button onclick="app.showOrderModal()" class="btn-primary w-full md:w-auto px-4 py-2 rounded-xl flex items-center justify-center gap-2">
                             <i class="ph ph-plus"></i> Nuevo Pedido
                         </button>
                     </div>
                     
                     <!-- Stats Cards -->
-                    <div class="grid grid-cols-2 md:grid-cols-5 gap-3 mb-4">
-                        <div class="glass rounded-xl p-3 md:p-4">
-                            <p class="text-muted text-xs md:text-sm">Total</p>
-                            <p id="orders-total" class="text-lg md:text-xl font-bold">0</p>
+                    <div class="grid grid-cols-2 md:grid-cols-5 gap-4 mb-6">
+                        <div class="glass rounded-xl p-4">
+                            <p class="text-muted text-sm">Total</p>
+                            <p id="orders-total" class="text-xl font-bold">0</p>
                         </div>
-                        <div class="glass rounded-xl p-3 md:p-4 border-l-2 border-yellow-500">
-                            <p class="text-muted text-xs md:text-sm">Pendientes</p>
-                            <p id="orders-pending" class="text-lg md:text-xl font-bold text-yellow-400">0</p>
+                        <div class="glass rounded-xl p-4 border-l-2 border-yellow-500">
+                            <p class="text-muted text-sm">Pendientes</p>
+                            <p id="orders-pending" class="text-xl font-bold text-yellow-400">0</p>
                         </div>
-                        <div class="glass rounded-xl p-3 md:p-4 border-l-2 border-blue-500">
-                            <p class="text-muted text-xs md:text-sm">En Proceso</p>
-                            <p id="orders-in-progress" class="text-lg md:text-xl font-bold text-blue-400">0</p>
+                        <div class="glass rounded-xl p-4 border-l-2 border-blue-500">
+                            <p class="text-muted text-sm">En Proceso</p>
+                            <p id="orders-in-progress" class="text-xl font-bold text-blue-400">0</p>
                         </div>
-                        <div class="glass rounded-xl p-3 md:p-4 border-l-2 border-green-500">
-                            <p class="text-muted text-xs md:text-sm">Completados</p>
-                            <p id="orders-completed" class="text-lg md:text-xl font-bold text-green-400">0</p>
+                        <div class="glass rounded-xl p-4 border-l-2 border-green-500">
+                            <p class="text-muted text-sm">Completados</p>
+                            <p id="orders-completed" class="text-xl font-bold text-green-400">0</p>
                         </div>
-                        <div class="glass rounded-xl p-3 md:p-4 border-l-2 border-red-500">
-                            <p class="text-muted text-xs md:text-sm">Cancelados</p>
-                            <p id="orders-cancelled" class="text-lg md:text-xl font-bold text-red-400">0</p>
+                        <div class="glass rounded-xl p-4 border-l-2 border-red-500">
+                            <p class="text-muted text-sm">Cancelados</p>
+                            <p id="orders-cancelled" class="text-xl font-bold text-red-400">0</p>
                         </div>
                     </div>
                     
                     <!-- Filters -->
                     <div class="glass rounded-xl p-4 mb-6">
-                        <div class="flex flex-wrap gap-4 items-center">
-                            <input type="text" id="orders-search" placeholder="Buscar pedido..." class="input px-4 py-2 rounded-lg flex-1 min-w-48" oninput="app.filterOrders()">
-                            <select id="orders-status-filter" class="input px-4 py-2 rounded-lg" onchange="app.filterOrders()">
-                                <option value="">Todos los estados</option>
-                                <option value="pending">Pendiente</option>
-                                <option value="in_progress">En Proceso</option>
-                                <option value="completed">Completado</option>
-                                <option value="cancelled">Cancelado</option>
-                            </select>
-                            <input type="date" id="orders-date-from" class="input px-4 py-2 rounded-lg" onchange="app.filterOrders()">
-                            <input type="date" id="orders-date-to" class="input px-4 py-2 rounded-lg" onchange="app.filterOrders()">
-                            <select id="orders-sort" class="input px-4 py-2 rounded-lg" onchange="app.filterOrders()">
-                                <option value="newest">Más reciente</option>
-                                <option value="oldest">Más antiguo</option>
-                                <option value="highest">Mayor valor</option>
-                                <option value="lowest">Menor valor</option>
-                            </select>
+                        <div class="flex gap-2 mb-2">
+                            <input type="text" id="orders-search" placeholder="Buscar pedido..." class="input px-4 py-2 rounded-lg flex-1" oninput="app.filterOrders()">
+                            <button onclick="app.toggleFilters('orders-filters')" class="btn-primary px-3 py-2 rounded-lg flex items-center justify-center">
+                                <i class="ph ph-funnel text-xl"></i>
+                            </button>
+                        </div>
+                        
+                        <div id="orders-filters" class="hidden mt-4 space-y-4">
+                            <div class="grid grid-cols-2 md:grid-cols-4 gap-2">
+                                <select id="orders-status-filter" class="input px-4 py-2 rounded-lg w-full" onchange="app.filterOrders()">
+                                    <option value="">Todos los estados</option>
+                                    <option value="pending">Pendiente</option>
+                                    <option value="in_progress">En Proceso</option>
+                                    <option value="completed">Completado</option>
+                                    <option value="cancelled">Cancelado</option>
+                                </select>
+                                <select id="orders-sort" class="input px-4 py-2 rounded-lg w-full" onchange="app.filterOrders()">
+                                    <option value="newest">Más reciente</option>
+                                    <option value="oldest">Más antiguo</option>
+                                    <option value="highest">Mayor valor</option>
+                                    <option value="lowest">Menor valor</option>
+                                </select>
+                                <input type="date" id="orders-date-from" class="input px-4 py-2 rounded-lg w-full" onchange="app.filterOrders()">
+                                <input type="date" id="orders-date-to" class="input px-4 py-2 rounded-lg w-full" onchange="app.filterOrders()">
+                            </div>
                         </div>
                     </div>
                     
                     <!-- Orders Table -->
-                    <div class="glass rounded-xl overflow-hidden">
-                        <table id="orders-table-container" class="w-full">
+                    <div class="glass rounded-xl overflow-hidden overflow-x-auto">
+                        <table class="w-full">
                             <thead class="bg-white/5">
                                 <tr>
-                                    <th class="px-4 py-3 text-left text-sm font-medium cursor-pointer select-none" onclick="app.sortTable('orders-table-container', 0, 'string')">Pedido</th>
-                                    <th class="px-4 py-3 text-left text-sm font-medium cursor-pointer select-none" onclick="app.sortTable('orders-table-container', 1, 'string')">Cliente</th>
-                                    <th class="px-4 py-3 text-left text-sm font-medium cursor-pointer select-none" onclick="app.sortTable('orders-table-container', 2, 'date')">Fecha</th>
-                                    <th class="px-4 py-3 text-left text-sm font-medium cursor-pointer select-none" onclick="app.sortTable('orders-table-container', 3, 'string')">Estado</th>
-                                    <th class="px-4 py-3 text-left text-sm font-medium cursor-pointer select-none" onclick="app.sortTable('orders-table-container', 4, 'number')">Total</th>
+                                    <th class="px-4 py-3 text-left text-sm font-medium">Pedido</th>
+                                    <th class="px-4 py-3 text-left text-sm font-medium">Cliente</th>
+                                    <th class="px-4 py-3 text-left text-sm font-medium">Fecha</th>
+                                    <th class="px-4 py-3 text-left text-sm font-medium">Estado</th>
+                                    <th class="px-4 py-3 text-left text-sm font-medium">Total</th>
                                     <th class="px-4 py-3 text-left text-sm font-medium">Acciones</th>
                                 </tr>
                             </thead>
@@ -1200,17 +1252,17 @@
                         <div class="grid md:grid-cols-3 gap-4">
                             <div class="p-4 bg-green-500/20 rounded-lg">
                                 <p class="text-sm text-muted">Plan Trimestral</p>
-                                <p class="font-bold text-xl text-green-400">$18,308/mes</p>
-                                <p class="text-xs text-muted">$54,924/3 meses</p>
+                                <p class="font-bold text-xl text-green-400">$<span id="dashboard-quarterly-price">0.00</span>/mes</p>
+                                <p class="text-xs text-muted">$<span id="dashboard-quarterly-total">0.00</span>/3 meses</p>
                             </div>
                             <div class="p-4 bg-purple-500/20 rounded-lg">
                                 <p class="text-sm text-muted">Plan Anual</p>
-                                <p class="font-bold text-xl text-purple-400">$16,915/mes</p>
-                                <p class="text-xs text-green-400">Ahorras $35,820</p>
+                                <p class="font-bold text-xl text-purple-400">$<span id="dashboard-annual-price">0.00</span>/mes</p>
+                                <p class="text-xs text-green-400">Ahorra hasta <span id="dashboard-annual-saving">0%</span></p>
                             </div>
                             <div class="p-4 bg-yellow-500/20 rounded-lg">
                                 <p class="text-sm text-muted">Plan Mensual</p>
-                                <p class="font-bold text-xl text-yellow-400">$19,900/mes</p>
+                                <p class="font-bold text-xl text-yellow-400">$<span id="dashboard-monthly-price">5.99</span>/mes</p>
                             </div>
                         </div>
                         <button onclick="app.navigate('upgrade')" class="btn-primary w-full mt-4 py-2 rounded-xl">Actualizar a Pro</button>
@@ -1267,11 +1319,10 @@
                                     <div class="flex gap-2">
                                         <button id="pay-method-card" class="btn-primary px-3 py-2 rounded-xl" onclick="app.selectPaymentMethod('card')"><i class="ph ph-credit-card ph-icon"></i> Tarjeta</button>
                                         <button id="pay-method-nequi" class="px-3 py-2 rounded-xl" onclick="app.selectPaymentMethod('nequi')"><i class="ph ph-device-mobile ph-icon"></i> Nequi</button>
-                                        <button id="pay-method-bancolombia" class="px-3 py-2 rounded-xl" onclick="app.selectPaymentMethod('bancolombia')"><i class="ph ph-bank ph-icon"></i> Bancolombia</button>
                                     </div>
                                 </div>
-                                <button class="btn-success w-full py-2 rounded-xl" onclick="app.startCheckout()">Continuar con Pago</button>
-                                <p class="text-xs text-muted">Se abrirá el checkout para completar el pago.</p>
+                                <button class="btn-success w-full py-2 rounded-xl" onclick="app.startCheckout()">Continuar con Mercado Pago</button>
+                                <p class="text-xs text-muted">Se abrirá un checkout de Mercado Pago (placeholder).</p>
                             </div>
                         </div>
                     </div>
@@ -2057,7 +2108,6 @@
             token: null,
             products: [],
             customers: [],
-            tableSortState: {},
             currentPage: 'dashboard',
             pricingCycle: 'monthly',
             pricingMonthlyCop: 19900,
@@ -2115,61 +2165,6 @@
                 }).format(amount);
             },
             
-            sortTable(tableId, columnIndex, type) {
-                const table = document.getElementById(tableId);
-                if (!table) return;
-                const tbody = table.tBodies[0];
-                if (!tbody) return;
-                const rows = Array.from(tbody.querySelectorAll('tr'));
-                if (!rows.length) return;
-                
-                if (!this.tableSortState) this.tableSortState = {};
-                const key = tableId + '-' + columnIndex;
-                const current = this.tableSortState[key] || 'desc';
-                const next = current === 'asc' ? 'desc' : 'asc';
-                this.tableSortState[key] = next;
-                
-                const headerRow = table.tHead?.rows[0];
-                if (headerRow) {
-                    Array.from(headerRow.cells).forEach((th, index) => {
-                        const baseLabel = th.dataset.label || th.textContent.trim().replace(/[▲▼]\s*$/, '');
-                        th.dataset.label = baseLabel;
-                        if (index === columnIndex) {
-                            const arrow = next === 'asc' ? ' ▲' : ' ▼';
-                            th.textContent = baseLabel + arrow;
-                        } else {
-                            th.textContent = baseLabel;
-                        }
-                    });
-                }
-                
-                const parseValue = (text) => {
-                    if (type === 'number') {
-                        const num = parseFloat(text.replace(/[^\d.-]/g, ''));
-                        return isNaN(num) ? 0 : num;
-                    }
-                    if (type === 'date') {
-                        const time = new Date(text).getTime();
-                        return isNaN(time) ? 0 : time;
-                    }
-                    return text.toLowerCase();
-                };
-                
-                rows.sort((a, b) => {
-                    const aCell = a.children[columnIndex];
-                    const bCell = b.children[columnIndex];
-                    const aText = aCell ? aCell.textContent.trim() : '';
-                    const bText = bCell ? bCell.textContent.trim() : '';
-                    const aVal = parseValue(aText);
-                    const bVal = parseValue(bText);
-                    if (aVal < bVal) return next === 'asc' ? -1 : 1;
-                    if (aVal > bVal) return next === 'asc' ? 1 : -1;
-                    return 0;
-                });
-                
-                rows.forEach(row => tbody.appendChild(row));
-            },
-            
             // API helpers
             async api(endpoint, options = {}) {
                 const url = '/api' + endpoint;
@@ -2218,6 +2213,14 @@
                     return responseData;
                 } catch (error) {
                     console.error('API Error:', error);
+                    
+                    // Manejo específico de token expirado
+                    if (error.message === "Inicio de sesión expirado" || error.code === "TOKEN_EXPIRED") {
+                        alert("Tu sesión ha expirado. Por favor inicia sesión nuevamente.");
+                        this.logout();
+                        return;
+                    }
+                    
                     alert(error.message);
                     throw error;
                 }
@@ -2319,7 +2322,12 @@
 
             toggleBusinessMenu() {
                 const menu = document.getElementById('business-switch-dropdown');
-                menu.classList.toggle('hidden');
+                if (menu) menu.classList.toggle('hidden');
+            },
+            
+            toggleMainBusinessMenu() {
+                const menu = document.getElementById('main-business-switch-dropdown');
+                if (menu) menu.classList.toggle('hidden');
             },
             
             toggleSettingsMenu() {
@@ -2332,6 +2340,13 @@
                 sidebar.classList.toggle('open');
                 if (overlay) {
                     overlay.classList.toggle('show');
+                }
+            },
+
+            toggleFilters(id) {
+                const el = document.getElementById(id);
+                if (el) {
+                    el.classList.toggle('hidden');
                 }
             },
             
@@ -2372,6 +2387,11 @@
                 document.getElementById('verify-form').classList.add('hidden');
                 document.getElementById('forgot-form').classList.add('hidden');
                 document.getElementById('reset-form').classList.add('hidden');
+                const emailInput = document.getElementById('login-email');
+                const passwordInput = document.getElementById('login-password');
+                if (emailInput) emailInput.value = '';
+                if (passwordInput) passwordInput.value = '';
+                this.storage.remove('password_reset_flow');
             },
             
             showRegister() {
@@ -2422,6 +2442,7 @@
                         body: JSON.stringify({ email })
                     });
                     alert('Te enviamos un código para restablecer tu contraseña.');
+                    this.storage.set('password_reset_flow', { email });
                     this.showResetPassword();
                     document.getElementById('reset-email').value = email;
                 } catch (e) {
@@ -2444,6 +2465,7 @@
                         body: JSON.stringify({ email, code, new_password })
                     });
                     alert('Contraseña restablecida. Ya puedes iniciar sesión.');
+                    this.storage.remove('password_reset_flow');
                     this.showLogin();
                 } catch (e) {
                     // Error already shown
@@ -2728,7 +2750,7 @@
                 `).join('');
                 
                 // Add "Agregar Negocio" option
-                dropdown.innerHTML += `
+                const addBusinessHtml = `
                     <hr class="border-white/10 my-1">
                     <a href="#" onclick="app.showAddBusinessModal()" class="text-green-400">
                         <span class="flex items-center gap-2">
@@ -2736,6 +2758,21 @@
                         </span>
                     </a>
                 `;
+                
+                if (dropdown) dropdown.innerHTML += addBusinessHtml;
+                
+                // Update main dropdown as well
+                const mainDropdown = document.getElementById('main-business-switch-dropdown');
+                if (mainDropdown) {
+                    mainDropdown.innerHTML = this.businesses.map(b => `
+                        <a href="#" onclick="app.switchBusiness(${b.id})" class="${b.id === this.business.id ? 'bg-white/10' : ''}">
+                            <span class="flex items-center gap-2">
+                                ${b.id === this.business.id ? '<i class="ph ph-check-circle text-green-400"></i>' : '<i class="ph ph-storefront text-white/50"></i>'}
+                                ${b.name}
+                            </span>
+                        </a>
+                    `).join('') + addBusinessHtml;
+                }
             },
             
             updateHeader() {
@@ -2776,6 +2813,12 @@
             
             // Navigation
             navigate(page) {
+                // Close sidebar if open (mobile)
+                const sidebar = document.getElementById('sidebar');
+                if (sidebar && sidebar.classList.contains('open')) {
+                    this.toggleSidebar();
+                }
+                
                 this.currentPage = page;
                 
                 // Update nav
@@ -2788,11 +2831,6 @@
                     el.classList.add('hidden');
                 });
                 document.getElementById('page-' + page)?.classList.remove('hidden');
-
-                const businessHeader = document.getElementById('business-header');
-                if (businessHeader) {
-                    businessHeader.classList.toggle('hidden', page !== 'dashboard');
-                }
 
                 if (page === 'admin') {
                     history.pushState({}, '', '/admin');
@@ -2854,22 +2892,49 @@
             },
 
             renderPricing() {
-                const monthly = this.pricingMonthlyCop;
-                const annual = Math.round(monthly * 12 * (1 - this.pricingAnnualDiscount));
+                const base = 5.99;
+                const quarterlyDiscount = 0.1;
+                const annualDiscount = 0.3;
+                const quarterlyTotal = base * 3 * (1 - quarterlyDiscount);
+                const annualTotal = base * 12 * (1 - annualDiscount);
+                const quarterlyMonthly = quarterlyTotal / 3;
+                const annualMonthly = annualTotal / 12;
                 const priceEl = document.getElementById('pro-price');
                 const noteEl = document.getElementById('pro-price-note');
                 const monthlyBtn = document.getElementById('pricing-monthly-btn');
+                const quarterlyBtn = document.getElementById('pricing-quarterly-btn');
                 const annualBtn = document.getElementById('pricing-annual-btn');
+                const mDash = document.getElementById('dashboard-monthly-price');
+                const qDash = document.getElementById('dashboard-quarterly-price');
+                const qDashTotal = document.getElementById('dashboard-quarterly-total');
+                const aDash = document.getElementById('dashboard-annual-price');
+                const aDashSaving = document.getElementById('dashboard-annual-saving');
+
+                if (mDash && qDash && qDashTotal && aDash && aDashSaving) {
+                    mDash.textContent = base.toFixed(2);
+                    qDash.textContent = quarterlyMonthly.toFixed(2);
+                    qDashTotal.textContent = quarterlyTotal.toFixed(2);
+                    aDash.textContent = annualMonthly.toFixed(2);
+                    aDashSaving.textContent = '30%';
+                }
 
                 if (this.pricingCycle === 'annual') {
-                    priceEl.textContent = this.formatMoney(annual);
-                    noteEl.textContent = `COP ${annual.toLocaleString('es-CO')} anual (ahorra 15%)`;
+                    priceEl.textContent = `$${annualMonthly.toFixed(2)}`;
+                    noteEl.textContent = `USD ${(annualTotal).toFixed(2)} anual (ahorra 30%)`;
                     monthlyBtn.classList.remove('btn-primary');
+                    quarterlyBtn.classList.remove('btn-primary');
                     annualBtn.classList.add('btn-primary');
-                } else {
-                    priceEl.textContent = this.formatMoney(monthly);
-                    noteEl.textContent = `COP ${monthly.toLocaleString('es-CO')} mensual`;
+                } else if (this.pricingCycle === 'quarterly') {
+                    priceEl.textContent = `$${quarterlyMonthly.toFixed(2)}`;
+                    noteEl.textContent = `USD ${(quarterlyTotal).toFixed(2)} cada 3 meses (ahorra 10%)`;
+                    monthlyBtn.classList.remove('btn-primary');
                     annualBtn.classList.remove('btn-primary');
+                    quarterlyBtn.classList.add('btn-primary');
+                } else {
+                    priceEl.textContent = `$${base.toFixed(2)}`;
+                    noteEl.textContent = `USD ${base.toFixed(2)} mensual`;
+                    annualBtn.classList.remove('btn-primary');
+                    quarterlyBtn.classList.remove('btn-primary');
                     monthlyBtn.classList.add('btn-primary');
                 }
             },
@@ -2881,12 +2946,7 @@
             },
 
             async startCheckout() {
-                let plan = 'pro_monthly';
-                if (this.pricingCycle === 'annual') {
-                    plan = 'pro_annual';
-                } else if (this.pricingCycle === 'quarterly') {
-                    plan = 'pro_quarterly';
-                }
+                const plan = this.pricingCycle === 'annual' ? 'pro_annual' : 'pro_monthly';
                 const url = '/api/billing/checkout';
                 const headers = {
                     'Content-Type': 'application/json'
@@ -3123,13 +3183,13 @@
                 } else {
                     tbody.innerHTML = sales.map(s => `
                         <tr>
-                            <td class="whitespace-nowrap">${s.sale_date}</td>
+                            <td>${s.sale_date}</td>
                             <td>${customers[s.customer_id] || '-'}</td>
-                            <td class="hidden md:table-cell">${s.items.length}</td>
+                            <td>${s.items.length}</td>
                             <td class="font-bold">${this.formatMoney(s.total)}</td>
-                            <td class="hidden sm:table-cell ${(s.balance || 0) > 0 ? 'money-negative' : 'money-positive'}">${this.formatMoney(s.balance || 0)}</td>
-                            <td class="hidden lg:table-cell">${s.payment_method === 'cash' ? 'Efectivo' : s.payment_method === 'transfer' ? 'Transferencia' : s.payment_method === 'card' ? 'Tarjeta' : 'Fiado'}</td>
-                            <td class="hidden sm:table-cell">${s.paid ? '<span class="text-green-400">Pagado</span>' : '<span class="text-red-400">Pendiente</span>'}</td>
+                            <td class="${(s.balance || 0) > 0 ? 'money-negative' : 'money-positive'}">${this.formatMoney(s.balance || 0)}</td>
+                            <td>${s.payment_method === 'cash' ? 'Efectivo' : s.payment_method === 'transfer' ? 'Transferencia' : s.payment_method === 'card' ? 'Tarjeta' : 'Fiado'}</td>
+                            <td>${s.paid ? '<span class="text-green-400">Pagado</span>' : '<span class="text-red-400">Pendiente</span>'}</td>
                             <td>
                                 <div class="flex gap-1">
                                     <button onclick="app.generateReceipt(${s.id})" class="text-blue-400 hover:text-blue-300 p-1" title="Ver recibo">
@@ -4871,7 +4931,7 @@
                         this.user = userData.user;
 
                         // Verify Wompi transaction if present
-                                if (wompiId) {
+                        if (wompiId) {
                             try {
                                 const verify = await this.api('/billing/confirm-wompi', {
                                     method: 'POST',
@@ -4880,14 +4940,9 @@
                                 
                                 if (verify.success) {
                                     this.user.plan = verify.plan;
-                                    if (verify.membership) {
-                                        this.user.membership_plan = verify.membership.plan;
-                                        this.user.membership_start = verify.membership.start;
-                                        this.user.membership_end = verify.membership.end;
-                                        this.user.membership_auto_renew = verify.membership.auto_renew;
-                                    }
                                     localStorage.setItem('user', JSON.stringify(this.user));
                                     alert(verify.message);
+                                    // Remove id from URL
                                     window.history.replaceState({}, document.title, window.location.pathname);
                                 }
                             } catch (e) {
@@ -4900,9 +4955,17 @@
                     } catch (e) {
                         this.logout();
                     }
-                }
+                }       
                 
                 this.showAuth();
+                const resetState = this.storage.get('password_reset_flow');
+                if (resetState && resetState.email) {
+                    this.showResetPassword();
+                    const resetEmailInput = document.getElementById('reset-email');
+                    if (resetEmailInput) resetEmailInput.value = resetState.email;
+                } else {
+                    this.showLogin();
+                }
             }
         };
         
@@ -4963,41 +5026,41 @@
         window.adminEditRole = function(id) { console.log('adminEditRole called', id); if(app && app.showEditRoleModal) app.showEditRoleModal(id); };
         window.adminDeleteRole = function(id) { console.log('adminDeleteRole called', id); if(app && app.deleteRole) app.deleteRole(id); };
     </script>
-<script>
-    document.addEventListener('DOMContentLoaded', () => {
-        const emailInput = document.getElementById('login-email');
-        const passwordInput = document.getElementById('login-password');
-        const wipe = () => {
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const emailInput = document.getElementById('login-email');
+            const passwordInput = document.getElementById('login-password');
+            const wipe = () => {
+                if (emailInput) {
+                    emailInput.value = '';
+                    emailInput.setAttribute('autocomplete', 'off');
+                    emailInput.setAttribute('name', 'login_email');
+                    emailInput.setAttribute('autocapitalize', 'none');
+                    emailInput.setAttribute('spellcheck', 'false');
+                }
+                if (passwordInput) {
+                    passwordInput.value = '';
+                    passwordInput.setAttribute('autocomplete', 'new-password');
+                    passwordInput.setAttribute('name', 'login_password');
+                }
+            };
+            wipe();
+            let tries = 0;
+            const interval = setInterval(() => {
+                tries++;
+                if (emailInput && emailInput.value) emailInput.value = '';
+                if (passwordInput && passwordInput.value) passwordInput.value = '';
+                if (tries > 20) clearInterval(interval);
+            }, 100);
             if (emailInput) {
-                emailInput.value = '';
-                emailInput.setAttribute('autocomplete', 'off');
-                emailInput.setAttribute('name', 'login_email');
-                emailInput.setAttribute('autocapitalize', 'none');
-                emailInput.setAttribute('spellcheck', 'false');
+                emailInput.readOnly = true;
+                emailInput.addEventListener('focus', () => { emailInput.readOnly = false; }, { once: true });
             }
             if (passwordInput) {
-                passwordInput.value = '';
-                passwordInput.setAttribute('autocomplete', 'new-password');
-                passwordInput.setAttribute('name', 'login_password');
+                passwordInput.readOnly = true;
+                passwordInput.addEventListener('focus', () => { passwordInput.readOnly = false; }, { once: true });
             }
-        };
-        wipe();
-        let tries = 0;
-        const interval = setInterval(() => {
-            tries++;
-            if (emailInput && emailInput.value) emailInput.value = '';
-            if (passwordInput && passwordInput.value) passwordInput.value = '';
-            if (tries > 20) clearInterval(interval);
-        }, 100);
-        if (emailInput) {
-            emailInput.readOnly = true;
-            emailInput.addEventListener('focus', () => { emailInput.readOnly = false; }, { once: true });
-        }
-        if (passwordInput) {
-            passwordInput.readOnly = true;
-            passwordInput.addEventListener('focus', () => { passwordInput.readOnly = false; }, { once: true });
-        }
-    });
-</script>
+        });
+    </script>
 </body>
 </html>
