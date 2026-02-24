@@ -286,10 +286,11 @@
                 top: 0; 
                 bottom: 0; 
                 width: 280px; 
-                z-index: 50; 
+                z-index: 100; 
                 background: #1a1a2e;
                 transform: translateX(-100%);
                 transition: transform 0.3s ease;
+                box-shadow: 4px 0 15px rgba(0,0,0,0.5);
             }
             .sidebar.open { 
                 display: flex; 
@@ -301,7 +302,8 @@
                 position: fixed;
                 inset: 0;
                 background: rgba(0,0,0,0.7);
-                z-index: 40;
+                z-index: 90;
+                backdrop-filter: blur(2px);
             }
             .sidebar-overlay.show {
                 display: block;
@@ -542,16 +544,16 @@
                 </div>
                 
                 <!-- Business Header - Center of page -->
-                <div id="business-header" class="glass rounded-xl p-4 mb-4 flex items-center justify-between relative z-50">
+                <div id="business-header" class="glass rounded-xl p-4 mb-4 flex items-center justify-between relative z-30">
                     <div class="flex items-center gap-3">
                         <div>
-                            <p class="text-muted text-xs">Negocio Actual</p>
-                            <h3 id="center-business-name" class="text-lg font-bold">Mi Negocio</h3>
+                            <p class="text-muted text-xs font-medium uppercase tracking-wide">Negocio Actual</p>
+                            <h3 id="center-business-name" class="text-lg font-bold text-white tracking-tight">Mi Negocio</h3>
                         </div>
                     </div>
                     <div class="relative">
-                        <button onclick="app.toggleMainBusinessMenu()" class="btn btn-primary text-sm py-2">
-                            <i class="ph ph-arrows-left-right"></i> Cambiar
+                        <button onclick="app.toggleMainBusinessMenu()" class="btn btn-primary text-xs font-semibold py-1.5 px-4 rounded-full shadow-lg hover:shadow-xl transition-all transform active:scale-95 border border-white/10">
+                            <i class="ph ph-arrows-left-right text-sm"></i> Cambiar
                         </button>
                         <div id="main-business-switch-dropdown" class="dropdown-menu hidden right-0 top-full mt-2 w-64 max-h-80 overflow-y-auto z-50"></div>
                     </div>
@@ -559,7 +561,17 @@
                 
                 <!-- Dashboard Page -->
                 <div id="page-dashboard" class="page fade-in">
-                    <h2 class="text-2xl font-bold mb-6">Dashboard</h2>
+                    <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
+                        <h2 class="text-2xl font-bold">Dashboard</h2>
+                        
+                        <!-- Period Selector -->
+                        <div class="flex bg-white/5 p-1 rounded-lg overflow-x-auto no-scrollbar max-w-full">
+                            <button onclick="app.setDashboardPeriod('today')" id="period-today" class="px-3 py-1.5 rounded-md text-xs font-medium transition-all text-white/60 hover:text-white whitespace-nowrap">Hoy</button>
+                            <button onclick="app.setDashboardPeriod('week')" id="period-week" class="px-3 py-1.5 rounded-md text-xs font-medium transition-all text-white/60 hover:text-white whitespace-nowrap">Semana</button>
+                            <button onclick="app.setDashboardPeriod('month')" id="period-month" class="px-3 py-1.5 rounded-md text-xs font-medium transition-all bg-white/10 text-white shadow-sm whitespace-nowrap">Mes</button>
+                            <button onclick="app.setDashboardPeriod('year')" id="period-year" class="px-3 py-1.5 rounded-md text-xs font-medium transition-all text-white/60 hover:text-white whitespace-nowrap">Año</button>
+                        </div>
+                    </div>
                     
                     <!-- Quick Stats -->
                     <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
@@ -583,7 +595,7 @@
                     
                     <!-- Monthly Summary -->
                     <div class="glass rounded-xl p-6 mb-6">
-                        <h3 class="text-lg font-semibold mb-4">Resumen del Mes</h3>
+                        <h3 id="dashboard-summary-title" class="text-lg font-semibold mb-4">Resumen</h3>
                         <div class="grid grid-cols-3 gap-4">
                             <div>
                                 <p class="text-muted text-sm">Ingresos</p>
@@ -696,7 +708,7 @@
                     <div class="glass rounded-xl p-4 mb-4">
                         <div class="flex gap-2 mb-2">
                             <input type="text" id="sales-search" placeholder="Buscar venta..." class="input px-4 py-2 rounded-lg flex-1">
-                            <button onclick="app.toggleFilters('sales-filters')" class="btn-primary px-3 py-2 rounded-lg flex items-center justify-center">
+                            <button onclick="app.toggleFilters('sales-filters')" class="btn-primary w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0">
                                 <i class="ph ph-funnel text-xl"></i>
                             </button>
                         </div>
@@ -802,7 +814,7 @@
                     <div class="glass rounded-xl p-4 mb-4">
                         <div class="flex gap-2 mb-2">
                             <input type="text" id="customer-search" placeholder="Buscar cliente..." class="input px-4 py-2 rounded-lg flex-1" oninput="app.filterCustomers()">
-                            <button onclick="app.toggleFilters('customer-filters')" class="btn-primary px-3 py-2 rounded-lg flex items-center justify-center">
+                            <button onclick="app.toggleFilters('customer-filters')" class="btn-primary w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0">
                                 <i class="ph ph-funnel text-xl"></i>
                             </button>
                         </div>
@@ -852,7 +864,7 @@
                     <div class="glass rounded-xl p-4 mb-4">
                         <div class="flex gap-2 mb-2">
                             <input type="text" id="product-search" placeholder="Buscar producto..." class="input px-4 py-2 rounded-lg flex-1" oninput="app.filterProducts()">
-                            <button onclick="app.toggleFilters('product-filters')" class="btn-primary px-3 py-2 rounded-lg flex items-center justify-center">
+                            <button onclick="app.toggleFilters('product-filters')" class="btn-primary w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0">
                                 <i class="ph ph-funnel text-xl"></i>
                             </button>
                         </div>
@@ -949,25 +961,21 @@
                     </div>
                     
                     <!-- Stats Cards -->
-                    <div class="grid grid-cols-2 md:grid-cols-5 gap-4 mb-6">
-                        <div class="glass rounded-xl p-4">
-                            <p class="text-muted text-sm">Total</p>
+                    <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
+                        <div class="glass rounded-xl p-3 flex flex-col items-center justify-center text-center">
+                            <p class="text-muted text-xs font-medium uppercase tracking-wider mb-1">Total</p>
                             <p id="orders-total" class="text-xl font-bold">0</p>
                         </div>
-                        <div class="glass rounded-xl p-4 border-l-2 border-yellow-500">
-                            <p class="text-muted text-sm">Pendientes</p>
+                        <div class="glass rounded-xl p-3 flex flex-col items-center justify-center text-center border-b-2 border-yellow-500">
+                            <p class="text-muted text-xs font-medium uppercase tracking-wider mb-1">Pendientes</p>
                             <p id="orders-pending" class="text-xl font-bold text-yellow-400">0</p>
                         </div>
-                        <div class="glass rounded-xl p-4 border-l-2 border-blue-500">
-                            <p class="text-muted text-sm">En Proceso</p>
-                            <p id="orders-in-progress" class="text-xl font-bold text-blue-400">0</p>
-                        </div>
-                        <div class="glass rounded-xl p-4 border-l-2 border-green-500">
-                            <p class="text-muted text-sm">Completados</p>
+                        <div class="glass rounded-xl p-3 flex flex-col items-center justify-center text-center border-b-2 border-green-500">
+                            <p class="text-muted text-xs font-medium uppercase tracking-wider mb-1">Completados</p>
                             <p id="orders-completed" class="text-xl font-bold text-green-400">0</p>
                         </div>
-                        <div class="glass rounded-xl p-4 border-l-2 border-red-500">
-                            <p class="text-muted text-sm">Cancelados</p>
+                        <div class="glass rounded-xl p-3 flex flex-col items-center justify-center text-center border-b-2 border-red-500">
+                            <p class="text-muted text-xs font-medium uppercase tracking-wider mb-1">Cancelados</p>
                             <p id="orders-cancelled" class="text-xl font-bold text-red-400">0</p>
                         </div>
                     </div>
@@ -976,7 +984,7 @@
                     <div class="glass rounded-xl p-4 mb-6">
                         <div class="flex gap-2 mb-2">
                             <input type="text" id="orders-search" placeholder="Buscar pedido..." class="input px-4 py-2 rounded-lg flex-1" oninput="app.filterOrders()">
-                            <button onclick="app.toggleFilters('orders-filters')" class="btn-primary px-3 py-2 rounded-lg flex items-center justify-center">
+                            <button onclick="app.toggleFilters('orders-filters')" class="btn-primary w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0">
                                 <i class="ph ph-funnel text-xl"></i>
                             </button>
                         </div>
@@ -2115,6 +2123,7 @@
             products: [],
             customers: [],
             currentPage: 'dashboard',
+            dashboardPeriod: 'month',
             pricingCycle: 'monthly',
             pricingMonthlyCop: 19900,
             pricingAnnualDiscount: 0.15,
@@ -3001,7 +3010,34 @@
             },
             
             // Dashboard
+            setDashboardPeriod(period) {
+                this.dashboardPeriod = period;
+                this.loadDashboard();
+            },
+
             async loadDashboard() {
+                // Update UI buttons
+                ['today', 'week', 'month', 'year'].forEach(p => {
+                    const btn = document.getElementById(`period-${p}`);
+                    if (btn) {
+                        if (p === this.dashboardPeriod) {
+                            btn.className = 'px-3 py-1.5 rounded-md text-xs font-medium transition-all bg-white/10 text-white shadow-sm whitespace-nowrap';
+                        } else {
+                            btn.className = 'px-3 py-1.5 rounded-md text-xs font-medium transition-all text-white/60 hover:text-white whitespace-nowrap';
+                        }
+                    }
+                });
+
+                // Update Summary Title
+                const titles = {
+                    today: 'Resumen de Hoy',
+                    week: 'Resumen de la Semana',
+                    month: 'Resumen del Mes',
+                    year: 'Resumen del Año'
+                };
+                const summaryTitle = document.getElementById('dashboard-summary-title');
+                if (summaryTitle) summaryTitle.textContent = titles[this.dashboardPeriod] || 'Resumen';
+
                 // Daily report
                 const daily = await this.api(`/businesses/${this.business.id}/reports/daily`);
                 document.getElementById('stat-cash-today').textContent = this.formatMoney(daily.cash_flow.net);
@@ -3009,7 +3045,15 @@
                 document.getElementById('stat-expenses-today').textContent = this.formatMoney(daily.expenses.total);
                 
                 // Monthly summary
-                const summary = await this.api(`/businesses/${this.business.id}/reports/summary`);
+                let summaryUrl = `/businesses/${this.business.id}/reports/summary?period=${this.dashboardPeriod}`;
+                if (this.dashboardPeriod === 'year') {
+                    const now = new Date();
+                    const start = new Date(now.getFullYear(), 0, 1).toISOString().split('T')[0];
+                    const end = new Date(now.getFullYear(), 11, 31).toISOString().split('T')[0];
+                    summaryUrl += `&start_date=${start}&end_date=${end}`;
+                }
+
+                const summary = await this.api(summaryUrl);
                 document.getElementById('month-income').textContent = this.formatMoney(summary.sales.total);
                 document.getElementById('month-expenses').textContent = this.formatMoney(summary.expenses.total);
                 document.getElementById('month-profit').textContent = this.formatMoney(summary.profit.net);
@@ -3777,7 +3821,6 @@
                 // Update stats cards
                 document.getElementById('orders-total').textContent = stats.total_orders || 0;
                 document.getElementById('orders-pending').textContent = stats.pending || 0;
-                document.getElementById('orders-in-progress').textContent = stats.in_progress || 0;
                 document.getElementById('orders-completed').textContent = stats.completed || 0;
                 document.getElementById('orders-cancelled').textContent = stats.cancelled || 0;
                 
