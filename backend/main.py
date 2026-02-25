@@ -5,8 +5,9 @@ Punto de entrada de la aplicación Flask
 """
 import os
 from datetime import datetime, date, timedelta
-from flask import Flask, request, jsonify, send_from_directory, g, send_file
+from flask import Flask, request, jsonify, send_from_directory, g, send_file, render_template, url_for
 from flask_cors import CORS
+from itsdangerous import URLSafeTimedSerializer, SignatureExpired, BadSignature
 from io import BytesIO
 
 # PIL for receipt generation (optional)
@@ -3959,6 +3960,63 @@ def register_receipt_routes(application):
             return send_file(img_bytes, mimetype='image/png', as_attachment=False, download_name=f'recibo_{sale_id}.png')
         except Exception as e:
             return jsonify({"error": f"Error: {str(e)}"}), 500
+
+    @application.route("/api/receipt/link/<int:sale_id>", methods=["GET"])
+    @token_required
+    def get_receipt_link(current_user, sale_id):
+        sale = Sale.query.get(sale_id)
+        if not sale:
+            return jsonify({"error": "Venta no encontrada"}), 404
+        
+        # Ensure user owns the business of the sale
+        business = Business.query.get(sale.business_id)
+        if business.user_id != current_user.id:
+            return jsonify({"error": "No autorizado"}), 403
+
+        s = URLSafeTimedSerializer(application.config["SECRET_KEY"])
+        token = s.dumps(sale.id, salt="receipt-view")
+        
+        link = url_for('public_receipt', token=token, _external=True)
+        return jsonify({"url": link})
+
+    @application.route("/r/<token>")
+    def public_receipt(token):
+        s = URLSafeTimedSerializer(application.config["SECRET_KEY"])
+        try:
+            sale_id = s.loads(token, salt="receipt-view", max_age=86400 * 30) # 30 days valid
+        except SignatureExpired:
+            return "El enlace del recibo ha expirado.", 404
+        except BadSignature:
+            return "Enlace inválido.", 404
+            
+        sale = Sale.query.get(sale_id)
+        if not sale:
+            return "Venta no encontrada", 404
+            
+        business = Business.query.get(sale.business_id)
+        customer = Customer.query.get(sale.customer_id) if sale.customer_id else None
+        
+        profile_data = {"business_name": business.name, "phone": "", "tax_id": "", "address": "", "message": ""}
+        try:
+            result = db.session.execute(db.text("SELECT * FROM business_profile WHERE id=1")).fetchone()
+            if result:
+                profile_data = {
+                    "business_name": result[1] or business.name,
+                    "phone": result[2] or "", 
+                    "tax_id": result[3] or "", 
+                    "address": result[4] or "", 
+                    "message": result[5] or ""
+                }
+        except:
+            pass
+            
+        receipt_number = f"RC-{sale.sale_date.year}-{sale.id:06d}"
+        
+        return render_template('receipt_view.html', 
+                               sale=sale, 
+                               business=profile_data, 
+                               customer=customer, 
+                               receipt_number=receipt_number)
 
 
 # Create app instance

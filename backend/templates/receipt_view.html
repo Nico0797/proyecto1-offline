@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Recibo de Venta - {{ business.name }}</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f3f4f6;
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+        }
+        .receipt-container {
+            background-color: white;
+            width: 100%;
+            max-width: 480px;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+        .header {
+            background-color: #2563eb;
+            color: white;
+            padding: 20px;
+            text-align: center;
+        }
+        .business-name {
+            font-size: 1.5rem;
+            font-weight: bold;
+            margin-bottom: 5px;
+            text-transform: uppercase;
+        }
+        .receipt-title {
+            font-size: 0.9rem;
+            opacity: 0.9;
+            letter-spacing: 1px;
+        }
+        .content {
+            padding: 20px;
+        }
+        .meta-info {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 20px;
+            font-size: 0.9rem;
+            color: #4b5563;
+            border-bottom: 1px solid #e5e7eb;
+            padding-bottom: 15px;
+        }
+        .customer-info {
+            margin-bottom: 20px;
+            font-size: 0.95rem;
+        }
+        .customer-label {
+            color: #2563eb;
+            font-size: 0.8rem;
+            font-weight: bold;
+            text-transform: uppercase;
+        }
+        .items-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 20px;
+            font-size: 0.9rem;
+        }
+        .items-table th {
+            text-align: left;
+            color: #2563eb;
+            font-size: 0.8rem;
+            border-bottom: 2px solid #e5e7eb;
+            padding-bottom: 8px;
+        }
+        .items-table td {
+            padding: 8px 0;
+            border-bottom: 1px solid #f3f4f6;
+        }
+        .item-name {
+            font-weight: 500;
+        }
+        .item-qty {
+            color: #6b7280;
+            font-size: 0.85rem;
+        }
+        .text-right {
+            text-align: right;
+        }
+        .totals {
+            margin-top: 20px;
+            border-top: 2px solid #e5e7eb;
+            padding-top: 15px;
+        }
+        .total-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 8px;
+            font-size: 0.95rem;
+        }
+        .total-final {
+            font-weight: bold;
+            font-size: 1.2rem;
+            color: #1f2937;
+            margin-top: 10px;
+        }
+        .footer {
+            text-align: center;
+            margin-top: 30px;
+            font-size: 0.85rem;
+            color: #6b7280;
+            padding-top: 20px;
+            border-top: 1px dashed #e5e7eb;
+        }
+        .actions {
+            background-color: #f9fafb;
+            padding: 15px;
+            text-align: center;
+            border-top: 1px solid #e5e7eb;
+        }
+        .btn {
+            display: inline-block;
+            padding: 10px 20px;
+            border-radius: 6px;
+            text-decoration: none;
+            font-weight: 500;
+            margin: 0 5px;
+            font-size: 0.9rem;
+        }
+        .btn-whatsapp {
+            background-color: #25D366;
+            color: white;
+        }
+        .btn-print {
+            background-color: #4b5563;
+            color: white;
+        }
+        @media print {
+            .actions { display: none; }
+            body { background-color: white; padding: 0; }
+            .receipt-container { box-shadow: none; max-width: 100%; }
+        }
+    </style>
+</head>
+<body>
+    <div class="receipt-container">
+        <div class="header">
+            <div class="business-name">{{ business.name }}</div>
+            <div class="receipt-title">COMPROBANTE DE PAGO</div>
+        </div>
+        
+        <div class="content">
+            <div class="meta-info">
+                <div>
+                    <div><strong>No.</strong> {{ receipt_number }}</div>
+                    <div>{{ sale.sale_date }}</div>
+                </div>
+                <div class="text-right">
+                    {% if business.phone %}<div>Tel: {{ business.phone }}</div>{% endif %}
+                    {% if business.tax_id %}<div>NIT: {{ business.tax_id }}</div>{% endif %}
+                </div>
+            </div>
+
+            <div class="customer-info">
+                <div class="customer-label">Cliente</div>
+                <div>{{ customer.name if customer else 'Cliente General' }}</div>
+                {% if customer and customer.phone %}
+                <div style="font-size: 0.85rem; color: #6b7280;">{{ customer.phone }}</div>
+                {% endif %}
+            </div>
+
+            <table class="items-table">
+                <thead>
+                    <tr>
+                        <th width="50%">Descripción</th>
+                        <th width="20%" class="text-right">Cant.</th>
+                        <th width="30%" class="text-right">Total</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in sale.items %}
+                    <tr>
+                        <td>
+                            <div class="item-name">{{ item.name }}</div>
+                        </td>
+                        <td class="text-right item-qty">{{ item.qty }}</td>
+                        <td class="text-right">{{ "{:,.0f}".format(item.total|float) }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+
+            <div class="totals">
+                <div class="total-row">
+                    <span>Subtotal</span>
+                    <span>$ {{ "{:,.0f}".format(sale.subtotal) }}</span>
+                </div>
+                {% if sale.discount > 0 %}
+                <div class="total-row" style="color: #ef4444;">
+                    <span>Descuento</span>
+                    <span>-$ {{ "{:,.0f}".format(sale.discount) }}</span>
+                </div>
+                {% endif %}
+                <div class="total-row total-final">
+                    <span>TOTAL</span>
+                    <span>$ {{ "{:,.0f}".format(sale.total) }}</span>
+                </div>
+                {% if sale.balance > 0 %}
+                <div class="total-row" style="color: #f59e0b; font-weight: bold; margin-top: 5px;">
+                    <span>Saldo Pendiente</span>
+                    <span>$ {{ "{:,.0f}".format(sale.balance) }}</span>
+                </div>
+                {% endif %}
+            </div>
+
+            <div class="footer">
+                {% if business.message %}
+                <p>{{ business.message }}</p>
+                {% else %}
+                <p>¡Gracias por su compra!</p>
+                {% endif %}
+                {% if business.address %}
+                <p style="margin-top: 5px; font-size: 0.8rem;">{{ business.address }}</p>
+                {% endif %}
+                <p style="margin-top: 15px; font-size: 0.7rem; color: #9ca3af;">Generado por EnCaja App</p>
+            </div>
+        </div>
+
+        <div class="actions">
+            <a href="https://wa.me/?text=Hola%2C%20aqu%C3%AD%20tienes%20tu%20recibo%20de%20compra%3A%20{{ request.url }}" class="btn btn-whatsapp" target="_blank">
+                Compartir
+            </a>
+            <button onclick="window.print()" class="btn btn-print">
+                Imprimir / PDF
+            </button>
+        </div>
+    </div>
+</body>
+</html>

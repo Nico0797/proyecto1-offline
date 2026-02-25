@@ -2691,65 +2691,78 @@
             },
             
             generateReceipt(saleId) {
-                // Usar fetch con autenticación para obtener el recibo
                 const token = this.token;
-                const url = `${API_BASE_URL}/api/receipt?sale_id=${saleId}&format=png`;
-                
-                fetch(url, {
-                    headers: {
-                        'Authorization': `Bearer ${token}`
+                // Obtener enlace público del recibo
+                fetch(`${API_BASE_URL}/api/receipt/link/${saleId}`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                })
+                .then(res => {
+                    if (!res.ok) throw new Error('Error obteniendo enlace del recibo');
+                    return res.json();
+                })
+                .then(data => {
+                    if (data.url) {
+                        window.open(data.url, '_blank');
+                    } else {
+                        throw new Error('URL no encontrada');
                     }
-                })
-                .then(response => {
-                    if (!response.ok) throw new Error('Error generando recibo');
-                    return response.blob();
-                })
-                .then(blob => {
-                    const blobUrl = window.URL.createObjectURL(blob);
-                    window.open(blobUrl, '_blank');
-                    // Limpiar URL después de un tiempo
-                    setTimeout(() => window.URL.revokeObjectURL(blobUrl), 60000);
                 })
                 .catch(e => {
                     console.error(e);
-                    alert('No se pudo generar el recibo. Intenta nuevamente.');
+                    // Fallback a método antiguo si falla el link
+                    const url = `${API_BASE_URL}/api/receipt?sale_id=${saleId}&format=png`;
+                    fetch(url, { headers: { 'Authorization': `Bearer ${token}` } })
+                        .then(r => r.blob())
+                        .then(blob => {
+                            const blobUrl = window.URL.createObjectURL(blob);
+                            window.open(blobUrl, '_blank');
+                        })
+                        .catch(err => alert('No se pudo generar el recibo.'));
                 });
             },
             
             shareOnWhatsApp(saleId) {
-                // Buscar la venta en los datos cargados actualmente
                 const sale = this.currentSales ? this.currentSales.find(s => s.id === saleId) : null;
-                
                 if (!sale) {
                     alert('Información de venta no disponible');
                     return;
                 }
 
-                const customerName = this.customersMap && this.customersMap[sale.customer_id] ? this.customersMap[sale.customer_id] : '';
-                const businessName = this.business ? this.business.name : 'Mi Negocio';
-                
-                const total = sale.total;
-                const paid = sale.paid ? sale.total : (sale.amount_paid || 0); // Asumiendo que existe amount_paid, si no, usar lógica de balance
-                const balance = sale.balance || (total - paid);
-                
-                let message = `Hola${customerName ? ' ' + customerName : ''}, aquí está tu comprobante de compra en *${businessName}*.%0A%0A`;
-                message += `*Total:* ${this.formatMoney(total)}`;
-                if (balance > 0) {
-                    message += `%0A*Saldo pendiente:* ${this.formatMoney(balance)}`;
-                }
-                
-                // Enlace al recibo (público si es posible, o genérico)
-                // Como el recibo requiere auth, mejor no enviamos link directo a menos que sea público.
-                // Enviaremos solo el resumen por ahora, o un link a la app si tuviéramos deep linking.
-                // El código original enviaba un link a /api/receipt. Si el usuario lo abre en un navegador donde no está logueado, fallará.
-                // Pero dejémoslo como referencia o quitémoslo si causa confusión.
-                // El usuario pidió "arreglarlo correctamente". Enviar un link roto no es correcto.
-                // Mejor enviar solo el texto detallado.
-                
-                message += `%0A%0AFech: ${sale.sale_date}`;
-                message += `%0AItems: ${sale.items.length}`;
-                
-                window.open(`https://wa.me/?text=${message}`, '_blank');
+                const token = this.token;
+                const btn = document.activeElement; // Botón presionado
+                const originalContent = btn ? btn.innerHTML : '';
+                if (btn) btn.innerHTML = '<i class="ph ph-spinner animate-spin"></i>';
+
+                fetch(`${API_BASE_URL}/api/receipt/link/${saleId}`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                })
+                .then(res => res.json())
+                .then(data => {
+                    if (btn) btn.innerHTML = originalContent;
+                    
+                    const receiptUrl = data.url || '';
+                    const customerName = this.customersMap && this.customersMap[sale.customer_id] ? this.customersMap[sale.customer_id] : '';
+                    const businessName = this.business ? this.business.name : 'Mi Negocio';
+                    const total = sale.total;
+                    const balance = sale.balance || 0;
+                    
+                    let message = `Hola${customerName ? ' ' + customerName : ''}, aquí está tu comprobante de compra en *${businessName}*.%0A%0A`;
+                    message += `*Total:* ${this.formatMoney(total)}`;
+                    if (balance > 0) {
+                        message += `%0A*Saldo pendiente:* ${this.formatMoney(balance)}`;
+                    }
+                    
+                    if (receiptUrl) {
+                        message += `%0A%0A📄 Ver recibo:%0A${encodeURIComponent(receiptUrl)}`;
+                    }
+                    
+                    window.open(`https://wa.me/?text=${message}`, '_blank');
+                })
+                .catch(e => {
+                    console.error(e);
+                    if (btn) btn.innerHTML = originalContent;
+                    alert('Error al generar enlace para compartir.');
+                });
             },
             
             async switchBusiness(businessId) {
