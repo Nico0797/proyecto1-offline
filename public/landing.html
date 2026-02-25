@@ -3,22 +3,49 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Cuaderno App - Tu Contabilidad en el Bolsillo</title>
+    <title>EnCaja</title>
     <meta name="description" content="Descarga Cuaderno App - La mejor aplicación de contabilidad móvil. Gestiona tus finanzas de forma simple y profesional.">
-    <link rel="icon" href="/favicon.ico">
+    <link rel="icon" type="image/png" href="/static/icons/icon-192x192.png">
+    <link rel="manifest" href="/manifest.json">
+    <script>
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('/service-worker.js')
+                    .then(registration => {
+                        console.log('ServiceWorker registration successful with scope: ', registration.scope);
+                    })
+                    .catch(err => {
+                        console.log('ServiceWorker registration failed: ', err);
+                    });
+            });
+        }
+    </script>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/@phosphor-icons/web"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <style>
+        /* Fix mobile width overflow */
+        html, body {
+            overflow-x: hidden;
+            width: 100%;
+            max-width: 100vw;
+        }
+        
+        * {
+            box-sizing: border-box;
+        }
+
         :root {
-            --primary: #22C55E;
+            --primary: #16a34a;
             --primary-dark: #166534;
-            --primary-light: #4ade80;
-            --secondary: #0F172A;
-            --accent: #06b6d4;
+            --primary-light: #22c55e;
+            --secondary: #22c55e;
+            --accent: #22c55e;
             --dark: #0f172a;
             --light: #f8fafc;
             --gray: #64748b;
+            --encaja-start: #16a34a;
+            --encaja-end: #22c55e;
         }
         
         * {
@@ -41,7 +68,7 @@
         }
         
         .gradient-hero {
-            background: linear-gradient(135deg, #eff6ff 0%, #f5f3ff 50%, #faf5ff 100%);
+            background: linear-gradient(135deg, #ecfdf5 0%, #f0fdf4 50%, #f8fafc 100%);
             position: relative;
             overflow: hidden;
         }
@@ -53,7 +80,7 @@
             right: -20%;
             width: 600px;
             height: 600px;
-            background: radial-gradient(circle, rgba(124, 58, 237, 0.1) 0%, transparent 70%);
+            background: radial-gradient(circle, rgba(34, 197, 94, 0.12) 0%, transparent 70%);
             border-radius: 50%;
         }
         
@@ -64,7 +91,7 @@
             left: -10%;
             width: 400px;
             height: 400px;
-            background: radial-gradient(circle, rgba(37, 99, 235, 0.1) 0%, transparent 70%);
+            background: radial-gradient(circle, rgba(22, 163, 74, 0.12) 0%, transparent 70%);
             border-radius: 50%;
         }
         
@@ -73,6 +100,18 @@
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
             background-clip: text;
+        }
+        .encaja-gradient {
+            background: linear-gradient(135deg, var(--encaja-start), var(--encaja-end));
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+        }
+        .logo-glass {
+            background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+            backdrop-filter: blur(8px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
         }
         
         /* Buttons */
@@ -94,12 +133,12 @@
         .btn-primary {
             background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
             color: white;
-            box-shadow: 0 4px 14px rgba(37, 99, 235, 0.35);
+            box-shadow: 0 4px 14px rgba(22, 163, 74, 0.35);
         }
         
         .btn-primary:hover {
             transform: translateY(-2px);
-            box-shadow: 0 8px 25px rgba(37, 99, 235, 0.45);
+            box-shadow: 0 8px 25px rgba(22, 163, 74, 0.45);
         }
         
         .btn-secondary {
@@ -294,17 +333,19 @@
             color: var(--primary);
         }
         
-        /* Mobile menu */
+        /* Mobile menu: mostrar hamburger antes para que no se corten opciones */
         .mobile-menu {
             display: none;
         }
         
-        @media (max-width: 768px) {
+        @media (max-width: 1024px) {
             .mobile-menu {
-                display: block;
+                display: flex;
+                align-items: center;
+                justify-content: center;
             }
             .desktop-menu {
-                display: none;
+                display: none !important;
             }
         }
         
@@ -327,10 +368,12 @@
     <!-- Navigation -->
     <nav class="fixed top-0 left-0 right-0 bg-white/80 backdrop-blur-lg z-50 border-b border-gray-100">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="flex justify-between items-center h-16 md:h-20">
+            <div class="flex justify-between items-center py-2 md:py-4">
                 <!-- Logo -->
-                <div class="flex items-center gap-3">
-                    <img src="/assets/logo.png" alt="Logo" class="w-24 h-24 object-cover scale-150 transform-gpu">
+                <div class="flex items-center">
+                    <div class="w-20 h-20 md:w-32 md:h-32 overflow-hidden rounded-2xl logo-glass shadow-lg">
+                        <img src="/assets/logo.png" alt="EnCaja" class="w-full h-full object-cover scale-150" onerror="this.onerror=null; this.src='/static/icons/icon-192x192.png'; if(!this.complete) this.parentElement.innerHTML='<span class=&quot;text-3xl font-bold encaja-gradient&quot;>EC</span>';">
+                    </div>
                 </div>
                 
                 <!-- Desktop Menu -->
@@ -372,11 +415,15 @@
     </nav>
 
     <!-- Hero Section -->
-    <section class="gradient-hero min-h-screen pt-24 pb-16 md:pt-32 md:pb-24 relative">
+    <section class="gradient-hero min-h-screen pt-32 pb-16 md:pt-48 md:pb-24 relative">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="grid lg:grid-cols-2 gap-12 items-center">
                 <!-- Hero Content -->
                 <div class="text-center lg:text-left animate-fade-in">
+                    <div class="inline-flex items-center gap-2 bg-white/60 backdrop-blur px-4 py-2 rounded-full mb-6">
+                        <span class="w-2 h-2 bg-emerald-400 rounded-full animate-pulse"></span>
+                        <span class="text-sm font-medium text-gray-700">EnCaja</span>
+                    </div>
                     
                     <h1 class="text-4xl md:text-5xl lg:text-6xl font-bold text-gray-900 mb-6 leading-tight">
                         Tu Contabilidad
@@ -386,24 +433,28 @@
                     <p class="text-lg md:text-xl text-gray-600 mb-8 max-w-xl mx-auto lg:mx-0">
                         Reemplaza tus cuadernos y hojas de cálculo por una app web rápida, moderna 
                         y pensada para llevar las finanzas de tu negocio día a día.
+                        <br><span class="encaja-gradient font-semibold">orden para soñar en grande.</span>
                     </p>
                     
                     <div class="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start mb-8">
-                        <a href="#descargar" class="btn btn-primary">
-                            <i class="ph ph-google-play-logo"></i>
-                            App Móvil - Próximamente
+                        <a href="/assets/encaja.apk" class="btn btn-primary" download="EnCaja.apk">
+                            <i class="ph ph-download-simple"></i>
+                            Descargar App (Android)
                         </a>
                         <a href="/index.html" class="btn btn-secondary">
                             <i class="ph ph-globe"></i>
-                            Regístrate en la App Web
+                            Usar App Web
                         </a>
                     </div>
                     
-                    <!-- Stats -->
+                    <p class="text-xs text-gray-500 mb-6 text-center lg:text-left">
+                        * Para instalar, descarga el archivo APK y permite la instalación desde orígenes desconocidos.
+                    </p>
+                    
                     <div class="flex flex-wrap gap-8 justify-center lg:justify-start">
                         <div class="text-center">
                             <p class="text-3xl font-bold gradient-text">+ Control</p>
-                            <p class="text-sm text-gray-500">De tus ventas y gastos en tiempo real</p>
+                            <p class="text-sm text-gray-500">Ventas y gastos en tiempo real</p>
                         </div>
                         <div class="text-center">
                             <p class="text-3xl font-bold gradient-text">+ Orden</p>
@@ -424,10 +475,8 @@
                             <div class="bg-white h-full p-4">
                                 <div class="flex justify-between items-center mb-6">
                                     <div class="flex items-center gap-2">
-                                        <div class="gradient-primary p-1.5 rounded-lg">
-                                            <i class="ph ph-notebook text-white text-sm"></i>
-                                        </div>
-                                        <span class="font-bold text-gray-900 text-sm">Cuaderno</span>
+                                        <img src="/assets/logo.png" alt="EnCaja" class="w-8 h-8 object-contain" onerror="this.onerror=null; this.src='/static/icons/icon-192x192.png'; if(!this.complete) this.parentElement.innerHTML='<span class=&quot;text-sm font-bold encaja-gradient&quot;>EnCaja</span>';">
+                                        <span class="font-bold encaja-gradient text-sm">EnCaja</span>
                                     </div>
                                     <div class="w-6 h-6 bg-gray-200 rounded-full"></div>
                                 </div>
@@ -731,8 +780,8 @@
                     <h3 class="text-xl font-bold text-gray-900 mb-2">PRO Mensual</h3>
                     <p class="text-gray-500 text-sm mb-4">Pago mes a mes</p>
                     <div class="mb-6">
-                        <span class="text-4xl font-bold text-gray-900">$19.900</span>
-                        <span class="text-gray-500">/mes</span>
+                        <span class="text-4xl font-bold text-gray-900">$5.99</span>
+                        <span class="text-gray-500">/mes (USD)</span>
                     </div>
                     <ul class="space-y-3 mb-8">
                         <li class="flex items-center gap-3 text-gray-600">
@@ -773,16 +822,54 @@
                     </a>
                 </div>
                 
+                <!-- Pro Trimestral -->
+                <div class="pricing-card">
+                    <h3 class="text-xl font-bold text-gray-900 mb-2">PRO Trimestral</h3>
+                    <p class="text-gray-500 text-sm mb-4">Ahorra 10% cada 3 meses</p>
+                    <div class="mb-6">
+                        <span class="text-4xl font-bold text-gray-900">$5.39</span>
+                        <span class="text-gray-500">/mes (USD)</span>
+                    </div>
+                    <div class="bg-green-100 text-green-700 px-3 py-1 rounded-full text-xs font-medium mb-4 inline-block">
+                        USD 16.17/3 meses
+                    </div>
+                    <ul class="space-y-3 mb-8">
+                        <li class="flex items-center gap-3 text-gray-600">
+                            <i class="ph ph-check-circle text-green-500 text-xl"></i>
+                            Todo en PRO Mensual
+                        </li>
+                        <li class="flex items-center gap-3 text-gray-600">
+                            <i class="ph ph-check-circle text-green-500 text-xl"></i>
+                            <strong>Descuento trimestral automático</strong>
+                        </li>
+                        <li class="flex items-center gap-3 text-gray-600">
+                            <i class="ph ph-check-circle text-green-500 text-xl"></i>
+                            Productos ilimitados
+                        </li>
+                        <li class="flex items-center gap-3 text-gray-600">
+                            <i class="ph ph-check-circle text-green-500 text-xl"></i>
+                            Clientes ilimitados
+                        </li>
+                        <li class="flex items-center gap-3 text-gray-600">
+                            <i class="ph ph-check-circle text-green-500 text-xl"></i>
+                            Ventas ilimitadas
+                        </li>
+                    </ul>
+                    <a href="#descargar" class="btn btn-primary w-full justify-center">
+                        Obtener PRO Trimestral
+                    </a>
+                </div>
+                
                 <!-- Pro Anual -->
                 <div class="pricing-card">
                     <h3 class="text-xl font-bold text-gray-900 mb-2">PRO Anual</h3>
-                    <p class="text-gray-500 text-sm mb-4">Mejor precio -aho rra 15%</p>
+                    <p class="text-gray-500 text-sm mb-4">Mejor precio - ahorra 30%</p>
                     <div class="mb-6">
-                        <span class="text-4xl font-bold text-gray-900">$16.915</span>
-                        <span class="text-gray-500">/mes</span>
+                        <span class="text-4xl font-bold text-gray-900">$4.19</span>
+                        <span class="text-gray-500">/mes (USD)</span>
                     </div>
                     <div class="bg-green-100 text-green-700 px-3 py-1 rounded-full text-xs font-medium mb-4 inline-block">
-                        Ahorras $35,820/año
+                        USD 50.35/año aprox
                     </div>
                     <ul class="space-y-3 mb-8">
                         <li class="flex items-center gap-3 text-gray-600">
@@ -961,7 +1048,7 @@
                     </div>
                     <div class="hidden mt-4 text-gray-600">
                         <p>Tenemos un plan gratuito con funciones básicas (hasta 5 productos, 5 clientes y 5 ventas) 
-                        y planes PRO desde $19.900/mes con productos, clientes y ventas ilimitadas.</p>
+                        y planes PRO desde USD 5.99/mes con productos, clientes y ventas ilimitadas.</p>
                     </div>
                 </div>
                 
@@ -1041,7 +1128,7 @@
             </p>
             
             <div class="flex flex-col sm:flex-row gap-4 justify-center mb-8">
-                <a href="/index.html" class="btn btn-secondary bg-white text-gray-900 border-gray-200 hover:bg-gray-50">
+                <a href="/panel.html" class="btn btn-secondary bg-white text-gray-900 border-gray-200 hover:bg-gray-50">
                     <i class="ph ph-globe text-2xl"></i>
                     <div class="text-left">
                         <p class="text-xs text-gray-500">Accede ahora a</p>
@@ -1230,37 +1317,6 @@
             observer.observe(el);
         });
         
-        const contactForm = document.getElementById('contact-form');
-        if (contactForm) {
-            contactForm.addEventListener('submit', async (e) => {
-                e.preventDefault();
-                const name = document.getElementById('contact-name').value.trim();
-                const email = document.getElementById('contact-email').value.trim();
-                const type = document.getElementById('contact-type').value;
-                const message = document.getElementById('contact-message').value.trim();
-                if (!name || !email || !message) {
-                    alert('Por favor completa nombre, email y mensaje');
-                    return;
-                }
-                try {
-                    const res = await fetch('/api/contact', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ name, email, type, message })
-                    });
-                    const data = await res.json().catch(() => ({}));
-                    if (!res.ok) {
-                        alert(data.error || 'No pudimos enviar tu mensaje. Intenta de nuevo.');
-                        return;
-                    }
-                    alert('Gracias por escribirnos. Te contactaremos muy pronto.');
-                    contactForm.reset();
-                } catch (err) {
-                    alert('Hubo un error al enviar el mensaje. Intenta de nuevo.');
-                }
-            });
-        }
-        
         // Smooth scroll for navigation
         document.querySelectorAll('a[href^="#"]').forEach(anchor => {
             anchor.addEventListener('click', function(e) {
@@ -1286,6 +1342,43 @@
                 nav.classList.remove('shadow-lg');
             }
         });
+        
+        const contactForm = document.getElementById('contact-form');
+        // Configuración para Capacitor / Híbrido (app móvil)
+        const isCapacitor = !!(window.Capacitor && typeof window.Capacitor.isNativePlatform === 'function' && window.Capacitor.isNativePlatform())
+            || window.location.protocol === 'capacitor:'
+            || (window.location.hostname === 'localhost' && window.location.port !== '5000' && window.location.port !== '8000');
+        const API_BASE_URL = isCapacitor ? 'https://app.encaja.co' : '';
+
+        if (contactForm) {
+            contactForm.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const name = document.getElementById('contact-name').value.trim();
+                const email = document.getElementById('contact-email').value.trim();
+                const type = document.getElementById('contact-type').value;
+                const message = document.getElementById('contact-message').value.trim();
+                if (!name || !email || !message) {
+                    alert('Por favor completa nombre, email y mensaje');
+                    return;
+                }
+                try {
+                    const res = await fetch(API_BASE_URL + '/api/contact', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ name, email, type, message })
+                    });
+                    const data = await res.json().catch(() => ({}));
+                    if (!res.ok) {
+                        alert(data.error || 'No pudimos enviar tu mensaje. Intenta de nuevo.');
+                        return;
+                    }
+                    alert('Gracias por escribirnos. Te contactaremos muy pronto.');
+                    contactForm.reset();
+                } catch (err) {
+                    alert('Hubo un error al enviar el mensaje. Intenta de nuevo.');
+                }
+            });
+        }
     </script>
 </body>
 </html>

@@ -230,6 +230,11 @@ def root2():
     return send_from_directory("public", "index.html")
 
 
+@app.get("/landing.html")
+def landing():
+    return send_from_directory("public", "landing.html")
+
+
 @app.get("/assets/<path:filename>")
 def assets(filename):
     return send_from_directory("public/assets", filename)
