@@ -474,9 +474,9 @@
             <aside id="sidebar" class="sidebar w-64 glass border-r border-white/10 p-4 flex flex-col">
                 <div class="mb-6 -mx-4 -mt-4" id="app-header">
                     <div class="relative w-full">
-                        <div class="w-full text-center bg-black/20 pb-4 pt-6">
-                            <h1 class="text-xl font-bold flex items-center justify-center">
-                                <img src="assets/logo.png" alt="Encaja" class="h-24 w-auto object-contain drop-shadow-lg filter brightness-110">
+                        <div class="w-full text-center bg-black/20 pb-6 pt-8">
+                            <h1 class="text-xl font-bold flex items-center justify-center px-2">
+                                <img src="assets/logo.png" alt="Encaja" class="h-40 w-auto max-w-full object-contain drop-shadow-2xl filter brightness-110">
                             </h1>
                         </div>
                         <div id="business-switch-dropdown" class="dropdown-menu hidden"></div>
@@ -2691,35 +2691,65 @@
             },
             
             generateReceipt(saleId) {
-                window.open(`/api/receipt?sale_id=${saleId}&format=png`, '_blank');
+                // Usar fetch con autenticación para obtener el recibo
+                const token = this.token;
+                const url = `${API_BASE_URL}/api/receipt?sale_id=${saleId}&format=png`;
+                
+                fetch(url, {
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                })
+                .then(response => {
+                    if (!response.ok) throw new Error('Error generando recibo');
+                    return response.blob();
+                })
+                .then(blob => {
+                    const blobUrl = window.URL.createObjectURL(blob);
+                    window.open(blobUrl, '_blank');
+                    // Limpiar URL después de un tiempo
+                    setTimeout(() => window.URL.revokeObjectURL(blobUrl), 60000);
+                })
+                .catch(e => {
+                    console.error(e);
+                    alert('No se pudo generar el recibo. Intenta nuevamente.');
+                });
             },
             
-            shareOnWhatsApp(saleId, customerName) {
-                // Get sale data
-                this.api(`/sales?id=${saleId}`)
-                    .then(data => {
-                        if (data.sales && data.sales.length > 0) {
-                            const sale = data.sales[0];
-                            const total = sale.total;
-                            const paid = sale.paid ? sale.total : 0;
-                            const balance = total - paid;
-                            
-                            // Get business name
-                            const businessName = document.getElementById('receipt-business-name').value || 'Mi Negocio';
-                            
-                            let message = `Hola${customerName ? ' ' + customerName : ''}, aquí está tu comprobante de compra en *${businessName}*.%0A%0A`;
-                            message += `*Total:* ${total.toLocaleString()}`;
-                            if (balance > 0) {
-                                message += `%0A*Saldo pendiente:* ${balance.toLocaleString()}`;
-                            }
-                            message += `%0A%0APuedes ver el comprobante completo aquí:%0A${API_BASE_URL || window.location.origin}/api/receipt?sale_id=${saleId}&format=png`;
-                            
-                            window.open(`https://wa.me/?text=${message}`, '_blank');
-                        }
-                    })
-                    .catch(e => {
-                        alert('Error al obtener datos de la venta');
-                    });
+            shareOnWhatsApp(saleId) {
+                // Buscar la venta en los datos cargados actualmente
+                const sale = this.currentSales ? this.currentSales.find(s => s.id === saleId) : null;
+                
+                if (!sale) {
+                    alert('Información de venta no disponible');
+                    return;
+                }
+
+                const customerName = this.customersMap && this.customersMap[sale.customer_id] ? this.customersMap[sale.customer_id] : '';
+                const businessName = this.business ? this.business.name : 'Mi Negocio';
+                
+                const total = sale.total;
+                const paid = sale.paid ? sale.total : (sale.amount_paid || 0); // Asumiendo que existe amount_paid, si no, usar lógica de balance
+                const balance = sale.balance || (total - paid);
+                
+                let message = `Hola${customerName ? ' ' + customerName : ''}, aquí está tu comprobante de compra en *${businessName}*.%0A%0A`;
+                message += `*Total:* ${this.formatMoney(total)}`;
+                if (balance > 0) {
+                    message += `%0A*Saldo pendiente:* ${this.formatMoney(balance)}`;
+                }
+                
+                // Enlace al recibo (público si es posible, o genérico)
+                // Como el recibo requiere auth, mejor no enviamos link directo a menos que sea público.
+                // Enviaremos solo el resumen por ahora, o un link a la app si tuviéramos deep linking.
+                // El código original enviaba un link a /api/receipt. Si el usuario lo abre en un navegador donde no está logueado, fallará.
+                // Pero dejémoslo como referencia o quitémoslo si causa confusión.
+                // El usuario pidió "arreglarlo correctamente". Enviar un link roto no es correcto.
+                // Mejor enviar solo el texto detallado.
+                
+                message += `%0A%0AFech: ${sale.sale_date}`;
+                message += `%0AItems: ${sale.items.length}`;
+                
+                window.open(`https://wa.me/?text=${message}`, '_blank');
             },
             
             async switchBusiness(businessId) {
@@ -2752,8 +2782,12 @@
             
             showAddBusinessModal() {
                 document.getElementById('add-business-name').value = '';
-                document.getElementById('modal-add-business').classList.remove('hidden');
-                document.getElementById('modal-overlay').classList.remove('hidden');
+                const modal = document.getElementById('modal-add-business');
+                const overlay = document.getElementById('modal-overlay');
+                modal.classList.remove('hidden');
+                modal.style.display = 'block';
+                overlay.classList.remove('hidden');
+                overlay.style.display = 'flex';
             },
             
             async addBusiness() {
@@ -3259,8 +3293,10 @@
                 const customersData = await this.api(`/businesses/${this.business.id}/customers`);
                 const customers = {};
                 customersData.customers.forEach(c => customers[c.id] = c.name);
+                this.customersMap = customers; // Store for global access
                 
                 let sales = data.sales || [];
+                this.currentSales = sales; // Store for global access
                 
                 // Apply client-side filters
                 if (statusFilter) {
@@ -3291,12 +3327,12 @@
                             <td>${s.payment_method === 'cash' ? 'Efectivo' : s.payment_method === 'transfer' ? 'Transferencia' : s.payment_method === 'card' ? 'Tarjeta' : 'Fiado'}</td>
                             <td>${s.paid ? '<span class="text-green-400">Pagado</span>' : '<span class="text-red-400">Pendiente</span>'}</td>
                             <td>
-                                <div class="flex gap-1">
-                                    <button type="button" onclick="event.preventDefault(); app.generateReceipt(${s.id})" class="text-blue-400 hover:text-blue-300 p-1" title="Ver recibo">
-                                        <i class="ph ph-receipt text-lg"></i>
+                                <div class="flex gap-3">
+                                    <button type="button" onclick="event.preventDefault(); app.generateReceipt(${s.id})" class="text-blue-400 hover:text-blue-300 p-2 rounded-full hover:bg-blue-900/30 transition-colors" title="Ver recibo">
+                                        <i class="ph ph-receipt text-xl"></i>
                                     </button>
-                                    <button type="button" onclick="event.preventDefault(); app.shareOnWhatsApp(${s.id}, '${customers[s.customer_id] || ''}')" class="text-green-400 hover:text-green-300 p-1" title="Compartir por WhatsApp">
-                                        <i class="ph ph-whatsapp-logo text-lg"></i>
+                                    <button type="button" onclick="event.preventDefault(); app.shareOnWhatsApp(${s.id})" class="text-green-400 hover:text-green-300 p-2 rounded-full hover:bg-green-900/30 transition-colors" title="Compartir por WhatsApp">
+                                        <i class="ph ph-whatsapp-logo text-xl"></i>
                                     </button>
                                 </div>
                             </td>
