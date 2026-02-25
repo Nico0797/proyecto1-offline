@@ -474,11 +474,11 @@
             <aside id="sidebar" class="sidebar w-64 glass border-r border-white/10 p-4 flex flex-col">
                 <div class="mb-6 -mx-4 -mt-4" id="app-header">
                     <div class="relative w-full">
-                        <div class="w-full text-center bg-black/20 pb-6 pt-8">
-                            <h1 class="text-xl font-bold flex items-center justify-center px-2">
-                                <img src="assets/logo.png" alt="Encaja" class="h-40 w-auto max-w-full object-contain drop-shadow-2xl filter brightness-110">
-                            </h1>
-                        </div>
+                        <div class="w-full text-center bg-black/20 pb-2 pt-4">
+                    <h1 class="text-xl font-bold flex items-center justify-center px-0">
+                        <img src="assets/logo.png" alt="Encaja" class="w-full h-auto object-contain drop-shadow-2xl filter brightness-110">
+                    </h1>
+                </div>
                         <div id="business-switch-dropdown" class="dropdown-menu hidden"></div>
                     </div>
                 </div>
@@ -593,7 +593,7 @@
                     <!-- Monthly Summary -->
                     <div class="glass rounded-xl p-6 mb-6">
                         <h3 id="dashboard-summary-title" class="text-lg font-semibold mb-4">Resumen</h3>
-                        <div class="grid grid-cols-3 gap-4">
+                        <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
                             <div>
                                 <p class="text-muted text-sm">Ingresos</p>
                                 <p id="month-income" class="text-xl font-bold money-positive">$0</p>
@@ -2702,7 +2702,7 @@
                 })
                 .then(data => {
                     if (data.url) {
-                        window.open(data.url, '_blank');
+                        window.open(data.url, '_system');
                     } else {
                         throw new Error('URL no encontrada');
                     }
@@ -2756,7 +2756,7 @@
                         message += `%0A%0A📄 Ver recibo:%0A${encodeURIComponent(receiptUrl)}`;
                     }
                     
-                    window.open(`https://wa.me/?text=${message}`, '_blank');
+                    window.open(`https://wa.me/?text=${message}`, '_system');
                 })
                 .catch(e => {
                     console.error(e);
