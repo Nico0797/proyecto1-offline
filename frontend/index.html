@@ -472,11 +472,11 @@
             
             <!-- Sidebar -->
             <aside id="sidebar" class="sidebar w-64 glass border-r border-white/10 p-4 flex flex-col">
-                <div class="mb-6" id="app-header">
-                    <div class="relative">
-                        <div class="w-full text-left">
-                            <h1 class="text-xl font-bold flex items-center gap-2">
-                                <img src="assets/logo.png" alt="Encaja" class="h-10 w-auto">
+                <div class="mb-6 -mx-4 -mt-4" id="app-header">
+                    <div class="relative w-full">
+                        <div class="w-full text-center bg-black/20 pb-4 pt-6">
+                            <h1 class="text-xl font-bold flex items-center justify-center">
+                                <img src="assets/logo.png" alt="Encaja" class="h-24 w-auto object-contain drop-shadow-lg filter brightness-110">
                             </h1>
                         </div>
                         <div id="business-switch-dropdown" class="dropdown-menu hidden"></div>
@@ -484,34 +484,34 @@
                 </div>
                 
                 <nav class="space-y-1 flex-1">
-                    <a href="#" onclick="app.navigate('dashboard')" class="nav-item block px-4 py-2 rounded-lg text-white/80 hover:bg-white/5" data-page="dashboard">
+                    <a href="#" onclick="event.preventDefault(); app.navigate('dashboard')" class="nav-item block px-4 py-2 rounded-lg text-white/80 hover:bg-white/5" data-page="dashboard">
                         <i class="ph ph-chart-pie-slice ph-icon"></i> Dashboard
                     </a>
-                    <a href="#" onclick="app.navigate('orders')" class="nav-item block px-4 py-2 rounded-lg text-white/80 hover:bg-white/5" data-page="orders">
+                    <a href="#" onclick="event.preventDefault(); app.navigate('orders')" class="nav-item block px-4 py-2 rounded-lg text-white/80 hover:bg-white/5" data-page="orders">
                         <i class="ph ph-shopping-bag ph-icon"></i> Pedidos
                     </a>
-                    <a href="#" onclick="app.navigate('sales')" class="nav-item block px-4 py-2 rounded-lg text-white/80 hover:bg-white/5" data-page="sales">
+                    <a href="#" onclick="event.preventDefault(); app.navigate('sales')" class="nav-item block px-4 py-2 rounded-lg text-white/80 hover:bg-white/5" data-page="sales">
                         <i class="ph ph-shopping-cart ph-icon"></i> Ventas
                     </a>
-                    <a href="#" onclick="app.navigate('expenses')" class="nav-item block px-4 py-2 rounded-lg text-white/80 hover:bg-white/5" data-page="expenses">
+                    <a href="#" onclick="event.preventDefault(); app.navigate('expenses')" class="nav-item block px-4 py-2 rounded-lg text-white/80 hover:bg-white/5" data-page="expenses">
                         <i class="ph ph-receipt ph-icon"></i> Gastos
                     </a>
-                    <a href="#" onclick="app.navigate('payments')" class="nav-item block px-4 py-2 rounded-lg text-white/80 hover:bg-white/5" data-page="payments">
+                    <a href="#" onclick="event.preventDefault(); app.navigate('payments')" class="nav-item block px-4 py-2 rounded-lg text-white/80 hover:bg-white/5" data-page="payments">
                         <i class="ph ph-money ph-icon"></i> Pagos/Abonos
                     </a>
-                    <a href="#" onclick="app.navigate('customers')" class="nav-item block px-4 py-2 rounded-lg text-white/80 hover:bg-white/5" data-page="customers">
+                    <a href="#" onclick="event.preventDefault(); app.navigate('customers')" class="nav-item block px-4 py-2 rounded-lg text-white/80 hover:bg-white/5" data-page="customers">
                         <i class="ph ph-users ph-icon"></i> Clientes
                     </a>
-                    <a href="#" onclick="app.navigate('products')" class="nav-item block px-4 py-2 rounded-lg text-white/80 hover:bg-white/5" data-page="products">
+                    <a href="#" onclick="event.preventDefault(); app.navigate('products')" class="nav-item block px-4 py-2 rounded-lg text-white/80 hover:bg-white/5" data-page="products">
                         <i class="ph ph-package ph-icon"></i> Productos
                     </a>
-                    <a href="#" onclick="app.navigate('reports')" class="nav-item block px-4 py-2 rounded-lg text-white/80 hover:bg-white/5" data-page="reports">
+                    <a href="#" onclick="event.preventDefault(); app.navigate('reports')" class="nav-item block px-4 py-2 rounded-lg text-white/80 hover:bg-white/5" data-page="reports">
                         <i class="ph ph-chart-line-up ph-icon"></i> Reportes
                     </a>
-                    <a href="#" onclick="app.navigate('settings')" class="nav-item block px-4 py-2 rounded-lg text-white/80 hover:bg-white/5" data-page="settings">
+                    <a href="#" onclick="event.preventDefault(); app.navigate('settings')" class="nav-item block px-4 py-2 rounded-lg text-white/80 hover:bg-white/5" data-page="settings">
                         <i class="ph ph-gear ph-icon"></i> Configuración
                     </a>
-                    <a href="#" onclick="app.navigate('upgrade')" class="nav-item block px-4 py-2 rounded-lg text-yellow-400 hover:bg-yellow-400/10 hidden" data-page="upgrade" id="nav-upgrade">
+                    <a href="#" onclick="event.preventDefault(); app.navigate('upgrade')" class="nav-item block px-4 py-2 rounded-lg text-yellow-400 hover:bg-yellow-400/10 hidden" data-page="upgrade" id="nav-upgrade">
                         <i class="ph ph-star ph-icon"></i> Actualizar a Pro
                     </a>
                 </nav>
@@ -549,11 +549,11 @@
                         </div>
                     </div>
                     <div class="relative">
-                        <button onclick="app.toggleMainBusinessMenu()" class="btn btn-primary text-xs font-semibold py-1.5 px-4 rounded-full shadow-lg hover:shadow-xl transition-all transform active:scale-95 border border-white/10">
-                            <i class="ph ph-arrows-left-right text-sm"></i> Cambiar
-                        </button>
-                        <div id="main-business-switch-dropdown" class="dropdown-menu hidden right-0 top-full mt-2 w-64 max-h-80 overflow-y-auto z-50"></div>
-                    </div>
+        <button onclick="event.preventDefault(); app.toggleMainBusinessMenu()" class="btn btn-primary text-xs font-semibold py-1.5 px-4 rounded-full shadow-lg hover:shadow-xl transition-all transform active:scale-95 border border-white/10">
+            <i class="ph ph-arrows-left-right text-sm"></i> Cambiar
+        </button>
+        <div id="main-business-switch-dropdown" class="dropdown-menu hidden right-0 top-full mt-2 w-64 max-h-80 overflow-y-auto z-50"></div>
+    </div>
                 </div>
                 
                 <!-- Dashboard Page -->
@@ -699,7 +699,7 @@
                 <div id="page-sales" class="page hidden fade-in">
                     <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
                         <h2 class="text-2xl font-bold">Ventas</h2>
-                        <button onclick="app.showSaleModal()" class="btn-success w-full md:w-auto px-4 py-2 rounded-xl font-semibold">+ Nueva Venta</button>
+                        <button onclick="event.preventDefault(); app.showSaleModal()" class="btn-success w-full md:w-auto px-4 py-2 rounded-xl font-semibold">+ Nueva Venta</button>
                     </div>
                     
                     <div class="glass rounded-xl p-4 mb-4">
@@ -1811,8 +1811,8 @@
                     <div class="flex justify-between items-center pt-4">
                         <p class="text-xl font-bold">Total: $<span id="sale-total">0</span></p>
                         <div class="flex gap-2">
-                            <button onclick="app.closeModal()" class="px-4 py-2 rounded-xl">Cancelar</button>
-                            <button onclick="app.saveSale()" class="btn-success px-6 py-2 rounded-xl">Guardar</button>
+                            <button type="button" onclick="event.preventDefault(); app.closeModal()" class="px-4 py-2 rounded-xl">Cancelar</button>
+                            <button type="button" onclick="event.preventDefault(); app.saveSale()" class="btn-success px-6 py-2 rounded-xl">Guardar</button>
                         </div>
                     </div>
                 </div>
@@ -1966,8 +1966,8 @@
                         <input type="text" id="add-business-name" class="input w-full px-4 py-3 rounded-xl" placeholder="Ej: Tienda de Ropa">
                     </div>
                     <div class="flex justify-end gap-2 pt-4">
-                        <button onclick="app.closeModal()" class="px-4 py-2 rounded-xl">Cancelar</button>
-                        <button onclick="app.addBusiness()" class="btn-success px-6 py-2 rounded-xl">Crear Negocio</button>
+                        <button type="button" onclick="event.preventDefault(); app.closeModal()" class="px-4 py-2 rounded-xl">Cancelar</button>
+                        <button type="button" onclick="event.preventDefault(); app.addBusiness()" class="btn-success px-6 py-2 rounded-xl">Crear Negocio</button>
                     </div>
                 </div>
             </div>
@@ -2636,7 +2636,15 @@
                 this.business.currency = currency;
                 this.business.settings = this.business.settings || {};
                 this.business.settings.logo = logo;
+                
+                // Update in businesses array
+                const index = this.businesses.findIndex(b => b.id === this.business.id);
+                if (index !== -1) {
+                    this.businesses[index] = this.business;
+                }
+                
                 this.updateHeader();
+                this.updateBusinessSwitch();
                 alert('Negocio actualizado');
             },
             
@@ -2805,7 +2813,7 @@
             
             updateBusinessSwitch() {
                 const itemsHtml = this.businesses.map(b => `
-                    <a href="#" onclick="app.switchBusiness(${b.id})" class="${b.id === this.business.id ? 'bg-white/10' : ''} flex items-center gap-2 px-4 py-2 hover:bg-white/5 transition-colors">
+                    <a href="javascript:void(0)" onclick="app.switchBusiness(${b.id})" class="${b.id === this.business.id ? 'bg-white/10' : ''} flex items-center gap-2 px-4 py-2 hover:bg-white/5 transition-colors">
                         ${b.id === this.business.id ? '<i class="ph ph-check-circle text-green-400"></i>' : '<i class="ph ph-storefront text-white/50"></i>'}
                         <span class="truncate">${b.name}</span>
                     </a>
@@ -2813,7 +2821,7 @@
                 
                 const addBusinessHtml = `
                     <div class="border-t border-white/10 mt-2 pt-2">
-                        <a href="#" onclick="app.showAddBusinessModal()" class="flex items-center gap-2 px-4 py-2 text-blue-400 hover:text-blue-300">
+                        <a href="javascript:void(0)" onclick="app.showAddBusinessModal()" class="flex items-center gap-2 px-4 py-2 text-blue-400 hover:text-blue-300">
                             <i class="ph ph-plus-circle"></i> Nuevo Negocio
                         </a>
                     </div>
@@ -3284,10 +3292,10 @@
                             <td>${s.paid ? '<span class="text-green-400">Pagado</span>' : '<span class="text-red-400">Pendiente</span>'}</td>
                             <td>
                                 <div class="flex gap-1">
-                                    <button onclick="app.generateReceipt(${s.id})" class="text-blue-400 hover:text-blue-300 p-1" title="Ver recibo">
+                                    <button type="button" onclick="event.preventDefault(); app.generateReceipt(${s.id})" class="text-blue-400 hover:text-blue-300 p-1" title="Ver recibo">
                                         <i class="ph ph-receipt text-lg"></i>
                                     </button>
-                                    <button onclick="app.shareOnWhatsApp(${s.id}, '${customers[s.customer_id] || ''}')" class="text-green-400 hover:text-green-300 p-1" title="Compartir por WhatsApp">
+                                    <button type="button" onclick="event.preventDefault(); app.shareOnWhatsApp(${s.id}, '${customers[s.customer_id] || ''}')" class="text-green-400 hover:text-green-300 p-1" title="Compartir por WhatsApp">
                                         <i class="ph ph-whatsapp-logo text-lg"></i>
                                     </button>
                                 </div>
