@@ -1940,19 +1940,33 @@ def create_app(config_class=None):
         # Calculate costs for profit
         total_cost = 0
         try:
+            # Optimize: Pre-fetch products to avoid N+1 queries
+            # Get all product IDs from sales
+            product_ids = set()
             for sale in sales:
                 if not sale.items: continue
                 for item in sale.items:
-                    # Get product cost if available
                     pid = item.get("product_id")
                     if pid:
-                        product = Product.query.get(pid)
-                        if product and product.cost:
+                        product_ids.add(pid)
+            
+            # Fetch products map
+            products_map = {}
+            if product_ids:
+                products = Product.query.filter(Product.id.in_(product_ids)).all()
+                products_map = {p.id: p for p in products}
+
+            for sale in sales:
+                if not sale.items: continue
+                for item in sale.items:
+                    pid = item.get("product_id")
+                    if pid and pid in products_map:
+                        product = products_map[pid]
+                        if product.cost:
                             qty = float(item.get("qty", 1))
                             total_cost += product.cost * qty
         except Exception as e:
             print(f"Error calculating costs: {e}")
-            # Continue without crashing, just report 0 cost
             pass
 
         # Expenses
@@ -1964,32 +1978,16 @@ def create_app(config_class=None):
         
         expenses_total = sum(e.amount for e in expenses)
 
-        # Accounts receivable logic
-        # First try using LedgerEntry if available and populated
+        # Accounts receivable logic - SIMPLIFIED and ROBUST
+        # Directly use Sale balance which is always available and safer
         try:
-            # Check if LedgerEntry table exists/works
-            test_query = db.session.query(LedgerEntry).limit(1).first()
-            
-            all_charges = db.session.query(db.func.sum(LedgerEntry.amount)).filter(
-                LedgerEntry.business_id == business_id,
-                LedgerEntry.entry_type == "charge"
-            ).scalar() or 0
-
-            all_payments = db.session.query(db.func.sum(LedgerEntry.amount)).filter(
-                LedgerEntry.business_id == business_id,
-                LedgerEntry.entry_type == "payment"
-            ).scalar() or 0
-
-            accounts_receivable = all_charges - all_payments
-        except Exception as e:
-            # Fallback: Calculate from Sales balance
-            # This is safer if LedgerEntry is not fully implemented or migrated
-            print(f"LedgerEntry error, using fallback: {e}")
-            receivable_sales = db.session.query(db.func.sum(Sale.balance)).filter(
+            accounts_receivable = db.session.query(db.func.sum(Sale.balance)).filter(
                 Sale.business_id == business_id,
                 Sale.balance > 0
             ).scalar() or 0
-            accounts_receivable = receivable_sales
+        except Exception as e:
+            print(f"Error calculating receivables: {e}")
+            accounts_receivable = 0
 
         return jsonify({
             "period": {
