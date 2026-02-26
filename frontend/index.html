@@ -3579,13 +3579,18 @@
                     if (response.invoice_url) {
                         const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
                         
+                        // Get Business Name
+                        const businessName = this.business.name || 'Mi Negocio';
+                        
                         // Construct message
                         let details = '';
                         items.forEach(item => {
-                            details += `• ${item.qty} x ${item.name} ($${item.unit_price.toLocaleString()})\n`;
+                            // Calculate item subtotal
+                            const itemSubtotal = item.unit_price * item.qty;
+                            details += `• ${item.qty} x ${item.name} | Subtotal: $${itemSubtotal.toLocaleString()}\n`;
                         });
                         
-                        const message = `Hola 👋 Aquí tienes los detalles de tu compra:\n\n${details}\n*Total: $${subtotal.toLocaleString()}*\n\n📄 Ver factura: ${response.invoice_url}`;
+                        const message = `Hola, aquí está tu comprobante de compra en *${businessName}*.\n\n${details}\n*Total:* $${subtotal.toLocaleString()}\n\n📄 Ver recibo: ${response.invoice_url}`;
                         const encodedMessage = encodeURIComponent(message);
                         
                         if (this.editingSaleId) {
