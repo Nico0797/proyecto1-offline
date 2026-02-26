@@ -22,7 +22,7 @@ except Exception as e:
 try:
     from PIL import Image, ImageDraw, ImageFont
     HAS_PIL = True
-except ImportError:
+except Exception:
     HAS_PIL = False
     Image = ImageDraw = ImageFont = None
 
