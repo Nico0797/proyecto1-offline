@@ -3500,6 +3500,23 @@
                 this.loadSales();
                 this.loadDashboard();
             },
+
+            async deleteSale(id) {
+                if (!confirm('¿Estás seguro de eliminar esta venta? Esta acción no se puede deshacer.')) return;
+                
+                try {
+                    await this.api(`/businesses/${this.business.id}/sales/${id}`, 'DELETE');
+                    this.loadSales();
+                    this.loadDashboard();
+                } catch (e) {
+                    console.error(e);
+                    alert('Error al eliminar venta: ' + e.message);
+                }
+            },
+
+            editSale(id) {
+                alert('Para editar una venta, por favor elimínela y créela nuevamente para asegurar la integridad del inventario y caja.');
+            },
             
             // Expenses
             async loadExpenses() {
