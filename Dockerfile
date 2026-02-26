@@ -22,6 +22,8 @@ RUN apt-get update && apt-get install -y \
     libfreetype6-dev \
     fontconfig \
     fonts-dejavu \
+    pkg-config \
+    libcairo2-dev \
     && rm -rf /var/lib/apt/lists/*
 
 # Copy requirements first for better caching
