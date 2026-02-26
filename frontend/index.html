@@ -3178,7 +3178,8 @@
 
                 // Daily report
                 const daily = await this.api(`/businesses/${this.business.id}/reports/daily`);
-                document.getElementById('stat-cash-today').textContent = this.formatMoney(daily.cash_flow.in);
+                const dailyIn = daily.cash_flow ? daily.cash_flow.in : daily.sales.total;
+                document.getElementById('stat-cash-today').textContent = this.formatMoney(dailyIn);
                 document.getElementById('stat-sales-today').textContent = this.formatMoney(daily.sales.total);
                 document.getElementById('stat-expenses-today').textContent = this.formatMoney(daily.expenses.total);
                 
@@ -3192,9 +3193,15 @@
                 }
 
                 const summary = await this.api(summaryUrl);
-                document.getElementById('month-income').textContent = this.formatMoney(summary.cash_flow.in);
-                document.getElementById('month-expenses').textContent = this.formatMoney(summary.cash_flow.out);
-                document.getElementById('month-profit').textContent = this.formatMoney(summary.cash_flow.net);
+                
+                // Fallback if cash_flow is missing (e.g. backend not fully updated yet)
+                const cashIn = summary.cash_flow ? summary.cash_flow.in : (summary.sales ? summary.sales.total : 0);
+                const cashOut = summary.cash_flow ? summary.cash_flow.out : (summary.expenses ? summary.expenses.total : 0);
+                const cashNet = summary.cash_flow ? summary.cash_flow.net : (summary.profit ? summary.profit.net : 0);
+
+                document.getElementById('month-income').textContent = this.formatMoney(cashIn);
+                document.getElementById('month-expenses').textContent = this.formatMoney(cashOut);
+                document.getElementById('month-profit').textContent = this.formatMoney(cashNet);
                 document.getElementById('stat-receivable').textContent = this.formatMoney(summary.accounts_receivable || 0);
                 
                 // Debtors - Update table format

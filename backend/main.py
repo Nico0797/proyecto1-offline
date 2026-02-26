@@ -2131,6 +2131,26 @@ def create_app(config_class=None):
             print(f"Error calculating receivables: {e}")
             accounts_receivable = 0
 
+        # Payments for the period
+        payments = Payment.query.filter(
+            Payment.business_id == business_id,
+            Payment.payment_date >= start_of_month,
+            Payment.payment_date <= today
+        ).all()
+        payments_total = sum(p.amount for p in payments)
+        
+        # Cash flow: Cash Sales + Payments
+        cash_sales = db.session.query(func.sum(Sale.total)).filter(
+            Sale.business_id == business_id,
+            Sale.sale_date >= start_of_month,
+            Sale.sale_date <= today,
+            Sale.payment_method == "cash"
+        ).scalar() or 0
+        
+        cash_in = cash_sales + payments_total
+        cash_out = expenses_total
+        cash_net = cash_in - cash_out
+
         return jsonify({
             "period": {
                 "start": start_of_month.isoformat(),
@@ -2147,6 +2167,11 @@ def create_app(config_class=None):
             "profit": {
                 "gross": sales_total - total_cost,
                 "net": sales_total - total_cost - expenses_total
+            },
+            "cash_flow": {
+                "in": cash_in,
+                "out": cash_out,
+                "net": cash_net
             },
             "accounts_receivable": round(accounts_receivable, 2)
         })
