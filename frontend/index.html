@@ -2285,7 +2285,13 @@
                             if (goPro) this.navigate('upgrade');
                             throw new Error(responseData.error || 'Acceso restringido');
                         }
-                        throw new Error(responseData.error || `Error ${status}: ${responseData.message || 'Error en la solicitud'}`);
+                        
+                        // Enhanced error reporting
+                        const errorMsg = responseData.error || `Error ${status}: ${responseData.message || 'Error en la solicitud'}`;
+                        const errorDetails = responseData.details ? `\nDetalles: ${responseData.details}` : '';
+                        console.error('Full API Error:', responseData); // Log full object for debugging
+                        
+                        throw new Error(errorMsg + errorDetails);
                     }
                     
                     return responseData;
