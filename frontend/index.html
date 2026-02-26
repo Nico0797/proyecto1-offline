@@ -527,7 +527,7 @@
             <!-- Main Content -->
             <main class="flex-1 p-4 md:p-6 overflow-auto">
                 <!-- Mobile Header -->
-                <div class="mobile-menu-btn flex items-center justify-between mb-4 mt-8">
+                <div class="mobile-menu-btn flex items-center justify-between mb-4">
                     <button onclick="app.toggleSidebar()" class="p-2 glass rounded-lg">
                         <i class="ph ph-list ph-icon"></i>
                     </button>
@@ -2642,7 +2642,7 @@
                     const logoPreview = document.getElementById('business-logo-preview');
                     if (logoPreview) {
                         if (logo && logo.trim()) {
-                            logoPreview.innerHTML = `<img src="${logo}" class="w-full h-full object-cover" onerror="this.parentElement.innerHTML='<span class=\\''text-3xl\\''>🏪</span>'">`;
+                            logoPreview.innerHTML = `<img src="${logo}" class="w-full h-full object-cover" onerror="this.parentElement.innerHTML='<span class=\\'text-3xl\\'>🏪</span>'">`;
                         } else {
                             logoPreview.innerHTML = '<span class="text-3xl">🏪</span>';
                         }
@@ -2820,7 +2820,7 @@
                     const logoPreview = document.getElementById('business-logo-preview');
                     if (logoPreview) {
                         if (logo && logo.trim()) {
-                            logoPreview.innerHTML = `<img src="${logo}" class="w-full h-full object-cover" onerror="this.parentElement.innerHTML='<span class=\\''text-3xl\\''>🏪</span>'">`;
+                            logoPreview.innerHTML = `<img src="${logo}" class="w-full h-full object-cover" onerror="this.parentElement.innerHTML='<span class=\\'text-3xl\\'>🏪</span>'">`;
                         } else {
                             logoPreview.innerHTML = '<span class="text-3xl">🏪</span>';
                         }
@@ -3178,7 +3178,7 @@
 
                 // Daily report
                 const daily = await this.api(`/businesses/${this.business.id}/reports/daily`);
-                document.getElementById('stat-cash-today').textContent = this.formatMoney(daily.cash_flow.net);
+                document.getElementById('stat-cash-today').textContent = this.formatMoney(daily.cash_flow.in);
                 document.getElementById('stat-sales-today').textContent = this.formatMoney(daily.sales.total);
                 document.getElementById('stat-expenses-today').textContent = this.formatMoney(daily.expenses.total);
                 
@@ -3192,10 +3192,10 @@
                 }
 
                 const summary = await this.api(summaryUrl);
-                document.getElementById('month-income').textContent = this.formatMoney(summary.sales.total);
-                document.getElementById('month-expenses').textContent = this.formatMoney(summary.expenses.total);
-                document.getElementById('month-profit').textContent = this.formatMoney(summary.profit.net);
-                document.getElementById('stat-receivable').textContent = this.formatMoney(summary.accounts_receivable);
+                document.getElementById('month-income').textContent = this.formatMoney(summary.cash_flow.in);
+                document.getElementById('month-expenses').textContent = this.formatMoney(summary.cash_flow.out);
+                document.getElementById('month-profit').textContent = this.formatMoney(summary.cash_flow.net);
+                document.getElementById('stat-receivable').textContent = this.formatMoney(summary.accounts_receivable || 0);
                 
                 // Debtors - Update table format
                 const debtors = await this.api(`/businesses/${this.business.id}/customers/debtors`);
@@ -3403,6 +3403,23 @@
                 }
             },
             
+            // Sales
+            async loadProductsForSelect() {
+                const data = await this.api(`/businesses/${this.business.id}/products`);
+                this.products = data.products;
+            },
+
+            async loadCustomersForSelect() {
+                const data = await this.api(`/businesses/${this.business.id}/customers`);
+                this.customers = data.customers;
+                
+                const select = document.getElementById('sale-customer');
+                if (select) {
+                    select.innerHTML = '<option value="">Sin cliente (Venta rápida)</option>' + 
+                        data.customers.map(c => `<option value="${c.id}">${c.name}</option>`).join('');
+                }
+            },
+
             showSaleModal() {
                 this.editingSaleId = null;
                 this.loadProductsForSelect();
@@ -3553,13 +3570,16 @@
                     // Only redirect to WhatsApp if it's a new sale (not editing) OR if the user wants it.
                     // For now, let's assume if they edit, they might want to share the new receipt too.
                     if (response.invoice_url) {
-                        const message = `Hola 👋 Te comparto tu factura: ${response.invoice_url}`;
-                        const encodedMessage = encodeURIComponent(message);
                         const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
                         
-                        // If it was an edit, maybe just show success alert instead of forcing WA?
-                        // The user said "edit button works properly". Usually means just update.
-                        // But sharing the new receipt is a nice bonus.
+                        // Construct message
+                        let details = '';
+                        items.forEach(item => {
+                            details += `• ${item.qty} x ${item.name} ($${item.unit_price.toLocaleString()})\n`;
+                        });
+                        
+                        const message = `Hola 👋 Aquí tienes los detalles de tu compra:\n\n${details}\n*Total: $${subtotal.toLocaleString()}*\n\n📄 Ver factura: ${response.invoice_url}`;
+                        const encodedMessage = encodeURIComponent(message);
                         
                         if (this.editingSaleId) {
                              showCustomAlert('Venta actualizada correctamente', 'success');
