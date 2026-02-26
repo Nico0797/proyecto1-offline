@@ -2139,6 +2139,7 @@ def create_app(config_class=None):
 
         from datetime import date, timedelta
         from sqlalchemy import func
+        from sqlalchemy.orm import joinedload # Add joinedload import
 
         today = date.today()
         thirty_days_ago = today - timedelta(days=30)
@@ -2187,7 +2188,7 @@ def create_app(config_class=None):
         } for p in low_stock_products]
 
         # Fiados alerts (unpaid sales)
-        unpaid_sales = Sale.query.filter(
+        unpaid_sales = Sale.query.options(joinedload(Sale.customer)).filter(
             Sale.business_id == business_id,
             Sale.paid == False,
             Sale.balance > 0
@@ -2206,7 +2207,7 @@ def create_app(config_class=None):
             total_fiados += sale.balance
 
         # Recent activity (last 5 sales)
-        recent_sales = Sale.query.filter_by(business_id=business_id).order_by(Sale.sale_date.desc()).limit(5).all()
+        recent_sales = Sale.query.options(joinedload(Sale.customer)).filter_by(business_id=business_id).order_by(Sale.sale_date.desc()).limit(5).all()
 
         return jsonify({
             "projections": {
