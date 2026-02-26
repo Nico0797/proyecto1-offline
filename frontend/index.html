@@ -21,6 +21,13 @@
             --accent-red: #EF4444;
         }
         
+        html, body {
+            margin: 0;
+            padding: 0;
+            height: 100%;
+            width: 100%;
+        }
+
         body {
             font-family: 'Inter', sans-serif;
             background: radial-gradient(circle at top, #1e293b 0, #020617 40%, #020617 100%);
@@ -296,6 +303,7 @@
                 transform: translateX(-100%);
                 transition: transform 0.3s ease;
                 box-shadow: 4px 0 15px rgba(0,0,0,0.5);
+                padding-top: env(safe-area-inset-top);
             }
             .sidebar.open { 
                 display: flex; 
