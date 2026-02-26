@@ -269,8 +269,13 @@
         }
         
         
-        /* Mobile menu button - hidden by default */
-        .mobile-menu-btn { display: none; }
+        /* Mobile menu button - robust visibility control */
+        .mobile-menu-btn {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 1rem;
+        }
         
         /* Desktop sidebar - always visible */
         .sidebar {
@@ -325,7 +330,7 @@
         }
         
         @media (min-width: 769px) {
-            .mobile-menu-btn { display: none; }
+            .mobile-menu-btn { display: none !important; }
             .sidebar-overlay { display: none !important; }
             .sidebar-close-btn { display: none; }
         }
@@ -527,7 +532,7 @@
             <!-- Main Content -->
             <main class="flex-1 p-4 md:p-6 overflow-auto">
                 <!-- Mobile Header -->
-                <div class="mobile-menu-btn flex md:hidden items-center justify-between mb-4">
+                <div class="mobile-menu-btn">
                     <button onclick="app.toggleSidebar()" class="p-2 glass rounded-lg">
                         <i class="ph ph-list ph-icon"></i>
                     </button>
