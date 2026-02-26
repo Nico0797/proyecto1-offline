@@ -81,8 +81,12 @@ def create_app(config_class=None):
 
     @app.errorhandler(500)
     def internal_error(e):
+        import traceback
+        tb = traceback.format_exc()
+        print(f"INTERNAL SERVER ERROR: {e}\n{tb}")  # Log to console/stderr
         if request.path.startswith("/api/") or request.accept_mimetypes.accept_json:
-            return jsonify({"error": "Internal server error"}), 500
+            # Return detailed error for debugging (remove in production if sensitive)
+            return jsonify({"error": "Internal server error", "details": str(e), "traceback": tb}), 500
         return e
 
     # Crear directorios necesarios
@@ -521,11 +525,13 @@ def create_app(config_class=None):
         user.email_verification_code = None
         user.email_verification_expires = None
         db.session.commit()
-
+        
+        # Generar tokens automáticamente tras verificar
         access_token = create_token(user.id, "access")
         refresh_token = create_token(user.id, "refresh")
 
         return jsonify({
+            "message": "Email verificado correctamente",
             "user": user.to_dict(),
             "access_token": access_token,
             "refresh_token": refresh_token
@@ -540,7 +546,10 @@ def create_app(config_class=None):
                 try:
                     data = request.get_json(force=True)
                 except:
-                    return jsonify({"error": "Content-Type must be application/json"}), 400
+                    # Last resort: try form data
+                    data = request.form.to_dict()
+                    if not data:
+                        return jsonify({"error": "Content-Type must be application/json"}), 400
             else:
                 data = request.get_json()
                 
@@ -562,6 +571,8 @@ def create_app(config_class=None):
             })
         except Exception as e:
             app.logger.error(f"Login error: {str(e)}")
+            import traceback
+            app.logger.error(traceback.format_exc())
             # Ensure 500 errors are returned as JSON
             return jsonify({"error": "Error interno del servidor", "details": str(e)}), 500
 

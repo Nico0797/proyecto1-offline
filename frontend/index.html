@@ -3185,20 +3185,101 @@
                 }
                 
                 // Dashboard con proyecciones, inventarios y ventas recientes
-                const dashboard = await this.api(`/businesses/${this.business.id}/dashboard`);
-                
-                // Recent Sales - Load from dashboard data
-                const recentSalesTable = document.getElementById('recent-sales-table');
-                if (dashboard.recent_sales && dashboard.recent_sales.length > 0) {
-                    recentSalesTable.innerHTML = dashboard.recent_sales.map(s => `
-                        <tr>
-                            <td>${s.date}</td>
-                            <td class="money-positive">${this.formatMoney(s.total)}</td>
-                            <td><span class="px-2 py-1 rounded-full text-xs bg-gray-500/20 text-gray-400">${s.customer_name}</span></td>
-                        </tr>
-                    `).join('');
-                } else {
-                    recentSalesTable.innerHTML = '<tr><td colspan="3" class="text-muted text-center py-4">Sin ventas recientes</td></tr>';
+                try {
+                    const dashboard = await this.api(`/businesses/${this.business.id}/dashboard`);
+                    
+                    // Recent Sales - Load from dashboard data
+                    const recentSalesTable = document.getElementById('recent-sales-table');
+                    if (dashboard.recent_sales && dashboard.recent_sales.length > 0) {
+                        recentSalesTable.innerHTML = dashboard.recent_sales.map(s => `
+                            <tr>
+                                <td>${s.date}</td>
+                                <td class="money-positive">${this.formatMoney(s.total)}</td>
+                                <td><span class="px-2 py-1 rounded-full text-xs bg-gray-500/20 text-gray-400">${s.customer_name}</span></td>
+                            </tr>
+                        `).join('');
+                    } else {
+                        recentSalesTable.innerHTML = '<tr><td colspan="3" class="text-muted text-center py-4">Sin ventas recientes</td></tr>';
+                    }
+                    
+                    // Top Products - Load from reports API
+                    // ... (Top products loading logic is already robust enough, but we keep it here or outside)
+                    
+                    // Proyecciones
+                    const proj = dashboard.projections;
+                    const projEl = document.getElementById('dashboard-projections');
+                    if (projEl && proj) {
+                        const growthIcon = proj.growth_rate >= 0 ? '<i class="ph ph-trend-up text-green-400"></i>' : '<i class="ph ph-trend-down text-red-400"></i>';
+                        const growthClass = proj.growth_rate >= 0 ? 'text-green-400' : 'text-red-400';
+                        projEl.innerHTML = `
+                            <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                                <div class="bg-white/5 p-3 rounded-lg">
+                                    <p class="text-xs text-muted">Promedio Diario</p>
+                                    <p class="font-bold text-lg">${this.formatMoney(proj.daily_average)}</p>
+                                </div>
+                                <div class="bg-white/5 p-3 rounded-lg">
+                                    <p class="text-xs text-muted">Últimos 30 días</p>
+                                    <p class="font-bold text-lg">${this.formatMoney(proj.last_30_days)}</p>
+                                </div>
+                                <div class="bg-white/5 p-3 rounded-lg">
+                                    <p class="text-xs text-muted">Proyectado 30 días</p>
+                                    <p class="font-bold text-lg">${this.formatMoney(proj.projected_next_30)}</p>
+                                </div>
+                                <div class="bg-white/5 p-3 rounded-lg">
+                                    <p class="text-xs text-muted">Crecimiento</p>
+                                    <p class="font-bold text-lg ${growthClass}">${growthIcon} ${proj.growth_rate}%</p>
+                                </div>
+                            </div>
+                        `;
+                    }
+                    
+                    // Alertas de inventario
+                    const inv = dashboard.inventory_alerts;
+                    const invEl = document.getElementById('inventory-alerts');
+                    if (invEl && inv) {
+                        if (inv.count === 0) {
+                            invEl.innerHTML = '<p class="text-muted"><i class="ph ph-check-circle text-green-400"></i> Inventario OK</p>';
+                        } else {
+                            invEl.innerHTML = `
+                                <div class="bg-yellow-500/20 border border-yellow-500 rounded-lg p-3">
+                                    <p class="font-bold text-yellow-300"><i class="ph ph-warning"></i> ${inv.count} productos con poco inventario</p>
+                                    <div class="mt-2 space-y-1">
+                                        ${inv.products.map(p => `
+                                            <div class="flex justify-between text-sm">
+                                                <span>${p.name}</span>
+                                                <span class="text-yellow-300">${p.stock} ${p.unit} (mín: ${p.threshold})</span>
+                                            </div>
+                                        `).join('')}
+                                    </div>
+                                </div>
+                            `;
+                        }
+                    }
+                    
+                    // Alertas de fiados
+                    const fiados = dashboard.fiados_alerts;
+                    const fiadosEl = document.getElementById('fiados-alerts');
+                    if (fiadosEl && fiados) {
+                        if (fiados.count === 0) {
+                            fiadosEl.innerHTML = '<p class="text-muted"><i class="ph ph-check-circle text-green-400"></i> Sin fiados pendientes</p>';
+                        } else {
+                            fiadosEl.innerHTML = `
+                                <div class="bg-red-500/20 border border-red-500 rounded-lg p-3">
+                                    <p class="font-bold text-red-300"><i class="ph ph-credit-card"></i> ${fiados.count} ventas fiadas (${this.formatMoney(fiados.total)})</p>
+                                    <div class="mt-2 space-y-1">
+                                        ${fiados.sales.slice(0, 5).map(s => `
+                                            <div class="flex justify-between text-sm">
+                                                <span>${s.customer_name}</span>
+                                                <span class="text-red-300">${this.formatMoney(s.balance)}</span>
+                                            </div>
+                                        `).join('')}
+                                    </div>
+                                </div>
+                            `;
+                        }
+                    }
+                } catch (e) {
+                    console.error('Error loading detailed dashboard:', e);
                 }
                 
                 // Top Products - Load from reports API
