@@ -2046,18 +2046,25 @@ def create_app(config_class=None):
             pass
 
         # Expenses
-        # Optimize: Aggregate expenses total and count in SQL
-        expenses_stats = db.session.query(
-            func.sum(Expense.amount),
-            func.count(Expense.id)
-        ).filter(
-            Expense.business_id == business_id,
-            Expense.expense_date >= start_of_month,
-            Expense.expense_date <= today
-        ).first()
-        
-        expenses_total = expenses_stats[0] or 0
-        expenses_count = expenses_stats[1] or 0
+        expenses_total = 0
+        expenses_count = 0
+        try:
+            # Optimize: Aggregate expenses total and count in SQL
+            expenses_stats = db.session.query(
+                func.sum(Expense.amount),
+                func.count(Expense.id)
+            ).filter(
+                Expense.business_id == business_id,
+                Expense.expense_date >= start_of_month,
+                Expense.expense_date <= today
+            ).first()
+            
+            if expenses_stats:
+                expenses_total = expenses_stats[0] or 0
+                expenses_count = expenses_stats[1] or 0
+        except Exception as e:
+            print(f"Error calculating expenses: {e}")
+            pass
 
         # Accounts receivable logic - SIMPLIFIED and ROBUST
         # Directly use Sale balance which is always available and safer
@@ -2080,7 +2087,7 @@ def create_app(config_class=None):
                 "total": sales_total
             },
             "expenses": {
-                "count": len(expenses),
+                "count": expenses_count,
                 "total": expenses_total
             },
             "profit": {
