@@ -9,7 +9,14 @@ from flask import Flask, request, jsonify, send_from_directory, g, send_file, re
 from flask_cors import CORS
 from itsdangerous import URLSafeTimedSerializer, SignatureExpired, BadSignature
 from io import BytesIO
-from xhtml2pdf import pisa  # Import xhtml2pdf
+
+# xhtml2pdf for PDF generation
+try:
+    from xhtml2pdf import pisa
+    HAS_XHTML2PDF = True
+except ImportError as e:
+    print(f"WARNING: Could not import xhtml2pdf: {e}")
+    HAS_XHTML2PDF = False
 
 # PIL for receipt generation (optional)
 try:
@@ -1448,6 +1455,9 @@ def create_app(config_class=None):
         html_content = render_template("order_pdf.html", **context)
         
         # Create PDF
+        if not HAS_XHTML2PDF:
+            return jsonify({"error": "La librería de generación de PDF no está instalada en el servidor"}), 500
+
         pdf_buffer = BytesIO()
         try:
             pisa_status = pisa.CreatePDF(html_content, dest=pdf_buffer)
