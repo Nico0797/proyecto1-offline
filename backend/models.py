@@ -194,6 +194,7 @@ class Sale(db.Model):
     discount = db.Column(db.Float, default=0)
     total = db.Column(db.Float, nullable=False)
     balance = db.Column(db.Float, default=0)  # Saldo pendiente para ventas fiadas
+    total_cost = db.Column(db.Float, default=0)  # Costo total de la venta (para reportes rápidos)
     payment_method = db.Column(db.String(20), default="cash")  # cash, transfer, credit
     paid = db.Column(db.Boolean, default=True)  # True = pagado, False = fiado
     note = db.Column(db.Text)
@@ -214,6 +215,7 @@ class Sale(db.Model):
             "discount": self.discount,
             "total": self.total,
             "balance": self.balance,
+            "total_cost": self.total_cost,
             "payment_method": self.payment_method,
             "paid": self.paid,
             "note": self.note,

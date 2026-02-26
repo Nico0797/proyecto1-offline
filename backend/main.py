@@ -1204,6 +1204,22 @@ def create_app(config_class=None):
             note=data.get("note", "").strip() or None
         )
 
+        # Calculate total cost for profit tracking
+        total_cost = 0
+        try:
+            for item in items:
+                pid = item.get("product_id")
+                qty = float(item.get("qty", 1))
+                if pid:
+                    product = Product.query.get(pid)
+                    if product and product.cost:
+                        total_cost += product.cost * qty
+        except Exception as e:
+            print(f"Error calculating sale cost: {e}")
+            pass
+            
+        sale.total_cost = total_cost
+
         db.session.add(sale)
         db.session.flush()  # Get sale.id
 
@@ -1224,6 +1240,41 @@ def create_app(config_class=None):
         db.session.commit()
 
         return jsonify({"sale": sale.to_dict()}), 201
+
+    @app.route("/api/businesses/<int:business_id>/fix-costs", methods=["POST"])
+    @token_required
+    def fix_sales_costs(business_id):
+        """Fix missing total_cost for historical sales"""
+        business = Business.query.filter_by(id=business_id, user_id=g.current_user.id).first()
+        if not business:
+            return jsonify({"error": "Negocio no encontrado"}), 404
+            
+        sales = Sale.query.filter(
+            Sale.business_id == business_id,
+            (Sale.total_cost == 0) | (Sale.total_cost == None)
+        ).all()
+        
+        count = 0
+        
+        # Batch processing to avoid memory issues
+        for sale in sales:
+            try:
+                total_cost = 0
+                if sale.items:
+                    for item in sale.items:
+                        pid = item.get("product_id")
+                        qty = float(item.get("qty", 1))
+                        if pid:
+                            product = Product.query.get(pid)
+                            if product and product.cost:
+                                total_cost += product.cost * qty
+                sale.total_cost = total_cost
+                count += 1
+            except Exception as e:
+                print(f"Error fixing sale {sale.id}: {e}")
+        
+        db.session.commit()
+        return jsonify({"message": f"Updated costs for {count} sales"})
 
     @app.route("/api/businesses/<int:business_id>/sales/<int:sale_id>", methods=["GET"])
     @token_required
@@ -1942,41 +1993,54 @@ def create_app(config_class=None):
         sales_total = sales_stats[0] or 0
         sales_count = sales_stats[1] or 0
         
-        # Calculate costs for profit
+        # Calculate costs for profit (Optimized)
         total_cost = 0
         try:
-            # Optimize: Fetch only items JSON to avoid full object hydration
-            # This is much faster than loading full Sale objects
-            sales_items = db.session.query(Sale.items).filter(
+            # First try using the total_cost column (instant)
+            total_cost_query = db.session.query(func.sum(Sale.total_cost)).filter(
                 Sale.business_id == business_id,
                 Sale.sale_date >= start_of_month,
                 Sale.sale_date <= today
-            ).all()
-
-            # Get all product IDs from sales items
-            product_ids = set()
-            for (items_json,) in sales_items:
-                if not items_json: continue
-                for item in items_json:
-                    pid = item.get("product_id")
-                    if pid:
-                        product_ids.add(pid)
+            ).scalar()
             
-            # Fetch products map
-            products_map = {}
-            if product_ids:
-                products = Product.query.filter(Product.id.in_(product_ids)).all()
-                products_map = {p.id: p for p in products}
+            if total_cost_query is not None and total_cost_query > 0:
+                total_cost = total_cost_query
+            else:
+                # Fallback: Calculate from items if total_cost is missing/zero (slow but necessary for old data)
+                # Optimize: Fetch only items JSON to avoid full object hydration
+                sales_items = db.session.query(Sale.items).filter(
+                    Sale.business_id == business_id,
+                    Sale.sale_date >= start_of_month,
+                    Sale.sale_date <= today,
+                    (Sale.total_cost == 0) | (Sale.total_cost == None)
+                ).all()
 
-            for (items_json,) in sales_items:
-                if not items_json: continue
-                for item in items_json:
-                    pid = item.get("product_id")
-                    if pid and pid in products_map:
-                        product = products_map[pid]
-                        if product.cost:
-                            qty = float(item.get("qty", 1))
-                            total_cost += product.cost * qty
+                # Only proceed if there are sales needing calculation
+                if sales_items:
+                    # Get all product IDs from sales items
+                    product_ids = set()
+                    for (items_json,) in sales_items:
+                        if not items_json: continue
+                        for item in items_json:
+                            pid = item.get("product_id")
+                            if pid:
+                                product_ids.add(pid)
+                    
+                    # Fetch products map
+                    products_map = {}
+                    if product_ids:
+                        products = Product.query.filter(Product.id.in_(product_ids)).all()
+                        products_map = {p.id: p for p in products}
+
+                    for (items_json,) in sales_items:
+                        if not items_json: continue
+                        for item in items_json:
+                            pid = item.get("product_id")
+                            if pid and pid in products_map:
+                                product = products_map[pid]
+                                if product.cost:
+                                    qty = float(item.get("qty", 1))
+                                    total_cost += product.cost * qty
         except Exception as e:
             print(f"Error calculating costs: {e}")
             pass

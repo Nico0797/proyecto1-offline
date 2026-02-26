@@ -84,6 +84,10 @@ def init_db(app):
                 if "balance" not in sales_columns:
                     db.session.execute(text("ALTER TABLE sales ADD COLUMN balance FLOAT DEFAULT 0"))
                     db.session.commit()
+                if "total_cost" not in sales_columns:
+                    # Usar 0 como default, luego se puede recalcular
+                    db.session.execute(text("ALTER TABLE sales ADD COLUMN total_cost FLOAT DEFAULT 0"))
+                    db.session.commit()
 
             # Verificar columnas en 'products'
             if inspector.has_table("products"):
