@@ -527,7 +527,7 @@
             <!-- Main Content -->
             <main class="flex-1 p-4 md:p-6 overflow-auto">
                 <!-- Mobile Header -->
-                <div class="mobile-menu-btn flex items-center justify-between mb-4">
+                <div class="mobile-menu-btn flex md:hidden items-center justify-between mb-4">
                     <button onclick="app.toggleSidebar()" class="p-2 glass rounded-lg">
                         <i class="ph ph-list ph-icon"></i>
                     </button>
@@ -1642,7 +1642,7 @@
                     </div>
                     <div class="mb-4">
                         <label class="block text-sm mb-1" style="color:#D1D5DB;">Email</label>
-                        <input type="email" id="user-email" required class="input w-full px-4 py-2 rounded-xl" style="background:#374151;color:white;border:1px solid #4B5563;padding:10px;width:100%;border-radius:8px;margin-bottom:12px;">
+                        <input type="email" id="user-email" class="input w-full px-4 py-2 rounded-xl" style="background:#374151;color:white;border:1px solid #4B5563;padding:10px;width:100%;border-radius:8px;margin-bottom:12px;">
                     </div>
                     <div class="mb-4" id="password-field">
                         <label class="block text-sm mb-1" style="color:#D1D5DB;">Contraseña</label>
@@ -1689,7 +1689,7 @@
                     <input type="hidden" id="role-id">
                     <div class="mb-4">
                         <label class="block text-sm mb-1">Nombre</label>
-                        <input type="text" id="role-name" required class="input w-full px-4 py-2 rounded-xl">
+                        <input type="text" id="role-name" class="input w-full px-4 py-2 rounded-xl">
                     </div>
                     <div class="mb-4">
                         <label class="block text-sm mb-1">Descripción</label>
@@ -1776,7 +1776,7 @@
             </div>
             
             <!-- Sale Modal -->
-            <div id="modal-sale" class="glass rounded-2xl p-6 w-full max-w-lg hidden">
+            <form id="modal-sale" class="glass rounded-2xl p-6 w-full max-w-lg hidden" onsubmit="event.preventDefault(); app.saveSale()">
                 <h3 class="text-xl font-bold mb-4">Nueva Venta</h3>
                 <div class="space-y-4">
                     <div>
@@ -1792,7 +1792,7 @@
                     <div>
                         <label class="block text-sm mb-1">Productos</label>
                         <div id="sale-items" class="space-y-2 mb-2"></div>
-                        <button onclick="app.addSaleItem()" class="text-blue-400 text-sm">+ Agregar producto</button>
+                        <button type="button" onclick="app.addSaleItem()" class="text-blue-400 text-sm">+ Agregar producto</button>
                     </div>
                     <div class="flex gap-4">
                         <div class="flex-1">
@@ -1812,11 +1812,11 @@
                         <p class="text-xl font-bold">Total: $<span id="sale-total">0</span></p>
                         <div class="flex gap-2">
                             <button type="button" onclick="event.preventDefault(); app.closeModal()" class="px-4 py-2 rounded-xl">Cancelar</button>
-                            <button type="button" onclick="event.preventDefault(); app.saveSale()" class="btn-success px-6 py-2 rounded-xl">Guardar</button>
+                            <button type="submit" class="btn-success px-6 py-2 rounded-xl">Guardar</button>
                         </div>
                     </div>
                 </div>
-            </div>
+            </form>
             
             <!-- Expense Modal -->
             <div id="modal-expense" class="glass rounded-2xl p-6 w-full max-w-md hidden">
