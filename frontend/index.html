@@ -363,14 +363,20 @@
         tr:hover {
             background: rgba(255,255,255,0.03);
         }
+
+        /* Critical Utility Classes */
+        .hidden { display: none !important; }
+        
+        /* Reset */
+        * { box-sizing: border-box; }
     </style>
 </head>
 <body>
-    <div id="app" class="min-h-screen">
+    <div id="app" class="h-screen w-screen overflow-hidden bg-gray-900">
         <!-- Auth Screens -->
-        <div id="auth-screen" class="hidden">
-            <div class="min-h-screen flex items-center justify-center p-4">
-                <div class="glass rounded-2xl p-8 w-full max-w-md">
+        <div id="auth-screen" class="hidden w-full h-full">
+            <div class="h-full w-full flex items-center justify-center p-4 overflow-y-auto">
+                <div class="glass rounded-2xl p-8 w-full max-w-md my-auto">
                     <div class="text-center mb-8">
                         <div class="flex items-center justify-center gap-3 mb-3">
                             <img src="/assets/logo.png" alt="Logo" class="w-64 h-64 object-cover scale-150 transform-gpu">
@@ -479,12 +485,12 @@
         </div>
         
         <!-- Main App -->
-        <div id="main-app" class="hidden flex min-h-screen">
+        <div id="main-app" class="hidden flex h-screen overflow-hidden bg-gray-900">
             <!-- Sidebar Overlay (for mobile) -->
             <div id="sidebar-overlay" class="sidebar-overlay" onclick="app.closeSidebar()"></div>
             
             <!-- Sidebar -->
-            <aside id="sidebar" class="sidebar w-64 glass border-r border-white/10 p-4 flex flex-col">
+            <aside id="sidebar" class="sidebar flex-none w-64 glass border-r border-white/10 p-4 flex flex-col h-full overflow-y-auto">
                 <div class="mb-6 -mx-4 -mt-4" id="app-header">
                     <div class="relative w-full">
                         <div class="w-full text-center bg-black/20 pb-2 pt-4">
@@ -538,9 +544,9 @@
             </aside>
             
             <!-- Main Content -->
-            <main class="flex-1 p-4 md:p-6 overflow-auto">
+            <main class="flex-1 p-4 md:p-6 overflow-y-auto h-full relative">
                 <!-- Mobile Header -->
-                <div class="mobile-menu-btn">
+                <div class="mobile-menu-btn md:hidden">
                     <button onclick="app.toggleSidebar()" class="p-2 glass rounded-lg">
                         <i class="ph ph-list ph-icon"></i>
                     </button>
@@ -2272,6 +2278,32 @@
                     minimumFractionDigits: 0
                 }).format(amount);
             },
+
+            // WhatsApp Message Builder - Single Source of Truth
+            buildWhatsappMessage(sale, customerName, businessName, receiptUrl) {
+                const greeting = customerName && customerName.trim() !== '' ? `Hola ${customerName},` : 'Hola,';
+                
+                let message = `${greeting} aquí está tu comprobante de compra en *${businessName}*.\n\n`;
+                
+                if (sale.items && sale.items.length > 0) {
+                    sale.items.forEach(item => {
+                        const price = item.unit_price || item.price || 0;
+                        const qty = item.qty || 1;
+                        const subtotal = price * qty;
+                        message += `${item.name} x${qty} - ${this.formatMoney(subtotal)}\n`;
+                    });
+                } else {
+                    message += "Sin detalle de productos\n";
+                }
+                
+                message += `\n*Total:* ${this.formatMoney(sale.total)}\n\n`;
+                
+                if (receiptUrl) {
+                    message += `📄 Ver recibo: ${receiptUrl}`;
+                }
+                
+                return message;
+            },
             
             // API helpers
             async api(endpoint, options = {}) {
@@ -2795,20 +2827,11 @@
                     const receiptUrl = data.url || '';
                     const customerName = this.customersMap && this.customersMap[sale.customer_id] ? this.customersMap[sale.customer_id] : '';
                     const businessName = this.business ? this.business.name : 'Mi Negocio';
-                    const total = sale.total;
-                    const balance = sale.balance || 0;
                     
-                    let message = `Hola${customerName ? ' ' + customerName : ''}, aquí está tu comprobante de compra en *${businessName}*.%0A%0A`;
-                    message += `*Total:* ${this.formatMoney(total)}`;
-                    if (balance > 0) {
-                        message += `%0A*Saldo pendiente:* ${this.formatMoney(balance)}`;
-                    }
+                    // Use unified builder
+                    const message = this.buildWhatsappMessage(sale, customerName, businessName, receiptUrl);
                     
-                    if (receiptUrl) {
-                        message += `%0A%0A📄 Ver recibo:%0A${encodeURIComponent(receiptUrl)}`;
-                    }
-                    
-                    window.open(`https://wa.me/?text=${message}`, '_system');
+                    window.open(`https://wa.me/?text=${encodeURIComponent(message)}`, '_system');
                 })
                 .catch(e => {
                     console.error(e);
@@ -3595,15 +3618,18 @@
                         // Get Business Name
                         const businessName = this.business.name || 'Mi Negocio';
                         
-                        // Construct message
-                        let details = '';
-                        items.forEach(item => {
-                            // Calculate item subtotal
-                            const itemSubtotal = item.unit_price * item.qty;
-                            details += `• ${item.qty} x ${item.name} | Subtotal: $${itemSubtotal.toLocaleString()}\n`;
-                        });
+                        const customerSelect = document.getElementById('sale-customer');
+                        const customerName = customerSelect && customerSelect.options[customerSelect.selectedIndex] ? customerSelect.options[customerSelect.selectedIndex].text : '';
+                        const cleanCustomerName = customerName === 'Sin cliente (Venta rápida)' ? '' : customerName;
                         
-                        const message = `Hola, aquí está tu comprobante de compra en *${businessName}*.\n\n${details}\n*Total:* $${subtotal.toLocaleString()}\n\n📄 Ver recibo: ${response.invoice_url}`;
+                        // Use unified builder
+                        const message = this.buildWhatsappMessage(
+                            { items: items, total: subtotal }, 
+                            cleanCustomerName, 
+                            businessName, 
+                            response.invoice_url
+                        );
+                        
                         const encodedMessage = encodeURIComponent(message);
                         
                         if (this.editingSaleId) {
