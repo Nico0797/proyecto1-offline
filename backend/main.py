@@ -14,7 +14,7 @@ from io import BytesIO
 try:
     from xhtml2pdf import pisa
     HAS_XHTML2PDF = True
-except ImportError as e:
+except Exception as e:
     print(f"WARNING: Could not import xhtml2pdf: {e}")
     HAS_XHTML2PDF = False
 

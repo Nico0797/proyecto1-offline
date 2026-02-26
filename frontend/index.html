@@ -4297,41 +4297,28 @@
                 if (!this.business || !this.business.id) return;
                 
                 try {
-                    const data = await this.api(`/businesses/${this.business.id}/orders/${orderId}/pdf`);
-                    if (data && data.download_url) {
-                        // If we get a JSON with URL (not implemented in backend this way but good for future)
-                        window.open(data.download_url, '_system');
-                    } else {
-                        // Direct blob download
-                        // But wait, our api() helper expects JSON by default unless we handle it
-                        // Let's do a direct fetch for PDF
-                        const url = `${API_BASE_URL}/api/businesses/${this.business.id}/orders/${orderId}/pdf`;
-                        const headers = { 'Authorization': `Bearer ${this.token}` };
-                        
-                        const response = await fetch(url, { headers });
-                        if (!response.ok) throw new Error('Error descargando PDF');
-                        
-                        const blob = await response.blob();
-                        const blobUrl = URL.createObjectURL(blob);
-                        
-                        // Open in system browser (mobile friendly)
-                        window.open(blobUrl, '_system');
-                        
-                        // Fallback for desktop: download
+                    // Direct URL strategy - safer for mobile apps/webviews to avoid getting stuck
+                    // We append the token as a query parameter since we updated the backend to support it
+                    const url = `${API_BASE_URL}/api/businesses/${this.business.id}/orders/${orderId}/pdf?token=${this.token}`;
+                    
+                    // Try to open in system browser first (works for Android/iOS)
+                    // If _system is not supported (desktop), it will open in a new tab
+                    const win = window.open(url, '_system');
+                    
+                    // Fallback for desktop if window.open was blocked or we want to force download behavior
+                    if (!win || win.closed || typeof win.closed === 'undefined') {
+                        // Create a hidden link and click it - standard web download
                         const a = document.createElement('a');
-                        a.href = blobUrl;
+                        a.href = url;
+                        a.target = '_blank';
                         a.download = `Pedido_${orderId}.pdf`;
                         document.body.appendChild(a);
                         a.click();
                         document.body.removeChild(a);
-                        
-                        setTimeout(() => URL.revokeObjectURL(blobUrl), 1000);
                     }
                 } catch (e) {
                     console.error('Error PDF:', e);
-                    // Try direct open as fallback
-                    const url = `${API_BASE_URL}/api/businesses/${this.business.id}/orders/${orderId}/pdf?token=${this.token}`;
-                    window.open(url, '_system');
+                    alert('Error al abrir el PDF. Por favor intenta de nuevo.');
                 }
             },
             

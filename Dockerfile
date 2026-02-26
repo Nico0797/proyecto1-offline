@@ -14,7 +14,9 @@ ENV PORT=5000
 
 # Install system dependencies
 RUN apt-get update && apt-get install -y \
-    gcc \
+    build-essential \
+    python3-dev \
+    libffi-dev \
     postgresql-client \
     libpq-dev \
     libjpeg-dev \

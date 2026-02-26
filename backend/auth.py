@@ -54,18 +54,24 @@ def decode_token(token):
 
 
 def get_user_from_token():
-    """Obtener usuario desde el token en el header"""
+    """Obtener usuario desde el token en el header o query param"""
+    token = None
+    
+    # Check Authorization header
     auth_header = request.headers.get("Authorization")
-    if not auth_header:
+    if auth_header:
+        parts = auth_header.split()
+        if len(parts) == 2 and parts[0] == "Bearer":
+            token = parts[1]
+
+    # Check query parameter as fallback (useful for direct downloads/links)
+    if not token:
+        token = request.args.get("token")
+
+    if not token:
         return None
 
     try:
-        # Formato: "Bearer <token>"
-        parts = auth_header.split()
-        if len(parts) != 2 or parts[0] != "Bearer":
-            return None
-
-        token = parts[1]
         payload = decode_token(token)
 
         if not payload:
