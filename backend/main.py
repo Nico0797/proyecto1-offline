@@ -1846,6 +1846,48 @@ def create_app(config_class=None):
 
         return jsonify({"payment": payment.to_dict()}), 201
 
+    @app.route("/api/businesses/<int:business_id>/payments/<int:payment_id>", methods=["GET"])
+    @token_required
+    def get_payment(business_id, payment_id):
+        payment = Payment.query.filter_by(id=payment_id, business_id=business_id).first()
+        if not payment:
+            return jsonify({"error": "Pago no encontrado"}), 404
+        return jsonify({"payment": payment.to_dict()})
+
+    @app.route("/api/businesses/<int:business_id>/payments/<int:payment_id>", methods=["DELETE"])
+    @token_required
+    @permission_required('payments.delete')
+    def delete_payment(business_id, payment_id):
+        payment = Payment.query.filter_by(id=payment_id, business_id=business_id).first()
+        if not payment:
+            return jsonify({"error": "Pago no encontrado"}), 404
+
+        # Reverse allocations
+        ledger_entry = LedgerEntry.query.filter_by(ref_type="payment", ref_id=payment.id).first()
+        if ledger_entry:
+            allocations = LedgerAllocation.query.filter_by(payment_id=ledger_entry.id).all()
+            for alloc in allocations:
+                # Find the charge (sale) and restore balance
+                charge = LedgerEntry.query.get(alloc.charge_id)
+                if charge and charge.ref_type == "sale":
+                    sale = Sale.query.get(charge.ref_id)
+                    if sale:
+                        sale.balance += alloc.amount
+                        # If balance restored, it might not be paid anymore? 
+                        # Actually, if balance > 0, it's not paid.
+                        # Floating point tolerance
+                        if sale.balance > 0.01:
+                            sale.paid = False
+            
+            # Delete allocations
+            LedgerAllocation.query.filter_by(payment_id=ledger_entry.id).delete()
+            # Delete ledger entry
+            db.session.delete(ledger_entry)
+
+        db.session.delete(payment)
+        db.session.commit()
+        return jsonify({"ok": True})
+
     # ========== REPORT ROUTES ==========
     @app.route("/api/businesses/<int:business_id>/reports/daily", methods=["GET"])
     @token_required

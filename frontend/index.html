@@ -366,7 +366,7 @@
                     </div>
                     
                     <!-- Login Form -->
-                    <div id="login-form">
+                    <form id="login-form" onsubmit="event.preventDefault(); app.login()">
                         <div class="space-y-4">
                             <div>
                                 <label class="block text-sm mb-1">Email</label>
@@ -376,16 +376,16 @@
                                 <label class="block text-sm mb-1">Password</label>
                                 <input type="password" id="login-password" class="input w-full px-4 py-3 rounded-xl" placeholder="••••••••" autocomplete="new-password">
                             </div>
-                            <button onclick="app.login()" class="btn-primary w-full py-3 rounded-xl font-semibold">Iniciar Sesión</button>
-                            <button onclick="app.showForgotPassword()" class="w-full py-2 rounded-xl text-blue-400">¿Olvidaste tu contraseña?</button>
+                            <button type="submit" class="btn-primary w-full py-3 rounded-xl font-semibold">Iniciar Sesión</button>
+                            <button type="button" onclick="app.showForgotPassword()" class="w-full py-2 rounded-xl text-blue-400">¿Olvidaste tu contraseña?</button>
                         </div>
                         <p class="text-center mt-6 text-muted">
                             ¿No tienes cuenta? <a href="#" onclick="app.showRegister()" class="text-blue-400">Regístrate</a>
                         </p>
-                    </div>
+                    </form>
                     
                     <!-- Register Form -->
-                    <div id="register-form" class="hidden">
+                    <form id="register-form" class="hidden" onsubmit="event.preventDefault(); app.register()">
                         <div class="space-y-4">
                             <div>
                                 <label class="block text-sm mb-1">Nombre</label>
@@ -399,15 +399,15 @@
                                 <label class="block text-sm mb-1">Password</label>
                                 <input type="password" id="register-password" class="input w-full px-4 py-3 rounded-xl" placeholder="Mínimo 6 caracteres">
                             </div>
-                            <button onclick="app.register()" class="btn-primary w-full py-3 rounded-xl font-semibold">Crear Cuenta</button>
+                            <button type="submit" class="btn-primary w-full py-3 rounded-xl font-semibold">Crear Cuenta</button>
                         </div>
                         <p class="text-center mt-6 text-muted">
                             ¿Ya tienes cuenta? <a href="#" onclick="app.showLogin()" class="text-blue-400">Inicia sesión</a>
                         </p>
-                    </div>
+                    </form>
 
                     <!-- Verify Email Form -->
-                    <div id="verify-form" class="hidden">
+                    <form id="verify-form" class="hidden" onsubmit="event.preventDefault(); app.verifyEmail()">
                         <div class="space-y-4">
                             <p class="text-sm text-muted">Te enviamos un código OTP al correo. Ingresa el código para verificar.</p>
                             <div>
@@ -418,30 +418,30 @@
                                 <label class="block text-sm mb-1">Código OTP</label>
                                 <input type="text" id="verify-code" class="input w-full px-4 py-3 rounded-xl" placeholder="123456">
                             </div>
-                            <button onclick="app.verifyEmail()" class="btn-success w-full py-3 rounded-xl font-semibold">Verificar Email</button>
+                            <button type="submit" class="btn-success w-full py-3 rounded-xl font-semibold">Verificar Email</button>
                         </div>
                         <p class="text-center mt-6 text-muted">
                             ¿Ya verificaste? <a href="#" onclick="app.showLogin()" class="text-blue-400">Inicia sesión</a>
                         </p>
-                    </div>
+                    </form>
 
                     <!-- Forgot Password Form -->
-                    <div id="forgot-form" class="hidden">
+                    <form id="forgot-form" class="hidden" onsubmit="event.preventDefault(); app.sendResetCode()">
                         <div class="space-y-4">
                             <p class="text-sm text-muted">Te enviamos un código para restablecer tu contraseña.</p>
                             <div>
                                 <label class="block text-sm mb-1">Email</label>
                                 <input type="email" id="forgot-email" class="input w-full px-4 py-3 rounded-xl" placeholder="tu@email.com">
                             </div>
-                            <button onclick="app.sendResetCode()" class="btn-primary w-full py-3 rounded-xl font-semibold">Enviar código</button>
+                            <button type="submit" class="btn-primary w-full py-3 rounded-xl font-semibold">Enviar código</button>
                         </div>
                         <p class="text-center mt-6 text-muted">
                             ¿Ya tienes el código? <a href="#" onclick="app.showResetPassword()" class="text-blue-400">Restablecer</a>
                         </p>
-                    </div>
+                    </form>
 
                     <!-- Reset Password Form -->
-                    <div id="reset-form" class="hidden">
+                    <form id="reset-form" class="hidden" onsubmit="event.preventDefault(); app.resetPassword()">
                         <div class="space-y-4">
                             <div>
                                 <label class="block text-sm mb-1">Email</label>
@@ -455,7 +455,7 @@
                                 <label class="block text-sm mb-1">Nueva contraseña</label>
                                 <input type="password" id="reset-password" class="input w-full px-4 py-3 rounded-xl" placeholder="Mínimo 6 caracteres">
                             </div>
-                            <button onclick="app.resetPassword()" class="btn-success w-full py-3 rounded-xl font-semibold">Restablecer contraseña</button>
+                            <button type="submit" class="btn-success w-full py-3 rounded-xl font-semibold">Restablecer contraseña</button>
                         </div>
                         <p class="text-center mt-6 text-muted">
                             ¿Ya la cambiaste? <a href="#" onclick="app.showLogin()" class="text-blue-400">Inicia sesión</a>
@@ -1821,165 +1821,175 @@
             <!-- Expense Modal -->
             <div id="modal-expense" class="glass rounded-2xl p-6 w-full max-w-md hidden">
                 <h3 class="text-xl font-bold mb-4">Nuevo Gasto</h3>
-                <div class="space-y-4">
-                    <div>
-                        <label class="block text-sm mb-1">Fecha</label>
-                        <input type="date" id="expense-date" class="input w-full px-4 py-2 rounded-xl">
+                <form onsubmit="event.preventDefault(); app.saveExpense()">
+                    <div class="space-y-4">
+                        <div>
+                            <label class="block text-sm mb-1">Fecha</label>
+                            <input type="date" id="expense-date" class="input w-full px-4 py-2 rounded-xl">
+                        </div>
+                        <div>
+                            <label class="block text-sm mb-1">Categoría</label>
+                            <input type="text" id="expense-category" class="input w-full px-4 py-2 rounded-xl" placeholder="e.g., Servicios, Inventario">
+                        </div>
+                        <div>
+                            <label class="block text-sm mb-1">Monto</label>
+                            <input type="number" id="expense-amount" class="input w-full px-4 py-2 rounded-xl" placeholder="0">
+                        </div>
+                        <div>
+                            <label class="block text-sm mb-1">Descripción</label>
+                            <input type="text" id="expense-description" class="input w-full px-4 py-2 rounded-xl">
+                        </div>
+                        <div class="flex justify-end gap-2 pt-4">
+                            <button type="button" onclick="app.closeModal()" class="px-4 py-2 rounded-xl">Cancelar</button>
+                            <button type="submit" class="btn-primary px-6 py-2 rounded-xl">Guardar</button>
+                        </div>
                     </div>
-                    <div>
-                        <label class="block text-sm mb-1">Categoría</label>
-                        <input type="text" id="expense-category" class="input w-full px-4 py-2 rounded-xl" placeholder="e.g., Servicios, Inventario">
-                    </div>
-                    <div>
-                        <label class="block text-sm mb-1">Monto</label>
-                        <input type="number" id="expense-amount" class="input w-full px-4 py-2 rounded-xl" placeholder="0">
-                    </div>
-                    <div>
-                        <label class="block text-sm mb-1">Descripción</label>
-                        <input type="text" id="expense-description" class="input w-full px-4 py-2 rounded-xl">
-                    </div>
-                    <div class="flex justify-end gap-2 pt-4">
-                        <button onclick="app.closeModal()" class="px-4 py-2 rounded-xl">Cancelar</button>
-                        <button onclick="app.saveExpense()" class="btn-primary px-6 py-2 rounded-xl">Guardar</button>
-                    </div>
-                </div>
+                </form>
             </div>
             
             <!-- Customer Modal -->
             <div id="modal-customer" class="glass rounded-2xl p-6 w-full max-w-md hidden">
                 <h3 class="text-xl font-bold mb-4">Nuevo Cliente</h3>
-                <div class="space-y-4">
-                    <div>
-                        <label class="block text-sm mb-1">Nombre</label>
-                        <input type="text" id="customer-name" class="input w-full px-4 py-2 rounded-xl">
+                <form onsubmit="event.preventDefault(); app.saveCustomer()">
+                    <div class="space-y-4">
+                        <div>
+                            <label class="block text-sm mb-1">Nombre</label>
+                            <input type="text" id="customer-name" class="input w-full px-4 py-2 rounded-xl">
+                        </div>
+                        <div>
+                            <label class="block text-sm mb-1">Teléfono</label>
+                            <input type="tel" id="customer-phone" class="input w-full px-4 py-2 rounded-xl">
+                        </div>
+                        <div>
+                            <label class="block text-sm mb-1">Dirección</label>
+                            <input type="text" id="customer-address" class="input w-full px-4 py-2 rounded-xl">
+                        </div>
+                        <div>
+                            <label class="block text-sm mb-1">Notas</label>
+                            <textarea id="customer-notes" class="input w-full px-4 py-2 rounded-xl" rows="2"></textarea>
+                        </div>
+                        <div class="flex justify-end gap-2 pt-4">
+                            <button type="button" onclick="app.closeModal()" class="px-4 py-2 rounded-xl">Cancelar</button>
+                            <button type="submit" class="btn-primary px-6 py-2 rounded-xl">Guardar</button>
+                        </div>
                     </div>
-                    <div>
-                        <label class="block text-sm mb-1">Teléfono</label>
-                        <input type="tel" id="customer-phone" class="input w-full px-4 py-2 rounded-xl">
-                    </div>
-                    <div>
-                        <label class="block text-sm mb-1">Dirección</label>
-                        <input type="text" id="customer-address" class="input w-full px-4 py-2 rounded-xl">
-                    </div>
-                    <div>
-                        <label class="block text-sm mb-1">Notas</label>
-                        <textarea id="customer-notes" class="input w-full px-4 py-2 rounded-xl" rows="2"></textarea>
-                    </div>
-                    <div class="flex justify-end gap-2 pt-4">
-                        <button onclick="app.closeModal()" class="px-4 py-2 rounded-xl">Cancelar</button>
-                        <button onclick="app.saveCustomer()" class="btn-primary px-6 py-2 rounded-xl">Guardar</button>
-                    </div>
-                </div>
+                </form>
             </div>
             
             <!-- Product Modal -->
             <div id="modal-product" class="glass rounded-2xl p-6 w-full max-w-md hidden">
                 <h3 id="product-modal-title" class="text-xl font-bold mb-4">Nuevo Producto/Servicio</h3>
-                <div class="space-y-4">
-                    <div>
-                        <label class="block text-sm mb-1">Tipo</label>
-                        <div class="flex gap-2">
-                            <button type="button" id="type-product" onclick="app.setProductType('product')" class="flex-1 py-2 rounded-xl bg-green-500/20 text-green-400 border border-green-500/50">Producto</button>
-                            <button type="button" id="type-service" onclick="app.setProductType('service')" class="flex-1 py-2 rounded-xl bg-white/5 text-white/60 border border-white/10 hover:bg-white/10">Servicio</button>
-                        </div>
-                        <input type="hidden" id="product-type" value="product">
-                    </div>
-                    <div>
-                        <label class="block text-sm mb-1">Nombre</label>
-                        <input type="text" id="product-name" class="input w-full px-4 py-2 rounded-xl">
-                    </div>
-                    <div>
-                        <label class="block text-sm mb-1">SKU (opcional)</label>
-                        <input type="text" id="product-sku" class="input w-full px-4 py-2 rounded-xl">
-                    </div>
-                    <div class="flex gap-4">
-                        <div class="flex-1">
-                            <label class="block text-sm mb-1">Precio</label>
-                            <input type="number" id="product-price" class="input w-full px-4 py-2 rounded-xl">
-                        </div>
-                        <div class="flex-1">
-                            <label class="block text-sm mb-1">Costo (opcional)</label>
-                            <input type="number" id="product-cost" class="input w-full px-4 py-2 rounded-xl">
-                        </div>
-                    </div>
-                    <div id="product-stock-fields">
+                <form onsubmit="event.preventDefault(); app.saveProduct()">
+                    <div class="space-y-4">
                         <div>
-                            <label class="block text-sm mb-1">Unidad</label>
-                            <select id="product-unit" class="input w-full px-4 py-2 rounded-xl">
-                                <option value="und">Unidad</option>
-                                <option value="kg">Kilogramo</option>
-                                <option value="lb">Libra</option>
-                                <option value="lt">Litro</option>
-                                <option value="hr">Hora</option>
-                            </select>
+                            <label class="block text-sm mb-1">Tipo</label>
+                            <div class="flex gap-2">
+                                <button type="button" id="type-product" onclick="app.setProductType('product')" class="flex-1 py-2 rounded-xl bg-green-500/20 text-green-400 border border-green-500/50">Producto</button>
+                                <button type="button" id="type-service" onclick="app.setProductType('service')" class="flex-1 py-2 rounded-xl bg-white/5 text-white/60 border border-white/10 hover:bg-white/10">Servicio</button>
+                            </div>
+                            <input type="hidden" id="product-type" value="product">
                         </div>
-                        <div class="flex gap-4 mt-4">
+                        <div>
+                            <label class="block text-sm mb-1">Nombre</label>
+                            <input type="text" id="product-name" class="input w-full px-4 py-2 rounded-xl">
+                        </div>
+                        <div>
+                            <label class="block text-sm mb-1">SKU (opcional)</label>
+                            <input type="text" id="product-sku" class="input w-full px-4 py-2 rounded-xl">
+                        </div>
+                        <div class="flex gap-4">
                             <div class="flex-1">
-                                <label class="block text-sm mb-1">Inventario inicial</label>
-                                <input type="number" id="product-stock" class="input w-full px-4 py-2 rounded-xl" value="0">
+                                <label class="block text-sm mb-1">Precio</label>
+                                <input type="number" id="product-price" class="input w-full px-4 py-2 rounded-xl">
                             </div>
                             <div class="flex-1">
-                                <label class="block text-sm mb-1">Alerta inventario bajo</label>
-                                <input type="number" id="product-low-stock" class="input w-full px-4 py-2 rounded-xl" value="5">
+                                <label class="block text-sm mb-1">Costo (opcional)</label>
+                                <input type="number" id="product-cost" class="input w-full px-4 py-2 rounded-xl">
                             </div>
                         </div>
+                        <div id="product-stock-fields">
+                            <div>
+                                <label class="block text-sm mb-1">Unidad</label>
+                                <select id="product-unit" class="input w-full px-4 py-2 rounded-xl">
+                                    <option value="und">Unidad</option>
+                                    <option value="kg">Kilogramo</option>
+                                    <option value="lb">Libra</option>
+                                    <option value="lt">Litro</option>
+                                    <option value="hr">Hora</option>
+                                </select>
+                            </div>
+                            <div class="flex gap-4 mt-4">
+                                <div class="flex-1">
+                                    <label class="block text-sm mb-1">Inventario inicial</label>
+                                    <input type="number" id="product-stock" class="input w-full px-4 py-2 rounded-xl" value="0">
+                                </div>
+                                <div class="flex-1">
+                                    <label class="block text-sm mb-1">Alerta inventario bajo</label>
+                                    <input type="number" id="product-low-stock" class="input w-full px-4 py-2 rounded-xl" value="5">
+                                </div>
+                            </div>
+                        </div>
+                        <div class="flex justify-end gap-2 pt-4">
+                            <button type="button" onclick="app.closeModal()" class="px-4 py-2 rounded-xl">Cancelar</button>
+                            <button type="submit" class="btn-primary px-6 py-2 rounded-xl">Guardar</button>
+                        </div>
                     </div>
-                    <div class="flex justify-end gap-2 pt-4">
-                        <button onclick="app.closeModal()" class="px-4 py-2 rounded-xl">Cancelar</button>
-                        <button onclick="app.saveProduct()" class="btn-primary px-6 py-2 rounded-xl">Guardar</button>
-                    </div>
-                </div>
+                </form>
             </div>
             
             <!-- Payment Modal -->
             <div id="modal-payment" class="glass rounded-2xl p-6 w-full max-w-md hidden">
                 <h3 class="text-xl font-bold mb-4">Registrar Pago / Abono</h3>
-                <div class="space-y-4">
-                    <div>
-                        <label class="block text-sm mb-1">Cliente</label>
-                        <select id="payment-customer" class="input w-full px-4 py-2 rounded-xl">
-                            <option value="">Seleccionar cliente</option>
-                        </select>
+                <form onsubmit="event.preventDefault(); app.savePayment()">
+                    <div class="space-y-4">
+                        <div>
+                            <label class="block text-sm mb-1">Cliente</label>
+                            <select id="payment-customer" class="input w-full px-4 py-2 rounded-xl">
+                                <option value="">Seleccionar cliente</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-sm mb-1">Fecha</label>
+                            <input type="date" id="payment-date" class="input w-full px-4 py-2 rounded-xl">
+                        </div>
+                        <div>
+                            <label class="block text-sm mb-1">Monto</label>
+                            <input type="number" id="payment-amount" class="input w-full px-4 py-2 rounded-xl" placeholder="0">
+                        </div>
+                        <div>
+                            <label class="block text-sm mb-1">Método de Pago</label>
+                            <select id="payment-method" class="input w-full px-4 py-2 rounded-xl">
+                                <option value="cash">Efectivo</option>
+                                <option value="transfer">Transferencia</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-sm mb-1">Nota</label>
+                            <input type="text" id="payment-note" class="input w-full px-4 py-2 rounded-xl">
+                        </div>
+                        <div class="flex justify-end gap-2 pt-4">
+                            <button type="button" onclick="app.closeModal()" class="px-4 py-2 rounded-xl">Cancelar</button>
+                            <button type="submit" class="btn-success px-6 py-2 rounded-xl">Guardar Pago</button>
+                        </div>
                     </div>
-                    <div>
-                        <label class="block text-sm mb-1">Fecha</label>
-                        <input type="date" id="payment-date" class="input w-full px-4 py-2 rounded-xl">
-                    </div>
-                    <div>
-                        <label class="block text-sm mb-1">Monto</label>
-                        <input type="number" id="payment-amount" class="input w-full px-4 py-2 rounded-xl" placeholder="0">
-                    </div>
-                    <div>
-                        <label class="block text-sm mb-1">Método de Pago</label>
-                        <select id="payment-method" class="input w-full px-4 py-2 rounded-xl">
-                            <option value="cash">Efectivo</option>
-                            <option value="transfer">Transferencia</option>
-                        </select>
-                    </div>
-                    <div>
-                        <label class="block text-sm mb-1">Nota</label>
-                        <input type="text" id="payment-note" class="input w-full px-4 py-2 rounded-xl">
-                    </div>
-                    <div class="flex justify-end gap-2 pt-4">
-                        <button onclick="app.closeModal()" class="px-4 py-2 rounded-xl">Cancelar</button>
-                        <button onclick="app.savePayment()" class="btn-success px-6 py-2 rounded-xl">Guardar Pago</button>
-                    </div>
-                </div>
+                </form>
             </div>
             
             <!-- Add Business Modal -->
             <div id="modal-add-business" class="hidden glass rounded-2xl p-6 w-full max-w-md">
                 <h3 class="text-xl font-bold mb-4"><i class="ph ph-plus-circle ph-icon"></i> Agregar Negocio</h3>
-                <div class="space-y-4">
-                    <div>
-                        <label class="block text-sm mb-1">Nombre del Negocio</label>
-                        <input type="text" id="add-business-name" class="input w-full px-4 py-3 rounded-xl" placeholder="Ej: Tienda de Ropa">
+                <form onsubmit="event.preventDefault(); app.addBusiness()">
+                    <div class="space-y-4">
+                        <div>
+                            <label class="block text-sm mb-1">Nombre del Negocio</label>
+                            <input type="text" id="add-business-name" class="input w-full px-4 py-3 rounded-xl" placeholder="Ej: Tienda de Ropa">
+                        </div>
+                        <div class="flex justify-end gap-2 pt-4">
+                            <button type="button" onclick="event.preventDefault(); app.closeModal()" class="px-4 py-2 rounded-xl">Cancelar</button>
+                            <button type="submit" class="btn-success px-6 py-2 rounded-xl">Crear Negocio</button>
+                        </div>
                     </div>
-                    <div class="flex justify-end gap-2 pt-4">
-                        <button type="button" onclick="event.preventDefault(); app.closeModal()" class="px-4 py-2 rounded-xl">Cancelar</button>
-                        <button type="button" onclick="event.preventDefault(); app.addBusiness()" class="btn-success px-6 py-2 rounded-xl">Crear Negocio</button>
-                    </div>
-                </div>
+                </form>
             </div>
         </div>
     </div>
@@ -2052,7 +2062,7 @@
             });
         }
         
-        function showCustomConfirm(message) {
+        function showCustomConfirm(message, type = 'warning') {
             return new Promise((resolve) => {
                 const modal = document.getElementById('custom-modal');
                 const icon = document.getElementById('modal-icon');
@@ -2064,15 +2074,23 @@
                 
                 modalType = 'confirm';
                 
-                icon.innerHTML = '<i class="ph ph-question text-xl text-white"></i>';
-                icon.className = 'flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center bg-yellow-500/20';
-                title.textContent = 'Confirmar';
+                if (type === 'danger') {
+                    icon.innerHTML = '<i class="ph ph-trash text-xl text-red-400"></i>';
+                    icon.className = 'flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center bg-red-500/20';
+                    title.textContent = '¿Eliminar elemento?';
+                    confirmBtn.className = 'px-5 py-2.5 rounded-xl bg-red-500 hover:bg-red-600 text-white transition-colors';
+                } else {
+                    icon.innerHTML = '<i class="ph ph-question text-xl text-white"></i>';
+                    icon.className = 'flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center bg-yellow-500/20';
+                    title.textContent = 'Confirmar';
+                    confirmBtn.className = 'px-5 py-2.5 rounded-xl btn-primary transition-colors';
+                }
+                
                 msg.textContent = message;
                 input.classList.add('hidden');
                 cancelBtn.classList.remove('hidden');
                 cancelBtn.textContent = 'Cancelar';
                 confirmBtn.textContent = 'Confirmar';
-                confirmBtn.className = 'px-5 py-2.5 rounded-xl btn-danger transition-colors';
                 
                 modalCallback = (value) => resolve(value);
                 modal.classList.remove('hidden');
@@ -2341,12 +2359,14 @@
                 const password = document.getElementById('register-password').value;
                 
                 if (!name || !email || !password) {
-                    alert('Por favor completa todos los campos');
+                    showCustomAlert('Por favor completa todos los campos', 'warning');
                     return;
                 }
                 
-                if (password.length < 6) {
-                    alert('Password debe tener al menos 6 caracteres');
+                // Password validation: min 8 chars, 1 uppercase, 1 number, 1 special char
+                const passwordRegex = /^(?=.*[A-Z])(?=.*\d)(?=.*[\W_]).{8,}$/;
+                if (!passwordRegex.test(password)) {
+                    showCustomAlert('La contraseña debe tener al menos 8 caracteres, una mayúscula, un número y un carácter especial.', 'warning');
                     return;
                 }
                 
@@ -2358,7 +2378,7 @@
 
                     // If verification code is in response (development mode), show it
                     if (data.verification_code) {
-                        alert(`Código de verificación: ${data.verification_code}\n\nEste código también se enviará a tu correo.`);
+                        showCustomAlert(`Código de verificación: ${data.verification_code}\n\nEste código también se enviará a tu correo.`, 'success');
                         // Pre-fill the verification code
                         this.showVerify(email);
                         setTimeout(() => {
@@ -2368,7 +2388,8 @@
                         this.showVerify(email);
                     }
                 } catch (e) {
-                    // Error already shown
+                    // Error already shown by api wrapper or we can show custom alert here if needed
+                    // Assuming api() handles error display or throws
                 }
             },
 
@@ -3372,8 +3393,8 @@
                                     <button onclick="app.deleteSale(${s.id})" class="text-red-400 hover:text-red-300 p-1 rounded hover:bg-white/10" title="Eliminar">
                                         <i class="ph ph-x text-lg"></i>
                                     </button>
-                                    <button onclick="app.generateReceipt(${s.id})" class="text-green-400 hover:text-green-300 p-1 rounded hover:bg-white/10" title="Recibo">
-                                        <i class="ph ph-receipt text-lg"></i>
+                                    <button onclick="app.shareOnWhatsApp(${s.id})" class="text-green-400 hover:text-green-300 p-1 rounded hover:bg-white/10" title="Enviar por WhatsApp">
+                                        <i class="ph ph-whatsapp-logo text-lg"></i>
                                     </button>
                                 </div>
                             </td>
@@ -3383,10 +3404,16 @@
             },
             
             showSaleModal() {
+                this.editingSaleId = null;
                 this.loadProductsForSelect();
                 this.loadCustomersForSelect();
                 document.getElementById('sale-date').value = new Date().toISOString().split('T')[0];
+                document.getElementById('sale-method').value = 'cash';
+                document.getElementById('sale-note').value = '';
+                document.getElementById('sale-customer').value = '';
+                
                 const modal = document.getElementById('modal-sale');
+                modal.querySelector('h3').innerText = 'Nueva Venta';
                 const overlay = document.getElementById('modal-overlay');
                 modal.classList.remove('hidden');
                 modal.style.display = 'block';
@@ -3396,61 +3423,67 @@
                 this.renderSaleItems();
             },
             
-            async loadProductsForSelect() {
-                const data = await this.api(`/businesses/${this.business.id}/products`);
-                this.products = data.products;
-            },
-            
-            async loadCustomersForSelect() {
-                const data = await this.api(`/businesses/${this.business.id}/customers`);
-                this.customers = data.customers;
-                
-                const select = document.getElementById('sale-customer');
-                select.innerHTML = '<option value="">Sin cliente</option>' + 
-                    data.customers.map(c => `<option value="${c.id}">${c.name}</option>`).join('');
-            },
-            
-            addSaleItem() {
-                const select = document.createElement('select');
-                select.className = 'input w-full px-3 py-2 rounded-lg mb-2 sale-item-select';
-                select.innerHTML = '<option value="">Seleccionar producto</option>' + 
-                    this.products.map(p => `<option value="${p.id}" data-price="${p.price}" data-name="${p.name}">${p.name} - ${this.formatMoney(p.price)}</option>`).join('');
-                
-                const qtyInput = document.createElement('input');
-                qtyInput.type = 'number';
-                qtyInput.value = '1';
-                qtyInput.min = '1';
-                qtyInput.className = 'input w-20 px-3 py-2 rounded-lg';
-                qtyInput.onchange = () => this.updateSaleTotal();
-                
-                const container = document.createElement('div');
-                container.className = 'flex gap-2 items-center';
-                container.appendChild(select);
-                container.appendChild(qtyInput);
-                
-                document.getElementById('sale-items').appendChild(container);
-                
-                select.onchange = () => this.updateSaleTotal();
-                qtyInput.oninput = () => this.updateSaleTotal();
-            },
-            
-            updateSaleTotal() {
-                let total = 0;
-                const containers = document.querySelectorAll('#sale-items > div');
-                containers.forEach(div => {
-                    const select = div.querySelector('select');
-                    const qty = div.querySelector('input').value;
-                    const option = select?.selectedOptions[0];
-                    if (option && option.dataset.price) {
-                        total += parseFloat(option.dataset.price) * parseInt(qty || 0);
+            async editSale(id) {
+                try {
+                    const data = await this.api(`/businesses/${this.business.id}/sales/${id}`);
+                    const sale = data.sale;
+                    
+                    if (!sale) throw new Error('Venta no encontrada');
+                    
+                    this.editingSaleId = id;
+                    await this.loadProductsForSelect();
+                    await this.loadCustomersForSelect();
+                    
+                    document.getElementById('sale-date').value = sale.sale_date;
+                    document.getElementById('sale-method').value = sale.payment_method;
+                    document.getElementById('sale-note').value = sale.note || '';
+                    document.getElementById('sale-customer').value = sale.customer_id || '';
+                    
+                    // Clear items
+                    const itemsContainer = document.getElementById('sale-items');
+                    itemsContainer.innerHTML = '';
+                    
+                    // Populate items
+                    if (sale.items && sale.items.length > 0) {
+                        sale.items.forEach(item => {
+                            // Re-create the item row
+                            const select = document.createElement('select');
+                            select.className = 'input w-full px-3 py-2 rounded-lg mb-2 sale-item-select';
+                            select.innerHTML = '<option value="">Seleccionar producto</option>' + 
+                                this.products.map(p => `<option value="${p.id}" data-price="${p.price}" data-name="${p.name}" ${p.id == item.product_id ? 'selected' : ''}>${p.name} - ${this.formatMoney(p.price)}</option>`).join('');
+                            
+                            const qtyInput = document.createElement('input');
+                            qtyInput.type = 'number';
+                            qtyInput.value = item.qty;
+                            qtyInput.min = '1';
+                            qtyInput.className = 'input w-20 px-3 py-2 rounded-lg';
+                            qtyInput.onchange = () => this.updateSaleTotal();
+                            qtyInput.oninput = () => this.updateSaleTotal();
+                            
+                            const container = document.createElement('div');
+                            container.className = 'flex gap-2 items-center';
+                            container.appendChild(select);
+                            container.appendChild(qtyInput);
+                            
+                            itemsContainer.appendChild(container);
+                            select.onchange = () => this.updateSaleTotal();
+                        });
+                        this.updateSaleTotal();
+                    } else {
+                        this.addSaleItem();
                     }
-                });
-                document.getElementById('sale-total').textContent = total.toLocaleString();
-            },
-            
-            renderSaleItems() {
-                document.getElementById('sale-items').innerHTML = '';
-                this.addSaleItem();
+                    
+                    const modal = document.getElementById('modal-sale');
+                    modal.querySelector('h3').innerText = 'Editar Venta (Reemplazar)';
+                    const overlay = document.getElementById('modal-overlay');
+                    modal.classList.remove('hidden');
+                    modal.style.display = 'block';
+                    overlay.classList.remove('hidden');
+                    overlay.style.display = 'flex';
+                    
+                } catch (e) {
+                    showCustomAlert('Error al cargar venta: ' + e.message, 'error');
+                }
             },
             
             async saveSale() {
@@ -3478,7 +3511,7 @@
                 });
                 
                 if (items.length === 0) {
-                    alert('Agrega al menos un producto');
+                    showCustomAlert('Agrega al menos un producto', 'warning');
                     return;
                 }
                 
@@ -3492,6 +3525,13 @@
                 }
 
                 try {
+                    // If editing, delete old first
+                    if (this.editingSaleId) {
+                        await this.api(`/businesses/${this.business.id}/sales/${this.editingSaleId}`, {
+                            method: 'DELETE'
+                        });
+                    }
+
                     const response = await this.api(`/businesses/${this.business.id}/sales`, {
                         method: 'POST',
                         body: JSON.stringify({
@@ -3510,24 +3550,31 @@
                     this.loadSales();
                     this.loadDashboard();
 
-                    // WhatsApp Logic
+                    // Only redirect to WhatsApp if it's a new sale (not editing) OR if the user wants it.
+                    // For now, let's assume if they edit, they might want to share the new receipt too.
                     if (response.invoice_url) {
                         const message = `Hola 👋 Te comparto tu factura: ${response.invoice_url}`;
                         const encodedMessage = encodeURIComponent(message);
                         const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
                         
-                        if (isMobile) {
-                            // On mobile, force opening app
-                            window.location.href = `whatsapp://send?text=${encodedMessage}`;
+                        // If it was an edit, maybe just show success alert instead of forcing WA?
+                        // The user said "edit button works properly". Usually means just update.
+                        // But sharing the new receipt is a nice bonus.
+                        
+                        if (this.editingSaleId) {
+                             showCustomAlert('Venta actualizada correctamente', 'success');
                         } else {
-                            // Desktop
-                            window.open(`https://web.whatsapp.com/send?text=${encodedMessage}`, '_blank');
+                            if (isMobile) {
+                                window.location.href = `whatsapp://send?text=${encodedMessage}`;
+                            } else {
+                                window.open(`https://web.whatsapp.com/send?text=${encodedMessage}`, '_blank');
+                            }
                         }
                     }
 
                 } catch (e) {
                     console.error(e);
-                    alert('Error al guardar venta: ' + e.message);
+                    showCustomAlert('Error al guardar venta: ' + e.message, 'error');
                 } finally {
                     // Re-enable button
                     if (saveBtn) {
@@ -3538,7 +3585,8 @@
             },
 
             async deleteSale(id) {
-                if (!confirm('¿Estás seguro de eliminar esta venta? Esta acción no se puede deshacer.')) return;
+                const confirmed = await showCustomConfirm('¿Estás seguro de eliminar esta venta? Esta acción no se puede deshacer.', 'danger');
+                if (!confirmed) return;
                 
                 try {
                     await this.api(`/businesses/${this.business.id}/sales/${id}`, 'DELETE');
@@ -3546,7 +3594,7 @@
                     this.loadDashboard();
                 } catch (e) {
                     console.error(e);
-                    alert('Error al eliminar venta: ' + e.message);
+                    showCustomAlert('Error al eliminar venta: ' + e.message, 'error');
                 }
             },
 
@@ -3641,16 +3689,42 @@
             },
             
             showExpenseModal() {
+                this.editingExpenseId = null;
                 document.getElementById('expense-date').value = new Date().toISOString().split('T')[0];
                 document.getElementById('expense-amount').value = '';
                 document.getElementById('expense-category').value = '';
                 document.getElementById('expense-description').value = '';
+                
                 const modal = document.getElementById('modal-expense');
+                modal.querySelector('h3').innerText = 'Nuevo Gasto';
                 const overlay = document.getElementById('modal-overlay');
                 modal.classList.remove('hidden');
                 modal.style.display = 'block';
                 overlay.classList.remove('hidden');
                 overlay.style.display = 'flex';
+            },
+            
+            async editExpense(id) {
+                try {
+                    const data = await this.api(`/businesses/${this.business.id}/expenses/${id}`);
+                    const e = data.expense;
+                    
+                    this.editingExpenseId = id;
+                    document.getElementById('expense-date').value = e.expense_date;
+                    document.getElementById('expense-amount').value = e.amount;
+                    document.getElementById('expense-category').value = e.category;
+                    document.getElementById('expense-description').value = e.description || '';
+                    
+                    const modal = document.getElementById('modal-expense');
+                    modal.querySelector('h3').innerText = 'Editar Gasto';
+                    const overlay = document.getElementById('modal-overlay');
+                    modal.classList.remove('hidden');
+                    modal.style.display = 'block';
+                    overlay.classList.remove('hidden');
+                    overlay.style.display = 'flex';
+                } catch (e) {
+                    showCustomAlert('Error al cargar gasto: ' + e.message, 'error');
+                }
             },
             
             async saveExpense() {
@@ -3660,23 +3734,38 @@
                 const description = document.getElementById('expense-description').value;
                 
                 if (!category || !amount) {
-                    alert('Completa todos los campos');
+                    showCustomAlert('Completa todos los campos', 'warning');
                     return;
                 }
                 
-                await this.api(`/businesses/${this.business.id}/expenses`, {
-                    method: 'POST',
-                    body: JSON.stringify({
-                        expense_date,
-                        category,
-                        amount,
-                        description
-                    })
-                });
+                const payload = {
+                    expense_date,
+                    category,
+                    amount,
+                    description
+                };
                 
-                this.closeModal();
-                this.loadExpenses();
-                this.loadDashboard();
+                try {
+                    if (this.editingExpenseId) {
+                        await this.api(`/businesses/${this.business.id}/expenses/${this.editingExpenseId}`, {
+                            method: 'PUT',
+                            body: JSON.stringify(payload)
+                        });
+                        showCustomAlert('Gasto actualizado', 'success');
+                    } else {
+                        await this.api(`/businesses/${this.business.id}/expenses`, {
+                            method: 'POST',
+                            body: JSON.stringify(payload)
+                        });
+                        showCustomAlert('Gasto creado', 'success');
+                    }
+                    
+                    this.closeModal();
+                    this.loadExpenses();
+                    this.loadDashboard();
+                } catch (e) {
+                    showCustomAlert('Error al guardar gasto: ' + e.message, 'error');
+                }
             },
             
             async deleteExpense(id) {
@@ -3692,14 +3781,47 @@
             
             // Show Payment Modal
             showPaymentModal() {
+                this.editingPaymentId = null;
                 this.loadCustomersForSelectPayment();
                 document.getElementById('payment-date').value = new Date().toISOString().split('T')[0];
+                document.getElementById('payment-customer').value = '';
+                document.getElementById('payment-amount').value = '';
+                document.getElementById('payment-method').value = 'cash';
+                document.getElementById('payment-note').value = '';
+                
                 const modal = document.getElementById('modal-payment');
+                modal.querySelector('h3').innerText = 'Registrar Pago / Abono';
                 const overlay = document.getElementById('modal-overlay');
                 modal.classList.remove('hidden');
                 modal.style.display = 'block';
                 overlay.classList.remove('hidden');
                 overlay.style.display = 'flex';
+            },
+            
+            async editPayment(id) {
+                try {
+                    const data = await this.api(`/businesses/${this.business.id}/payments/${id}`);
+                    const p = data.payment;
+                    
+                    this.editingPaymentId = id;
+                    await this.loadCustomersForSelectPayment();
+                    
+                    document.getElementById('payment-date').value = p.payment_date;
+                    document.getElementById('payment-customer').value = p.customer_id;
+                    document.getElementById('payment-amount').value = p.amount;
+                    document.getElementById('payment-method').value = p.method;
+                    document.getElementById('payment-note').value = p.note || '';
+                    
+                    const modal = document.getElementById('modal-payment');
+                    modal.querySelector('h3').innerText = 'Editar Pago (Reemplazar)';
+                    const overlay = document.getElementById('modal-overlay');
+                    modal.classList.remove('hidden');
+                    modal.style.display = 'block';
+                    overlay.classList.remove('hidden');
+                    overlay.style.display = 'flex';
+                } catch (e) {
+                    showCustomAlert('Error al cargar pago: ' + e.message, 'error');
+                }
             },
             
             async loadCustomersForSelectPayment() {
@@ -3717,27 +3839,56 @@
                 const note = document.getElementById('payment-note').value;
                 
                 if (!customer_id || !amount) {
-                    alert('Completa todos los campos');
+                    showCustomAlert('Cliente y monto son requeridos', 'warning');
                     return;
                 }
                 
-                await this.api(`/businesses/${this.business.id}/payments`, {
-                    method: 'POST',
-                    body: JSON.stringify({
-                        customer_id: parseInt(customer_id),
-                        payment_date,
-                        amount,
-                        method,
-                        note
-                    })
-                });
+                try {
+                    if (this.editingPaymentId) {
+                        await this.api(`/businesses/${this.business.id}/payments/${this.editingPaymentId}`, {
+                            method: 'DELETE'
+                        });
+                    }
+
+                    await this.api(`/businesses/${this.business.id}/payments`, {
+                        method: 'POST',
+                        body: JSON.stringify({
+                            customer_id: parseInt(customer_id),
+                            payment_date,
+                            amount,
+                            method,
+                            note
+                        })
+                    });
+                    
+                    showCustomAlert(this.editingPaymentId ? 'Pago actualizado' : 'Pago registrado', 'success');
+                    this.closeModal();
+                    // Reload all relevant data
+                    if (this.loadPayments) this.loadPayments();
+                    this.loadSales();
+                    this.loadDashboard();
+                    this.loadCustomers();
+                } catch (e) {
+                    showCustomAlert('Error al guardar pago: ' + e.message, 'error');
+                }
+            },
+
+            async deletePayment(id) {
+                const confirmed = await showCustomConfirm('¿Eliminar pago? Esto revertirá el saldo del cliente.', 'danger');
+                if (!confirmed) return;
                 
-                this.closeModal();
-                this.loadPayments();
-                this.loadSales();
-                this.loadDashboard();
-                this.loadCustomers(); // Refresh balances
-                alert('¡Listo! Abono registrado y saldo actualizado.');
+                try {
+                    await this.api(`/businesses/${this.business.id}/payments/${id}`, {
+                        method: 'DELETE'
+                    });
+                    if (this.loadPayments) this.loadPayments();
+                    this.loadSales();
+                    this.loadDashboard();
+                    this.loadCustomers();
+                    showCustomAlert('Pago eliminado', 'success');
+                } catch (e) {
+                    showCustomAlert('Error al eliminar pago: ' + e.message, 'error');
+                }
             },
             
             // Customers
@@ -3808,16 +3959,42 @@
             },
             
             showCustomerModal() {
+                this.editingCustomerId = null;
                 document.getElementById('customer-name').value = '';
                 document.getElementById('customer-phone').value = '';
                 document.getElementById('customer-address').value = '';
                 document.getElementById('customer-notes').value = '';
+                
                 const modal = document.getElementById('modal-customer');
+                modal.querySelector('h3').innerText = 'Nuevo Cliente';
                 const overlay = document.getElementById('modal-overlay');
                 modal.classList.remove('hidden');
                 modal.style.display = 'block';
                 overlay.classList.remove('hidden');
                 overlay.style.display = 'flex';
+            },
+            
+            async editCustomer(id) {
+                try {
+                    const data = await this.api(`/businesses/${this.business.id}/customers/${id}`);
+                    const c = data.customer;
+                    
+                    this.editingCustomerId = id;
+                    document.getElementById('customer-name').value = c.name;
+                    document.getElementById('customer-phone').value = c.phone || '';
+                    document.getElementById('customer-address').value = c.address || '';
+                    document.getElementById('customer-notes').value = c.notes || '';
+                    
+                    const modal = document.getElementById('modal-customer');
+                    modal.querySelector('h3').innerText = 'Editar Cliente';
+                    const overlay = document.getElementById('modal-overlay');
+                    modal.classList.remove('hidden');
+                    modal.style.display = 'block';
+                    overlay.classList.remove('hidden');
+                    overlay.style.display = 'flex';
+                } catch (e) {
+                    showCustomAlert('Error al cargar cliente: ' + e.message, 'error');
+                }
             },
             
             async saveCustomer() {
@@ -3827,27 +4004,44 @@
                 const notes = document.getElementById('customer-notes').value;
                 
                 if (!name) {
-                    alert('El nombre es requerido');
+                    showCustomAlert('El nombre es requerido', 'warning');
                     return;
                 }
                 
-                await this.api(`/businesses/${this.business.id}/customers`, {
-                    method: 'POST',
-                    body: JSON.stringify({ name, phone, address, notes })
-                });
-                
-                this.closeModal();
-                this.loadCustomers();
+                try {
+                    if (this.editingCustomerId) {
+                        await this.api(`/businesses/${this.business.id}/customers/${this.editingCustomerId}`, {
+                            method: 'PUT',
+                            body: JSON.stringify({ name, phone, address, notes })
+                        });
+                        showCustomAlert('Cliente actualizado', 'success');
+                    } else {
+                        await this.api(`/businesses/${this.business.id}/customers`, {
+                            method: 'POST',
+                            body: JSON.stringify({ name, phone, address, notes })
+                        });
+                        showCustomAlert('Cliente creado', 'success');
+                    }
+                    
+                    this.closeModal();
+                    this.loadCustomers();
+                } catch (e) {
+                    showCustomAlert('Error al guardar cliente: ' + e.message, 'error');
+                }
             },
             
             async deleteCustomer(id) {
-                if (!await showConfirm('¿Eliminar cliente?')) return;
+                const confirmed = await showCustomConfirm('¿Eliminar cliente? Esta acción no se puede deshacer.', 'danger');
+                if (!confirmed) return;
                 
-                await this.api(`/businesses/${this.business.id}/customers/${id}`, {
-                    method: 'DELETE'
-                });
-                
-                this.loadCustomers();
+                try {
+                    await this.api(`/businesses/${this.business.id}/customers/${id}`, {
+                        method: 'DELETE'
+                    });
+                    this.loadCustomers();
+                } catch (e) {
+                    showCustomAlert('Error al eliminar cliente: ' + e.message, 'error');
+                }
             },
             
             // Products
@@ -3963,24 +4157,28 @@
             },
             
             async editProduct(id) {
-                const data = await this.api(`/businesses/${this.business.id}/products/${id}`);
-                if (data.product) {
-                    this.editingProductId = id;
-                    document.getElementById('product-modal-title').textContent = 'Editar Producto/Servicio';
-                    this.setProductType(data.product.type || 'product');
-                    document.getElementById('product-name').value = data.product.name;
-                    document.getElementById('product-sku').value = data.product.sku || '';
-                    document.getElementById('product-price').value = data.product.price;
-                    document.getElementById('product-cost').value = data.product.cost || '';
-                    document.getElementById('product-unit').value = data.product.unit || 'und';
-                    document.getElementById('product-stock').value = data.product.stock || 0;
-                    document.getElementById('product-low-stock').value = data.product.low_stock_threshold || 5;
-                    const modal = document.getElementById('modal-product');
-                    const overlay = document.getElementById('modal-overlay');
-                    modal.classList.remove('hidden');
-                    modal.style.display = 'block';
-                    overlay.classList.remove('hidden');
-                    overlay.style.display = 'flex';
+                try {
+                    const data = await this.api(`/businesses/${this.business.id}/products/${id}`);
+                    if (data.product) {
+                        this.editingProductId = id;
+                        document.getElementById('product-modal-title').textContent = 'Editar Producto/Servicio';
+                        this.setProductType(data.product.type || 'product');
+                        document.getElementById('product-name').value = data.product.name;
+                        document.getElementById('product-sku').value = data.product.sku || '';
+                        document.getElementById('product-price').value = data.product.price;
+                        document.getElementById('product-cost').value = data.product.cost || '';
+                        document.getElementById('product-unit').value = data.product.unit || 'und';
+                        document.getElementById('product-stock').value = data.product.stock || 0;
+                        document.getElementById('product-low-stock').value = data.product.low_stock_threshold || 5;
+                        const modal = document.getElementById('modal-product');
+                        const overlay = document.getElementById('modal-overlay');
+                        modal.classList.remove('hidden');
+                        modal.style.display = 'block';
+                        overlay.classList.remove('hidden');
+                        overlay.style.display = 'flex';
+                    }
+                } catch (e) {
+                    showCustomAlert('Error al cargar producto: ' + e.message, 'error');
                 }
             },
             
@@ -3995,7 +4193,7 @@
                 const low_stock_threshold = parseFloat(document.getElementById('product-low-stock').value) || 5;
                 
                 if (!name || !price) {
-                    alert('Nombre y precio son requeridos');
+                    showCustomAlert('Nombre y precio son requeridos', 'warning');
                     return;
                 }
                 
@@ -4010,32 +4208,42 @@
                     low_stock_threshold 
                 };
 
-                if (this.editingProductId) {
-                    // Update existing
-                    await this.api(`/businesses/${this.business.id}/products/${this.editingProductId}`, {
-                        method: 'PUT',
-                        body: JSON.stringify(payload)
-                    });
-                } else {
-                    // Create new
-                    await this.api(`/businesses/${this.business.id}/products`, {
-                        method: 'POST',
-                        body: JSON.stringify(payload)
-                    });
+                try {
+                    if (this.editingProductId) {
+                        // Update existing
+                        await this.api(`/businesses/${this.business.id}/products/${this.editingProductId}`, {
+                            method: 'PUT',
+                            body: JSON.stringify(payload)
+                        });
+                        showCustomAlert('Producto actualizado', 'success');
+                    } else {
+                        // Create new
+                        await this.api(`/businesses/${this.business.id}/products`, {
+                            method: 'POST',
+                            body: JSON.stringify(payload)
+                        });
+                        showCustomAlert('Producto creado', 'success');
+                    }
+                    
+                    this.closeModal();
+                    this.loadProducts();
+                } catch (e) {
+                    showCustomAlert('Error al guardar producto: ' + e.message, 'error');
                 }
-                
-                this.closeModal();
-                this.loadProducts();
             },
             
             async deleteProduct(id) {
-                if (!await showConfirm('¿Eliminar producto?')) return;
+                const confirmed = await showCustomConfirm('¿Eliminar producto? Esta acción no se puede deshacer.', 'danger');
+                if (!confirmed) return;
                 
-                await this.api(`/businesses/${this.business.id}/products/${id}`, {
-                    method: 'DELETE'
-                });
-                
-                this.loadProducts();
+                try {
+                    await this.api(`/businesses/${this.business.id}/products/${id}`, {
+                        method: 'DELETE'
+                    });
+                    this.loadProducts();
+                } catch (e) {
+                    showCustomAlert('Error al eliminar producto: ' + e.message, 'error');
+                }
             },
             
             // Reports
