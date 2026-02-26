@@ -9,6 +9,7 @@ from flask import Flask, request, jsonify, send_from_directory, g, send_file, re
 from flask_cors import CORS
 from itsdangerous import URLSafeTimedSerializer, SignatureExpired, BadSignature
 from io import BytesIO
+from xhtml2pdf import pisa  # Import xhtml2pdf
 
 # PIL for receipt generation (optional)
 try:
@@ -859,6 +860,7 @@ def create_app(config_class=None):
         product = Product(
             business_id=business_id,
             name=name,
+            type=data.get("type", "product"),
             sku=data.get("sku", "").strip() or None,
             price=price,
             cost=data.get("cost"),
@@ -891,6 +893,8 @@ def create_app(config_class=None):
         data = request.get_json() or {}
         if "name" in data:
             product.name = data["name"].strip()
+        if "type" in data:
+            product.type = data["type"]
         if "sku" in data:
             product.sku = data["sku"].strip() or None
         if "price" in data:
@@ -1290,17 +1294,42 @@ def create_app(config_class=None):
 
         data = request.get_json()
 
-        # Generate order number
-        last_order = Order.query.filter_by(business_id=business_id).order_by(Order.id.desc()).first()
-        next_num = (last_order.id + 1) if last_order else 1
-        order_number = f"ORD-{next_num:05d}"
+        # Generate unique order number scoped to business
+        # Format: ORD-{business_id}-{sequence}
+        count = Order.query.filter_by(business_id=business_id).count()
+        next_num = count + 1
+        
+        while True:
+            order_number = f"ORD-{business_id}-{next_num:05d}"
+            if not Order.query.filter_by(order_number=order_number).first():
+                break
+            next_num += 1
 
         customer_id = data.get("customer_id")
+        if customer_id == "":
+            customer_id = None
+            
         items = data.get("items", [])
         subtotal = data.get("subtotal", 0)
         discount = data.get("discount", 0)
         total = data.get("total", subtotal - discount)
         notes = data.get("notes", "")
+        
+        # Handle order date
+        order_date_str = data.get("order_date")
+        order_date = datetime.utcnow()
+        if order_date_str:
+            try:
+                # Append current time to the date if only date is provided
+                # Or just parse the date and set time to now or 00:00
+                # Assuming format YYYY-MM-DD
+                dt = datetime.strptime(order_date_str, "%Y-%m-%d")
+                # Keep current time for precision if it's today, otherwise use end of day or start?
+                # Let's just use the date part combined with current time for ordering
+                now = datetime.utcnow()
+                order_date = dt.replace(hour=now.hour, minute=now.minute, second=now.second)
+            except ValueError:
+                pass # Use default
 
         order = Order(
             business_id=business_id,
@@ -1311,7 +1340,8 @@ def create_app(config_class=None):
             subtotal=subtotal,
             discount=discount,
             total=total,
-            notes=notes
+            notes=notes,
+            order_date=order_date
         )
 
         db.session.add(order)
@@ -1386,6 +1416,53 @@ def create_app(config_class=None):
         db.session.commit()
 
         return jsonify({"order": order.to_dict()})
+
+    @app.route("/api/businesses/<int:business_id>/orders/<int:order_id>/pdf", methods=["GET"])
+    @token_required
+    def get_order_pdf(business_id, order_id):
+        order = Order.query.filter_by(id=order_id, business_id=business_id).first()
+        if not order:
+            return jsonify({"error": "Pedido no encontrado"}), 404
+
+        # Get business profile
+        settings = AppSettings.query.all()
+        settings_dict = {s.key: s.value for s in settings}
+        business = Business.query.get(business_id)
+        
+        # Prepare context
+        context = {
+            "order": order,
+            "business": business,
+            "items": order.items,
+            "customer": order.customer,
+            "date": order.order_date.strftime("%d/%m/%Y"),
+            "settings": settings_dict,
+            "logo_url": business.settings.get("logo") if business.settings else None,
+            "subtotal": order.subtotal,
+            "discount": order.discount,
+            "total": order.total,
+            "notes": order.notes
+        }
+
+        # Render HTML
+        html_content = render_template("order_pdf.html", **context)
+        
+        # Create PDF
+        pdf_buffer = BytesIO()
+        try:
+            pisa_status = pisa.CreatePDF(html_content, dest=pdf_buffer)
+            if pisa_status.err:
+                return jsonify({"error": "Error al generar PDF"}), 500
+        except Exception as e:
+            return jsonify({"error": f"Error: {str(e)}"}), 500
+            
+        pdf_buffer.seek(0)
+        return send_file(
+            pdf_buffer,
+            mimetype='application/pdf',
+            as_attachment=True,
+            download_name=f'Pedido_{order.order_number}.pdf'
+        )
 
     @app.route("/api/businesses/<int:business_id>/orders/stats", methods=["GET"])
     @token_required
@@ -1630,6 +1707,56 @@ def create_app(config_class=None):
         )
         db.session.add(ledger_entry)
         db.session.flush()
+
+        # --- Auto-allocation Logic ---
+        # Automatically apply payment to pending sales (FIFO)
+        remaining_payment = amount
+        
+        # Find pending sales for this customer, ordered by date
+        pending_sales = Sale.query.filter(
+            Sale.business_id == business_id,
+            Sale.customer_id == customer_id,
+            Sale.paid == False
+        ).order_by(Sale.sale_date.asc()).all()
+        
+        for sale in pending_sales:
+            if remaining_payment <= 0.01:
+                break
+                
+            # Calculate amount to pay for this sale
+            sale_balance = sale.balance
+            
+            # Amount we can pay
+            amount_to_pay = min(sale_balance, remaining_payment)
+            
+            if amount_to_pay > 0:
+                # Update sale balance
+                sale.balance -= amount_to_pay
+                remaining_payment -= amount_to_pay
+                
+                # If balance is effectively zero, mark as paid
+                if sale.balance <= 0.01:
+                    sale.balance = 0
+                    sale.paid = True
+                
+                # Find associated ledger charge
+                charge_entry = LedgerEntry.query.filter_by(
+                    business_id=business_id,
+                    customer_id=customer_id,
+                    ref_type='sale',
+                    ref_id=sale.id,
+                    entry_type='charge'
+                ).first()
+                
+                # Create allocation record
+                if charge_entry:
+                    allocation = LedgerAllocation(
+                        payment_id=ledger_entry.id,
+                        charge_id=charge_entry.id,
+                        amount=amount_to_pay
+                    )
+                    db.session.add(allocation)
+        # -----------------------------
 
         db.session.commit()
 
