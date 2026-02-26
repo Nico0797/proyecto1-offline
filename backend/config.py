@@ -28,6 +28,8 @@ class Config:
     SQLALCHEMY_ENGINE_OPTIONS = {
         "pool_pre_ping": True,
         "pool_recycle": 300,
+        "pool_size": 20,
+        "max_overflow": 40,
     }
 
     # JWT

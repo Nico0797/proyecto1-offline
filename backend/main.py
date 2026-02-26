@@ -7,6 +7,7 @@ import os
 from datetime import datetime, date, timedelta
 from flask import Flask, request, jsonify, send_from_directory, g, send_file, render_template, url_for
 from flask_cors import CORS
+from sqlalchemy import func
 from itsdangerous import URLSafeTimedSerializer, SignatureExpired, BadSignature
 from io import BytesIO
 
@@ -1864,7 +1865,7 @@ def create_app(config_class=None):
                 "total": sales_total
             },
             "expenses": {
-                "count": len(expenses),
+                "count": expenses_count,
                 "total": expenses_total
             },
             "payments": {
@@ -1928,24 +1929,35 @@ def create_app(config_class=None):
         today = end_date
 
         # Sales
-        sales = Sale.query.filter(
+        # Optimize: Aggregate sales total and count in SQL
+        sales_stats = db.session.query(
+            func.sum(Sale.total),
+            func.count(Sale.id)
+        ).filter(
             Sale.business_id == business_id,
             Sale.sale_date >= start_of_month,
             Sale.sale_date <= today
-        ).all()
+        ).first()
         
-        sales_total = sum(s.total for s in sales)
-        sales_count = len(sales)
+        sales_total = sales_stats[0] or 0
+        sales_count = sales_stats[1] or 0
         
         # Calculate costs for profit
         total_cost = 0
         try:
-            # Optimize: Pre-fetch products to avoid N+1 queries
-            # Get all product IDs from sales
+            # Optimize: Fetch only items JSON to avoid full object hydration
+            # This is much faster than loading full Sale objects
+            sales_items = db.session.query(Sale.items).filter(
+                Sale.business_id == business_id,
+                Sale.sale_date >= start_of_month,
+                Sale.sale_date <= today
+            ).all()
+
+            # Get all product IDs from sales items
             product_ids = set()
-            for sale in sales:
-                if not sale.items: continue
-                for item in sale.items:
+            for (items_json,) in sales_items:
+                if not items_json: continue
+                for item in items_json:
                     pid = item.get("product_id")
                     if pid:
                         product_ids.add(pid)
@@ -1956,9 +1968,9 @@ def create_app(config_class=None):
                 products = Product.query.filter(Product.id.in_(product_ids)).all()
                 products_map = {p.id: p for p in products}
 
-            for sale in sales:
-                if not sale.items: continue
-                for item in sale.items:
+            for (items_json,) in sales_items:
+                if not items_json: continue
+                for item in items_json:
                     pid = item.get("product_id")
                     if pid and pid in products_map:
                         product = products_map[pid]
@@ -1970,18 +1982,23 @@ def create_app(config_class=None):
             pass
 
         # Expenses
-        expenses = Expense.query.filter(
+        # Optimize: Aggregate expenses total and count in SQL
+        expenses_stats = db.session.query(
+            func.sum(Expense.amount),
+            func.count(Expense.id)
+        ).filter(
             Expense.business_id == business_id,
             Expense.expense_date >= start_of_month,
             Expense.expense_date <= today
-        ).all()
+        ).first()
         
-        expenses_total = sum(e.amount for e in expenses)
+        expenses_total = expenses_stats[0] or 0
+        expenses_count = expenses_stats[1] or 0
 
         # Accounts receivable logic - SIMPLIFIED and ROBUST
         # Directly use Sale balance which is always available and safer
         try:
-            accounts_receivable = db.session.query(db.func.sum(Sale.balance)).filter(
+            accounts_receivable = db.session.query(func.sum(Sale.balance)).filter(
                 Sale.business_id == business_id,
                 Sale.balance > 0
             ).scalar() or 0
@@ -2017,11 +2034,13 @@ def create_app(config_class=None):
             return jsonify({"error": "Negocio no encontrado"}), 404
 
         # Aggregate sales by product
-        sales = Sale.query.filter_by(business_id=business_id).all()
+        # Optimize: Fetch only items JSON to avoid full object hydration
+        sales_items = db.session.query(Sale.items).filter_by(business_id=business_id).all()
         
         product_stats = {}
-        for sale in sales:
-            for item in sale.items:
+        for (items_json,) in sales_items:
+            if not items_json: continue
+            for item in items_json:
                 pid = item.get("product_id")
                 name = item.get("name", "Producto")
                 qty = item.get("qty", 1)
