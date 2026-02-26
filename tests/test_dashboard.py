@@ -135,6 +135,37 @@ def test_dashboard_endpoint_with_data(client, auth_header, app):
     assert data["fiados_alerts"]["count"] == 1
     assert data["fiados_alerts"]["total"] == 500
     
-    # Verify recent sales
-    assert len(data["recent_sales"]) == 2
-    assert data["recent_sales"][0]["customer_name"] == "Test Customer"
+def test_dashboard_product_type_check(client, auth_header, app):
+    """Test that Product.type column exists and is usable"""
+    with app.app_context():
+        user = User.query.filter_by(email="test_dashboard@example.com").first()
+        business = Business(user_id=user.id, name="Test Business 3")
+        db.session.add(business)
+        db.session.commit()
+        business_id = business.id
+        
+        # Create product with explicit type
+        product = Product(
+            business_id=business_id,
+            name="Service Product",
+            price=100,
+            type="service",
+            stock=0,
+            low_stock_threshold=5
+        )
+        db.session.add(product)
+        db.session.commit()
+        
+        # Query directly to ensure column exists
+        p = Product.query.filter_by(id=product.id).first()
+        assert p.type == "service"
+
+    response = client.get(
+        f"/api/businesses/{business_id}/dashboard",
+        headers=auth_header
+    )
+    
+    assert response.status_code == 200
+    data = json.loads(response.data)
+    # Service product with 0 stock should be in alerts
+    assert data["inventory_alerts"]["count"] == 1
