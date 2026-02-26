@@ -492,7 +492,7 @@
         </div>
         
         <!-- Main App -->
-        <div id="main-app" class="absolute top-0 left-0 w-full h-full flex flex-col z-10 hidden bg-gray-900 overflow-hidden">
+        <div id="main-app" class="absolute top-0 left-0 w-full h-full flex flex-col md:flex-row z-10 hidden bg-gray-900 overflow-hidden">
             <!-- Sidebar Overlay (for mobile) -->
             <div id="sidebar-overlay" class="sidebar-overlay z-40" onclick="app.closeSidebar()"></div>
             
@@ -3234,47 +3234,60 @@
                 if (summaryTitle) summaryTitle.textContent = titles[this.dashboardPeriod] || 'Resumen';
 
                 // Daily report
-                const daily = await this.api(`/businesses/${this.business.id}/reports/daily`);
-                const dailyIn = daily.cash_flow ? daily.cash_flow.in : daily.sales.total;
-                document.getElementById('stat-cash-today').textContent = this.formatMoney(dailyIn);
-                document.getElementById('stat-sales-today').textContent = this.formatMoney(daily.sales.total);
-                document.getElementById('stat-expenses-today').textContent = this.formatMoney(daily.expenses.total);
+                try {
+                    const daily = await this.api(`/businesses/${this.business.id}/reports/daily`);
+                    const dailyIn = daily.cash_flow ? daily.cash_flow.in : daily.sales.total;
+                    document.getElementById('stat-cash-today').textContent = this.formatMoney(dailyIn);
+                    document.getElementById('stat-sales-today').textContent = this.formatMoney(daily.sales.total);
+                    document.getElementById('stat-expenses-today').textContent = this.formatMoney(daily.expenses.total);
+                } catch (e) {
+                    console.error('Error loading daily stats:', e);
+                }
                 
                 // Monthly summary
-                let summaryUrl = `/businesses/${this.business.id}/reports/summary?period=${this.dashboardPeriod}`;
-                if (this.dashboardPeriod === 'year') {
-                    const now = new Date();
-                    const start = new Date(now.getFullYear(), 0, 1).toISOString().split('T')[0];
-                    const end = new Date(now.getFullYear(), 11, 31).toISOString().split('T')[0];
-                    summaryUrl += `&start_date=${start}&end_date=${end}`;
+                try {
+                    let summaryUrl = `/businesses/${this.business.id}/reports/summary?period=${this.dashboardPeriod}`;
+                    if (this.dashboardPeriod === 'year') {
+                        const now = new Date();
+                        const start = new Date(now.getFullYear(), 0, 1).toISOString().split('T')[0];
+                        const end = new Date(now.getFullYear(), 11, 31).toISOString().split('T')[0];
+                        summaryUrl += `&start_date=${start}&end_date=${end}`;
+                    }
+
+                    const summary = await this.api(summaryUrl);
+                    
+                    // Fallback if cash_flow is missing (e.g. backend not fully updated yet)
+                    const cashIn = summary.cash_flow ? summary.cash_flow.in : (summary.sales ? summary.sales.total : 0);
+                    const cashOut = summary.cash_flow ? summary.cash_flow.out : (summary.expenses ? summary.expenses.total : 0);
+                    const cashNet = summary.cash_flow ? summary.cash_flow.net : (summary.profit ? summary.profit.net : 0);
+
+                    document.getElementById('month-income').textContent = this.formatMoney(cashIn);
+                    document.getElementById('month-expenses').textContent = this.formatMoney(cashOut);
+                    document.getElementById('month-profit').textContent = this.formatMoney(cashNet);
+                    document.getElementById('stat-receivable').textContent = this.formatMoney(summary.accounts_receivable || 0);
+                } catch (e) {
+                    console.error('Error loading summary stats:', e);
                 }
-
-                const summary = await this.api(summaryUrl);
-                
-                // Fallback if cash_flow is missing (e.g. backend not fully updated yet)
-                const cashIn = summary.cash_flow ? summary.cash_flow.in : (summary.sales ? summary.sales.total : 0);
-                const cashOut = summary.cash_flow ? summary.cash_flow.out : (summary.expenses ? summary.expenses.total : 0);
-                const cashNet = summary.cash_flow ? summary.cash_flow.net : (summary.profit ? summary.profit.net : 0);
-
-                document.getElementById('month-income').textContent = this.formatMoney(cashIn);
-                document.getElementById('month-expenses').textContent = this.formatMoney(cashOut);
-                document.getElementById('month-profit').textContent = this.formatMoney(cashNet);
-                document.getElementById('stat-receivable').textContent = this.formatMoney(summary.accounts_receivable || 0);
                 
                 // Debtors - Update table format
-                const debtors = await this.api(`/businesses/${this.business.id}/customers/debtors`);
-                const debtorsList = document.getElementById('debtors-list');
-                if (debtors.debtors.length === 0) {
-                    debtorsList.innerHTML = '<tr><td colspan="4" class="text-muted text-center py-4">Sin deudores</td></tr>';
-                } else {
-                    debtorsList.innerHTML = debtors.debtors.slice(0, 5).map(d => `
-                        <tr>
-                            <td>${d.name}</td>
-                            <td class="money-negative">${this.formatMoney(d.balance)}</td>
-                            <td>${d.last_sale_date || '-'}</td>
-                            <td><button onclick="app.navigate('customers')" class="text-blue-400 hover:text-blue-300"><i class="ph ph-eye"></i></button></td>
-                        </tr>
-                    `).join('');
+                try {
+                    const debtors = await this.api(`/businesses/${this.business.id}/customers/debtors`);
+                    const debtorsList = document.getElementById('debtors-list');
+                    if (debtors.debtors.length === 0) {
+                        debtorsList.innerHTML = '<tr><td colspan="4" class="text-muted text-center py-4">Sin deudores</td></tr>';
+                    } else {
+                        debtorsList.innerHTML = debtors.debtors.slice(0, 5).map(d => `
+                            <tr>
+                                <td>${d.name}</td>
+                                <td class="money-negative">${this.formatMoney(d.balance)}</td>
+                                <td>${d.last_sale_date || '-'}</td>
+                                <td><button onclick="app.navigate('customers')" class="text-blue-400 hover:text-blue-300"><i class="ph ph-eye"></i></button></td>
+                            </tr>
+                        `).join('');
+                    }
+                } catch (e) {
+                    console.error('Error loading debtors:', e);
+                    document.getElementById('debtors-list').innerHTML = '<tr><td colspan="4" class="text-red-400 text-center py-4">Error al cargar deudores</td></tr>';
                 }
                 
                 // Dashboard con proyecciones, inventarios y ventas recientes
@@ -3397,73 +3410,81 @@
             
             // Sales
             async loadSales() {
-                const start = document.getElementById('sales-start').value;
-                const end = document.getElementById('sales-end').value;
-                const search = document.getElementById('sales-search').value;
-                const statusFilter = document.getElementById('sales-status-filter').value;
-                const paymentFilter = document.getElementById('sales-payment-filter').value;
-                
-                let url = `/businesses/${this.business.id}/sales`;
-                const params = [];
-                if (start) params.push(`start_date=${start}`);
-                if (end) params.push(`end_date=${end}`);
-                if (search) params.push(`search=${encodeURIComponent(search)}`);
-                if (params.length) url += '?' + params.join('&');
-                
-                const data = await this.api(url);
-                
-                // Get customers for lookup
-                const customersData = await this.api(`/businesses/${this.business.id}/customers`);
-                const customers = {};
-                customersData.customers.forEach(c => customers[c.id] = c.name);
-                this.customersMap = customers; // Store for global access
-                
-                let sales = data.sales || [];
-                this.currentSales = sales; // Store for global access
-                
-                // Apply client-side filters
-                if (statusFilter) {
-                    if (statusFilter === 'completed') {
-                        sales = sales.filter(s => s.paid);
-                    } else if (statusFilter === 'pending') {
-                        sales = sales.filter(s => !s.paid);
-                    } else if (statusFilter === 'cancelled') {
-                        sales = sales.filter(s => s.cancelled);
+                try {
+                    const start = document.getElementById('sales-start').value;
+                    const end = document.getElementById('sales-end').value;
+                    const search = document.getElementById('sales-search').value;
+                    const statusFilter = document.getElementById('sales-status-filter').value;
+                    const paymentFilter = document.getElementById('sales-payment-filter').value;
+                    
+                    let url = `/businesses/${this.business.id}/sales`;
+                    const params = [];
+                    if (start) params.push(`start_date=${start}`);
+                    if (end) params.push(`end_date=${end}`);
+                    if (search) params.push(`search=${encodeURIComponent(search)}`);
+                    if (params.length) url += '?' + params.join('&');
+                    
+                    const data = await this.api(url);
+                    
+                    // Get customers for lookup
+                    const customersData = await this.api(`/businesses/${this.business.id}/customers`);
+                    const customers = {};
+                    customersData.customers.forEach(c => customers[c.id] = c.name);
+                    this.customersMap = customers; // Store for global access
+                    
+                    let sales = data.sales || [];
+                    this.currentSales = sales; // Store for global access
+                    
+                    // Apply client-side filters
+                    if (statusFilter) {
+                        if (statusFilter === 'completed') {
+                            sales = sales.filter(s => s.paid);
+                        } else if (statusFilter === 'pending') {
+                            sales = sales.filter(s => !s.paid);
+                        } else if (statusFilter === 'cancelled') {
+                            sales = sales.filter(s => s.cancelled);
+                        }
                     }
-                }
-                
-                if (paymentFilter) {
-                    sales = sales.filter(s => s.payment_method === paymentFilter);
-                }
-                
-                const tbody = document.getElementById('sales-table');
-                if (sales.length === 0) {
-                    tbody.innerHTML = '<tr><td colspan="8" class="text-center text-muted py-8">Sin ventas registradas</td></tr>';
-                } else {
-                    tbody.innerHTML = sales.map(s => `
-                        <tr>
-                            <td>${s.sale_date}</td>
-                            <td>${customers[s.customer_id] || '-'}</td>
-                            <td>${s.items.length}</td>
-                            <td class="font-bold">${this.formatMoney(s.total)}</td>
-                            <td class="${(s.balance || 0) > 0 ? 'money-negative' : 'money-positive'}">${this.formatMoney(s.balance || 0)}</td>
-                            <td>${s.payment_method === 'cash' ? 'Efectivo' : s.payment_method === 'transfer' ? 'Transferencia' : s.payment_method === 'card' ? 'Tarjeta' : 'Fiado'}</td>
-                            <td>${s.paid ? '<span class="text-green-400">Pagado</span>' : '<span class="text-red-400">Pendiente</span>'}</td>
-                            <td>
-                                <div class="flex gap-2">
-                                    <button onclick="app.editSale(${s.id})" class="text-blue-400 hover:text-blue-300 p-1 rounded hover:bg-white/10" title="Editar">
-                                        <i class="ph ph-pencil-simple text-lg"></i>
-                                    </button>
-                                    <button onclick="app.deleteSale(${s.id})" class="text-red-400 hover:text-red-300 p-1 rounded hover:bg-white/10" title="Eliminar">
-                                        <i class="ph ph-x text-lg"></i>
-                                    </button>
-                                    <button onclick="app.shareOnWhatsApp(${s.id})" class="text-green-400 hover:text-green-300 p-1 rounded hover:bg-white/10" title="Enviar por WhatsApp">
-                                        <i class="ph ph-whatsapp-logo text-lg"></i>
-                                    </button>
-                                </div>
-                            </td>
-                        </tr>
-                    `).join('');
+                    
+                    if (paymentFilter) {
+                        sales = sales.filter(s => s.payment_method === paymentFilter);
+                    }
+                    
+                    const tbody = document.getElementById('sales-table');
+                    if (sales.length === 0) {
+                        tbody.innerHTML = '<tr><td colspan="8" class="text-center text-muted py-8">Sin ventas registradas</td></tr>';
+                    } else {
+                        tbody.innerHTML = sales.map(s => `
+                            <tr>
+                                <td>${s.sale_date}</td>
+                                <td>${customers[s.customer_id] || '-'}</td>
+                                <td>${s.items.length}</td>
+                                <td class="font-bold">${this.formatMoney(s.total)}</td>
+                                <td class="${(s.balance || 0) > 0 ? 'money-negative' : 'money-positive'}">${this.formatMoney(s.balance || 0)}</td>
+                                <td>${s.payment_method === 'cash' ? 'Efectivo' : s.payment_method === 'transfer' ? 'Transferencia' : s.payment_method === 'card' ? 'Tarjeta' : 'Fiado'}</td>
+                                <td>${s.paid ? '<span class="text-green-400">Pagado</span>' : '<span class="text-red-400">Pendiente</span>'}</td>
+                                <td>
+                                    <div class="flex gap-2">
+                                        <button onclick="app.editSale(${s.id})" class="text-blue-400 hover:text-blue-300 p-1 rounded hover:bg-white/10" title="Editar">
+                                            <i class="ph ph-pencil-simple text-lg"></i>
+                                        </button>
+                                        <button onclick="app.deleteSale(${s.id})" class="text-red-400 hover:text-red-300 p-1 rounded hover:bg-white/10" title="Eliminar">
+                                            <i class="ph ph-x text-lg"></i>
+                                        </button>
+                                        <button onclick="app.shareOnWhatsApp(${s.id})" class="text-green-400 hover:text-green-300 p-1 rounded hover:bg-white/10" title="Enviar por WhatsApp">
+                                            <i class="ph ph-whatsapp-logo text-lg"></i>
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+                        `).join('');
+                    }
+                } catch (e) {
+                    console.error('Error loading sales:', e);
+                    const tbody = document.getElementById('sales-table');
+                    if (tbody) {
+                        tbody.innerHTML = '<tr><td colspan="8" class="text-center text-red-400 py-8">Error al cargar ventas: ' + (e.message || 'Desconocido') + '</td></tr>';
+                    }
                 }
             },
             
@@ -4138,69 +4159,77 @@
             
             // Products
             async loadProducts() {
-                // Get filter values
-                const search = document.getElementById('product-search')?.value || '';
-                const category = document.getElementById('product-category-filter')?.value || '';
-                const stockFilter = document.getElementById('product-stock-filter')?.value || '';
-                
-                let url = `/businesses/${this.business.id}/products`;
-                const params = [];
-                if (search) params.push(`search=${encodeURIComponent(search)}`);
-                if (category) params.push(`category=${category}`);
-                if (params.length) url += '?' + params.join('&');
-                
-                const data = await this.api(url);
-                
-                let products = data.products || [];
-                
-                // Apply client-side stock filter
-                if (stockFilter) {
-                    if (stockFilter === 'in_stock') {
-                        products = products.filter(p => p.stock > 0);
-                    } else if (stockFilter === 'out_of_stock') {
-                        products = products.filter(p => p.stock <= 0);
-                    } else if (stockFilter === 'low_stock') {
-                        products = products.filter(p => p.stock > 0 && p.stock <= (p.low_stock_threshold || 5));
+                try {
+                    // Get filter values
+                    const search = document.getElementById('product-search')?.value || '';
+                    const category = document.getElementById('product-category-filter')?.value || '';
+                    const stockFilter = document.getElementById('product-stock-filter')?.value || '';
+                    
+                    let url = `/businesses/${this.business.id}/products`;
+                    const params = [];
+                    if (search) params.push(`search=${encodeURIComponent(search)}`);
+                    if (category) params.push(`category=${category}`);
+                    if (params.length) url += '?' + params.join('&');
+                    
+                    const data = await this.api(url);
+                    
+                    let products = data.products || [];
+                    
+                    // Apply client-side stock filter
+                    if (stockFilter) {
+                        if (stockFilter === 'in_stock') {
+                            products = products.filter(p => p.stock > 0);
+                        } else if (stockFilter === 'out_of_stock') {
+                            products = products.filter(p => p.stock <= 0);
+                        } else if (stockFilter === 'low_stock') {
+                            products = products.filter(p => p.stock > 0 && p.stock <= (p.low_stock_threshold || 5));
+                        }
                     }
-                }
-                
-                const tbody = document.getElementById('products-table');
-                if (products.length === 0) {
-                    tbody.innerHTML = '<tr><td colspan="6" class="text-center text-muted py-8">Sin productos registrados</td></tr>';
-                } else {
-                    tbody.innerHTML = products.map(p => `
-                        <tr>
-                            <td>
-                                <div class="flex items-center gap-2">
-                                    <span class="text-xl" title="${p.type === 'service' ? 'Servicio' : 'Producto'}">
-                                        ${p.type === 'service' ? '🛠️' : '📦'}
-                                    </span>
-                                    <div>
-                                        <div class="font-medium">${p.name}</div>
-                                        <div class="text-xs text-muted">${p.type === 'service' ? 'Servicio' : 'Producto'}</div>
+                    
+                    const tbody = document.getElementById('products-table');
+                    if (products.length === 0) {
+                        tbody.innerHTML = '<tr><td colspan="6" class="text-center text-muted py-8">Sin productos registrados</td></tr>';
+                    } else {
+                        tbody.innerHTML = products.map(p => `
+                            <tr>
+                                <td>
+                                    <div class="flex items-center gap-2">
+                                        <span class="text-xl" title="${p.type === 'service' ? 'Servicio' : 'Producto'}">
+                                            ${p.type === 'service' ? '🛠️' : '📦'}
+                                        </span>
+                                        <div>
+                                            <div class="font-medium">${p.name}</div>
+                                            <div class="text-xs text-muted">${p.type === 'service' ? 'Servicio' : 'Producto'}</div>
+                                        </div>
                                     </div>
-                                </div>
-                            </td>
-                            <td>${p.sku || '-'}</td>
-                            <td class="font-bold">${this.formatMoney(p.price)}</td>
-                            <td>${p.cost ? this.formatMoney(p.cost) : '-'}</td>
-                            <td>
-                                ${p.type === 'service' ? '<span class="text-muted">N/A</span>' : `
-                                    <span class="${p.stock <= p.low_stock_threshold ? 'text-yellow-400' : ''}">${p.stock || 0}</span>
-                                `}
-                            </td>
-                            <td>
-                                <div class="flex gap-2">
-                                    <button onclick="app.editProduct(${p.id})" class="text-blue-400 hover:text-blue-300 p-1 rounded hover:bg-white/10" title="Editar">
-                                        <i class="ph ph-pencil-simple text-lg"></i>
-                                    </button>
-                                    <button onclick="app.deleteProduct(${p.id})" class="text-red-400 hover:text-red-300 p-1 rounded hover:bg-white/10" title="Eliminar">
-                                        <i class="ph ph-x text-lg"></i>
-                                    </button>
-                                </div>
-                            </td>
-                        </tr>
-                    `).join('');
+                                </td>
+                                <td>${p.sku || '-'}</td>
+                                <td class="font-bold">${this.formatMoney(p.price)}</td>
+                                <td>${p.cost ? this.formatMoney(p.cost) : '-'}</td>
+                                <td>
+                                    ${p.type === 'service' ? '<span class="text-muted">N/A</span>' : `
+                                        <span class="${p.stock <= p.low_stock_threshold ? 'text-yellow-400' : ''}">${p.stock || 0}</span>
+                                    `}
+                                </td>
+                                <td>
+                                    <div class="flex gap-2">
+                                        <button onclick="app.editProduct(${p.id})" class="text-blue-400 hover:text-blue-300 p-1 rounded hover:bg-white/10" title="Editar">
+                                            <i class="ph ph-pencil-simple text-lg"></i>
+                                        </button>
+                                        <button onclick="app.deleteProduct(${p.id})" class="text-red-400 hover:text-red-300 p-1 rounded hover:bg-white/10" title="Eliminar">
+                                            <i class="ph ph-x text-lg"></i>
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+                        `).join('');
+                    }
+                } catch (e) {
+                    console.error('Error loading products:', e);
+                    const tbody = document.getElementById('products-table');
+                    if (tbody) {
+                        tbody.innerHTML = '<tr><td colspan="6" class="text-center text-red-400 py-8">Error al cargar productos: ' + (e.message || 'Desconocido') + '</td></tr>';
+                    }
                 }
             },
             
