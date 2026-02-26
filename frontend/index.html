@@ -2944,7 +2944,9 @@
             // Navigation
             navigate(page) {
                 // Force close sidebar (mobile)
-                this.closeSidebar();
+                if (window.innerWidth < 1024) {
+                    this.closeSidebar();
+                }
                 
                 this.currentPage = page;
                 
@@ -3482,23 +3484,57 @@
                 
                 const subtotal = items.reduce((sum, i) => sum + i.total, 0);
                 
-                await this.api(`/businesses/${this.business.id}/sales`, {
-                    method: 'POST',
-                    body: JSON.stringify({
-                        customer_id: customerId || null,
-                        sale_date: saleDate,
-                        items: items,
-                        subtotal: subtotal,
-                        discount: 0,
-                        total: subtotal,
-                        payment_method: paymentMethod,
-                        note: note
-                    })
-                });
-                
-                this.closeModal();
-                this.loadSales();
-                this.loadDashboard();
+                // Disable button to prevent duplicates
+                const saveBtn = document.querySelector('#modal-sale .bg-indigo-600');
+                if (saveBtn) {
+                    saveBtn.disabled = true;
+                    saveBtn.innerHTML = '<i class="ph ph-spinner animate-spin"></i> Guardando...';
+                }
+
+                try {
+                    const response = await this.api(`/businesses/${this.business.id}/sales`, {
+                        method: 'POST',
+                        body: JSON.stringify({
+                            customer_id: customerId || null,
+                            sale_date: saleDate,
+                            items: items,
+                            subtotal: subtotal,
+                            discount: 0,
+                            total: subtotal,
+                            payment_method: paymentMethod,
+                            note: note
+                        })
+                    });
+                    
+                    this.closeModal('modal-sale');
+                    this.loadSales();
+                    this.loadDashboard();
+
+                    // WhatsApp Logic
+                    if (response.invoice_url) {
+                        const message = `Hola 👋 Te comparto tu factura: ${response.invoice_url}`;
+                        const encodedMessage = encodeURIComponent(message);
+                        const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+                        
+                        if (isMobile) {
+                            // On mobile, force opening app
+                            window.location.href = `whatsapp://send?text=${encodedMessage}`;
+                        } else {
+                            // Desktop
+                            window.open(`https://web.whatsapp.com/send?text=${encodedMessage}`, '_blank');
+                        }
+                    }
+
+                } catch (e) {
+                    console.error(e);
+                    alert('Error al guardar venta: ' + e.message);
+                } finally {
+                    // Re-enable button
+                    if (saveBtn) {
+                        saveBtn.disabled = false;
+                        saveBtn.innerHTML = 'Guardar';
+                    }
+                }
             },
 
             async deleteSale(id) {

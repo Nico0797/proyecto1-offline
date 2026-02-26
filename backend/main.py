@@ -1239,7 +1239,18 @@ def create_app(config_class=None):
 
         db.session.commit()
 
-        return jsonify({"sale": sale.to_dict()}), 201
+        # Generate invoice URL
+        try:
+            s = URLSafeTimedSerializer(app.config["SECRET_KEY"])
+            token = s.dumps(sale.id, salt="receipt-view")
+            invoice_url = url_for('public_receipt', token=token, _external=True)
+        except Exception:
+            invoice_url = ""
+
+        return jsonify({
+            "sale": sale.to_dict(),
+            "invoice_url": invoice_url
+        }), 201
 
     @app.route("/api/businesses/<int:business_id>/fix-costs", methods=["POST"])
     @token_required
