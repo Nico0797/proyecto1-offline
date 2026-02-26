@@ -486,7 +486,7 @@
                         <p class="text-center mt-6 text-muted">
                             ¿Ya la cambiaste? <a href="#" onclick="app.showLogin()" class="text-blue-400">Inicia sesión</a>
                         </p>
-                    </div>
+                    </form>
                 </div>
             </div>
         </div>
@@ -554,11 +554,11 @@
             <main class="flex-1 p-4 md:p-6 overflow-y-auto h-full relative">
                 <!-- Mobile Header -->
                 <div class="mobile-menu-btn md:hidden">
-                    <button onclick="app.toggleSidebar()" class="p-2 glass rounded-lg">
+                    <button type="button" onclick="app.toggleSidebar()" class="p-2 glass rounded-lg">
                         <i class="ph ph-list ph-icon"></i>
                     </button>
                     <div class="relative">
-                        <button id="settings-menu-btn" onclick="app.toggleSettingsMenu()" class="p-2 glass rounded-lg"><i class="ph ph-gear"></i></button>
+                        <button type="button" id="settings-menu-btn" onclick="app.toggleSettingsMenu()" class="p-2 glass rounded-lg"><i class="ph ph-gear"></i></button>
                         <div id="settings-menu" class="dropdown-menu hidden">
                             <a href="#" onclick="app.navigate('settings')">Perfil</a>
                             <a href="#" onclick="app.logout()" class="text-red-300">Cerrar sesión</a>
@@ -2890,6 +2890,7 @@
             },
             
             showAddBusinessModal() {
+                this.closeModal(); // Ensure other modals are closed
                 document.getElementById('add-business-name').value = '';
                 const modal = document.getElementById('modal-add-business');
                 const overlay = document.getElementById('modal-overlay');
@@ -3506,6 +3507,7 @@
             },
 
             showSaleModal() {
+                this.closeModal(); // Ensure other modals are closed
                 this.editingSaleId = null;
                 this.loadProductsForSelect();
                 this.loadCustomersForSelect();
@@ -3522,7 +3524,59 @@
                 overlay.classList.remove('hidden');
                 overlay.style.display = 'flex';
                 this.saleItems = [];
-                this.renderSaleItems();
+                // Initialize with one empty item
+                const itemsContainer = document.getElementById('sale-items');
+                itemsContainer.innerHTML = '';
+                this.addSaleItem();
+                this.updateSaleTotal();
+            },
+            
+            addSaleItem() {
+                const itemsContainer = document.getElementById('sale-items');
+                const select = document.createElement('select');
+                select.className = 'input w-full px-3 py-2 rounded-lg mb-2 sale-item-select';
+                select.innerHTML = '<option value="">Seleccionar producto</option>' + 
+                    this.products.map(p => `<option value="${p.id}" data-price="${p.price}" data-name="${p.name}">${p.name} - ${this.formatMoney(p.price)}</option>`).join('');
+                
+                const qtyInput = document.createElement('input');
+                qtyInput.type = 'number';
+                qtyInput.value = '1';
+                qtyInput.min = '1';
+                qtyInput.className = 'input w-20 px-3 py-2 rounded-lg';
+                qtyInput.onchange = () => this.updateSaleTotal();
+                qtyInput.oninput = () => this.updateSaleTotal();
+                
+                const removeBtn = document.createElement('button');
+                removeBtn.type = 'button';
+                removeBtn.className = 'text-red-400 hover:text-red-300 p-2';
+                removeBtn.innerHTML = '<i class="ph ph-trash"></i>';
+                removeBtn.onclick = function() {
+                    this.parentElement.remove();
+                    app.updateSaleTotal();
+                };
+                
+                const container = document.createElement('div');
+                container.className = 'flex gap-2 items-center';
+                container.appendChild(select);
+                container.appendChild(qtyInput);
+                container.appendChild(removeBtn);
+                
+                itemsContainer.appendChild(container);
+                select.onchange = () => this.updateSaleTotal();
+            },
+
+            updateSaleTotal() {
+                let total = 0;
+                const containers = document.querySelectorAll('#sale-items > div');
+                containers.forEach(div => {
+                    const select = div.querySelector('select');
+                    const qty = parseInt(div.querySelector('input').value) || 0;
+                    const option = select?.selectedOptions[0];
+                    if (option && option.dataset.price) {
+                        total += parseFloat(option.dataset.price) * qty;
+                    }
+                });
+                document.getElementById('sale-total').textContent = this.formatMoney(total).replace('$', '').trim();
             },
             
             async editSale(id) {
@@ -3802,6 +3856,7 @@
             },
             
             showExpenseModal() {
+                this.closeModal();
                 this.editingExpenseId = null;
                 document.getElementById('expense-date').value = new Date().toISOString().split('T')[0];
                 document.getElementById('expense-amount').value = '';
@@ -3894,6 +3949,7 @@
             
             // Show Payment Modal
             showPaymentModal() {
+                this.closeModal();
                 this.editingPaymentId = null;
                 this.loadCustomersForSelectPayment();
                 document.getElementById('payment-date').value = new Date().toISOString().split('T')[0];
@@ -5600,11 +5656,13 @@
                     if (overlay) {
                         overlay.classList.add('hidden');
                         overlay.style.display = 'none';
+                        
+                        // Hide all children of overlay (divs, forms, etc)
+                        Array.from(overlay.children).forEach(el => {
+                            el.classList.add('hidden');
+                            el.style.display = 'none';
+                        });
                     }
-                    document.querySelectorAll('#modal-overlay > div').forEach(el => {
-                        el.classList.add('hidden');
-                        el.style.display = 'none';
-                    });
                 }
             },
             
