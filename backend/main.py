@@ -1893,6 +1893,7 @@ def create_app(config_class=None):
             Expense.expense_date <= end_date
         ).all()
         expenses_total = sum(e.amount for e in expenses)
+        expenses_count = len(expenses)
         
         # Payments for the period
         payments = Payment.query.filter(
