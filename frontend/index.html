@@ -1807,9 +1807,6 @@
                     <div class="mb-4">
                         <label class="block text-sm mb-1">Productos</label>
                         <div id="order-items-container" class="space-y-2 mb-2"></div>
-                        <select id="order-product" class="input w-full px-4 py-2 rounded-xl mb-2">
-                            <option value="">Seleccionar producto...</option>
-                        </select>
                         <button type="button" onclick="app.addOrderItem()" class="text-blue-400 text-sm">+ Agregar producto</button>
                     </div>
                     <div class="flex gap-4 mb-4">
@@ -3659,50 +3656,52 @@
                 this.updateSaleTotal();
             },
             
-            addSaleItem() {
+            addSaleItem(productId = '', quantity = 1, unitPrice = 0) {
                 const itemsContainer = document.getElementById('sale-items');
-                const select = document.createElement('select');
-                select.className = 'input w-full px-3 py-2 rounded-lg mb-2 sale-item-select';
-                select.innerHTML = '<option value="">Seleccionar producto</option>' + 
-                    this.products.map(p => `<option value="${p.id}" data-price="${p.price}" data-name="${p.name}">${p.name} - ${this.formatMoney(p.price)}</option>`).join('');
                 
-                const qtyInput = document.createElement('input');
-                qtyInput.type = 'number';
-                qtyInput.value = '1';
-                qtyInput.min = '1';
-                qtyInput.className = 'input w-20 px-3 py-2 rounded-lg';
-                qtyInput.onchange = () => this.updateSaleTotal();
-                qtyInput.oninput = () => this.updateSaleTotal();
-                
-                const removeBtn = document.createElement('button');
-                removeBtn.type = 'button';
-                removeBtn.className = 'text-red-400 hover:text-red-300 p-2';
-                removeBtn.innerHTML = '<i class="ph ph-trash"></i>';
-                removeBtn.onclick = function() {
-                    this.parentElement.remove();
-                    app.updateSaleTotal();
-                };
-                
-                const container = document.createElement('div');
-                container.className = 'flex gap-2 items-center';
-                container.appendChild(select);
-                container.appendChild(qtyInput);
-                container.appendChild(removeBtn);
-                
-                itemsContainer.appendChild(container);
-                select.onchange = () => this.updateSaleTotal();
+                const productOptions = '<option value="">Seleccionar producto</option>' + 
+                    this.products.map(p => `<option value="${p.id}" data-price="${p.price}" data-name="${p.name}" ${p.id == productId ? 'selected' : ''}>${p.name}</option>`).join('');
+
+                const html = `
+                    <div class="sale-item flex gap-2 items-center mb-2">
+                        <select class="sale-item-product input flex-1 px-3 py-2 rounded-lg text-sm" onchange="app.onSaleProductChange(this)">
+                            ${productOptions}
+                        </select>
+                        <input type="number" class="sale-item-qty input w-20 px-3 py-2 rounded-lg text-sm" value="${quantity}" min="1" onchange="app.calculateSaleItem(this)" oninput="app.calculateSaleItem(this)">
+                        <input type="number" class="sale-item-price input w-24 px-3 py-2 rounded-lg text-sm" value="${unitPrice}" step="0.01" onchange="app.calculateSaleItem(this)" oninput="app.calculateSaleItem(this)">
+                        <span class="sale-item-subtotal w-24 text-right font-mono text-sm">${this.formatMoney(quantity * unitPrice)}</span>
+                        <button type="button" onclick="this.closest('.sale-item').remove(); app.updateSaleTotal();" class="text-red-400 hover:text-red-300 p-2">
+                            <i class="ph ph-trash"></i>
+                        </button>
+                    </div>
+                `;
+                itemsContainer.insertAdjacentHTML('beforeend', html);
+            },
+
+            onSaleProductChange(select) {
+                const option = select.selectedOptions[0];
+                const price = parseFloat(option.dataset.price || 0);
+                const itemRow = select.closest('.sale-item');
+                const priceInput = itemRow.querySelector('.sale-item-price');
+                priceInput.value = price;
+                this.calculateSaleItem(select);
+            },
+
+            calculateSaleItem(element) {
+                const itemRow = element.closest('.sale-item');
+                const qty = parseFloat(itemRow.querySelector('.sale-item-qty').value) || 0;
+                const price = parseFloat(itemRow.querySelector('.sale-item-price').value) || 0;
+                const subtotal = qty * price;
+                itemRow.querySelector('.sale-item-subtotal').textContent = this.formatMoney(subtotal);
+                this.updateSaleTotal();
             },
 
             updateSaleTotal() {
                 let total = 0;
-                const containers = document.querySelectorAll('#sale-items > div');
-                containers.forEach(div => {
-                    const select = div.querySelector('select');
-                    const qty = parseInt(div.querySelector('input').value) || 0;
-                    const option = select?.selectedOptions[0];
-                    if (option && option.dataset.price) {
-                        total += parseFloat(option.dataset.price) * qty;
-                    }
+                document.querySelectorAll('.sale-item').forEach(item => {
+                    const qty = parseFloat(item.querySelector('.sale-item-qty').value) || 0;
+                    const price = parseFloat(item.querySelector('.sale-item-price').value) || 0;
+                    total += qty * price;
                 });
                 document.getElementById('sale-total').textContent = this.formatMoney(total).replace('$', '').trim();
             },
@@ -3730,27 +3729,7 @@
                     // Populate items
                     if (sale.items && sale.items.length > 0) {
                         sale.items.forEach(item => {
-                            // Re-create the item row
-                            const select = document.createElement('select');
-                            select.className = 'input w-full px-3 py-2 rounded-lg mb-2 sale-item-select';
-                            select.innerHTML = '<option value="">Seleccionar producto</option>' + 
-                                this.products.map(p => `<option value="${p.id}" data-price="${p.price}" data-name="${p.name}" ${p.id == item.product_id ? 'selected' : ''}>${p.name} - ${this.formatMoney(p.price)}</option>`).join('');
-                            
-                            const qtyInput = document.createElement('input');
-                            qtyInput.type = 'number';
-                            qtyInput.value = item.qty;
-                            qtyInput.min = '1';
-                            qtyInput.className = 'input w-20 px-3 py-2 rounded-lg';
-                            qtyInput.onchange = () => this.updateSaleTotal();
-                            qtyInput.oninput = () => this.updateSaleTotal();
-                            
-                            const container = document.createElement('div');
-                            container.className = 'flex gap-2 items-center';
-                            container.appendChild(select);
-                            container.appendChild(qtyInput);
-                            
-                            itemsContainer.appendChild(container);
-                            select.onchange = () => this.updateSaleTotal();
+                            this.addSaleItem(item.product_id, item.qty, item.unit_price || item.price);
                         });
                         this.updateSaleTotal();
                     } else {
@@ -3778,18 +3757,19 @@
                 
                 // Build items
                 const items = [];
-                const containers = document.querySelectorAll('#sale-items > div');
-                containers.forEach(div => {
-                    const select = div.querySelector('select');
-                    const qty = parseInt(div.querySelector('input').value) || 1;
-                    const option = select?.selectedOptions[0];
-                    if (option && option.dataset.price) {
-                        items.push({
+                document.querySelectorAll('.sale-item').forEach(item => {
+                    const select = item.querySelector('.sale-item-product');
+                    const qty = parseFloat(item.querySelector('.sale-item-qty').value) || 0;
+                    const price = parseFloat(item.querySelector('.sale-item-price').value) || 0;
+                    
+                    if (select.value && qty > 0) {
+                         const option = select.selectedOptions[0];
+                         items.push({
                             product_id: parseInt(select.value),
-                            name: option.dataset.name,
+                            name: option.text, // or option.dataset.name
                             qty: qty,
-                            unit_price: parseFloat(option.dataset.price),
-                            total: parseFloat(option.dataset.price) * qty
+                            unit_price: price,
+                            total: price * qty
                         });
                     }
                 });
@@ -4686,13 +4666,6 @@
                 const productOptions = '<option value="">Seleccionar...</option>' + 
                     this._orderProducts.map(p => `<option value="${p.id}" data-price="${p.price}" data-name="${p.name}">${p.name}</option>`).join('');
                 this._orderProductOptions = productOptions;
-                
-                // Also populate the standalone select if it exists
-                const productSelect = document.getElementById('order-product');
-                if (productSelect) {
-                    productSelect.innerHTML = '<option value="">Seleccionar producto...</option>' + 
-                        this._orderProducts.map(p => `<option value="${p.id}" data-price="${p.price}" data-name="${p.name}">${p.name} - ${this.formatMoney(p.price)}</option>`).join('');
-                }
                 
                 if (orderId) {
                     // Edit mode
