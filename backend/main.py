@@ -69,6 +69,10 @@ def create_app(config_class=None):
         import gzip
         from io import BytesIO
         
+        # If the response is streaming (e.g. file download), allow reading it
+        if response.direct_passthrough:
+            response.direct_passthrough = False
+            
         gzip_buffer = BytesIO()
         gzip_file = gzip.GzipFile(mode='wb', fileobj=gzip_buffer)
         gzip_file.write(response.data)
