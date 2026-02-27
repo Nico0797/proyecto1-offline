@@ -3623,6 +3623,10 @@
                 const data = await this.api(`/businesses/${this.business.id}/customers`);
                 this.customers = data.customers;
                 
+                // Update customers map
+                if (!this.customersMap) this.customersMap = {};
+                data.customers.forEach(c => this.customersMap[c.id] = c.name);
+                
                 const select = document.getElementById('sale-customer');
                 if (select) {
                     select.innerHTML = '<option value="">Sin cliente (Venta rápida)</option>' + 
@@ -3843,12 +3847,7 @@
                         const cleanCustomerName = customerName === 'Sin cliente (Venta rápida)' ? '' : customerName;
                         
                         // Use unified builder
-                        const message = this.buildWhatsappMessage(
-                            { items: items, total: subtotal }, 
-                            cleanCustomerName, 
-                            businessName, 
-                            response.invoice_url
-                        );
+                        const message = this.buildWhatsappMessage(response.sale);
                         
                         // Success
                         this.closeModal();
@@ -3860,10 +3859,11 @@
                         // Optional: ask to share
                         setTimeout(() => {
                             if (confirm('¿Deseas enviar el comprobante por WhatsApp?')) {
-                                this.shareOnWhatsApp(data.sale.id);
+                                this.shareOnWhatsApp(response.sale.id);
                             }
                         }, 500);
-                    } catch (e) {
+                    }
+                } catch (e) {
                     console.error(e);
                     showCustomAlert('Error al guardar venta: ' + e.message, 'error');
                 } finally {
