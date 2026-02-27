@@ -31,7 +31,7 @@ import textwrap
 from backend.config import get_config
 from backend.database import db, init_db
 from backend.auth import token_required, optional_token, AuthManager, create_token, permission_required
-from backend.models import User, Business, Product, Customer, Sale, Expense, Payment, LedgerEntry, LedgerAllocation, Permission, Role, UserRole, RolePermission, AuditLog, SubscriptionPayment, AppSettings, Order, RecurringExpense
+from backend.models import User, Business, Product, Customer, Sale, Expense, Payment, LedgerEntry, LedgerAllocation, Permission, Role, UserRole, RolePermission, AuditLog, SubscriptionPayment, AppSettings, Order, RecurringExpense, QuickNote
 
 
 def create_app(config_class=None):
@@ -772,11 +772,25 @@ def create_app(config_class=None):
             business.currency = data["currency"]
         if "timezone" in data:
             business.timezone = data["timezone"]
+        if "monthly_sales_goal" in data:
+            try:
+                business.monthly_sales_goal = float(data["monthly_sales_goal"])
+            except:
+                pass
+        if "whatsapp_templates" in data:
+            # Merge templates
+            current_templates = business.whatsapp_templates or {}
+            new_templates = data["whatsapp_templates"]
+            # Update current with new (simple merge)
+            current_templates.update(new_templates)
+            business.whatsapp_templates = current_templates
+            
         if "settings" in data:
             # Merge settings (preserve existing logo if not provided)
             current_settings = business.settings or {}
             new_settings = data["settings"]
-            if "logo" not in new_settings and "logo" in current_settings:
+            # Ensure we don't overwrite the logo if it's not in the new settings but exists in current
+            if "logo" in current_settings and "logo" not in new_settings:
                 new_settings["logo"] = current_settings["logo"]
             business.settings = new_settings
 
@@ -1079,15 +1093,23 @@ def create_app(config_class=None):
         # Build message
         business_name = business.name or "nosotros"
         
-        message = f"Hola {customer.name} 😊\n"
-        if business.name:
-            message += f"Te escribo de *{business.name}*.\n\n"
-        else:
-            message += "\n"
-            
-        message += f"Según mi registro, tienes un saldo pendiente de *${formatted_balance}*.\n"
-        message += "¿Me confirmas por favor cuándo puedes realizar el pago?\n\n"
-        message += "Gracias 🙌"
+        # Default template if not set
+        default_template = (
+            "Hola {cliente} 😊\n"
+            "Te escribo de *{negocio}*.\n\n"
+            "Según mi registro, tienes un saldo pendiente de *${deuda}*.\n"
+            "¿Me confirmas por favor cuándo puedes realizar el pago?\n\n"
+            "Gracias 🙌"
+        )
+        
+        # Get custom template if exists
+        templates = business.whatsapp_templates or {}
+        template = templates.get("collection_message", default_template)
+        
+        # Replace variables
+        message = template.replace("{cliente}", customer.name)\
+                          .replace("{negocio}", business_name)\
+                          .replace("{deuda}", formatted_balance)
 
         return jsonify({
             "message": message,
@@ -2587,6 +2609,52 @@ def create_app(config_class=None):
             "trend": trend
         })
 
+    @app.route("/api/businesses/<int:business_id>/quick-notes", methods=["GET"])
+    @token_required
+    def get_quick_notes(business_id):
+        business = Business.query.filter_by(id=business_id, user_id=g.current_user.id).first()
+        if not business:
+            return jsonify({"error": "Negocio no encontrado"}), 404
+
+        notes = QuickNote.query.filter_by(business_id=business_id).order_by(QuickNote.created_at.desc()).limit(20).all()
+        return jsonify({"notes": [n.to_dict() for n in notes]})
+
+    @app.route("/api/businesses/<int:business_id>/quick-notes", methods=["POST"])
+    @token_required
+    def create_quick_note(business_id):
+        business = Business.query.filter_by(id=business_id, user_id=g.current_user.id).first()
+        if not business:
+            return jsonify({"error": "Negocio no encontrado"}), 404
+
+        data = request.get_json()
+        note_text = data.get("note", "").strip()
+
+        if not note_text:
+            return jsonify({"error": "La nota no puede estar vacía"}), 400
+        
+        if len(note_text) > 280:
+            return jsonify({"error": "La nota es demasiado larga (máx 280 caracteres)"}), 400
+
+        note = QuickNote(
+            business_id=business_id,
+            note=note_text
+        )
+        db.session.add(note)
+        db.session.commit()
+        
+        return jsonify({"note": note.to_dict()}), 201
+
+    @app.route("/api/businesses/<int:business_id>/quick-notes/<int:note_id>", methods=["DELETE"])
+    @token_required
+    def delete_quick_note(business_id, note_id):
+        note = QuickNote.query.filter_by(id=note_id, business_id=business_id).first()
+        if not note:
+            return jsonify({"error": "Nota no encontrada"}), 404
+
+        db.session.delete(note)
+        db.session.commit()
+        return jsonify({"ok": True})
+
     @app.route("/api/businesses/<int:business_id>/analytics/comparison", methods=["GET"])
     @token_required
     def period_comparison(business_id):
@@ -2637,6 +2705,24 @@ def create_app(config_class=None):
         sales_growth = ((current_sales - prev_sales) / prev_sales * 100) if prev_sales > 0 else 0
         expenses_growth = ((current_expenses - prev_expenses) / prev_expenses * 100) if prev_expenses > 0 else 0
 
+        # Monthly Goal Calculation
+        current_month_start = date(today.year, today.month, 1)
+        # Use existing current_sales if it matches month, but current_sales is last 30 days.
+        # We need specific current month sales for goal tracking
+        month_sales = db.session.query(func.sum(Sale.total)).filter(
+            Sale.business_id == business_id,
+            Sale.sale_date >= current_month_start
+        ).scalar() or 0
+        
+        goal_data = {
+            "goal": business.monthly_sales_goal or 0,
+            "current": float(month_sales),
+            "percentage": 0
+        }
+        
+        if goal_data["goal"] > 0:
+            goal_data["percentage"] = min(100, round((goal_data["current"] / goal_data["goal"]) * 100, 1))
+
         # Upcoming recurring expenses
         upcoming_expenses = []
         try:
@@ -2655,7 +2741,6 @@ def create_app(config_class=None):
 
                 # Check if already paid this month
                 # Look for an expense in the current month with same category and similar amount
-                current_month_start = date(today.year, today.month, 1)
                 is_paid = Expense.query.filter(
                     Expense.business_id == business_id,
                     Expense.expense_date >= current_month_start,
@@ -2718,6 +2803,7 @@ def create_app(config_class=None):
                 "expenses": float(current_expenses),
                 "profit": float(current_sales - current_expenses)
             },
+            "monthly_goal": goal_data,
             "upcoming_expenses": upcoming_expenses,
             "previous_period": {
                 "start": prev_start.isoformat(),

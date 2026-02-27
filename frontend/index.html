@@ -618,6 +618,27 @@
                             <p id="stat-receivable" class="text-xl font-bold money-negative">$0</p>
                         </div>
                     </div>
+
+                    <!-- Alerts & Goal -->
+                    <div id="dashboard-alerts"></div>
+                    <div id="dashboard-goal"></div>
+                    
+                    <!-- Quick Notes -->
+                    <div class="glass rounded-xl p-6 mb-6">
+                        <h3 class="text-lg font-semibold mb-4 flex items-center gap-2">
+                            <i class="ph ph-sticker text-yellow-300"></i> Notas Rápidas
+                        </h3>
+                        <div class="mb-4">
+                            <div class="relative">
+                                <textarea id="quick-note-input" rows="2" class="input w-full p-3 rounded-lg resize-none" placeholder="Escribe una nota rápida... (máx 280)" maxlength="280" oninput="app.updateNoteCounter()"></textarea>
+                                <span id="note-counter" class="absolute bottom-2 right-2 text-xs text-white/40">0/280</span>
+                            </div>
+                            <button onclick="app.addQuickNote()" class="mt-2 btn-primary px-4 py-1.5 rounded-lg text-sm font-medium">Guardar Nota</button>
+                        </div>
+                        <div id="quick-notes-list" class="space-y-2 max-h-60 overflow-y-auto pr-1">
+                            <!-- Notes loaded here -->
+                        </div>
+                    </div>
                     
                     <!-- Monthly Summary -->
                     <div class="glass rounded-xl p-6 mb-6">
@@ -3005,9 +3026,25 @@
                     const nameEl2 = document.getElementById('business-name');
                     const currencyEl2 = document.getElementById('business-currency');
                     const logoEl2 = document.getElementById('business-logo');
+                    const goalEl = document.getElementById('business-goal');
+                    const collectionTemplateEl = document.getElementById('template-collection');
+                    
                     if (nameEl2) nameEl2.value = this.business.name || '';
                     if (currencyEl2) currencyEl2.value = this.business.currency || '';
+                    if (goalEl) goalEl.value = this.business.monthly_sales_goal || '';
+                    
                     const settings = this.business.settings || {};
+                    const templates = this.business.whatsapp_templates || {};
+                    
+                    if (collectionTemplateEl) {
+                        collectionTemplateEl.value = templates.collection_message || 
+                            "Hola {cliente} 😊\n" +
+                            "Te escribo de *{negocio}*.\n\n" +
+                            "Según mi registro, tienes un saldo pendiente de *${deuda}*.\n" +
+                            "¿Me confirmas por favor cuándo puedes realizar el pago?\n\n" +
+                            "Gracias 🙌";
+                    }
+                    
                     const logo = settings.logo || '';
                     if (logoEl2) logoEl2.value = logo;
                     const logoPreview = document.getElementById('business-logo-preview');
@@ -3643,6 +3680,83 @@
                 } catch(e) {
                     topProductsTable.innerHTML = '<tr><td colspan="3" class="text-muted text-center py-4">Sin datos</td></tr>';
                 }
+
+                // Load Quick Notes
+                this.loadQuickNotes();
+            },
+            
+            async loadQuickNotes() {
+                try {
+                    const data = await this.api(`/businesses/${this.business.id}/quick-notes`);
+                    const container = document.getElementById('quick-notes-list');
+                    if (!data.notes || data.notes.length === 0) {
+                        container.innerHTML = '<p class="text-sm text-white/30 text-center py-2">No hay notas guardadas.</p>';
+                        return;
+                    }
+                    
+                    container.innerHTML = data.notes.map(note => `
+                        <div class="group flex justify-between items-start bg-white/5 p-3 rounded-lg hover:bg-white/10 transition-colors">
+                            <p class="text-sm text-white/80 break-words flex-1 pr-2 whitespace-pre-wrap">${this.escapeHtml(note.note)}</p>
+                            <button onclick="app.deleteQuickNote(${note.id})" class="text-white/20 hover:text-red-400 transition-colors p-1">
+                                <i class="ph ph-x"></i>
+                            </button>
+                        </div>
+                    `).join('');
+                } catch (e) {
+                    console.error('Error loading quick notes:', e);
+                }
+            },
+
+            updateNoteCounter() {
+                const input = document.getElementById('quick-note-input');
+                const counter = document.getElementById('note-counter');
+                if (input && counter) {
+                    counter.textContent = `${input.value.length}/280`;
+                    if (input.value.length >= 280) counter.classList.add('text-red-400');
+                    else counter.classList.remove('text-red-400');
+                }
+            },
+
+            async addQuickNote() {
+                const input = document.getElementById('quick-note-input');
+                const note = input.value.trim();
+                
+                if (!note) return;
+                
+                try {
+                    await this.api(`/businesses/${this.business.id}/quick-notes`, {
+                        method: 'POST',
+                        body: JSON.stringify({ note })
+                    });
+                    
+                    input.value = '';
+                    this.updateNoteCounter();
+                    this.loadQuickNotes();
+                } catch (e) {
+                    showCustomAlert('Error al guardar nota: ' + e.message, 'error');
+                }
+            },
+
+            async deleteQuickNote(id) {
+                if (!await showConfirm('¿Eliminar esta nota?')) return;
+                
+                try {
+                    await this.api(`/businesses/${this.business.id}/quick-notes/${id}`, 'DELETE');
+                    this.loadQuickNotes();
+                } catch (e) {
+                    showCustomAlert('Error al eliminar nota', 'error');
+                }
+            },
+
+            escapeHtml(text) {
+                const map = {
+                    '&': '&amp;',
+                    '<': '&lt;',
+                    '>': '&gt;',
+                    '"': '&quot;',
+                    "'": '&#039;'
+                };
+                return text.replace(/[&<>"']/g, function(m) { return map[m]; });
             },
             
             // Sales

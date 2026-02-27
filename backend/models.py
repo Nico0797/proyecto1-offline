@@ -81,6 +81,8 @@ class Business(db.Model):
     name = db.Column(db.String(255), nullable=False)
     currency = db.Column(db.String(10), default="COP")
     timezone = db.Column(db.String(50), default="America/Bogota")
+    monthly_sales_goal = db.Column(db.Float, default=0)
+    whatsapp_templates = db.Column(db.JSON, default={})
     settings = db.Column(db.JSON, default={})
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
@@ -100,6 +102,8 @@ class Business(db.Model):
             "name": self.name,
             "currency": self.currency,
             "timezone": self.timezone,
+            "monthly_sales_goal": self.monthly_sales_goal,
+            "whatsapp_templates": self.whatsapp_templates,
             "settings": self.settings,
             "created_at": self.created_at.isoformat() if self.created_at else None,
         }
@@ -282,6 +286,27 @@ class RecurringExpense(db.Model):
 
     def __repr__(self):
         return f"<RecurringExpense {self.name} - {self.amount}>"
+
+
+class QuickNote(db.Model):
+    """Nota rápida"""
+    __tablename__ = "quick_notes"
+
+    id = db.Column(db.Integer, primary_key=True)
+    business_id = db.Column(db.Integer, db.ForeignKey("businesses.id"), nullable=False, index=True)
+    note = db.Column(db.Text, nullable=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    def to_dict(self):
+        return {
+            "id": self.id,
+            "business_id": self.business_id,
+            "note": self.note,
+            "created_at": self.created_at.isoformat() if self.created_at else None,
+        }
+
+    def __repr__(self):
+        return f"<QuickNote {self.id}>"
 
 
 class Payment(db.Model):

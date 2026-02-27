@@ -111,8 +111,35 @@ def init_db(app):
 
             # Crear tabla recurring_expenses si no existe
             if not inspector.has_table("recurring_expenses"):
-                # Se crea automáticamente con db.create_all() si es sqlite, pero para postgres aseguramos
-                pass 
+                # Crear todas las tablas faltantes (incluyendo recurring_expenses)
+                db.create_all()
+
+            # Add monthly_sales_goal to businesses if not exists
+            if inspector.has_table("businesses"):
+                business_columns = [col['name'] for col in inspector.get_columns("businesses")]
+                if "monthly_sales_goal" not in business_columns:
+                    try:
+                        with db.session.begin_nested():
+                            db.session.execute(text("ALTER TABLE businesses ADD COLUMN monthly_sales_goal FLOAT DEFAULT 0"))
+                        db.session.commit()
+                    except Exception as e:
+                        app.logger.info(f"Skipping monthly_sales_goal migration: {str(e)}")
+
+            # Crear tabla quick_notes si no existe
+            if not inspector.has_table("quick_notes"):
+                # Crear todas las tablas faltantes (incluyendo quick_notes)
+                db.create_all()
+
+            # Add whatsapp_templates to businesses if not exists
+            if inspector.has_table("businesses"):
+                business_columns = [col['name'] for col in inspector.get_columns("businesses")]
+                if "whatsapp_templates" not in business_columns:
+                    try:
+                        with db.session.begin_nested():
+                            db.session.execute(text("ALTER TABLE businesses ADD COLUMN whatsapp_templates JSON DEFAULT '{}'"))
+                        db.session.commit()
+                    except Exception as e:
+                        app.logger.info(f"Skipping whatsapp_templates migration: {str(e)}")
                 
         except Exception as exc:
             app.logger.warning("Error asegurando esquema de base de datos: %s", exc)
