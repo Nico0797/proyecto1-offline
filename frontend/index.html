@@ -2842,8 +2842,14 @@
                     return res.json();
                 })
                 .then(data => {
-                    if (data.url) {
-                        window.open(data.url, '_system');
+                    let finalUrl = data.url;
+                    if (data.path) {
+                        const baseUrl = API_BASE_URL || window.location.origin;
+                        finalUrl = `${baseUrl}${data.path}`;
+                    }
+
+                    if (finalUrl) {
+                        window.open(finalUrl, '_system');
                     } else {
                         throw new Error('URL no encontrada');
                     }
@@ -2878,7 +2884,12 @@
                     
                     if (btn) btn.innerHTML = originalContent;
                     
-                    const receiptUrl = data.url || '';
+                    let receiptUrl = data.url || '';
+                    if (data.path) {
+                        const baseUrl = API_BASE_URL || window.location.origin;
+                        receiptUrl = `${baseUrl}${data.path}`;
+                    }
+
                     const customerName = this.customersMap && this.customersMap[sale.customer_id] ? this.customersMap[sale.customer_id] : '';
                     const businessName = this.business ? this.business.name : 'Mi Negocio';
                     

@@ -4385,7 +4385,8 @@ def register_receipt_routes(application):
             token = s.dumps(sale.id, salt="receipt-view")
             
             link = url_for('public_receipt', token=token, _external=True)
-            return jsonify({"url": link})
+            path = url_for('public_receipt', token=token, _external=False)
+            return jsonify({"url": link, "path": path, "token": token})
         except Exception as e:
             print(f"Error generating receipt link: {e}")
             return jsonify({"error": f"Error interno: {str(e)}"}), 500
