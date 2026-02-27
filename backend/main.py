@@ -1044,6 +1044,57 @@ def create_app(config_class=None):
 
         return jsonify({"debtors": debtors})
 
+    @app.route("/api/businesses/<int:business_id>/customers/<int:customer_id>/whatsapp-collection-message", methods=["GET"])
+    @token_required
+    @permission_required('clients.read')
+    def get_whatsapp_collection_message(business_id, customer_id):
+        business = Business.query.filter_by(id=business_id, user_id=g.current_user.id).first()
+        if not business:
+            return jsonify({"error": "Negocio no encontrado"}), 404
+
+        customer = Customer.query.filter_by(id=customer_id, business_id=business_id).first()
+        if not customer:
+            return jsonify({"error": "Cliente no encontrado"}), 404
+
+        # Calculate balance
+        charges = db.session.query(db.func.sum(LedgerEntry.amount)).filter(
+            LedgerEntry.customer_id == customer_id,
+            LedgerEntry.entry_type == "charge"
+        ).scalar() or 0
+
+        payments = db.session.query(db.func.sum(LedgerEntry.amount)).filter(
+            LedgerEntry.customer_id == customer_id,
+            LedgerEntry.entry_type == "payment"
+        ).scalar() or 0
+
+        balance = charges - payments
+        balance = round(balance, 2)
+
+        # Format money
+        try:
+            formatted_balance = "{:,.0f}".format(balance).replace(",", ".")
+        except:
+            formatted_balance = str(balance)
+
+        # Build message
+        business_name = business.business_name or "nosotros"
+        
+        message = f"Hola {customer.name} 😊\n"
+        if business.business_name:
+            message += f"Te escribo de *{business.business_name}*.\n\n"
+        else:
+            message += "\n"
+            
+        message += f"Según mi registro, tienes un saldo pendiente de *${formatted_balance}*.\n"
+        message += "¿Me confirmas por favor cuándo puedes realizar el pago?\n\n"
+        message += "Gracias 🙌"
+
+        return jsonify({
+            "message": message,
+            "clientName": customer.name,
+            "debt": balance
+        })
+
     @app.route("/api/businesses/<int:business_id>/customers/<int:customer_id>", methods=["GET"])
     @token_required
     def get_customer(business_id, customer_id):

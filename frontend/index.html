@@ -497,19 +497,19 @@
             <div id="sidebar-overlay" class="sidebar-overlay z-[90] backdrop-blur-none" onclick="app.closeSidebar()"></div>
             
             <!-- Sidebar -->
-            <aside id="sidebar" class="sidebar flex-none w-64 glass border-r border-white/10 p-4 flex flex-col h-full overflow-y-auto z-[100]">
-                <div class="mb-6 -mx-4 -mt-4" id="app-header">
+            <aside id="sidebar" class="sidebar flex-none w-64 glass border-r border-white/10 p-0 flex flex-col h-full overflow-y-auto z-[100]">
+                <div class="mb-2" id="app-header">
                     <div class="relative w-full">
-                        <div class="w-full text-center bg-black/20 pb-2 pt-4">
-                    <h1 class="text-xl font-bold flex items-center justify-center px-0">
-                        <img src="assets/logo.png" alt="Encaja" class="w-full h-auto object-contain drop-shadow-2xl filter brightness-110">
+                        <div class="w-full text-center bg-black/20 pb-0 pt-0">
+                    <h1 class="text-xl font-bold flex items-center justify-center px-0 py-0">
+                        <img src="assets/logo.png" alt="Encaja" class="w-full h-auto object-cover max-h-40 drop-shadow-2xl filter brightness-110">
                     </h1>
                 </div>
                         <div id="business-switch-dropdown" class="dropdown-menu hidden"></div>
                     </div>
                 </div>
                 
-                <nav class="space-y-1 flex-1">
+                <nav class="space-y-1 flex-1 px-4">
                     <a href="#" onclick="event.preventDefault(); app.navigate('dashboard')" class="nav-item block px-4 py-2 rounded-lg text-white/80 hover:bg-white/5" data-page="dashboard">
                         <i class="ph ph-chart-pie-slice ph-icon"></i> Dashboard
                     </a>
@@ -2893,6 +2893,46 @@
                     showCustomAlert('Error al generar mensaje: ' + e.message, 'error');
                 }
             },
+
+            async collectDebt(customerId) {
+                try {
+                    const data = await this.api(`/businesses/${this.business.id}/customers/${customerId}/whatsapp-collection-message`);
+                    
+                    if (data.debt <= 0) {
+                        alert('Este cliente no tiene deuda pendiente.');
+                        return;
+                    }
+
+                    const message = data.message;
+                    
+                    // Copy to clipboard
+                    try {
+                        await navigator.clipboard.writeText(message);
+                        showCustomAlert('Mensaje copiado. Pega en WhatsApp.', 'success');
+                    } catch (err) {
+                        // Fallback
+                        const textarea = document.createElement('textarea');
+                        textarea.value = message;
+                        document.body.appendChild(textarea);
+                        textarea.select();
+                        document.execCommand('copy');
+                        document.body.removeChild(textarea);
+                        showCustomAlert('Mensaje copiado.', 'success');
+                    }
+
+                    // Open WhatsApp
+                    const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent) || window.innerWidth < 768;
+                    const url = isMobile 
+                        ? `https://wa.me/?text=${encodeURIComponent(message)}`
+                        : `https://web.whatsapp.com/send?text=${encodeURIComponent(message)}`;
+                    
+                    window.open(url, '_blank');
+
+                } catch (e) {
+                    console.error(e);
+                    alert('Error al generar mensaje de cobro: ' + e.message);
+                }
+            },
             
             async switchBusiness(businessId) {
                 const business = this.businesses.find(b => b.id === businessId);
@@ -2990,7 +3030,7 @@
             
             updateBusinessSwitch() {
                 const itemsHtml = this.businesses.map(b => `
-                    <a href="javascript:void(0)" onclick="app.switchBusiness(${b.id})" class="${b.id === this.business.id ? 'bg-white/10' : ''} flex items-center gap-2 px-4 py-2 hover:bg-white/5 transition-colors">
+                    <a href="javascript:void(0)" onclick="app.switchBusiness(${b.id}); app.toggleMainBusinessMenu();" class="${b.id === this.business.id ? 'bg-white/10' : ''} flex items-center gap-2 px-4 py-2 hover:bg-white/5 transition-colors">
                         ${b.id === this.business.id ? '<i class="ph ph-check-circle text-green-400"></i>' : '<i class="ph ph-storefront text-white/50"></i>'}
                         <span class="truncate">${b.name}</span>
                     </a>
@@ -2998,7 +3038,7 @@
                 
                 const addBusinessHtml = `
                     <div class="border-t border-white/10 mt-2 pt-2">
-                        <a href="javascript:void(0)" onclick="app.showAddBusinessModal()" class="flex items-center gap-2 px-4 py-2 text-blue-400 hover:text-blue-300">
+                        <a href="javascript:void(0)" onclick="app.showAddBusinessModal(); app.toggleMainBusinessMenu();" class="flex items-center gap-2 px-4 py-2 text-blue-400 hover:text-blue-300">
                             <i class="ph ph-plus-circle"></i> Nuevo Negocio
                         </a>
                     </div>
@@ -3405,8 +3445,17 @@
                             <tr>
                                 <td>${d.name}</td>
                                 <td class="money-negative">${this.formatMoney(d.balance)}</td>
-                                <td>${d.last_sale_date || '-'}</td>
-                                <td><button onclick="app.navigate('customers')" class="text-blue-400 hover:text-blue-300"><i class="ph ph-eye"></i></button></td>
+                                <td>${d.since ? d.since.split('T')[0] : '-'}</td>
+                                <td>
+                                    <div class="flex gap-2">
+                                        <button onclick="app.navigate('customers')" class="text-blue-400 hover:text-blue-300 p-1 rounded hover:bg-white/10" title="Ver detalle">
+                                            <i class="ph ph-eye text-lg"></i>
+                                        </button>
+                                        <button onclick="app.collectDebt(${d.id})" class="text-green-400 hover:text-green-300 p-1 rounded hover:bg-white/10" title="Cobrar por WhatsApp">
+                                            <i class="ph ph-whatsapp-logo text-lg"></i>
+                                        </button>
+                                    </div>
+                                </td>
                             </tr>
                         `).join('');
                     }
@@ -3631,11 +3680,11 @@
                 }
             },
 
-            showSaleModal() {
+            async showSaleModal() {
                 this.closeModal(); // Ensure other modals are closed
                 this.editingSaleId = null;
-                this.loadProductsForSelect();
-                this.loadCustomersForSelect();
+                await this.loadProductsForSelect();
+                await this.loadCustomersForSelect();
                 document.getElementById('sale-date').value = new Date().toISOString().split('T')[0];
                 document.getElementById('sale-method').value = 'cash';
                 document.getElementById('sale-note').value = '';
