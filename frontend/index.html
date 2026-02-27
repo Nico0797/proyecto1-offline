@@ -3999,30 +3999,6 @@
                 // Recurring Expenses Alerts
                 try {
                     const recurringData = await this.api(`/businesses/${this.business.id}/recurring-expenses`);
-                    const alertsContainer = document.getElementById('recurring-alerts');
-                    
-                    if (recurringData.recurring_expenses && recurringData.recurring_expenses.length > 0) {
-                        const today = new Date();
-                        const currentDay = today.getDate();
-                        const alerts = [];
-                        
-                        recurringData.recurring_expenses.forEach(exp => {
-                            if (!exp.is_active) return;
-                            
-                            if (exp.due_day < currentDay) {
-                                // Overdue
-                                alerts.push({
-                                    type: 'overdue',
-                                    html: `<div class="bg-red-500/20 border border-red-500/50 rounded-lg p-3 flex justify-between items-center">
-                                            <div class="flex items-center gap-3">
-                                                <div class="p-2 bg-red-500/20 rounded-lg text-red-400">
-                                                    <i class="ph ph-warning-circle text-xl"></i>
-                                                </div>
-                                                <div>
-                                                    <p class="font-bold text-red-300">Gasto Vencido: ${exp.name}</p>
-                                                    <p class="text-xs text-white/60">Venció el día ${exp.due_day} - ${this.formatMoney(exp.amount)}</p>
-                    // Recurring Expenses Alerts
-                    const recurringData = await this.api(`/businesses/${this.business.id}/recurring-expenses`);
                     const alertsContainer = document.getElementById('dashboard-alerts');
                     
                     if (recurringData.recurring_expenses && recurringData.recurring_expenses.length > 0) {
