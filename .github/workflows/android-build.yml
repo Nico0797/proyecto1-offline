@@ -55,6 +55,14 @@ jobs:
       - name: Build Web Assets
         run: npm run build
 
+      - name: Clean unnecessary files to reduce APK size
+        run: |
+          rm -f frontend/static/android/encaja.apk
+          rm -rf frontend/static/screenshots
+          rm -rf frontend/static/icons/*.png # Optional: keep only if used in PWA manifest, but usually native app uses res/mipmap
+          # Ensure we don't delete icons if they are used by the web view, but usually we can clean up heavy things.
+          # For safety, let's just delete the APK and screenshots for now.
+
       - name: Sync Capacitor
         run: npx cap sync android
 

@@ -238,8 +238,8 @@
                 return new Intl.NumberFormat('es-CO', {
                     style: 'currency',
                     currency: this.business?.currency || 'COP',
-                    minimumFractionDigits: 2,
-                    maximumFractionDigits: 2
+                    minimumFractionDigits: 0,
+                    maximumFractionDigits: 0
                 }).format(amount);
             },
 
@@ -3387,8 +3387,8 @@
                 });
                 const discount = parseFloat(document.getElementById('order-discount').value) || 0;
                 const total = subtotal - discount;
-                document.getElementById('order-subtotal').value = subtotal.toFixed(2);
-                document.getElementById('order-total').value = total.toFixed(2);
+                document.getElementById('order-subtotal').value = subtotal.toFixed(0);
+                document.getElementById('order-total').value = total.toFixed(0);
             },
             
             async saveOrder() {
