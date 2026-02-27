@@ -133,6 +133,20 @@ def init_db(app):
                              db.session.execute(text("ALTER TABLE recurring_expenses ADD COLUMN is_active BOOLEAN DEFAULT TRUE"))
                         db.session.commit()
                      except: pass
+                
+                if "frequency" not in re_columns:
+                    try:
+                        with db.session.begin_nested():
+                            db.session.execute(text("ALTER TABLE recurring_expenses ADD COLUMN frequency VARCHAR(20) DEFAULT 'monthly'"))
+                        db.session.commit()
+                    except: pass
+                
+                if "next_due_date" not in re_columns:
+                    try:
+                        with db.session.begin_nested():
+                            db.session.execute(text("ALTER TABLE recurring_expenses ADD COLUMN next_due_date DATE"))
+                        db.session.commit()
+                    except: pass
 
             # Add monthly_sales_goal to businesses if not exists
             if inspector.has_table("businesses"):

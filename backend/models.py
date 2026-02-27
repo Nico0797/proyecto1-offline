@@ -266,7 +266,9 @@ class RecurringExpense(db.Model):
     business_id = db.Column(db.Integer, db.ForeignKey("businesses.id"), nullable=False, index=True)
     name = db.Column(db.String(255), nullable=False)
     amount = db.Column(db.Float, nullable=False, default=0)
-    due_day = db.Column(db.Integer, nullable=False)  # 1-31
+    due_day = db.Column(db.Integer, nullable=False)  # 1-31 (Keep for reference)
+    frequency = db.Column(db.String(20), default='monthly') # monthly, weekly, biweekly, annual
+    next_due_date = db.Column(db.Date) # Specific date for next alert
     category = db.Column(db.String(100))
     is_active = db.Column(db.Boolean, default=True, index=True)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
@@ -279,6 +281,8 @@ class RecurringExpense(db.Model):
             "name": self.name,
             "amount": self.amount,
             "due_day": self.due_day,
+            "frequency": self.frequency,
+            "next_due_date": self.next_due_date.isoformat() if self.next_due_date else None,
             "category": self.category,
             "is_active": self.is_active,
             "created_at": self.created_at.isoformat() if self.created_at else None,

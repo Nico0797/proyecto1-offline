@@ -1800,11 +1800,26 @@ def create_app(config_class=None):
             if not (1 <= due_day <= 31):
                 return jsonify({"error": "Día debe ser entre 1 y 31"}), 400
 
+            # Calculate initial next_due_date
+            today = date.today()
+            try:
+                # Try to set date to this month's due_day
+                next_due = date(today.year, today.month, due_day)
+            except ValueError:
+                # If invalid (e.g. Feb 30), set to last day of month or today
+                next_due = today
+            
+            # If passed, move to next interval?
+            # For simplicity, if passed, it's overdue immediately (so user sees it)
+            # OR we can auto-advance. Let's stick to "if passed, it's overdue" so they pay it.
+            
             expense = RecurringExpense(
                 business_id=business_id,
                 name=data["name"],
                 amount=float(data["amount"]),
                 due_day=due_day,
+                frequency=data.get("frequency", "monthly"),
+                next_due_date=next_due,
                 category=data.get("category"),
                 is_active=data.get("is_active", True)
             )
@@ -1833,6 +1848,14 @@ def create_app(config_class=None):
                 if not (1 <= due_day <= 31):
                     return jsonify({"error": "Día debe ser entre 1 y 31"}), 400
                 expense.due_day = due_day
+            if "frequency" in data:
+                expense.frequency = data["frequency"]
+            if "next_due_date" in data:
+                # Expect YYYY-MM-DD
+                try:
+                    expense.next_due_date = datetime.strptime(data["next_due_date"], "%Y-%m-%d").date()
+                except:
+                    pass # Ignore invalid date format
             if "category" in data:
                 expense.category = data["category"]
             if "is_active" in data:
@@ -2726,58 +2749,63 @@ def create_app(config_class=None):
         # Upcoming recurring expenses
         upcoming_expenses = []
         try:
-            today_day = today.day
+            today_date = date.today()
             recurring = RecurringExpense.query.filter_by(
                 business_id=business_id, 
                 is_active=True
             ).all()
 
             for exp in recurring:
-                # Check if due in next 7 days or overdue
-                days_until = exp.due_day - today_day
-                
+                days_until = 999
                 status = "unknown"
-                display_days = days_until
 
-                # Check if already paid this month
-                # Look for an expense in the current month with same category and similar amount
-                is_paid = Expense.query.filter(
-                    Expense.business_id == business_id,
-                    Expense.expense_date >= current_month_start,
-                    Expense.category == exp.category,
-                    Expense.amount >= exp.amount * 0.9, # Allow small variation
-                    Expense.amount <= exp.amount * 1.1
-                ).first() is not None
-
-                if is_paid:
-                    continue # Skip if paid
-
-                # Logic for overdue/due soon
-                if days_until < 0:
-                    # Could be overdue from this month OR due next month
-                    # Heuristic: if day is passed and not paid, it's overdue
-                    status = "overdue"
-                    display_days = abs(days_until)
-                elif days_until == 0:
-                    status = "due_today"
-                    display_days = 0
-                elif 0 < days_until <= 7:
-                    status = "due_soon"
-                    display_days = days_until
+                if exp.next_due_date:
+                    days_until = (exp.next_due_date - today_date).days
+                    if days_until < 0:
+                        status = "overdue"
+                    elif days_until == 0:
+                        status = "due_today"
+                    elif days_until <= 7:
+                        status = "due_soon"
                 else:
-                    # Check wrap around for next month
-                    days_until_next_month = exp.due_day + 30 - today_day
-                    if days_until_next_month <= 7:
-                        status = "due_soon_next_month"
-                        display_days = days_until_next_month
-                
-                if status in ["overdue", "due_today", "due_soon", "due_soon_next_month"]:
+                    # Fallback for old records without next_due_date
+                    # Check if due in next 7 days or overdue
+                    # Simplified logic: use due_day of current month
+                    try:
+                        due_date = date(today_date.year, today_date.month, exp.due_day)
+                    except:
+                        due_date = today_date
+                    
+                    days_until = (due_date - today_date).days
+                    
+                    # Check if already paid this month
+                    is_paid = Expense.query.filter(
+                        Expense.business_id == business_id,
+                        Expense.expense_date >= current_month_start,
+                        Expense.category == exp.category,
+                        Expense.amount >= exp.amount * 0.9, 
+                        Expense.amount <= exp.amount * 1.1
+                    ).first() is not None
+
+                    if not is_paid:
+                        if days_until < 0:
+                            status = "overdue" # Passed this month and not paid
+                        elif days_until == 0:
+                            status = "due_today"
+                        elif days_until <= 7:
+                            status = "due_soon"
+                        else:
+                             # Check wrap around for next month? No, too complex for fallback.
+                             pass
+
+                if status in ["overdue", "due_today", "due_soon"]:
                     upcoming_expenses.append({
                         "id": exp.id,
                         "name": exp.name,
                         "amount": exp.amount,
                         "due_day": exp.due_day,
-                        "days_until": display_days,
+                        "next_due_date": exp.next_due_date.isoformat() if exp.next_due_date else None,
+                        "days_until": abs(days_until),
                         "status": status
                     })
             

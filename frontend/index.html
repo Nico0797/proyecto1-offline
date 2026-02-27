@@ -302,10 +302,12 @@
         .pro-overlay-content {
             background: linear-gradient(135deg, rgba(255,255,255,0.1), rgba(255,255,255,0.05));
             border: 1px solid rgba(255,255,255,0.2);
-            padding: 2rem;
-            border-radius: 1rem;
+            padding: 1.25rem;
+            border-radius: 0.75rem;
             max-width: 90%;
+            width: 260px;
             box-shadow: 0 10px 30px -10px rgba(0,0,0,0.5);
+            margin: auto;
         }
 
         .pro-locked {
@@ -1410,42 +1412,85 @@
                         </h3>
                         
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <div class="bg-white/5 p-4 rounded-xl">
-                                <h4 class="font-semibold mb-2">Centro de Ayuda</h4>
-                                <div class="space-y-2">
-                                    <details class="group">
-                                        <summary class="flex justify-between items-center font-medium cursor-pointer list-none text-sm text-white/80 hover:text-white">
-                                            <span>¿Cómo crear una venta?</span>
-                                            <span class="transition group-open:rotate-180">
-                                                <i class="ph ph-caret-down"></i>
-                                            </span>
-                                        </summary>
-                                        <p class="text-xs text-white/60 mt-2 group-open:animate-fadeIn">
-                                            Ve a la sección "Ventas", haz clic en "Nueva Venta", selecciona los productos y el cliente (opcional), elige el método de pago y guarda.
-                                        </p>
-                                    </details>
-                                    <details class="group">
-                                        <summary class="flex justify-between items-center font-medium cursor-pointer list-none text-sm text-white/80 hover:text-white">
-                                            <span>¿Cómo funciona el fiado?</span>
-                                            <span class="transition group-open:rotate-180">
-                                                <i class="ph ph-caret-down"></i>
-                                            </span>
-                                        </summary>
-                                        <p class="text-xs text-white/60 mt-2 group-open:animate-fadeIn">
-                                            Al crear una venta, selecciona "Fiado/Crédito" como método de pago. La deuda se asociará al cliente y podrás registrar abonos posteriormente en la sección "Pagos".
-                                        </p>
-                                    </details>
-                                    <details class="group">
-                                        <summary class="flex justify-between items-center font-medium cursor-pointer list-none text-sm text-white/80 hover:text-white">
-                                            <span>¿Cómo exportar reportes?</span>
-                                            <span class="transition group-open:rotate-180">
-                                                <i class="ph ph-caret-down"></i>
-                                            </span>
-                                        </summary>
-                                        <p class="text-xs text-white/60 mt-2 group-open:animate-fadeIn">
-                                            Ve a la sección "Reportes". Si tienes el plan Pro, verás los botones para descargar Excel de ventas y gastos en la parte superior.
-                                        </p>
-                                    </details>
+                            <div class="bg-white/5 p-4 rounded-xl md:col-span-2">
+                                <h4 class="font-semibold mb-4 text-lg">Centro de Ayuda y Preguntas Frecuentes</h4>
+                                <div class="grid md:grid-cols-2 gap-4">
+                                    <div class="space-y-2">
+                                        <details class="group bg-black/20 p-3 rounded-lg">
+                                            <summary class="flex justify-between items-center font-medium cursor-pointer list-none text-sm text-white/90 hover:text-white">
+                                                <span>¿Cómo registrar una venta?</span>
+                                                <span class="transition group-open:rotate-180"><i class="ph ph-caret-down"></i></span>
+                                            </summary>
+                                            <p class="text-xs text-white/70 mt-2 group-open:animate-fadeIn leading-relaxed">
+                                                Ve al menú "Ventas" y pulsa el botón "+ Nueva Venta". Selecciona los productos, indica si es al contado o fiado, y guarda. ¡Listo! El stock se descuenta automáticamente.
+                                            </p>
+                                        </details>
+                                        <details class="group bg-black/20 p-3 rounded-lg">
+                                            <summary class="flex justify-between items-center font-medium cursor-pointer list-none text-sm text-white/90 hover:text-white">
+                                                <span>¿Cómo cobrar una deuda (Fiado)?</span>
+                                                <span class="transition group-open:rotate-180"><i class="ph ph-caret-down"></i></span>
+                                            </summary>
+                                            <p class="text-xs text-white/70 mt-2 group-open:animate-fadeIn leading-relaxed">
+                                                Ve a la sección "Pagos". Busca al cliente y verás su saldo pendiente. Pulsa "Registrar Pago", ingresa el monto que te está abonando y guarda. El saldo del cliente se actualizará.
+                                            </p>
+                                        </details>
+                                        <details class="group bg-black/20 p-3 rounded-lg">
+                                            <summary class="flex justify-between items-center font-medium cursor-pointer list-none text-sm text-white/90 hover:text-white">
+                                                <span>¿Cómo crear un gasto recurrente?</span>
+                                                <span class="transition group-open:rotate-180"><i class="ph ph-caret-down"></i></span>
+                                            </summary>
+                                            <p class="text-xs text-white/70 mt-2 group-open:animate-fadeIn leading-relaxed">
+                                                En "Gastos", ve a la pestaña "Gastos Recurrentes" (Solo Pro). Pulsa "Nuevo Gasto", define el nombre (ej: Alquiler), monto, día de pago y frecuencia (mensual, semanal, etc). El sistema te avisará cuando venza.
+                                            </p>
+                                        </details>
+                                        <details class="group bg-black/20 p-3 rounded-lg">
+                                            <summary class="flex justify-between items-center font-medium cursor-pointer list-none text-sm text-white/90 hover:text-white">
+                                                <span>¿Cómo personalizar los mensajes de WhatsApp?</span>
+                                                <span class="transition group-open:rotate-180"><i class="ph ph-caret-down"></i></span>
+                                            </summary>
+                                            <p class="text-xs text-white/70 mt-2 group-open:animate-fadeIn leading-relaxed">
+                                                En "Configuración" > "Plantillas de Mensajes", puedes editar el texto que se envía. Usa las variables como {cliente} o {total} para que se completen solas con los datos de la venta.
+                                            </p>
+                                        </details>
+                                    </div>
+                                    <div class="space-y-2">
+                                        <details class="group bg-black/20 p-3 rounded-lg">
+                                            <summary class="flex justify-between items-center font-medium cursor-pointer list-none text-sm text-white/90 hover:text-white">
+                                                <span>¿Cómo controlo mi inventario?</span>
+                                                <span class="transition group-open:rotate-180"><i class="ph ph-caret-down"></i></span>
+                                            </summary>
+                                            <p class="text-xs text-white/70 mt-2 group-open:animate-fadeIn leading-relaxed">
+                                                Al crear un producto, activa "Controlar Stock" e ingresa la cantidad inicial. Cada venta restará unidades. Puedes ajustar el stock manualmente editando el producto.
+                                            </p>
+                                        </details>
+                                        <details class="group bg-black/20 p-3 rounded-lg">
+                                            <summary class="flex justify-between items-center font-medium cursor-pointer list-none text-sm text-white/90 hover:text-white">
+                                                <span>¿Qué incluye el Plan Pro?</span>
+                                                <span class="transition group-open:rotate-180"><i class="ph ph-caret-down"></i></span>
+                                            </summary>
+                                            <p class="text-xs text-white/70 mt-2 group-open:animate-fadeIn leading-relaxed">
+                                                El Plan Pro elimina todos los límites (ventas, productos, clientes ilimitados), desbloquea reportes avanzados, proyecciones de ventas, gastos recurrentes y elimina la publicidad.
+                                            </p>
+                                        </details>
+                                        <details class="group bg-black/20 p-3 rounded-lg">
+                                            <summary class="flex justify-between items-center font-medium cursor-pointer list-none text-sm text-white/90 hover:text-white">
+                                                <span>¿Cómo exportar mis datos?</span>
+                                                <span class="transition group-open:rotate-180"><i class="ph ph-caret-down"></i></span>
+                                            </summary>
+                                            <p class="text-xs text-white/70 mt-2 group-open:animate-fadeIn leading-relaxed">
+                                                Ve a la sección "Reportes" (versión de escritorio o móvil apaisado). Si tienes Plan Pro, verás botones para descargar tus ventas y gastos en formato Excel/CSV.
+                                            </p>
+                                        </details>
+                                        <details class="group bg-black/20 p-3 rounded-lg">
+                                            <summary class="flex justify-between items-center font-medium cursor-pointer list-none text-sm text-white/90 hover:text-white">
+                                                <span>¿Olvide mi contraseña, qué hago?</span>
+                                                <span class="transition group-open:rotate-180"><i class="ph ph-caret-down"></i></span>
+                                            </summary>
+                                            <p class="text-xs text-white/70 mt-2 group-open:animate-fadeIn leading-relaxed">
+                                                En la pantalla de inicio de sesión, pulsa "¿Olvidaste tu contraseña?". Te enviaremos un código a tu correo para que puedas crear una nueva.
+                                            </p>
+                                        </details>
+                                    </div>
                                 </div>
                             </div>
                             
@@ -2069,6 +2114,15 @@
                             <input type="number" id="recurring-expense-day" class="input w-full px-4 py-2 rounded-xl" min="1" max="31" required>
                         </div>
                         <div>
+                            <label class="block text-sm mb-1">Frecuencia</label>
+                            <select id="recurring-expense-frequency" class="input w-full px-4 py-2 rounded-xl">
+                                <option value="weekly">Semanal</option>
+                                <option value="biweekly">Quincenal</option>
+                                <option value="monthly" selected>Mensual</option>
+                                <option value="annual">Anual</option>
+                            </select>
+                        </div>
+                        <div>
                             <label class="block text-sm mb-1">Categoría (Opcional)</label>
                             <input type="text" id="recurring-expense-category" class="input w-full px-4 py-2 rounded-xl" placeholder="e.g. Servicios">
                         </div>
@@ -2616,13 +2670,13 @@
                     overlay.className = 'pro-overlay';
                     overlay.innerHTML = `
                         <div class="pro-overlay-content">
-                            <div class="w-12 h-12 mx-auto mb-3 rounded-full bg-gradient-to-br from-yellow-400 to-orange-500 flex items-center justify-center shadow-lg shadow-orange-500/30">
-                                <i class="ph ph-lock-key text-2xl text-white"></i>
+                            <div class="w-10 h-10 mx-auto mb-2 rounded-full bg-gradient-to-br from-yellow-400 to-orange-500 flex items-center justify-center shadow-lg shadow-orange-500/30">
+                                <i class="ph ph-lock-key text-xl text-white"></i>
                             </div>
-                            <h3 class="text-xl font-bold text-white mb-2">Función Pro</h3>
-                            <p class="text-white/70 text-sm mb-4">Actualiza tu plan para desbloquear ${title}.</p>
-                            <button onclick="app.navigate('upgrade')" class="btn-primary px-6 py-2 rounded-xl text-sm font-bold shadow-lg shadow-blue-500/30 hover:scale-105 transition-transform">
-                                Ver Planes Pro
+                            <h3 class="text-base font-bold text-white mb-1">Función Pro</h3>
+                            <p class="text-white/70 text-xs mb-3">Actualiza para desbloquear ${title}.</p>
+                            <button onclick="app.navigate('upgrade')" class="btn-primary px-4 py-1.5 rounded-lg text-xs font-bold shadow-lg shadow-blue-500/30 hover:scale-105 transition-transform w-full">
+                                Ver Planes
                             </button>
                         </div>
                     `;
@@ -3293,7 +3347,9 @@
                         saleTemplateEl.value = templates.sale_message || 
                             "Hola {cliente}, gracias por tu compra en *{negocio}*.\n\n" +
                             "*Detalle:*\n{items}\n" +
-                            "*TOTAL: ${total}*\n\n" +
+                            "*TOTAL: ${total}*\n" +
+                            "Pagado: ${pagado}\n" +
+                            "Saldo: ${saldo}\n\n" +
                             "¡Esperamos verte pronto! 👋";
                     }
                     
@@ -5899,16 +5955,19 @@
                     tbody.innerHTML = data.recurring_expenses.map(exp => {
                         let statusColor = '';
                         let statusText = '';
+                        let payButton = '';
                         
                         if (exp.is_active) {
                             if (exp.due_day < currentDay) {
                                 // Overdue (passed this month)
                                 statusColor = 'text-red-400 font-bold';
                                 statusText = 'Vencido';
+                                payButton = `<button onclick="app.payRecurringExpense(${exp.id}, '${exp.name}', ${exp.amount})" class="text-xs bg-green-500/20 text-green-400 border border-green-500/50 px-2 py-1 rounded hover:bg-green-500/30 ml-2" title="Marcar como pagado y renovar">Pagar</button>`;
                             } else if (exp.due_day <= currentDay + 3) {
                                 // Upcoming (within 3 days)
                                 statusColor = 'text-yellow-400 font-bold';
                                 statusText = 'Próximo';
+                                payButton = `<button onclick="app.payRecurringExpense(${exp.id}, '${exp.name}', ${exp.amount})" class="text-xs bg-green-500/20 text-green-400 border border-green-500/50 px-2 py-1 rounded hover:bg-green-500/30 ml-2" title="Marcar como pagado y renovar">Pagar</button>`;
                             } else {
                                 statusColor = 'text-white/60';
                                 statusText = 'Pendiente';
@@ -5918,11 +5977,19 @@
                         return `
                         <tr class="${!exp.is_active ? 'opacity-50' : ''}">
                             <td class="font-medium">
-                                ${exp.name}
-                                ${statusText && exp.is_active ? `<div class="text-xs ${statusColor}">${statusText}</div>` : ''}
+                                <div class="flex items-center flex-wrap gap-1">
+                                    ${exp.name}
+                                    ${statusText && exp.is_active ? `<div class="text-xs ${statusColor}">(${statusText})</div>` : ''}
+                                    ${payButton}
+                                </div>
                             </td>
                             <td>${this.formatMoney(exp.amount)}</td>
-                            <td>Día ${exp.due_day}</td>
+                            <td>
+                                <div class="flex flex-col">
+                                    <span>${exp.next_due_date ? this.formatDate(exp.next_due_date) : 'Día ' + exp.due_day}</span>
+                                    <span class="text-xs text-muted">${this.getFrequencyLabel(exp.frequency)}</span>
+                                </div>
+                            </td>
                             <td>${exp.category || '-'}</td>
                             <td class="text-center">
                                 <span class="px-2 py-1 rounded-full text-xs ${exp.is_active ? 'bg-green-400/10 text-green-400' : 'bg-gray-700 text-gray-400'}">
@@ -5944,6 +6011,90 @@
                 }
             },
             
+            getFrequencyLabel(freq) {
+                const map = {
+                    'weekly': 'Semanal',
+                    'biweekly': 'Quincenal',
+                    'monthly': 'Mensual',
+                    'annual': 'Anual'
+                };
+                return map[freq] || 'Mensual';
+            },
+
+            async payRecurringExpense(id, name, amount) {
+                if (!await showConfirm(`¿Marcar "${name}" como pagado?\n\nSe registrará un gasto por ${this.formatMoney(amount)} y se actualizará la fecha de vencimiento.`)) return;
+
+                try {
+                    // Fetch full details first to get frequency and dates
+                    const data = await this.api(`/businesses/${this.business.id}/recurring-expenses`);
+                    const expense = data.recurring_expenses.find(e => e.id === id);
+                    if (!expense) throw new Error('Gasto no encontrado');
+
+                    // 1. Create the expense record
+                    const today = new Date();
+                    const todayStr = today.toISOString().split('T')[0];
+                    
+                    await this.api(`/businesses/${this.business.id}/expenses`, {
+                        method: 'POST',
+                        body: JSON.stringify({
+                            expense_date: todayStr,
+                            category: expense.category || 'Gasto Recurrente',
+                            amount: amount,
+                            description: `Pago recurrente: ${name}`
+                        })
+                    });
+
+                    // 2. Calculate next due date
+                    let nextDate = new Date();
+                    if (expense.next_due_date) {
+                        // Parse local date
+                        const parts = expense.next_due_date.split('-');
+                        nextDate = new Date(parts[0], parts[1]-1, parts[2]);
+                    }
+                    
+                    // If overdue (in past), start counting from today for the renewal?
+                    // User said "se renueve... vuelva aparecer la alerta un mes despues".
+                    // If I pay today, I expect next payment in X time from TODAY or from ORIGINAL DATE?
+                    // Usually from ORIGINAL DATE to keep schedule, but if it's very old, it might be weird.
+                    // Let's ensure base date is at least today if it was way in the past.
+                    const todayDate = new Date();
+                    todayDate.setHours(0,0,0,0);
+                    if (nextDate < todayDate) {
+                        nextDate = todayDate;
+                    }
+
+                    const freq = expense.frequency || 'monthly';
+                    if (freq === 'weekly') {
+                        nextDate.setDate(nextDate.getDate() + 7);
+                    } else if (freq === 'biweekly') {
+                        nextDate.setDate(nextDate.getDate() + 15);
+                    } else if (freq === 'monthly') {
+                        nextDate.setMonth(nextDate.getMonth() + 1);
+                    } else if (freq === 'annual') {
+                        nextDate.setFullYear(nextDate.getFullYear() + 1);
+                    }
+                    
+                    const nextDateStr = nextDate.toISOString().split('T')[0];
+
+                    // 3. Update recurring expense
+                    await this.api(`/businesses/${this.business.id}/recurring-expenses/${id}`, {
+                        method: 'PUT',
+                        body: JSON.stringify({
+                            next_due_date: nextDateStr
+                        })
+                    });
+                    
+                    showCustomAlert('Pago registrado y renovado', 'success');
+                    this.loadDashboard(); 
+                    if (this.currentPage === 'recurring_expenses') {
+                        this.loadRecurringExpenses();
+                    }
+                    
+                } catch (e) {
+                    showCustomAlert('Error al registrar pago: ' + e.message, 'error');
+                }
+            },
+            
             showRecurringExpenseModal() {
                 this.closeModal(); // Ensure others are closed
                 const modal = document.getElementById('modal-recurring-expense');
@@ -5955,6 +6106,7 @@
                 document.getElementById('recurring-expense-amount').value = '';
                 document.getElementById('recurring-expense-day').value = '';
                 document.getElementById('recurring-expense-category').value = '';
+                document.getElementById('recurring-expense-frequency').value = 'monthly';
                 const activeCheck = document.getElementById('recurring-expense-active');
                 if(activeCheck) activeCheck.checked = true;
                 
@@ -5982,6 +6134,7 @@
                     document.getElementById('recurring-expense-amount').value = expense.amount;
                     document.getElementById('recurring-expense-day').value = expense.due_day;
                     document.getElementById('recurring-expense-category').value = expense.category || '';
+                    document.getElementById('recurring-expense-frequency').value = expense.frequency || 'monthly';
                     const activeCheck = document.getElementById('recurring-expense-active');
                     if(activeCheck) activeCheck.checked = expense.is_active;
 
@@ -6004,6 +6157,7 @@
                 const amount = document.getElementById('recurring-expense-amount').value;
                 const due_day = document.getElementById('recurring-expense-day').value;
                 const category = document.getElementById('recurring-expense-category').value;
+                const frequency = document.getElementById('recurring-expense-frequency').value || 'monthly';
                 const activeCheck = document.getElementById('recurring-expense-active');
                 const is_active = activeCheck ? activeCheck.checked : true;
                 
@@ -6017,7 +6171,8 @@
                     amount: parseFloat(amount), 
                     due_day: parseInt(due_day), 
                     category, 
-                    is_active 
+                    is_active,
+                    frequency
                 };
                 
                 try {
