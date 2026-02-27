@@ -2440,6 +2440,49 @@
                 return message;
             },
             
+            reportProblem() {
+                const userId = this.user ? this.user.id : 'N/A';
+                const businessId = this.business ? this.business.id : 'N/A';
+                const appVersion = '1.0.0'; // Hardcoded for now
+                const browser = navigator.userAgent;
+                
+                const message = `Hola, quiero reportar un problema.\n\n` +
+                    `Info Técnica:\n` +
+                    `- User ID: ${userId}\n` +
+                    `- Business ID: ${businessId}\n` +
+                    `- App Version: ${appVersion}\n` +
+                    `- Navegador: ${browser}\n\n` +
+                    `Descripción del problema: `;
+                
+                const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent) || window.innerWidth < 768;
+                // Replace with actual support number
+                const supportNumber = '573001234567'; 
+                const url = isMobile 
+                    ? `https://wa.me/${supportNumber}?text=${encodeURIComponent(message)}`
+                    : `https://web.whatsapp.com/send?phone=${supportNumber}&text=${encodeURIComponent(message)}`;
+                
+                window.open(url, '_blank');
+            },
+
+            reportProblemEmail() {
+                const userId = this.user ? this.user.id : 'N/A';
+                const businessId = this.business ? this.business.id : 'N/A';
+                const appVersion = '1.0.0';
+                const browser = navigator.userAgent;
+                
+                const subject = `Reporte de Problema - User ${userId}`;
+                const body = `Hola equipo de soporte,\n\n` +
+                    `Estoy experimentando el siguiente problema:\n\n\n` +
+                    `----------------------------------------\n` +
+                    `Información Técnica:\n` +
+                    `- User ID: ${userId}\n` +
+                    `- Business ID: ${businessId}\n` +
+                    `- App Version: ${appVersion}\n` +
+                    `- Navegador: ${browser}`;
+                
+                window.location.href = `mailto:soporte@encaja.co?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+            },
+
             // API helpers
             async api(endpoint, options = {}) {
                 // Si estamos en Capacitor, agregar la URL base
@@ -5693,25 +5736,12 @@
                 }
             },
 
-                try {
-                    if (id) {
-                        await this.api(`/businesses/${this.business.id}/recurring-expenses/${id}`, 'PUT', payload);
-                        showCustomAlert('Gasto recurrente actualizado', 'success');
-                    } else {
-                        await this.api(`/businesses/${this.business.id}/recurring-expenses`, 'POST', payload);
-                        showCustomAlert('Gasto recurrente creado', 'success');
-                    }
-                    this.closeModal();
-                    this.loadRecurringExpenses();
-                } catch (e) {
-                    showCustomAlert('Error al guardar: ' + e.message, 'error');
-                }
-            },
-
             async deleteRecurringExpense(id) {
-                if (!confirm('¿Estás seguro de eliminar este gasto recurrente?')) return;
+                if (!await showConfirm('¿Estás seguro de eliminar este gasto recurrente?')) return;
                 try {
-                    await this.api(`/businesses/${this.business.id}/recurring-expenses/${id}`, 'DELETE');
+                    await this.api(`/businesses/${this.business.id}/recurring-expenses/${id}`, {
+                        method: 'DELETE'
+                    });
                     showCustomAlert('Gasto recurrente eliminado', 'success');
                     this.loadRecurringExpenses();
                 } catch (e) {
