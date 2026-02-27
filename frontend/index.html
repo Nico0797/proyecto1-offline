@@ -3738,13 +3738,20 @@
             },
 
             async deleteQuickNote(id) {
+                // Ensure id is a number or valid string
+                if (!id) return;
+                
                 if (!await showConfirm('¿Eliminar esta nota?')) return;
                 
                 try {
-                    await this.api(`/businesses/${this.business.id}/quick-notes/${id}`, 'DELETE');
+                    // Use DELETE method correctly
+                    await this.api(`/businesses/${this.business.id}/quick-notes/${id}`, {
+                         method: 'DELETE'
+                    });
                     this.loadQuickNotes();
+                    showCustomAlert('Nota eliminada', 'success');
                 } catch (e) {
-                    showCustomAlert('Error al eliminar nota', 'error');
+                    showCustomAlert('Error al eliminar nota: ' + e.message, 'error');
                 }
             },
 
@@ -5584,20 +5591,24 @@
                     console.error('Error loading recurring expenses:', e);
                 }
             },
-
+            
             showRecurringExpenseModal() {
                 this.closeModal(); // Ensure others are closed
+                const modal = document.getElementById('modal-recurring-expense');
+                const overlay = document.getElementById('modal-overlay');
+                
+                // Reset form
                 document.getElementById('recurring-expense-id').value = '';
                 document.getElementById('recurring-expense-name').value = '';
                 document.getElementById('recurring-expense-amount').value = '';
                 document.getElementById('recurring-expense-day').value = '';
                 document.getElementById('recurring-expense-category').value = '';
-                document.getElementById('recurring-expense-active').checked = true;
+                const activeCheck = document.getElementById('recurring-expense-active');
+                if(activeCheck) activeCheck.checked = true;
                 
-                document.querySelector('#modal-recurring-expense h3').textContent = 'Nuevo Gasto Recurrente';
+                const title = modal.querySelector('h3');
+                if(title) title.textContent = 'Nuevo Gasto Recurrente';
                 
-                const modal = document.getElementById('modal-recurring-expense');
-                const overlay = document.getElementById('modal-overlay');
                 modal.classList.remove('hidden');
                 modal.style.display = 'block';
                 overlay.classList.remove('hidden');
@@ -5606,27 +5617,32 @@
 
             async editRecurringExpense(id) {
                 try {
+                    // Fetch directly from API to ensure fresh data
                     const data = await this.api(`/businesses/${this.business.id}/recurring-expenses`);
                     const expense = data.recurring_expenses.find(e => e.id === id);
                     if (!expense) return;
+
+                    const modal = document.getElementById('modal-recurring-expense');
+                    const overlay = document.getElementById('modal-overlay');
 
                     document.getElementById('recurring-expense-id').value = expense.id;
                     document.getElementById('recurring-expense-name').value = expense.name;
                     document.getElementById('recurring-expense-amount').value = expense.amount;
                     document.getElementById('recurring-expense-day').value = expense.due_day;
                     document.getElementById('recurring-expense-category').value = expense.category || '';
-                    document.getElementById('recurring-expense-active').checked = expense.is_active;
+                    const activeCheck = document.getElementById('recurring-expense-active');
+                    if(activeCheck) activeCheck.checked = expense.is_active;
 
-                    document.querySelector('#modal-recurring-expense h3').textContent = 'Editar Gasto Recurrente';
+                    const title = modal.querySelector('h3');
+                    if(title) title.textContent = 'Editar Gasto Recurrente';
                     
-                    const modal = document.getElementById('modal-recurring-expense');
-                    const overlay = document.getElementById('modal-overlay');
                     modal.classList.remove('hidden');
                     modal.style.display = 'block';
                     overlay.classList.remove('hidden');
                     overlay.style.display = 'flex';
                 } catch (e) {
                     console.error(e);
+                    showCustomAlert('Error al cargar gasto para editar', 'error');
                 }
             },
 
@@ -5636,9 +5652,46 @@
                 const amount = document.getElementById('recurring-expense-amount').value;
                 const due_day = document.getElementById('recurring-expense-day').value;
                 const category = document.getElementById('recurring-expense-category').value;
-                const is_active = document.getElementById('recurring-expense-active').checked;
+                const activeCheck = document.getElementById('recurring-expense-active');
+                const is_active = activeCheck ? activeCheck.checked : true;
+                
+                if (!name || !amount || !due_day) {
+                    showCustomAlert('Por favor completa los campos obligatorios', 'warning');
+                    return;
+                }
 
-                const payload = { name, amount, due_day, category, is_active };
+                const payload = { 
+                    name, 
+                    amount: parseFloat(amount), 
+                    due_day: parseInt(due_day), 
+                    category, 
+                    is_active 
+                };
+                
+                try {
+                    if (id) {
+                        await this.api(`/businesses/${this.business.id}/recurring-expenses/${id}`, {
+                            method: 'PUT',
+                            body: JSON.stringify(payload)
+                        });
+                        showCustomAlert('Gasto recurrente actualizado', 'success');
+                    } else {
+                        await this.api(`/businesses/${this.business.id}/recurring-expenses`, {
+                            method: 'POST',
+                            body: JSON.stringify(payload)
+                        });
+                        showCustomAlert('Gasto recurrente creado', 'success');
+                    }
+                    this.closeModal();
+                    this.loadRecurringExpenses();
+                    // Also refresh dashboard to update alerts
+                    if (this.currentPage === 'dashboard') {
+                        this.loadDashboard();
+                    }
+                } catch (e) {
+                    showCustomAlert('Error al guardar: ' + e.message, 'error');
+                }
+            },
 
                 try {
                     if (id) {

@@ -109,10 +109,30 @@ def init_db(app):
                             app.logger.info(f"Skipping product migration: {statement}. Reason: {str(e)}")
                     db.session.commit()
 
-            # Crear tabla recurring_expenses si no existe
+            # Create recurring_expenses if not exists
+            # IMPORTANT: This must run for both SQLite and Postgres
+            # Check table existence explicitly
             if not inspector.has_table("recurring_expenses"):
-                # Crear todas las tablas faltantes (incluyendo recurring_expenses)
-                db.create_all()
+                try:
+                    # In Postgres, create_all only creates tables that don't exist
+                    # But we need to be sure the model is imported in main.py or wherever init_db is called
+                    # To be safe, we can use raw SQL fallback for Postgres if create_all misses it
+                    # However, create_all is the standard way.
+                    db.create_all()
+                    app.logger.info("Created missing tables including recurring_expenses")
+                except Exception as e:
+                    app.logger.error(f"Error creating tables: {e}")
+
+            # Verify recurring_expenses columns just in case it was created with old schema
+            if inspector.has_table("recurring_expenses"):
+                re_columns = [col['name'] for col in inspector.get_columns("recurring_expenses")]
+                # Ensure all columns exist
+                if "is_active" not in re_columns:
+                     try:
+                        with db.session.begin_nested():
+                             db.session.execute(text("ALTER TABLE recurring_expenses ADD COLUMN is_active BOOLEAN DEFAULT TRUE"))
+                        db.session.commit()
+                     except: pass
 
             # Add monthly_sales_goal to businesses if not exists
             if inspector.has_table("businesses"):
