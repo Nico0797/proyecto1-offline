@@ -315,6 +315,43 @@ class QuickNote(db.Model):
         return f"<QuickNote {self.id}>"
 
 
+class SalesGoal(db.Model):
+    """Metas de Ventas"""
+    __tablename__ = "sales_goals"
+
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=False, index=True)
+    business_id = db.Column(db.Integer, db.ForeignKey("businesses.id"), nullable=False, index=True)
+    title = db.Column(db.String(255), nullable=False)
+    description = db.Column(db.Text)
+    target_amount = db.Column(db.Float, nullable=False)
+    start_date = db.Column(db.Date, nullable=False)
+    end_date = db.Column(db.Date, nullable=False)
+    status = db.Column(db.String(20), default="active")  # active, achieved, archived
+    achieved_at = db.Column(db.DateTime)
+    congrats_archived = db.Column(db.Boolean, default=False)
+    last_congrats_seen_at = db.Column(db.DateTime)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    def to_dict(self):
+        return {
+            "id": self.id,
+            "user_id": self.user_id,
+            "business_id": self.business_id,
+            "title": self.title,
+            "description": self.description,
+            "target_amount": self.target_amount,
+            "start_date": self.start_date.isoformat() if self.start_date else None,
+            "end_date": self.end_date.isoformat() if self.end_date else None,
+            "status": self.status,
+            "achieved_at": self.achieved_at.isoformat() if self.achieved_at else None,
+            "congrats_archived": self.congrats_archived,
+            "last_congrats_seen_at": self.last_congrats_seen_at.isoformat() if self.last_congrats_seen_at else None,
+            "created_at": self.created_at.isoformat() if self.created_at else None,
+        }
+
+
 class Payment(db.Model):
     """Pago/Abono de cliente"""
     __tablename__ = "payments"

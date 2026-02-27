@@ -568,6 +568,9 @@
                     <a href="#" onclick="event.preventDefault(); app.navigate('reports')" class="nav-item block px-4 py-2 rounded-lg text-white/80 hover:bg-white/5" data-page="reports">
                         <i class="ph ph-chart-line-up ph-icon"></i> Reportes
                     </a>
+                    <a href="#" onclick="event.preventDefault(); app.navigate('sales_goals')" class="nav-item block px-4 py-2 rounded-lg text-white/80 hover:bg-white/5" data-page="sales_goals">
+                        <i class="ph ph-target ph-icon"></i> Metas de Ventas
+                    </a>
                     <a href="#" onclick="event.preventDefault(); app.navigate('settings')" class="nav-item block px-4 py-2 rounded-lg text-white/80 hover:bg-white/5" data-page="settings">
                         <i class="ph ph-gear ph-icon"></i> Configuración
                     </a>
@@ -618,8 +621,8 @@
                 
                 <!-- Dashboard Page -->
                 <div id="page-dashboard" class="page fade-in">
-                    <!-- Recurring Expense Alerts -->
-                    <div id="recurring-alerts" class="mb-6 space-y-2 hidden"></div>
+                    <!-- Recurring Expense Alerts (Top of Dashboard) -->
+                    <div id="dashboard-alerts" class="mb-6 space-y-2 hidden"></div>
 
                     <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
                         <h2 class="text-2xl font-bold">Dashboard</h2>
@@ -632,6 +635,9 @@
                             <button onclick="app.setDashboardPeriod('year')" id="period-year" class="px-3 py-1.5 rounded-md text-xs font-medium transition-all text-white/60 hover:text-white whitespace-nowrap">Año</button>
                         </div>
                     </div>
+
+                    <!-- Recurring Expense Alerts (Placed after title, before cards) -->
+                    <div id="recurring-alerts-placeholder" class="hidden"></div>
                     
                     <!-- Quick Stats -->
                     <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
@@ -1122,7 +1128,7 @@
                     <!-- Filters -->
                     <div class="glass rounded-xl p-4 mb-6">
                         <div class="flex gap-2 mb-2">
-                            <input type="text" id="orders-search" placeholder="Buscar pedido..." class="input px-4 py-2 rounded-lg flex-1" oninput="app.filterOrders()">
+                            <input type="text" id="orders-search" placeholder="Buscar pedido..." class="input px-4 py-2 rounded-lg flex-1" oninput="app.filterOrders()" autocomplete="off" name="search_orders_unique_field">
                             <button onclick="app.toggleFilters('orders-filters')" class="btn-primary w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0">
                                 <i class="ph ph-funnel text-xl"></i>
                             </button>
@@ -1299,6 +1305,43 @@
                     </div>
                 </div>
                 
+                <!-- Sales Goals Page -->
+                <div id="page-sales_goals" class="page hidden fade-in">
+                    <!-- PRO Gating Overlay (Hidden by default, shown via JS) -->
+                    <div id="goals-pro-lock" class="hidden flex flex-col items-center justify-center py-16 text-center">
+                        <div class="w-24 h-24 rounded-full bg-white/5 flex items-center justify-center mb-6">
+                            <i class="ph ph-lock-key text-4xl text-white/40"></i>
+                        </div>
+                        <h2 class="text-3xl font-bold mb-2">Función Disponible en PRO</h2>
+                        <p class="text-white/60 max-w-md mb-8">Establece metas de ventas, sigue tu progreso y celebra tus logros. Actualiza tu plan para desbloquear esta herramienta.</p>
+                        <button onclick="app.navigate('upgrade')" class="btn-primary px-8 py-3 rounded-xl font-bold text-lg hover:scale-105 transition-transform shadow-lg shadow-yellow-500/20">
+                            <i class="ph ph-star mr-2"></i> Actualizar a PRO
+                        </button>
+                    </div>
+
+                    <!-- Goals Content -->
+                    <div id="goals-content">
+                        <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
+                            <h2 class="text-2xl font-bold flex items-center gap-2">
+                                <i class="ph ph-target text-red-400"></i> Metas de Ventas
+                            </h2>
+                            <button onclick="app.showGoalModal()" class="btn-primary w-full md:w-auto px-4 py-2 rounded-xl font-semibold">+ Nueva Meta</button>
+                        </div>
+
+                        <!-- Filters -->
+                        <div class="flex gap-2 mb-6 overflow-x-auto pb-2">
+                            <button onclick="app.filterGoals('active')" id="goal-filter-active" class="px-4 py-2 rounded-lg bg-white/10 text-white font-medium whitespace-nowrap">Activas</button>
+                            <button onclick="app.filterGoals('achieved')" id="goal-filter-achieved" class="px-4 py-2 rounded-lg text-white/60 hover:text-white hover:bg-white/5 font-medium whitespace-nowrap">Cumplidas</button>
+                            <button onclick="app.filterGoals('archived')" id="goal-filter-archived" class="px-4 py-2 rounded-lg text-white/60 hover:text-white hover:bg-white/5 font-medium whitespace-nowrap">Archivadas</button>
+                        </div>
+
+                        <!-- Goals List -->
+                        <div id="goals-list" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                            <!-- Injected via JS -->
+                        </div>
+                    </div>
+                </div>
+
                 <!-- Settings Page -->
                 <div id="page-settings" class="page hidden fade-in">
                     <h2 class="text-2xl font-bold mb-6">Configuración</h2>
@@ -2289,6 +2332,81 @@
                         </div>
                     </div>
                 </form>
+            </div>
+
+            <!-- Goal Modal -->
+            <div id="modal-goal" class="hidden glass rounded-2xl p-6 w-full max-w-md">
+                <h3 id="goal-modal-title" class="text-xl font-bold mb-4">Nueva Meta</h3>
+                <form onsubmit="event.preventDefault(); app.saveSalesGoal()">
+                    <input type="hidden" id="goal-id">
+                    <div class="space-y-4">
+                        <div>
+                            <label class="block text-sm mb-1">Título</label>
+                            <input type="text" id="goal-title" class="input w-full px-4 py-2 rounded-xl" placeholder="Ej: Ventas Marzo" required>
+                        </div>
+                        <div>
+                            <label class="block text-sm mb-1">Descripción (Opcional)</label>
+                            <textarea id="goal-description" class="input w-full px-4 py-2 rounded-xl h-20" placeholder="Ej: Para cubrir arriendo..."></textarea>
+                        </div>
+                        <div>
+                            <label class="block text-sm mb-1">Monto Objetivo</label>
+                            <input type="number" id="goal-target" class="input w-full px-4 py-2 rounded-xl" placeholder="0" required min="1">
+                        </div>
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-sm mb-1">Inicio</label>
+                                <input type="date" id="goal-start" class="input w-full px-4 py-2 rounded-xl" required>
+                            </div>
+                            <div>
+                                <label class="block text-sm mb-1">Fin</label>
+                                <input type="date" id="goal-end" class="input w-full px-4 py-2 rounded-xl" required>
+                            </div>
+                        </div>
+                        <!-- Presets -->
+                        <div class="flex gap-2 flex-wrap">
+                            <button type="button" onclick="app.setGoalPeriod('month')" class="text-xs bg-white/5 hover:bg-white/10 px-2 py-1 rounded border border-white/10">Este Mes</button>
+                            <button type="button" onclick="app.setGoalPeriod('quarter')" class="text-xs bg-white/5 hover:bg-white/10 px-2 py-1 rounded border border-white/10">Este Trimestre</button>
+                            <button type="button" onclick="app.setGoalPeriod('year')" class="text-xs bg-white/5 hover:bg-white/10 px-2 py-1 rounded border border-white/10">Este Año</button>
+                        </div>
+                        
+                        <div class="flex justify-end gap-2 pt-4">
+                            <button type="button" onclick="app.closeModal('modal-goal')" class="px-4 py-2 rounded-xl">Cancelar</button>
+                            <button type="submit" class="btn-primary px-6 py-2 rounded-xl">Guardar</button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+
+            <!-- Congrats Modal -->
+            <div id="modal-congrats" class="hidden fixed inset-0 z-[200] flex items-center justify-center p-4">
+                <div class="absolute inset-0 bg-black/60 backdrop-blur-md"></div>
+                <div class="relative glass rounded-3xl p-8 max-w-md w-full text-center border-2 border-yellow-400/50 shadow-2xl shadow-yellow-500/20 transform transition-all scale-100">
+                    <div class="absolute -top-10 left-1/2 transform -translate-x-1/2 text-6xl">🎉</div>
+                    <h2 class="text-3xl font-bold text-white mb-2 mt-4">¡Felicitaciones!</h2>
+                    <p class="text-lg text-yellow-300 font-medium mb-6">Has cumplido tu meta</p>
+                    
+                    <div class="bg-white/10 rounded-xl p-4 mb-6">
+                        <h3 id="congrats-title" class="font-bold text-xl mb-2">Meta</h3>
+                        <div class="flex justify-between items-end">
+                            <div class="text-left">
+                                <p class="text-xs text-muted">Logrado</p>
+                                <p id="congrats-current" class="text-2xl font-bold text-green-400">$0</p>
+                            </div>
+                            <div class="text-right">
+                                <p class="text-xs text-muted">Objetivo</p>
+                                <p id="congrats-target" class="text-lg text-white/80">$0</p>
+                            </div>
+                        </div>
+                        <div class="w-full bg-white/10 rounded-full h-2 mt-3 overflow-hidden">
+                            <div class="bg-green-400 h-full w-full animate-pulse"></div>
+                        </div>
+                    </div>
+                    
+                    <div class="flex flex-col gap-3">
+                        <button id="congrats-archive-btn" class="btn-primary w-full py-3 rounded-xl font-bold">Archivar Meta</button>
+                        <button id="congrats-close-btn" class="text-white/60 hover:text-white py-2">Cerrar</button>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
@@ -3675,6 +3793,9 @@
                         // Removed strict block for better UX (show teaser or basic stats)
                         await this.loadReports();
                         break;
+                    case 'sales_goals':
+                        await this.loadSalesGoals();
+                        break;
                     case 'settings':
                         await this.loadSettings();
                         break;
@@ -4000,6 +4121,7 @@
                 try {
                     const recurringData = await this.api(`/businesses/${this.business.id}/recurring-expenses`);
                     const alertsContainer = document.getElementById('dashboard-alerts');
+                    const placeholder = document.getElementById('recurring-alerts-placeholder');
                     
                     if (recurringData.recurring_expenses && recurringData.recurring_expenses.length > 0) {
                         const today = new Date();
@@ -4027,7 +4149,7 @@
                                 // Overdue
                                 alerts.push({
                                     type: 'overdue',
-                                    html: `<div class="bg-red-500/20 border border-red-500/50 rounded-lg p-3 flex justify-between items-center">
+                                    html: `<div class="bg-red-500/20 border border-red-500/50 rounded-lg p-3 flex justify-between items-center mb-2">
                                             <div class="flex items-center gap-3">
                                                 <div class="p-2 bg-red-500/20 rounded-lg text-red-400">
                                                     <i class="ph ph-warning-circle text-xl"></i>
@@ -4044,7 +4166,7 @@
                                 // Upcoming (within 5 days)
                                 alerts.push({
                                     type: 'upcoming',
-                                    html: `<div class="bg-yellow-500/20 border border-yellow-500/50 rounded-lg p-3 flex justify-between items-center">
+                                    html: `<div class="bg-yellow-500/20 border border-yellow-500/50 rounded-lg p-3 flex justify-between items-center mb-2">
                                             <div class="flex items-center gap-3">
                                                 <div class="p-2 bg-yellow-500/20 rounded-lg text-yellow-400">
                                                     <i class="ph ph-clock text-xl"></i>
@@ -4061,15 +4183,42 @@
                         });
                         
                         if (alerts.length > 0) {
-                            alertsContainer.innerHTML = alerts.map(a => a.html).join('');
-                            alertsContainer.classList.remove('hidden');
+                            // Inject into both containers to be safe, or decide on one.
+                            // The user asked for "encima del card de caja hoy".
+                            // "dashboard-alerts" is at the very top (above title).
+                            // "recurring-alerts-placeholder" is below title, above cards.
+                            // Based on request "encima del card de caja hoy", the placeholder is better.
+                            
+                            // Let's use the placeholder and clear the top one
+                            if (placeholder) {
+                                placeholder.innerHTML = alerts.map(a => a.html).join('');
+                                placeholder.classList.remove('hidden');
+                                placeholder.classList.add('mb-6');
+                            }
+                            
+                            if (alertsContainer) {
+                                alertsContainer.innerHTML = ''; 
+                                alertsContainer.classList.add('hidden');
+                            }
                         } else {
+                            if (placeholder) {
+                                placeholder.innerHTML = '';
+                                placeholder.classList.add('hidden');
+                            }
+                            if (alertsContainer) {
+                                alertsContainer.innerHTML = '';
+                                alertsContainer.classList.add('hidden');
+                            }
+                        }
+                    } else {
+                         if (placeholder) {
+                            placeholder.innerHTML = '';
+                            placeholder.classList.add('hidden');
+                        }
+                        if (alertsContainer) {
                             alertsContainer.innerHTML = '';
                             alertsContainer.classList.add('hidden');
                         }
-                    } else {
-                        alertsContainer.innerHTML = '';
-                        alertsContainer.classList.add('hidden');
                     }
                 } catch (e) {
                     console.error('Error loading recurring alerts:', e);
@@ -4109,10 +4258,10 @@
                     
                     container.innerHTML = data.notes.map(note => `
                         <div class="group flex justify-between items-start bg-white/5 p-3 rounded-lg hover:bg-white/10 transition-colors">
-                            <p class="text-sm text-white/80 break-words flex-1 pr-2 whitespace-pre-wrap">${this.escapeHtml(note.note)}</p>
-                            <button onclick="app.deleteQuickNote(${note.id})" class="text-white/20 hover:text-red-400 transition-colors p-1">
-                                <i class="ph ph-x"></i>
-                            </button>
+                            <div class="flex items-start gap-3 flex-1">
+                                <input type="checkbox" onclick="app.deleteQuickNote(${note.id})" class="mt-1 rounded border-white/20 bg-white/10 text-green-500 focus:ring-green-500 cursor-pointer w-4 h-4">
+                                <p class="text-sm text-white/80 break-words whitespace-pre-wrap">${this.escapeHtml(note.note)}</p>
+                            </div>
                         </div>
                     `).join('');
                 } catch (e) {
@@ -4154,7 +4303,8 @@
                 // Ensure id is a number or valid string
                 if (!id) return;
                 
-                if (!await showConfirm('¿Eliminar esta nota?')) return;
+                // No confirmation needed for checkbox action, feels faster/smoother
+                // if (!await showConfirm('¿Eliminar esta nota?')) return;
                 
                 try {
                     // Use DELETE method correctly
@@ -4162,7 +4312,7 @@
                          method: 'DELETE'
                     });
                     this.loadQuickNotes();
-                    showCustomAlert('Nota eliminada', 'success');
+                    // showCustomAlert('Nota completada', 'success'); // Optional feedback
                 } catch (e) {
                     showCustomAlert('Error al eliminar nota: ' + e.message, 'error');
                 }
@@ -4297,7 +4447,267 @@
                 overlay.classList.remove('hidden');
                 overlay.style.display = 'flex';
                 this.saleItems = [];
-                // Initialize with one empty item
+                // Sales Goals Logic
+            async loadSalesGoals(status = 'active') {
+                const container = document.getElementById('goals-list');
+                const proLock = document.getElementById('goals-pro-lock');
+                const content = document.getElementById('goals-content');
+                
+                // Reset UI
+                if (container) container.innerHTML = '<div class="col-span-3 text-center py-8"><div class="animate-spin rounded-full h-8 w-8 border-b-2 border-white mx-auto"></div></div>';
+                
+                // Update filters UI
+                ['active', 'achieved', 'archived'].forEach(s => {
+                    const btn = document.getElementById(`goal-filter-${s}`);
+                    if (btn) {
+                        if (s === status) {
+                            btn.classList.remove('text-white/60', 'hover:bg-white/5');
+                            btn.classList.add('bg-white/10', 'text-white');
+                        } else {
+                            btn.classList.add('text-white/60', 'hover:bg-white/5');
+                            btn.classList.remove('bg-white/10', 'text-white');
+                        }
+                    }
+                });
+
+                try {
+                    const data = await this.api(`/businesses/${this.business.id}/sales-goals?status=${status}`);
+                    this.currentGoals = data.sales_goals; // Store for editing
+                    
+                    // PRO Check handled by backend 403, but also check locally to show nice UI
+                    // If success, hide lock
+                    if (proLock) proLock.classList.add('hidden');
+                    if (content) content.classList.remove('hidden');
+
+                    if (!data.sales_goals || data.sales_goals.length === 0) {
+                        container.innerHTML = '<div class="col-span-3 text-center py-12 text-white/30">No hay metas en esta sección</div>';
+                        return;
+                    }
+
+                    container.innerHTML = data.sales_goals.map(goal => {
+                        const progress = Math.round(goal.progress_pct);
+                        const isAchieved = goal.status === 'achieved';
+                        const barColor = isAchieved ? 'bg-green-400' : 'bg-blue-500';
+                        
+                        // Check for congrats popup
+                        if (goal.should_show_congrats) {
+                            setTimeout(() => this.showCongrats(goal), 1000); // Small delay for effect
+                        }
+
+                        return `
+                            <div class="glass rounded-xl p-5 relative group overflow-hidden">
+                                <div class="absolute top-0 left-0 w-1 h-full ${isAchieved ? 'bg-green-400' : 'bg-blue-500'}"></div>
+                                <div class="flex justify-between items-start mb-2">
+                                    <h3 class="font-bold text-lg truncate pr-2">${this.escapeHtml(goal.title)}</h3>
+                                    ${goal.status === 'active' ? 
+                                        `<button onclick="app.showGoalModal(${goal.id})" class="text-white/40 hover:text-white p-1"><i class="ph ph-pencil-simple"></i></button>` : 
+                                        (goal.status === 'achieved' ? `<span class="text-xs bg-green-500/20 text-green-400 px-2 py-1 rounded-lg">Cumplida</span>` : '')
+                                    }
+                                </div>
+                                <p class="text-sm text-white/60 mb-4 h-10 overflow-hidden text-ellipsis line-clamp-2">${this.escapeHtml(goal.description || '')}</p>
+                                
+                                <div class="mb-2 flex justify-between text-sm">
+                                    <span class="text-white/80">${this.formatMoney(goal.current_amount)}</span>
+                                    <span class="font-bold ${isAchieved ? 'text-green-400' : 'text-white'}">${progress}%</span>
+                                </div>
+                                <div class="w-full bg-white/10 rounded-full h-2 mb-4 overflow-hidden">
+                                    <div class="${barColor} h-full transition-all duration-1000 ease-out" style="width: ${progress}%"></div>
+                                </div>
+                                
+                                <div class="flex justify-between items-center mt-4 pt-4 border-t border-white/5">
+                                    <div class="text-xs text-white/40">
+                                        ${this.formatDate(goal.start_date)} - ${this.formatDate(goal.end_date)}
+                                    </div>
+                                    <div class="flex gap-2">
+                                        ${goal.status === 'achieved' || goal.status === 'active' ? 
+                                            `<button onclick="app.archiveSalesGoal(${goal.id})" class="text-xs bg-white/5 hover:bg-white/10 px-3 py-1.5 rounded-lg border border-white/10 transition-colors">Archivar</button>` : ''
+                                        }
+                                        <div class="text-right text-xs text-white/40 flex items-center">
+                                            Meta: ${this.formatMoney(goal.target_amount)}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        `;
+                    }).join('');
+
+                } catch (e) {
+                    if (e.message.includes('PRO_REQUIRED') || e.status === 403) {
+                        if (proLock) proLock.classList.remove('hidden');
+                        if (content) content.classList.add('hidden');
+                        if (container) container.innerHTML = '';
+                    } else {
+                        if (container) container.innerHTML = `<div class="col-span-3 text-center text-red-400 py-8">Error: ${e.message}</div>`;
+                    }
+                }
+            },
+
+            filterGoals(status) {
+                this.loadSalesGoals(status);
+            },
+
+            async showGoalModal(goalId = null) {
+                // Check PRO first
+                if (this.user.plan === 'free') {
+                    this.navigate('upgrade');
+                    return;
+                }
+
+                const modal = document.getElementById('modal-goal');
+                const overlay = document.getElementById('modal-overlay');
+                const title = document.getElementById('goal-modal-title');
+                const idInput = document.getElementById('goal-id');
+                const titleInput = document.getElementById('goal-title');
+                const descInput = document.getElementById('goal-description');
+                const targetInput = document.getElementById('goal-target');
+                const startInput = document.getElementById('goal-start');
+                const endInput = document.getElementById('goal-end');
+
+                // Reset form
+                idInput.value = '';
+                titleInput.value = '';
+                descInput.value = '';
+                targetInput.value = '';
+                
+                // Default dates (current month)
+                this.setGoalPeriod('month');
+
+                if (goalId) {
+                    title.textContent = 'Editar Meta';
+                    try {
+                        if (this.currentGoals) {
+                            const goal = this.currentGoals.find(g => g.id === goalId);
+                            if (goal) {
+                                idInput.value = goal.id;
+                                titleInput.value = goal.title;
+                                descInput.value = goal.description || '';
+                                targetInput.value = goal.target_amount;
+                                startInput.value = goal.start_date;
+                                endInput.value = goal.end_date;
+                            }
+                        }
+                    } catch(e) {}
+                } else {
+                    title.textContent = 'Nueva Meta';
+                }
+
+                if (modal) {
+                    modal.classList.remove('hidden');
+                    modal.style.display = 'block';
+                    modal.style.zIndex = '100000'; // Ensure on top
+                }
+                if (overlay) {
+                    overlay.classList.remove('hidden');
+                    overlay.style.display = 'flex';
+                    overlay.style.zIndex = '99999';
+                }
+            },
+
+            setGoalPeriod(period) {
+                const startInput = document.getElementById('goal-start');
+                const endInput = document.getElementById('goal-end');
+                const today = new Date();
+                let start = new Date(today);
+                let end = new Date(today);
+
+                if (period === 'month') {
+                    start.setDate(1);
+                    end.setMonth(end.getMonth() + 1);
+                    end.setDate(0);
+                } else if (period === 'quarter') {
+                    const quarter = Math.floor(today.getMonth() / 3);
+                    start.setMonth(quarter * 3);
+                    start.setDate(1);
+                    end.setMonth(start.getMonth() + 3);
+                    end.setDate(0);
+                } else if (period === 'year') {
+                    start.setMonth(0, 1);
+                    end.setMonth(11, 31);
+                }
+
+                startInput.value = start.toISOString().split('T')[0];
+                endInput.value = end.toISOString().split('T')[0];
+            },
+
+            async saveSalesGoal() {
+                const id = document.getElementById('goal-id').value;
+                const title = document.getElementById('goal-title').value;
+                const description = document.getElementById('goal-description').value;
+                const target_amount = document.getElementById('goal-target').value;
+                const start_date = document.getElementById('goal-start').value;
+                const end_date = document.getElementById('goal-end').value;
+
+                if (!title || !target_amount || !start_date || !end_date) {
+                    showCustomAlert('Completa los campos obligatorios', 'warning');
+                    return;
+                }
+
+                const payload = {
+                    title, description, target_amount, start_date, end_date
+                };
+
+                try {
+                    if (id) {
+                        await this.api(`/businesses/${this.business.id}/sales-goals/${id}`, {
+                            method: 'PUT',
+                            body: JSON.stringify(payload)
+                        });
+                    } else {
+                        await this.api(`/businesses/${this.business.id}/sales-goals`, {
+                            method: 'POST',
+                            body: JSON.stringify(payload)
+                        });
+                    }
+                    this.closeModal('modal-goal');
+                    this.loadSalesGoals();
+                    showCustomAlert('Meta guardada exitosamente', 'success');
+                } catch (e) {
+                    showCustomAlert(e.message, 'error');
+                }
+            },
+
+            async archiveSalesGoal(id, fromCongrats = false) {
+                if (!fromCongrats && !await showConfirm('¿Archivar esta meta? Ya no aparecerá en Activas.')) return;
+                
+                try {
+                    await this.api(`/businesses/${this.business.id}/sales-goals/${id}/archive`, {
+                        method: 'POST'
+                    });
+                    this.loadSalesGoals();
+                    if (fromCongrats) {
+                        document.getElementById('modal-congrats').classList.add('hidden');
+                    }
+                } catch (e) {
+                    showCustomAlert(e.message, 'error');
+                }
+            },
+
+            showCongrats(goal) {
+                const modal = document.getElementById('modal-congrats');
+                if (!modal) return;
+                
+                document.getElementById('congrats-title').textContent = goal.title;
+                document.getElementById('congrats-current').textContent = this.formatMoney(goal.current_amount);
+                document.getElementById('congrats-target').textContent = this.formatMoney(goal.target_amount);
+                
+                // Buttons
+                const archiveBtn = document.getElementById('congrats-archive-btn');
+                const closeBtn = document.getElementById('congrats-close-btn');
+                
+                archiveBtn.onclick = () => this.archiveSalesGoal(goal.id, true);
+                closeBtn.onclick = async () => {
+                    // Mark as seen
+                    await this.api(`/businesses/${this.business.id}/sales-goals/${goal.id}/mark-congrats-seen`, {
+                        method: 'POST'
+                    });
+                    modal.classList.add('hidden');
+                };
+                
+                modal.classList.remove('hidden');
+                // Trigger confetti if library available or just simple animation
+            },
+
+            // Initialize with one empty item
                 const itemsContainer = document.getElementById('sale-items');
                 itemsContainer.innerHTML = '';
                 this.addSaleItem();
@@ -6121,27 +6531,50 @@
                         nextDate = new Date(parts[0], parts[1]-1, parts[2]);
                     }
                     
-                    // If overdue (in past), start counting from today for the renewal?
-                    // User said "se renueve... vuelva aparecer la alerta un mes despues".
-                    // If I pay today, I expect next payment in X time from TODAY or from ORIGINAL DATE?
-                    // Usually from ORIGINAL DATE to keep schedule, but if it's very old, it might be weird.
-                    // Let's ensure base date is at least today if it was way in the past.
-                    const todayDate = new Date();
-                    todayDate.setHours(0,0,0,0);
-                    if (nextDate < todayDate) {
-                        nextDate = todayDate;
-                    }
-
+                    // User request: Preserve original due date logic (e.g. always 1st of month)
+                    // Do NOT reset to today if overdue.
+                    // If it's way in the past, we should advance it by N periods until it's in the future?
+                    // OR just advance 1 period from the current due date, even if that is still in the past (to catch up)?
+                    // Usually users want: "I paid the January bill. Now show me the February bill."
+                    // So we just add 1 period to the `nextDate`.
+                    
                     const freq = expense.frequency || 'monthly';
                     if (freq === 'weekly') {
                         nextDate.setDate(nextDate.getDate() + 7);
                     } else if (freq === 'biweekly') {
                         nextDate.setDate(nextDate.getDate() + 15);
                     } else if (freq === 'monthly') {
-                        nextDate.setMonth(nextDate.getMonth() + 1);
+                        // Special handling for months to avoid skipping days (e.g. Jan 31 -> Feb 28 -> Mar 28)
+                        // Ideally we should stick to the original `due_day` if possible.
+                        // But JS Date auto-corrects.
+                        // Let's use simple month addition for now, which is standard.
+                        // To keep the "day", we might need more complex logic, but let's stick to standard date math first.
+                        // If we want to strictly respect `due_day` (e.g. always 15th):
+                        if (expense.due_day) {
+                             // Move to next month
+                             let targetMonth = nextDate.getMonth() + 1;
+                             let targetYear = nextDate.getFullYear();
+                             if (targetMonth > 11) {
+                                 targetMonth = 0;
+                                 targetYear++;
+                             }
+                             // Validate day (e.g. Feb 30 -> Feb 28)
+                             const daysInMonth = new Date(targetYear, targetMonth + 1, 0).getDate();
+                             const targetDay = Math.min(expense.due_day, daysInMonth);
+                             nextDate = new Date(targetYear, targetMonth, targetDay);
+                        } else {
+                             nextDate.setMonth(nextDate.getMonth() + 1);
+                        }
                     } else if (freq === 'annual') {
                         nextDate.setFullYear(nextDate.getFullYear() + 1);
                     }
+                    
+                    // If the calculated next date is still in the past (e.g. user forgot to pay for 3 months),
+                    // should we jump to the CURRENT upcoming one?
+                    // User said: "conserve la fecha del dia que se tiene que pagar"
+                    // If I pay a bill from 3 months ago, I probably still owe the ones in between.
+                    // So advancing just ONE period is the correct behavior for "paying off a specific bill".
+                    // The user will see the next one immediately as "Overdue" or "Pending" if it's also passed.
                     
                     const nextDateStr = nextDate.toISOString().split('T')[0];
 

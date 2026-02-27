@@ -31,7 +31,7 @@ import textwrap
 from backend.config import get_config
 from backend.database import db, init_db
 from backend.auth import token_required, optional_token, AuthManager, create_token, permission_required
-from backend.models import User, Business, Product, Customer, Sale, Expense, Payment, LedgerEntry, LedgerAllocation, Permission, Role, UserRole, RolePermission, AuditLog, SubscriptionPayment, AppSettings, Order, RecurringExpense, QuickNote
+from backend.models import User, Business, Product, Customer, Sale, Expense, Payment, LedgerEntry, LedgerAllocation, Permission, Role, UserRole, RolePermission, AuditLog, SubscriptionPayment, AppSettings, Order, RecurringExpense, QuickNote, SalesGoal
 
 
 def create_app(config_class=None):
@@ -1805,23 +1805,40 @@ def create_app(config_class=None):
 
             # Calculate initial next_due_date
             today = date.today()
-            try:
-                # Try to set date to this month's due_day
-                next_due = date(today.year, today.month, due_day)
-            except ValueError:
-                # If invalid (e.g. Feb 30), set to last day of month or today
-                next_due = today
+            frequency = data.get("frequency", "monthly")
+            import calendar
+
+            def get_valid_date(y, m, d):
+                # Normalize month (handle overflow)
+                # Simple year increment if month > 12
+                while m > 12:
+                    m -= 12
+                    y += 1
+                last_day = calendar.monthrange(y, m)[1]
+                return date(y, m, min(d, last_day))
+
+            # Try to set date to this month's due_day
+            next_due = get_valid_date(today.year, today.month, due_day)
             
-            # If passed, move to next interval?
-            # For simplicity, if passed, it's overdue immediately (so user sees it)
-            # OR we can auto-advance. Let's stick to "if passed, it's overdue" so they pay it.
+            # If passed, move to next interval
+            if next_due < today:
+                if frequency == 'monthly':
+                    next_due = get_valid_date(next_due.year, next_due.month + 1, due_day)
+                elif frequency == 'annual':
+                    next_due = get_valid_date(next_due.year + 1, next_due.month, due_day)
+                elif frequency == 'weekly':
+                     while next_due < today:
+                         next_due += timedelta(days=7)
+                elif frequency == 'biweekly':
+                     while next_due < today:
+                         next_due += timedelta(days=15)
             
             expense = RecurringExpense(
                 business_id=business_id,
                 name=data["name"],
                 amount=float(data["amount"]),
                 due_day=due_day,
-                frequency=data.get("frequency", "monthly"),
+                frequency=frequency,
                 next_due_date=next_due,
                 category=data.get("category"),
                 is_active=data.get("is_active", True)
@@ -1878,6 +1895,153 @@ def create_app(config_class=None):
             return jsonify({"error": "Gasto recurrente no encontrado"}), 404
 
         db.session.delete(expense)
+        db.session.commit()
+        return jsonify({"ok": True})
+
+    # ========== SALES GOALS ROUTES (PRO) ==========
+    @app.route("/api/businesses/<int:business_id>/sales-goals", methods=["GET"])
+    @token_required
+    def get_sales_goals(business_id):
+        # PRO Check
+        if g.current_user.plan != 'pro':
+            return jsonify({"code": "PRO_REQUIRED", "message": "Disponible solo en PRO"}), 403
+
+        business = Business.query.filter_by(id=business_id, user_id=g.current_user.id).first()
+        if not business:
+            return jsonify({"error": "Negocio no encontrado"}), 404
+
+        status_filter = request.args.get("status", "active")
+        
+        query = SalesGoal.query.filter_by(business_id=business_id)
+        if status_filter == 'active':
+            # Active or Achieved but not yet archived/congrats_archived
+            query = query.filter(SalesGoal.congrats_archived == False)
+        elif status_filter == 'archived':
+            query = query.filter(SalesGoal.congrats_archived == True)
+            
+        goals = query.order_by(SalesGoal.end_date).all()
+        
+        results = []
+        for goal in goals:
+            # Calculate current amount
+            current_amount = db.session.query(func.sum(Sale.total)).filter(
+                Sale.business_id == business_id,
+                Sale.sale_date >= goal.start_date,
+                Sale.sale_date <= goal.end_date
+            ).scalar() or 0
+            
+            # Check achievement
+            if goal.status == 'active' and current_amount >= goal.target_amount:
+                goal.status = 'achieved'
+                goal.achieved_at = datetime.utcnow()
+                db.session.commit()
+            
+            progress_pct = min(100, (current_amount / goal.target_amount) * 100) if goal.target_amount > 0 else 0
+            
+            should_show_congrats = (
+                goal.status == 'achieved' and 
+                not goal.congrats_archived and 
+                goal.last_congrats_seen_at is None
+            )
+            
+            data = goal.to_dict()
+            data['current_amount'] = current_amount
+            data['progress_pct'] = progress_pct
+            data['should_show_congrats'] = should_show_congrats
+            results.append(data)
+            
+        return jsonify({"sales_goals": results})
+
+    @app.route("/api/businesses/<int:business_id>/sales-goals", methods=["POST"])
+    @token_required
+    def create_sales_goal(business_id):
+        if g.current_user.plan != 'pro':
+            return jsonify({"code": "PRO_REQUIRED", "message": "Disponible solo en PRO"}), 403
+
+        business = Business.query.filter_by(id=business_id, user_id=g.current_user.id).first()
+        if not business:
+            return jsonify({"error": "Negocio no encontrado"}), 404
+
+        data = request.get_json()
+        if not data.get("title") or not data.get("target_amount") or not data.get("start_date") or not data.get("end_date"):
+            return jsonify({"error": "Datos incompletos"}), 400
+
+        try:
+            start_date = datetime.strptime(data["start_date"], "%Y-%m-%d").date()
+            end_date = datetime.strptime(data["end_date"], "%Y-%m-%d").date()
+            if end_date < start_date:
+                return jsonify({"error": "Fecha fin debe ser mayor o igual a inicio"}), 400
+            
+            goal = SalesGoal(
+                user_id=g.current_user.id,
+                business_id=business_id,
+                title=data["title"],
+                description=data.get("description"),
+                target_amount=float(data["target_amount"]),
+                start_date=start_date,
+                end_date=end_date
+            )
+            db.session.add(goal)
+            db.session.commit()
+            return jsonify({"sales_goal": goal.to_dict()}), 201
+        except Exception as e:
+            return jsonify({"error": str(e)}), 400
+
+    @app.route("/api/businesses/<int:business_id>/sales-goals/<int:goal_id>", methods=["PUT"])
+    @token_required
+    def update_sales_goal(business_id, goal_id):
+        if g.current_user.plan != 'pro':
+            return jsonify({"code": "PRO_REQUIRED", "message": "Disponible solo en PRO"}), 403
+
+        goal = SalesGoal.query.filter_by(id=goal_id, business_id=business_id).first()
+        if not goal:
+            return jsonify({"error": "Meta no encontrada"}), 404
+            
+        if goal.status == 'archived' or goal.congrats_archived:
+             return jsonify({"error": "No se puede editar una meta archivada"}), 400
+
+        data = request.get_json()
+        try:
+            if "title" in data: goal.title = data["title"]
+            if "description" in data: goal.description = data["description"]
+            if "target_amount" in data: goal.target_amount = float(data["target_amount"])
+            if "start_date" in data: goal.start_date = datetime.strptime(data["start_date"], "%Y-%m-%d").date()
+            if "end_date" in data: goal.end_date = datetime.strptime(data["end_date"], "%Y-%m-%d").date()
+            
+            if goal.end_date < goal.start_date:
+                 return jsonify({"error": "Fecha fin debe ser mayor o igual a inicio"}), 400
+
+            db.session.commit()
+            return jsonify({"sales_goal": goal.to_dict()})
+        except Exception as e:
+            return jsonify({"error": str(e)}), 400
+
+    @app.route("/api/businesses/<int:business_id>/sales-goals/<int:goal_id>/archive", methods=["POST"])
+    @token_required
+    def archive_sales_goal(business_id, goal_id):
+        if g.current_user.plan != 'pro':
+            return jsonify({"code": "PRO_REQUIRED", "message": "Disponible solo en PRO"}), 403
+
+        goal = SalesGoal.query.filter_by(id=goal_id, business_id=business_id).first()
+        if not goal:
+            return jsonify({"error": "Meta no encontrada"}), 404
+
+        goal.status = 'archived'
+        goal.congrats_archived = True
+        db.session.commit()
+        return jsonify({"ok": True})
+
+    @app.route("/api/businesses/<int:business_id>/sales-goals/<int:goal_id>/mark-congrats-seen", methods=["POST"])
+    @token_required
+    def mark_sales_goal_seen(business_id, goal_id):
+        if g.current_user.plan != 'pro':
+            return jsonify({"code": "PRO_REQUIRED", "message": "Disponible solo en PRO"}), 403
+
+        goal = SalesGoal.query.filter_by(id=goal_id, business_id=business_id).first()
+        if not goal:
+            return jsonify({"error": "Meta no encontrada"}), 404
+
+        goal.last_congrats_seen_at = datetime.utcnow()
         db.session.commit()
         return jsonify({"ok": True})
 

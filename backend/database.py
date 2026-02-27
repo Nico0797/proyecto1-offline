@@ -29,6 +29,15 @@ def init_db(app):
             if engine.dialect.name == "sqlite":
                 db.create_all()
             
+            # Asegurar tabla sales_goals en Postgres si no existe
+            if not inspector.has_table("sales_goals"):
+                try:
+                    # En Postgres db.create_all() crea solo lo que falta, pero a veces requiere contexto explícito
+                    # Si falla, podemos usar SQL directo o confiar en create_all
+                    db.create_all()
+                except Exception as e:
+                    app.logger.error(f"Error creating sales_goals table: {e}")
+
             # Verificar columnas en 'users'
             if inspector.has_table("users"):
                 existing_columns = {col["name"] for col in inspector.get_columns("users")}
