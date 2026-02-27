@@ -3593,9 +3593,6 @@
                                 <td>${s.paid ? '<span class="text-green-400">Pagado</span>' : '<span class="text-red-400">Pendiente</span>'}</td>
                                 <td>
                                     <div class="flex gap-2">
-                                        <button onclick="app.editSale(${s.id})" class="text-blue-400 hover:text-blue-300 p-1 rounded hover:bg-white/10" title="Editar">
-                                            <i class="ph ph-pencil-simple text-lg"></i>
-                                        </button>
                                         <button onclick="app.deleteSale(${s.id})" class="text-red-400 hover:text-red-300 p-1 rounded hover:bg-white/10" title="Eliminar">
                                             <i class="ph ph-x text-lg"></i>
                                         </button>
@@ -5868,7 +5865,11 @@
         });
         
         // Initialize app
-        document.addEventListener('DOMContentLoaded', () => app.init());
+        document.addEventListener('DOMContentLoaded', () => {
+             if (window.app) {
+                 window.app.init();
+             }
+        });
         
         // Close modal on overlay click
         document.getElementById('modal-overlay').addEventListener('click', (e) => {
@@ -5900,42 +5901,6 @@
         };
         window.adminEditRole = function(id) { console.log('adminEditRole called', id); if(app && app.showEditRoleModal) app.showEditRoleModal(id); };
         window.adminDeleteRole = function(id) { console.log('adminDeleteRole called', id); if(app && app.deleteRole) app.deleteRole(id); };
-    </script>
-    <script>
-        document.addEventListener('DOMContentLoaded', () => {
-            const emailInput = document.getElementById('login-email');
-            const passwordInput = document.getElementById('login-password');
-            const wipe = () => {
-                if (emailInput) {
-                    emailInput.value = '';
-                    emailInput.setAttribute('autocomplete', 'off');
-                    emailInput.setAttribute('name', 'login_email');
-                    emailInput.setAttribute('autocapitalize', 'none');
-                    emailInput.setAttribute('spellcheck', 'false');
-                }
-                if (passwordInput) {
-                    passwordInput.value = '';
-                    passwordInput.setAttribute('autocomplete', 'new-password');
-                    passwordInput.setAttribute('name', 'login_password');
-                }
-            };
-            wipe();
-            let tries = 0;
-            const interval = setInterval(() => {
-                tries++;
-                if (emailInput && emailInput.value) emailInput.value = '';
-                if (passwordInput && passwordInput.value) passwordInput.value = '';
-                if (tries > 20) clearInterval(interval);
-            }, 100);
-            if (emailInput) {
-                emailInput.readOnly = true;
-                emailInput.addEventListener('focus', () => { emailInput.readOnly = false; }, { once: true });
-            }
-            if (passwordInput) {
-                passwordInput.readOnly = true;
-                passwordInput.addEventListener('focus', () => { passwordInput.readOnly = false; }, { once: true });
-            }
-        });
     </script>
 </body>
 </html>
