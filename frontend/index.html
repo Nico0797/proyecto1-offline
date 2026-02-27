@@ -522,6 +522,9 @@
                     <a href="#" onclick="event.preventDefault(); app.navigate('expenses')" class="nav-item block px-4 py-2 rounded-lg text-white/80 hover:bg-white/5" data-page="expenses">
                         <i class="ph ph-receipt ph-icon"></i> Gastos
                     </a>
+                    <a href="#" onclick="event.preventDefault(); app.navigate('recurring_expenses')" class="nav-item block px-4 py-2 rounded-lg text-white/80 hover:bg-white/5" data-page="recurring_expenses">
+                        <i class="ph ph-clock ph-icon"></i> Gastos Recurrentes
+                    </a>
                     <a href="#" onclick="event.preventDefault(); app.navigate('payments')" class="nav-item block px-4 py-2 rounded-lg text-white/80 hover:bg-white/5" data-page="payments">
                         <i class="ph ph-money ph-icon"></i> Pagos/Abonos
                     </a>
@@ -813,6 +816,32 @@
                                 </tr>
                             </thead>
                             <tbody id="expenses-table">
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                
+                <!-- Recurring Expenses Page -->
+                <div id="page-recurring_expenses" class="page hidden fade-in">
+                    <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
+                        <h2 class="text-2xl font-bold">Gastos Recurrentes</h2>
+                        <button onclick="app.showRecurringExpenseModal()" class="btn-primary w-full md:w-auto px-4 py-2 rounded-xl font-semibold">+ Nuevo Gasto Recurrente</button>
+                    </div>
+
+                    <div class="glass rounded-xl overflow-hidden overflow-x-auto">
+                        <table class="w-full">
+                            <thead>
+                                <tr>
+                                    <th class="text-left">Nombre</th>
+                                    <th class="text-left">Monto</th>
+                                    <th class="text-left">Día Vencimiento</th>
+                                    <th class="text-left">Categoría</th>
+                                    <th class="text-center">Estado</th>
+                                    <th class="text-right">Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody id="recurring-expenses-table">
+                                <!-- Loaded via JS -->
                             </tbody>
                         </table>
                     </div>
@@ -1897,6 +1926,40 @@
                         <div>
                             <label class="block text-sm mb-1">Descripción</label>
                             <input type="text" id="expense-description" class="input w-full px-4 py-2 rounded-xl">
+                        </div>
+                        <div class="flex justify-end gap-2 pt-4">
+                            <button type="button" onclick="app.closeModal()" class="px-4 py-2 rounded-xl">Cancelar</button>
+                            <button type="submit" class="btn-primary px-6 py-2 rounded-xl">Guardar</button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+
+            <!-- Recurring Expense Modal -->
+            <div id="modal-recurring-expense" class="glass rounded-2xl p-6 w-full max-w-md hidden">
+                <h3 class="text-xl font-bold mb-4">Nuevo Gasto Recurrente</h3>
+                <form onsubmit="event.preventDefault(); app.saveRecurringExpense()">
+                    <input type="hidden" id="recurring-expense-id">
+                    <div class="space-y-4">
+                        <div>
+                            <label class="block text-sm mb-1">Nombre</label>
+                            <input type="text" id="recurring-expense-name" class="input w-full px-4 py-2 rounded-xl" placeholder="e.g. Alquiler, Internet" required>
+                        </div>
+                        <div>
+                            <label class="block text-sm mb-1">Monto</label>
+                            <input type="number" id="recurring-expense-amount" class="input w-full px-4 py-2 rounded-xl" placeholder="0" step="0.01" required>
+                        </div>
+                        <div>
+                            <label class="block text-sm mb-1">Día de Vencimiento (1-31)</label>
+                            <input type="number" id="recurring-expense-day" class="input w-full px-4 py-2 rounded-xl" min="1" max="31" required>
+                        </div>
+                        <div>
+                            <label class="block text-sm mb-1">Categoría (Opcional)</label>
+                            <input type="text" id="recurring-expense-category" class="input w-full px-4 py-2 rounded-xl" placeholder="e.g. Servicios">
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <input type="checkbox" id="recurring-expense-active" class="w-4 h-4 rounded bg-gray-700 border-gray-600 text-blue-500 focus:ring-blue-500" checked>
+                            <label for="recurring-expense-active" class="text-sm">Activo</label>
                         </div>
                         <div class="flex justify-end gap-2 pt-4">
                             <button type="button" onclick="app.closeModal()" class="px-4 py-2 rounded-xl">Cancelar</button>
@@ -3225,6 +3288,9 @@
                         break;
                     case 'expenses':
                         await this.loadExpenses();
+                        break;
+                    case 'recurring_expenses':
+                        await this.loadRecurringExpenses();
                         break;
                     case 'payments':
                         await this.loadPayments();
@@ -5369,6 +5435,123 @@
                     userModal.classList.add('hidden');
                     userModal.style.display = 'none';
                     userModal.style.zIndex = '';
+                }
+            },
+
+            async loadRecurringExpenses() {
+                try {
+                    const data = await this.api(`/businesses/${this.business.id}/recurring-expenses`);
+                    const tbody = document.getElementById('recurring-expenses-table');
+                    
+                    if (data.recurring_expenses.length === 0) {
+                        tbody.innerHTML = '<tr><td colspan="6" class="text-muted text-center py-8">No hay gastos recurrentes configurados.</td></tr>';
+                        return;
+                    }
+                    
+                    tbody.innerHTML = data.recurring_expenses.map(exp => `
+                        <tr class="${!exp.is_active ? 'opacity-50' : ''}">
+                            <td class="font-medium">${exp.name}</td>
+                            <td>${this.formatMoney(exp.amount)}</td>
+                            <td>Día ${exp.due_day}</td>
+                            <td>${exp.category || '-'}</td>
+                            <td class="text-center">
+                                <span class="px-2 py-1 rounded-full text-xs ${exp.is_active ? 'bg-green-400/10 text-green-400' : 'bg-gray-700 text-gray-400'}">
+                                    ${exp.is_active ? 'Activo' : 'Inactivo'}
+                                </span>
+                            </td>
+                            <td class="text-right">
+                                <button onclick="app.editRecurringExpense(${exp.id})" class="text-blue-400 hover:text-blue-300 mr-2" title="Editar">
+                                    <i class="ph ph-pencil-simple"></i>
+                                </button>
+                                <button onclick="app.deleteRecurringExpense(${exp.id})" class="text-red-400 hover:text-red-300" title="Eliminar">
+                                    <i class="ph ph-trash"></i>
+                                </button>
+                            </td>
+                        </tr>
+                    `).join('');
+                } catch (e) {
+                    console.error('Error loading recurring expenses:', e);
+                }
+            },
+
+            showRecurringExpenseModal() {
+                this.closeModal(); // Ensure others are closed
+                document.getElementById('recurring-expense-id').value = '';
+                document.getElementById('recurring-expense-name').value = '';
+                document.getElementById('recurring-expense-amount').value = '';
+                document.getElementById('recurring-expense-day').value = '';
+                document.getElementById('recurring-expense-category').value = '';
+                document.getElementById('recurring-expense-active').checked = true;
+                
+                document.querySelector('#modal-recurring-expense h3').textContent = 'Nuevo Gasto Recurrente';
+                
+                const modal = document.getElementById('modal-recurring-expense');
+                const overlay = document.getElementById('modal-overlay');
+                modal.classList.remove('hidden');
+                modal.style.display = 'block';
+                overlay.classList.remove('hidden');
+                overlay.style.display = 'flex';
+            },
+
+            async editRecurringExpense(id) {
+                try {
+                    const data = await this.api(`/businesses/${this.business.id}/recurring-expenses`);
+                    const expense = data.recurring_expenses.find(e => e.id === id);
+                    if (!expense) return;
+
+                    document.getElementById('recurring-expense-id').value = expense.id;
+                    document.getElementById('recurring-expense-name').value = expense.name;
+                    document.getElementById('recurring-expense-amount').value = expense.amount;
+                    document.getElementById('recurring-expense-day').value = expense.due_day;
+                    document.getElementById('recurring-expense-category').value = expense.category || '';
+                    document.getElementById('recurring-expense-active').checked = expense.is_active;
+
+                    document.querySelector('#modal-recurring-expense h3').textContent = 'Editar Gasto Recurrente';
+                    
+                    const modal = document.getElementById('modal-recurring-expense');
+                    const overlay = document.getElementById('modal-overlay');
+                    modal.classList.remove('hidden');
+                    modal.style.display = 'block';
+                    overlay.classList.remove('hidden');
+                    overlay.style.display = 'flex';
+                } catch (e) {
+                    console.error(e);
+                }
+            },
+
+            async saveRecurringExpense() {
+                const id = document.getElementById('recurring-expense-id').value;
+                const name = document.getElementById('recurring-expense-name').value;
+                const amount = document.getElementById('recurring-expense-amount').value;
+                const due_day = document.getElementById('recurring-expense-day').value;
+                const category = document.getElementById('recurring-expense-category').value;
+                const is_active = document.getElementById('recurring-expense-active').checked;
+
+                const payload = { name, amount, due_day, category, is_active };
+
+                try {
+                    if (id) {
+                        await this.api(`/businesses/${this.business.id}/recurring-expenses/${id}`, 'PUT', payload);
+                        showCustomAlert('Gasto recurrente actualizado', 'success');
+                    } else {
+                        await this.api(`/businesses/${this.business.id}/recurring-expenses`, 'POST', payload);
+                        showCustomAlert('Gasto recurrente creado', 'success');
+                    }
+                    this.closeModal();
+                    this.loadRecurringExpenses();
+                } catch (e) {
+                    showCustomAlert('Error al guardar: ' + e.message, 'error');
+                }
+            },
+
+            async deleteRecurringExpense(id) {
+                if (!confirm('¿Estás seguro de eliminar este gasto recurrente?')) return;
+                try {
+                    await this.api(`/businesses/${this.business.id}/recurring-expenses/${id}`, 'DELETE');
+                    showCustomAlert('Gasto recurrente eliminado', 'success');
+                    this.loadRecurringExpenses();
+                } catch (e) {
+                    showCustomAlert('Error al eliminar: ' + e.message, 'error');
                 }
             },
 

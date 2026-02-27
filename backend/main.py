@@ -31,7 +31,7 @@ import textwrap
 from backend.config import get_config
 from backend.database import db, init_db
 from backend.auth import token_required, optional_token, AuthManager, create_token, permission_required
-from backend.models import User, Business, Product, Customer, Sale, Expense, Payment, LedgerEntry, LedgerAllocation, Permission, Role, UserRole, RolePermission, AuditLog, SubscriptionPayment, AppSettings, Order
+from backend.models import User, Business, Product, Customer, Sale, Expense, Payment, LedgerEntry, LedgerAllocation, Permission, Role, UserRole, RolePermission, AuditLog, SubscriptionPayment, AppSettings, Order, RecurringExpense
 
 
 def create_app(config_class=None):
@@ -1077,11 +1077,11 @@ def create_app(config_class=None):
             formatted_balance = str(balance)
 
         # Build message
-        business_name = business.business_name or "nosotros"
+        business_name = business.name or "nosotros"
         
         message = f"Hola {customer.name} 😊\n"
-        if business.business_name:
-            message += f"Te escribo de *{business.business_name}*.\n\n"
+        if business.name:
+            message += f"Te escribo de *{business.name}*.\n\n"
         else:
             message += "\n"
             
@@ -1744,6 +1744,90 @@ def create_app(config_class=None):
         expense = Expense.query.filter_by(id=expense_id, business_id=business_id).first()
         if not expense:
             return jsonify({"error": "Gasto no encontrado"}), 404
+
+        db.session.delete(expense)
+        db.session.commit()
+        return jsonify({"ok": True})
+
+    # ========== RECURRING EXPENSE ROUTES ==========
+    @app.route("/api/businesses/<int:business_id>/recurring-expenses", methods=["GET"])
+    @token_required
+    @permission_required('expenses.read')
+    def get_recurring_expenses(business_id):
+        business = Business.query.filter_by(id=business_id, user_id=g.current_user.id).first()
+        if not business:
+            return jsonify({"error": "Negocio no encontrado"}), 404
+
+        expenses = RecurringExpense.query.filter_by(business_id=business_id).order_by(RecurringExpense.due_day).all()
+        return jsonify({"recurring_expenses": [e.to_dict() for e in expenses]})
+
+    @app.route("/api/businesses/<int:business_id>/recurring-expenses", methods=["POST"])
+    @token_required
+    @permission_required('expenses.create')
+    def create_recurring_expense(business_id):
+        business = Business.query.filter_by(id=business_id, user_id=g.current_user.id).first()
+        if not business:
+            return jsonify({"error": "Negocio no encontrado"}), 404
+
+        data = request.get_json()
+        if not data or not data.get("name") or not data.get("amount") or not data.get("due_day"):
+            return jsonify({"error": "Datos incompletos"}), 400
+
+        try:
+            due_day = int(data["due_day"])
+            if not (1 <= due_day <= 31):
+                return jsonify({"error": "Día debe ser entre 1 y 31"}), 400
+
+            expense = RecurringExpense(
+                business_id=business_id,
+                name=data["name"],
+                amount=float(data["amount"]),
+                due_day=due_day,
+                category=data.get("category"),
+                is_active=data.get("is_active", True)
+            )
+            db.session.add(expense)
+            db.session.commit()
+            return jsonify({"recurring_expense": expense.to_dict()}), 201
+        except Exception as e:
+            return jsonify({"error": str(e)}), 400
+
+    @app.route("/api/businesses/<int:business_id>/recurring-expenses/<int:expense_id>", methods=["PUT"])
+    @token_required
+    @permission_required('expenses.update')
+    def update_recurring_expense(business_id, expense_id):
+        expense = RecurringExpense.query.filter_by(id=expense_id, business_id=business_id).first()
+        if not expense:
+            return jsonify({"error": "Gasto recurrente no encontrado"}), 404
+
+        data = request.get_json()
+        try:
+            if "name" in data:
+                expense.name = data["name"]
+            if "amount" in data:
+                expense.amount = float(data["amount"])
+            if "due_day" in data:
+                due_day = int(data["due_day"])
+                if not (1 <= due_day <= 31):
+                    return jsonify({"error": "Día debe ser entre 1 y 31"}), 400
+                expense.due_day = due_day
+            if "category" in data:
+                expense.category = data["category"]
+            if "is_active" in data:
+                expense.is_active = bool(data["is_active"])
+            
+            db.session.commit()
+            return jsonify({"recurring_expense": expense.to_dict()})
+        except Exception as e:
+            return jsonify({"error": str(e)}), 400
+
+    @app.route("/api/businesses/<int:business_id>/recurring-expenses/<int:expense_id>", methods=["DELETE"])
+    @token_required
+    @permission_required('expenses.delete')
+    def delete_recurring_expense(business_id, expense_id):
+        expense = RecurringExpense.query.filter_by(id=expense_id, business_id=business_id).first()
+        if not expense:
+            return jsonify({"error": "Gasto recurrente no encontrado"}), 404
 
         db.session.delete(expense)
         db.session.commit()
@@ -2552,6 +2636,51 @@ def create_app(config_class=None):
         # Calculate growth
         sales_growth = ((current_sales - prev_sales) / prev_sales * 100) if prev_sales > 0 else 0
         expenses_growth = ((current_expenses - prev_expenses) / prev_expenses * 100) if prev_expenses > 0 else 0
+
+        # Upcoming recurring expenses
+        upcoming_expenses = []
+        try:
+            today_day = today.day
+            recurring = RecurringExpense.query.filter_by(
+                business_id=business_id, 
+                is_active=True
+            ).all()
+
+            for exp in recurring:
+                # Check if due in next 7 days
+                days_until = exp.due_day - today_day
+                
+                # Case 1: Due later this month
+                if 0 <= days_until <= 7:
+                    upcoming_expenses.append({
+                        "id": exp.id,
+                        "name": exp.name,
+                        "amount": exp.amount,
+                        "due_day": exp.due_day,
+                        "days_until": days_until,
+                        "status": "due_soon"
+                    })
+                # Case 2: Due early next month (wrap around)
+                elif days_until < 0:
+                     # e.g. today is 28, due is 2. 2 + 30 - 28 = 4 days
+                     # Simplification: assume 30 days/month for calculation
+                     days_until_next_month = exp.due_day + 30 - today_day
+                     if days_until_next_month <= 7:
+                        upcoming_expenses.append({
+                            "id": exp.id,
+                            "name": exp.name,
+                            "amount": exp.amount,
+                            "due_day": exp.due_day,
+                            "days_until": days_until_next_month,
+                            "status": "due_soon_next_month"
+                        })
+            
+            # Sort by days until due
+            upcoming_expenses.sort(key=lambda x: x["days_until"])
+            upcoming_expenses = upcoming_expenses[:5] # Limit to 5
+            
+        except Exception as e:
+            print(f"Error calculating upcoming expenses: {e}")
         
         return jsonify({
             "current_period": {
@@ -2561,6 +2690,7 @@ def create_app(config_class=None):
                 "expenses": float(current_expenses),
                 "profit": float(current_sales - current_expenses)
             },
+            "upcoming_expenses": upcoming_expenses,
             "previous_period": {
                 "start": prev_start.isoformat(),
                 "end": prev_end.isoformat(),

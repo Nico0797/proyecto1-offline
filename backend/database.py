@@ -100,11 +100,20 @@ def init_db(app):
                 if "type" not in product_columns:
                     pending_prod.append("ALTER TABLE products ADD COLUMN type VARCHAR(20) DEFAULT 'product'")
                 
-                for statement in pending_prod:
-                    db.session.execute(text(statement))
                 if pending_prod:
+                    for statement in pending_prod:
+                        try:
+                            with db.session.begin_nested():
+                                db.session.execute(text(statement))
+                        except Exception as e:
+                            app.logger.info(f"Skipping product migration: {statement}. Reason: {str(e)}")
                     db.session.commit()
-                    
+
+            # Crear tabla recurring_expenses si no existe
+            if not inspector.has_table("recurring_expenses"):
+                # Se crea automáticamente con db.create_all() si es sqlite, pero para postgres aseguramos
+                pass 
+                
         except Exception as exc:
             app.logger.warning("Error asegurando esquema de base de datos: %s", exc)
 
