@@ -1210,8 +1210,11 @@
             
             // Navigation
             navigate(page) {
-                // Force close sidebar (mobile)
-                if (window.innerWidth < 1024) {
+                // Force close sidebar (mobile only)
+                // Check if screen width is less than 768px (standard mobile breakpoint)
+                // AND check if sidebar is currently open to avoid unnecessary DOM manipulation
+                const sidebar = document.getElementById('sidebar');
+                if (window.innerWidth < 768 && sidebar && sidebar.classList.contains('open')) {
                     this.closeSidebar();
                 }
                 
