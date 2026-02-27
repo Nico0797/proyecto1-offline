@@ -503,8 +503,13 @@ def create_app(config_class=None):
         if not email or not password or not name:
             return jsonify({"error": "Email, password y nombre son requeridos"}), 400
 
-        if len(password) < 6:
-            return jsonify({"error": "Password debe tener al menos 6 caracteres"}), 400
+        import re
+        if len(password) < 8:
+            return jsonify({"error": "La contraseña debe tener al menos 8 caracteres"}), 400
+        if not re.search(r"\d", password):
+            return jsonify({"error": "La contraseña debe contener al menos un número"}), 400
+        if not re.search(r"[\W_]", password):
+            return jsonify({"error": "La contraseña debe contener al menos un carácter especial"}), 400
 
         user, error = AuthManager.register(email, password, name)
         if error:

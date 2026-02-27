@@ -533,10 +533,10 @@
                     return;
                 }
                 
-                // Password validation: min 8 chars, 1 uppercase, 1 number, 1 special char
-                const passwordRegex = /^(?=.*[A-Z])(?=.*\d)(?=.*[\W_]).{8,}$/;
+                // Password validation: min 8 chars, 1 number, 1 special char
+                const passwordRegex = /^(?=.*\d)(?=.*[\W_]).{8,}$/;
                 if (!passwordRegex.test(password)) {
-                    showCustomAlert('La contraseña debe tener al menos 8 caracteres, una mayúscula, un número y un carácter especial.', 'warning');
+                    showCustomAlert('La contraseña debe tener al menos 8 caracteres, un número y un carácter especial.', 'warning');
                     return;
                 }
                 
