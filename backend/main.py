@@ -7,7 +7,6 @@ import os
 from datetime import datetime, date, timedelta
 from flask import Flask, request, jsonify, send_from_directory, g, send_file, render_template, url_for
 from flask_cors import CORS
-from flask_compress import Compress
 from sqlalchemy import func
 from itsdangerous import URLSafeTimedSerializer, SignatureExpired, BadSignature
 from io import BytesIO
@@ -47,7 +46,44 @@ def create_app(config_class=None):
 
     # Inicializar extensiones
     init_db(app)
-    Compress(app)
+    # Compress(app) - Removed due to build errors
+    
+    # Implement Gzip compression manually to avoid Flask-Compress/brotli dependency
+    @app.after_request
+    def compress_response(response):
+        # Skip compression for non-200 responses or already compressed content
+        if (response.status_code < 200 or response.status_code >= 300 or 'Content-Encoding' in response.headers):
+            return response
+            
+        # Check if client accepts gzip
+        accept_encoding = request.headers.get('Accept-Encoding', '')
+        if 'gzip' not in accept_encoding.lower():
+            return response
+            
+        # Check content type
+        content_type = response.content_type or ''
+        if not any(t in content_type for t in ['text/', 'application/json', 'application/javascript', 'application/xml']):
+            return response
+            
+        # Compress
+        import gzip
+        from io import BytesIO
+        
+        gzip_buffer = BytesIO()
+        gzip_file = gzip.GzipFile(mode='wb', fileobj=gzip_buffer)
+        gzip_file.write(response.data)
+        gzip_file.close()
+        
+        compressed_data = gzip_buffer.getvalue()
+        
+        # Only use compressed version if it's smaller
+        if len(compressed_data) < len(response.data):
+            response.data = compressed_data
+            response.headers['Content-Encoding'] = 'gzip'
+            response.headers['Content-Length'] = len(response.data)
+            response.headers['Vary'] = 'Accept-Encoding'
+            
+        return response
     
     # Normalizar rutas de export y backup a absolutas
     import os as _os

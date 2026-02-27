@@ -5,7 +5,7 @@
 Flask>=3.1.0
 Flask-CORS>=5.0.0
 Flask-Migrate>=4.0.0
-Flask-Compress>=1.14.0
+# Flask-Compress>=1.14.0 # Removed due to build issues (brotli)
 
 # Database
 SQLAlchemy>=2.0.0
