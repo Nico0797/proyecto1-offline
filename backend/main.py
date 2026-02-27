@@ -4369,7 +4369,8 @@ def register_receipt_routes(application):
 
     @application.route("/api/receipt/link/<int:sale_id>", methods=["GET"])
     @token_required
-    def get_receipt_link(current_user, sale_id):
+    def get_receipt_link(sale_id):
+        current_user = g.current_user
         try:
             sale = Sale.query.get(sale_id)
             if not sale:
