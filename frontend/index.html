@@ -1347,6 +1347,10 @@
                                     <option value="VES">VES - Bolívar Venezolano</option>
                                 </select>
                             </div>
+                            <div>
+                                <label class="block text-sm mb-1">Meta de Ventas Mensual</label>
+                                <input type="number" id="business-goal" class="input w-full px-4 py-2 rounded-xl" placeholder="0">
+                            </div>
                             <!-- Logo URL (Hidden or Visible if needed) -->
                             <div class="hidden">
                                 <input type="text" id="business-logo" class="input w-full">
@@ -1515,7 +1519,7 @@
                         <h3 class="font-semibold mb-4">Tu Plan</h3>
                         <div id="plan-info" class="p-4 bg-blue-500/20 rounded-lg mb-4">
                             <p class="font-bold text-lg">Plan Free - Prueba</p>
-                            <p class="text-sm text-muted mt-1">Solo para pruebas. Limite: 5 productos, 5 clientes, 5 ventas</p>
+                            <p class="text-sm text-muted mt-1">Solo para pruebas. Limite: 5 productos, 5 clientes, 20 ventas</p>
                         </div>
                         
                         <!-- Free User Pricing -->
@@ -2547,7 +2551,8 @@
                 return new Intl.NumberFormat('es-CO', {
                     style: 'currency',
                     currency: this.business?.currency || 'COP',
-                    minimumFractionDigits: 0
+                    minimumFractionDigits: 2,
+                    maximumFractionDigits: 2
                 }).format(amount);
             },
 
@@ -3123,9 +3128,11 @@
                     
                     const nameEl = document.getElementById('business-name');
                     const currencyEl = document.getElementById('business-currency');
+                    const goalEl = document.getElementById('business-goal');
                     const logoEl = document.getElementById('business-logo');
                     if (nameEl) nameEl.value = this.business.name || '';
                     if (currencyEl) currencyEl.value = this.business.currency || '';
+                    if (goalEl) goalEl.value = this.business.monthly_sales_goal || '';
                     // Logo
                     const settings = this.business.settings || {};
                     const logo = settings.logo || '';
@@ -3156,15 +3163,22 @@
             async saveBusiness() {
                 const name = document.getElementById('business-name').value;
                 const currency = document.getElementById('business-currency').value;
+                const goal = document.getElementById('business-goal').value;
                 const logo = document.getElementById('business-logo').value;
                 
                 await this.api(`/businesses/${this.business.id}`, {
                     method: 'PUT',
-                    body: JSON.stringify({ name, currency, settings: { logo } })
+                    body: JSON.stringify({ 
+                        name, 
+                        currency, 
+                        monthly_sales_goal: goal ? parseFloat(goal) : 0,
+                        settings: { logo } 
+                    })
                 });
                 
                 this.business.name = name;
                 this.business.currency = currency;
+                this.business.monthly_sales_goal = goal ? parseFloat(goal) : 0;
                 this.business.settings = this.business.settings || {};
                 this.business.settings.logo = logo;
                 
@@ -3180,11 +3194,17 @@
             },
             
             async updateBusinessSettings() {
-                const name = document.getElementById('business-name').value;
-                const currency = document.getElementById('business-currency').value;
-                const goal = document.getElementById('business-goal').value;
-                const collectionTemplate = document.getElementById('template-collection').value;
-                const saleTemplate = document.getElementById('template-sale').value;
+                const nameEl = document.getElementById('business-name');
+                const currencyEl = document.getElementById('business-currency');
+                const goalEl = document.getElementById('business-goal');
+                const collectionTemplateEl = document.getElementById('template-collection');
+                const saleTemplateEl = document.getElementById('template-sale');
+                
+                const name = nameEl ? nameEl.value : this.business.name;
+                const currency = currencyEl ? currencyEl.value : this.business.currency;
+                const goal = goalEl ? goalEl.value : (this.business.monthly_sales_goal || 0);
+                const collectionTemplate = collectionTemplateEl ? collectionTemplateEl.value : '';
+                const saleTemplate = saleTemplateEl ? saleTemplateEl.value : '';
                 
                 if (!name) {
                     alert('El nombre es requerido');
@@ -3596,7 +3616,7 @@
                     if (planContainer) {
                         planContainer.innerHTML = `
                             <p class="font-bold text-lg">Plan Free - Prueba</p>
-                            <p class="text-sm text-muted mt-1">Solo para pruebas. Limite: 5 productos, 5 clientes, 5 ventas</p>
+                            <p class="text-sm text-muted mt-1">Solo para pruebas. Limite: 5 productos, 5 clientes, 20 ventas</p>
                         `;
                     }
                     
@@ -5958,12 +5978,27 @@
                         let payButton = '';
                         
                         if (exp.is_active) {
-                            if (exp.due_day < currentDay) {
-                                // Overdue (passed this month)
+                            // Check if next_due_date exists, otherwise construct from due_day
+                            let dueDate;
+                            if (exp.next_due_date) {
+                                const parts = exp.next_due_date.split('-');
+                                dueDate = new Date(parts[0], parts[1]-1, parts[2]);
+                            } else {
+                                dueDate = new Date(today.getFullYear(), today.getMonth(), exp.due_day);
+                            }
+                            
+                            // Normalize today to start of day for comparison
+                            const todayDate = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+                            
+                            const diffTime = dueDate - todayDate;
+                            const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)); 
+
+                            if (diffDays < 0) {
+                                // Overdue
                                 statusColor = 'text-red-400 font-bold';
                                 statusText = 'Vencido';
                                 payButton = `<button onclick="app.payRecurringExpense(${exp.id}, '${exp.name}', ${exp.amount})" class="text-xs bg-green-500/20 text-green-400 border border-green-500/50 px-2 py-1 rounded hover:bg-green-500/30 ml-2" title="Marcar como pagado y renovar">Pagar</button>`;
-                            } else if (exp.due_day <= currentDay + 3) {
+                            } else if (diffDays <= 3) {
                                 // Upcoming (within 3 days)
                                 statusColor = 'text-yellow-400 font-bold';
                                 statusText = 'Próximo';
@@ -5971,6 +6006,8 @@
                             } else {
                                 statusColor = 'text-white/60';
                                 statusText = 'Pendiente';
+                                // Optional: Allow paying early?
+                                payButton = `<button onclick="app.payRecurringExpense(${exp.id}, '${exp.name}', ${exp.amount})" class="text-xs bg-blue-500/10 text-blue-400 border border-blue-500/30 px-2 py-1 rounded hover:bg-blue-500/20 ml-2" title="Pagar adelantado">Pagar</button>`;
                             }
                         }
 
@@ -6019,6 +6056,16 @@
                     'annual': 'Anual'
                 };
                 return map[freq] || 'Mensual';
+            },
+
+            formatDate(dateString) {
+                if (!dateString) return '';
+                // Handle YYYY-MM-DD manually to avoid timezone issues
+                const parts = dateString.split('-');
+                if (parts.length === 3) {
+                    return `${parts[2]}/${parts[1]}/${parts[0]}`;
+                }
+                return dateString;
             },
 
             async payRecurringExpense(id, name, amount) {
