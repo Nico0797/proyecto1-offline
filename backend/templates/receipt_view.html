@@ -131,19 +131,30 @@
             background-color: #25D366;
             color: white;
         }
+        .btn-share {
+            background-color: #3b82f6;
+            color: white;
+            border: none;
+            cursor: pointer;
+            font-family: inherit;
+        }
         .btn-print {
             background-color: #4b5563;
             color: white;
+            border: none;
+            cursor: pointer;
+            font-family: inherit;
         }
         @media print {
             .actions { display: none; }
             body { background-color: white; padding: 0; }
-            .receipt-container { box-shadow: none; max-width: 100%; }
+            .receipt-container { box-shadow: none; max-width: 100%; border: none; }
         }
     </style>
 </head>
 <body>
     <div class="receipt-container">
+        <!-- ... content ... -->
         <div class="header">
             <div class="business-name">{{ business.name }}</div>
             <div class="receipt-title">COMPROBANTE DE PAGO</div>
@@ -153,7 +164,7 @@
             <div class="meta-info">
                 <div>
                     <div><strong>No.</strong> {{ receipt_number }}</div>
-                    <div>{{ sale.sale_date }}</div>
+                    <div>{{ sale.sale_date.strftime('%Y-%m-%d %H:%M') if sale.sale_date else 'N/A' }}</div>
                 </div>
                 <div class="text-right">
                     {% if business.phone %}<div>Tel: {{ business.phone }}</div>{% endif %}
@@ -184,7 +195,7 @@
                             <div class="item-name">{{ item.name }}</div>
                         </td>
                         <td class="text-right item-qty">{{ item.qty }}</td>
-                        <td class="text-right">{{ "{:,.0f}".format(item.total|float) }}</td>
+                        <td class="text-right">${{ "{:,.0f}".format(item.total|float) }}</td>
                     </tr>
                     {% endfor %}
                 </tbody>
@@ -211,6 +222,12 @@
                     <span>$ {{ "{:,.0f}".format(sale.balance) }}</span>
                 </div>
                 {% endif %}
+                {% if sale.paid > 0 %}
+                <div class="total-row" style="color: #10b981; font-weight: bold; margin-top: 5px;">
+                    <span>Pagado</span>
+                    <span>$ {{ "{:,.0f}".format(sale.paid) }}</span>
+                </div>
+                {% endif %}
             </div>
 
             <div class="footer">
@@ -226,14 +243,36 @@
             </div>
         </div>
 
-        <div class="actions">
+        <div class="actions" id="action-buttons">
             <a href="https://wa.me/?text=Hola%2C%20aqu%C3%AD%20tienes%20tu%20recibo%20de%20compra%3A%20{{ request.url }}" class="btn btn-whatsapp" target="_blank">
-                Compartir
+                WhatsApp
             </a>
             <button onclick="window.print()" class="btn btn-print">
-                Imprimir / PDF
+                Imprimir
             </button>
         </div>
     </div>
+    
+    <script>
+        // Native Share API support
+        if (navigator.share) {
+            const container = document.getElementById('action-buttons');
+            const shareBtn = document.createElement('button');
+            shareBtn.className = 'btn btn-share';
+            shareBtn.innerHTML = 'Compartir';
+            shareBtn.onclick = async () => {
+                try {
+                    await navigator.share({
+                        title: 'Recibo de Venta',
+                        text: 'Comprobante de pago de {{ business.name }}',
+                        url: window.location.href
+                    });
+                } catch (err) {
+                    console.log('Error sharing:', err);
+                }
+            };
+            container.prepend(shareBtn);
+        }
+    </script>
 </body>
 </html>

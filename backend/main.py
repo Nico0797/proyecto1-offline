@@ -4390,7 +4390,7 @@ def register_receipt_routes(application):
             print(f"Error generating receipt link: {e}")
             return jsonify({"error": f"Error interno: {str(e)}"}), 500
 
-    @application.route("/r/<token>")
+    @application.route("/api/public/r/<token>")
     def public_receipt(token):
         s = URLSafeTimedSerializer(application.config["SECRET_KEY"])
         try:
