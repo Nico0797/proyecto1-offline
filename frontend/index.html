@@ -2323,27 +2323,38 @@
             },
 
             // WhatsApp Message Builder - Single Source of Truth
-            buildWhatsappMessage(sale, customerName, businessName, receiptUrl) {
-                const greeting = customerName && customerName.trim() !== '' ? `Hola ${customerName},` : 'Hola,';
+            buildWhatsappMessage(sale) {
+                const customerName = this.customersMap && this.customersMap[sale.customer_id] ? this.customersMap[sale.customer_id] : '';
+                const businessName = this.business ? this.business.name : 'Mi Negocio';
                 
-                let message = `${greeting} aquí está tu comprobante de compra en *${businessName}*.\n\n`;
+                let message = `Hola${customerName ? ' ' + customerName : ''}, gracias por tu compra en *${businessName}*.\n\n`;
+                message += `*Detalle de tu pedido:*\n`;
                 
                 if (sale.items && sale.items.length > 0) {
                     sale.items.forEach(item => {
-                        const price = item.unit_price || item.price || 0;
+                        const price = item.price || 0;
                         const qty = item.qty || 1;
                         const subtotal = price * qty;
-                        message += `${item.name} x${qty} - ${this.formatMoney(subtotal)}\n`;
+                        // Format: "- Producto (x2): $20.000"
+                        message += `- ${item.name} (x${qty}): ${this.formatMoney(subtotal)}\n`;
                     });
                 } else {
                     message += "Sin detalle de productos\n";
                 }
                 
-                message += `\n*Total:* ${this.formatMoney(sale.total)}\n\n`;
+                message += `\n*TOTAL: ${this.formatMoney(sale.total)}*\n`;
                 
-                if (receiptUrl) {
-                    message += `📄 Ver recibo: ${receiptUrl}`;
+                if (sale.paid && sale.paid > 0) {
+                    message += `Pagado: ${this.formatMoney(sale.paid)}\n`;
                 }
+                
+                if (sale.balance && sale.balance > 0) {
+                    message += `⚠️ *Saldo Pendiente: ${this.formatMoney(sale.balance)}*\n`;
+                } else {
+                    message += `✅ *Pagado en su totalidad*\n`;
+                }
+                
+                message += `\n¡Esperamos verte pronto! 👋`;
                 
                 return message;
             },
@@ -2875,32 +2886,14 @@
                     return;
                 }
 
-                const btn = document.activeElement; // Botón presionado
-                const originalContent = btn ? btn.innerHTML : '';
-                if (btn) btn.innerHTML = '<i class="ph ph-spinner animate-spin"></i>';
-
                 try {
-                    const data = await this.api(`/receipt/link/${saleId}`);
-                    
-                    if (btn) btn.innerHTML = originalContent;
-                    
-                    let receiptUrl = data.url || '';
-                    if (data.path) {
-                        const baseUrl = API_BASE_URL || window.location.origin;
-                        receiptUrl = `${baseUrl}${data.path}`;
-                    }
-
-                    const customerName = this.customersMap && this.customersMap[sale.customer_id] ? this.customersMap[sale.customer_id] : '';
-                    const businessName = this.business ? this.business.name : 'Mi Negocio';
-                    
-                    // Use unified builder
-                    const message = this.buildWhatsappMessage(sale, customerName, businessName, receiptUrl);
+                    // Use unified builder (no link generation needed)
+                    const message = this.buildWhatsappMessage(sale);
                     
                     window.open(`https://wa.me/?text=${encodeURIComponent(message)}`, '_system');
                 } catch (e) {
                     console.error(e);
-                    if (btn) btn.innerHTML = originalContent;
-                    showCustomAlert('Error al generar enlace: ' + e.message, 'error');
+                    showCustomAlert('Error al generar mensaje: ' + e.message, 'error');
                 }
             },
             
@@ -3860,20 +3853,20 @@
                             response.invoice_url
                         );
                         
-                        const encodedMessage = encodeURIComponent(message);
+                        // Success
+                        this.closeModal();
+                        this.loadSales();
+                        this.loadDashboard();
                         
-                        if (this.editingSaleId) {
-                             showCustomAlert('Venta actualizada correctamente', 'success');
-                        } else {
-                            if (isMobile) {
-                                window.location.href = `whatsapp://send?text=${encodedMessage}`;
-                            } else {
-                                window.open(`https://web.whatsapp.com/send?text=${encodedMessage}`, '_blank');
+                        showCustomAlert('Venta registrada', 'success');
+                        
+                        // Optional: ask to share
+                        setTimeout(() => {
+                            if (confirm('¿Deseas enviar el comprobante por WhatsApp?')) {
+                                this.shareOnWhatsApp(data.sale.id);
                             }
-                        }
-                    }
-
-                } catch (e) {
+                        }, 500);
+                    } catch (e) {
                     console.error(e);
                     showCustomAlert('Error al guardar venta: ' + e.message, 'error');
                 } finally {
