@@ -7,6 +7,7 @@ import os
 from datetime import datetime, date, timedelta
 from flask import Flask, request, jsonify, send_from_directory, g, send_file, render_template, url_for
 from flask_cors import CORS
+from flask_compress import Compress
 from sqlalchemy import func
 from itsdangerous import URLSafeTimedSerializer, SignatureExpired, BadSignature
 from io import BytesIO
@@ -46,6 +47,7 @@ def create_app(config_class=None):
 
     # Inicializar extensiones
     init_db(app)
+    Compress(app)
     
     # Normalizar rutas de export y backup a absolutas
     import os as _os
