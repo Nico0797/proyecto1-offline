@@ -1328,23 +1328,59 @@
                             <p class="font-bold text-lg">Plan Free - Prueba</p>
                             <p class="text-sm text-muted mt-1">Solo para pruebas. Limite: 5 productos, 5 clientes, 5 ventas</p>
                         </div>
-                        <div class="grid md:grid-cols-3 gap-4">
-                            <div class="p-4 bg-green-500/20 rounded-lg">
-                                <p class="text-sm text-muted">Plan Trimestral</p>
-                                <p class="font-bold text-xl text-green-400">$<span id="dashboard-quarterly-price">5.39</span>/mes</p>
-                                <p class="text-xs text-muted">$<span id="dashboard-quarterly-total">16.17</span>/3 meses</p>
+                        
+                        <!-- Free User Pricing -->
+                        <div id="plan-pricing-container">
+                            <div class="grid md:grid-cols-3 gap-4">
+                                <div class="p-4 bg-green-500/20 rounded-lg">
+                                    <p class="text-sm text-muted">Plan Trimestral</p>
+                                    <p class="font-bold text-xl text-green-400">$<span id="dashboard-quarterly-price">5.39</span>/mes</p>
+                                    <p class="text-xs text-muted">$<span id="dashboard-quarterly-total">16.17</span>/3 meses</p>
+                                </div>
+                                <div class="p-4 bg-purple-500/20 rounded-lg">
+                                    <p class="text-sm text-muted">Plan Anual</p>
+                                    <p class="font-bold text-xl text-purple-400">$<span id="dashboard-annual-price">4.19</span>/mes</p>
+                                    <p class="text-xs text-green-400">Ahorra hasta <span id="dashboard-annual-saving">30%</span></p>
+                                </div>
+                                <div class="p-4 bg-yellow-500/20 rounded-lg">
+                                    <p class="text-sm text-muted">Plan Mensual</p>
+                                    <p class="font-bold text-xl text-yellow-400">$<span id="dashboard-monthly-price">5.99</span>/mes</p>
+                                </div>
                             </div>
-                            <div class="p-4 bg-purple-500/20 rounded-lg">
-                                <p class="text-sm text-muted">Plan Anual</p>
-                                <p class="font-bold text-xl text-purple-400">$<span id="dashboard-annual-price">4.19</span>/mes</p>
-                                <p class="text-xs text-green-400">Ahorra hasta <span id="dashboard-annual-saving">30%</span></p>
-                            </div>
-                            <div class="p-4 bg-yellow-500/20 rounded-lg">
-                                <p class="text-sm text-muted">Plan Mensual</p>
-                                <p class="font-bold text-xl text-yellow-400">$<span id="dashboard-monthly-price">5.99</span>/mes</p>
-                            </div>
+                            <button onclick="app.navigate('upgrade')" class="btn-primary w-full mt-4 py-2 rounded-xl">Actualizar a Pro</button>
                         </div>
-                        <button onclick="app.navigate('upgrade')" class="btn-primary w-full mt-4 py-2 rounded-xl">Actualizar a Pro</button>
+
+                        <!-- Pro User Management (Hidden by default) -->
+                        <div id="plan-management-container" class="hidden">
+                            <div class="p-4 bg-white/5 rounded-lg border border-white/10 mb-4">
+                                <div class="flex justify-between items-center mb-3">
+                                    <span class="text-muted">Estado de suscripción</span>
+                                    <span class="text-green-400 font-bold flex items-center gap-2 bg-green-500/10 px-3 py-1 rounded-full">
+                                        <i class="ph ph-check-circle"></i> Activo
+                                    </span>
+                                </div>
+                                <div class="flex justify-between items-center mb-3">
+                                    <span class="text-muted">Próxima facturación</span>
+                                    <span class="font-semibold" id="sub-next-billing">--/--/----</span>
+                                </div>
+                                <div class="flex justify-between items-center">
+                                    <span class="text-muted">Monto recurrente</span>
+                                    <span class="font-semibold" id="sub-amount">--</span>
+                                </div>
+                            </div>
+                            
+                            <div class="flex gap-3">
+                                <button onclick="app.manageSubscription()" class="btn-secondary flex-1 py-2 rounded-xl border border-white/20 hover:bg-white/10">
+                                    <i class="ph ph-receipt"></i> Historial de Pagos
+                                </button>
+                                <button onclick="app.cancelSubscription()" class="text-red-400 hover:text-red-300 px-4 py-2 text-sm hover:bg-red-500/10 rounded-xl transition-colors">
+                                    Cancelar Plan
+                                </button>
+                            </div>
+                            <p class="text-xs text-muted mt-4 text-center">
+                                ¿Necesitas ayuda con tu facturación? <a href="#" onclick="window.open('https://wa.me/573192426874', '_blank')" class="text-blue-400 hover:underline">Contáctanos</a>
+                            </p>
+                        </div>
                     </div>
                 </div>
                 
@@ -2826,23 +2862,20 @@
                 });
             },
             
-            shareOnWhatsApp(saleId) {
+            async shareOnWhatsApp(saleId) {
                 const sale = this.currentSales ? this.currentSales.find(s => s.id === saleId) : null;
                 if (!sale) {
                     alert('Información de venta no disponible');
                     return;
                 }
 
-                const token = this.token;
                 const btn = document.activeElement; // Botón presionado
                 const originalContent = btn ? btn.innerHTML : '';
                 if (btn) btn.innerHTML = '<i class="ph ph-spinner animate-spin"></i>';
 
-                fetch(`${API_BASE_URL}/api/receipt/link/${saleId}`, {
-                    headers: { 'Authorization': `Bearer ${token}` }
-                })
-                .then(res => res.json())
-                .then(data => {
+                try {
+                    const data = await this.api(`/receipt/link/${saleId}`);
+                    
                     if (btn) btn.innerHTML = originalContent;
                     
                     const receiptUrl = data.url || '';
@@ -2853,12 +2886,11 @@
                     const message = this.buildWhatsappMessage(sale, customerName, businessName, receiptUrl);
                     
                     window.open(`https://wa.me/?text=${encodeURIComponent(message)}`, '_system');
-                })
-                .catch(e => {
+                } catch (e) {
                     console.error(e);
                     if (btn) btn.innerHTML = originalContent;
-                    alert('Error al generar enlace para compartir.');
-                });
+                    showCustomAlert('Error al generar enlace: ' + e.message, 'error');
+                }
             },
             
             async switchBusiness(businessId) {
@@ -3050,6 +3082,98 @@
                 this.loadPageData(page);
             },
             
+            async loadSettings() {
+                await this.loadBusinesses();
+                await this.loadReceiptProfile();
+                
+                // Subscription UI Logic
+                const planContainer = document.getElementById('plan-info');
+                const pricingContainer = document.getElementById('plan-pricing-container');
+                const managementContainer = document.getElementById('plan-management-container');
+                
+                // Check if user is Pro (any variation)
+                const isPro = this.user.plan && this.user.plan !== 'free';
+                
+                if (isPro) {
+                    if (pricingContainer) pricingContainer.classList.add('hidden');
+                    if (managementContainer) managementContainer.classList.remove('hidden');
+                    
+                    // Format Plan Name
+                    let planName = 'Plan Pro';
+                    let amount = '$5.99 USD';
+                    let cycle = 'Mensual';
+                    let billingDate = new Date();
+                    
+                    if (this.user.plan === 'pro_monthly' || this.user.plan === 'pro') {
+                        planName = 'Plan Pro Mensual';
+                        amount = '$5.99 USD';
+                        cycle = 'Mensual';
+                        billingDate.setMonth(billingDate.getMonth() + 1);
+                    } else if (this.user.plan === 'pro_quarterly') {
+                        planName = 'Plan Pro Trimestral';
+                        amount = '$16.17 USD';
+                        cycle = 'Trimestral';
+                        billingDate.setMonth(billingDate.getMonth() + 3);
+                    } else if (this.user.plan === 'pro_annual') {
+                        planName = 'Plan Pro Anual';
+                        amount = '$50.32 USD';
+                        cycle = 'Anual';
+                        billingDate.setFullYear(billingDate.getFullYear() + 1);
+                    }
+                    
+                    if (planContainer) {
+                        planContainer.innerHTML = `
+                            <div class="flex justify-between items-start">
+                                <div>
+                                    <p class="font-bold text-lg text-white">${planName}</p>
+                                    <p class="text-sm text-muted mt-1">Disfruta de todas las funciones ilimitadas.</p>
+                                </div>
+                                <span class="px-2 py-1 bg-green-500/20 text-green-400 text-xs rounded-lg border border-green-500/30">Activo</span>
+                            </div>
+                        `;
+                    }
+                    
+                    const billingEl = document.getElementById('sub-next-billing');
+                    const amountEl = document.getElementById('sub-amount');
+                    
+                    if (billingEl) billingEl.textContent = billingDate.toLocaleDateString();
+                    if (amountEl) amountEl.textContent = `${amount}`;
+                    
+                } else {
+                    // Free User
+                    if (pricingContainer) pricingContainer.classList.remove('hidden');
+                    if (managementContainer) managementContainer.classList.add('hidden');
+                    
+                    if (planContainer) {
+                        planContainer.innerHTML = `
+                            <p class="font-bold text-lg">Plan Free - Prueba</p>
+                            <p class="text-sm text-muted mt-1">Solo para pruebas. Limite: 5 productos, 5 clientes, 5 ventas</p>
+                        `;
+                    }
+                    
+                    this.renderPricing(); 
+                }
+            },
+            
+            manageSubscription() {
+                alert('Pronto podrás gestionar tu método de pago aquí. Por ahora, contáctanos si necesitas cambios.');
+            },
+            
+            async cancelSubscription() {
+                if (confirm('¿Estás seguro que deseas cancelar tu suscripción? \n\nTu plan seguirá activo hasta el final del periodo actual, pero no se renovará automáticamente.')) {
+                    const btn = document.activeElement;
+                    const originalText = btn.innerText;
+                    btn.innerText = 'Procesando...';
+                    btn.disabled = true;
+                    
+                    setTimeout(() => {
+                        alert('Tu solicitud de cancelación ha sido recibida. Te contactaremos para confirmar.');
+                        btn.innerText = originalText;
+                        btn.disabled = false;
+                    }, 1500);
+                }
+            },
+
             async loadPageData(page) {
                 switch(page) {
                     case 'dashboard':
@@ -3079,8 +3203,7 @@
                         await this.loadReports();
                         break;
                     case 'settings':
-                        await this.loadBusinesses();
-                        await this.loadReceiptProfile();
+                        await this.loadSettings();
                         break;
                     case 'orders':
                         await this.loadOrders();

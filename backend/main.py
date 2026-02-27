@@ -4370,20 +4370,24 @@ def register_receipt_routes(application):
     @application.route("/api/receipt/link/<int:sale_id>", methods=["GET"])
     @token_required
     def get_receipt_link(current_user, sale_id):
-        sale = Sale.query.get(sale_id)
-        if not sale:
-            return jsonify({"error": "Venta no encontrada"}), 404
-        
-        # Ensure user owns the business of the sale
-        business = Business.query.get(sale.business_id)
-        if business.user_id != current_user.id:
-            return jsonify({"error": "No autorizado"}), 403
+        try:
+            sale = Sale.query.get(sale_id)
+            if not sale:
+                return jsonify({"error": "Venta no encontrada"}), 404
+            
+            # Ensure user owns the business of the sale
+            business = Business.query.get(sale.business_id)
+            if not business or business.user_id != current_user.id:
+                return jsonify({"error": "No autorizado"}), 403
 
-        s = URLSafeTimedSerializer(application.config["SECRET_KEY"])
-        token = s.dumps(sale.id, salt="receipt-view")
-        
-        link = url_for('public_receipt', token=token, _external=True)
-        return jsonify({"url": link})
+            s = URLSafeTimedSerializer(application.config["SECRET_KEY"])
+            token = s.dumps(sale.id, salt="receipt-view")
+            
+            link = url_for('public_receipt', token=token, _external=True)
+            return jsonify({"url": link})
+        except Exception as e:
+            print(f"Error generating receipt link: {e}")
+            return jsonify({"error": f"Error interno: {str(e)}"}), 500
 
     @application.route("/r/<token>")
     def public_receipt(token):
