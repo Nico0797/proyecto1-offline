@@ -3302,11 +3302,8 @@
                         await this.loadProducts();
                         break;
                     case 'reports':
-                        if (this.user.plan !== 'pro' && this.user.plan !== 'pro_monthly' && this.user.plan !== 'pro_annual') {
-                            alert('Los reportes son solo para cuentas Pro. ¡Actualiza tu plan para acceder a esta función!');
-                            this.navigate('upgrade');
-                            return;
-                        }
+                        // Allow free users to see reports but maybe with limitations or upsell
+                        // Removed strict block for better UX (show teaser or basic stats)
                         await this.loadReports();
                         break;
                     case 'settings':

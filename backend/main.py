@@ -2647,40 +2647,68 @@ def create_app(config_class=None):
             ).all()
 
             for exp in recurring:
-                # Check if due in next 7 days
+                # Check if due in next 7 days or overdue
                 days_until = exp.due_day - today_day
                 
-                # Case 1: Due later this month
-                if 0 <= days_until <= 7:
+                status = "unknown"
+                display_days = days_until
+
+                # Check if already paid this month
+                # Look for an expense in the current month with same category and similar amount
+                current_month_start = date(today.year, today.month, 1)
+                is_paid = Expense.query.filter(
+                    Expense.business_id == business_id,
+                    Expense.expense_date >= current_month_start,
+                    Expense.category == exp.category,
+                    Expense.amount >= exp.amount * 0.9, # Allow small variation
+                    Expense.amount <= exp.amount * 1.1
+                ).first() is not None
+
+                if is_paid:
+                    continue # Skip if paid
+
+                # Logic for overdue/due soon
+                if days_until < 0:
+                    # Could be overdue from this month OR due next month
+                    # Heuristic: if day is passed and not paid, it's overdue
+                    status = "overdue"
+                    display_days = abs(days_until)
+                elif days_until == 0:
+                    status = "due_today"
+                    display_days = 0
+                elif 0 < days_until <= 7:
+                    status = "due_soon"
+                    display_days = days_until
+                else:
+                    # Check wrap around for next month
+                    days_until_next_month = exp.due_day + 30 - today_day
+                    if days_until_next_month <= 7:
+                        status = "due_soon_next_month"
+                        display_days = days_until_next_month
+                
+                if status in ["overdue", "due_today", "due_soon", "due_soon_next_month"]:
                     upcoming_expenses.append({
                         "id": exp.id,
                         "name": exp.name,
                         "amount": exp.amount,
                         "due_day": exp.due_day,
-                        "days_until": days_until,
-                        "status": "due_soon"
+                        "days_until": display_days,
+                        "status": status
                     })
-                # Case 2: Due early next month (wrap around)
-                elif days_until < 0:
-                     # e.g. today is 28, due is 2. 2 + 30 - 28 = 4 days
-                     # Simplification: assume 30 days/month for calculation
-                     days_until_next_month = exp.due_day + 30 - today_day
-                     if days_until_next_month <= 7:
-                        upcoming_expenses.append({
-                            "id": exp.id,
-                            "name": exp.name,
-                            "amount": exp.amount,
-                            "due_day": exp.due_day,
-                            "days_until": days_until_next_month,
-                            "status": "due_soon_next_month"
-                        })
             
-            # Sort by days until due
-            upcoming_expenses.sort(key=lambda x: x["days_until"])
+            # Sort: Overdue first, then by days
+            def sort_key(x):
+                if x["status"] == "overdue": return -100 + x["days_until"]
+                if x["status"] == "due_today": return -50
+                return x["days_until"]
+
+            upcoming_expenses.sort(key=sort_key)
             upcoming_expenses = upcoming_expenses[:5] # Limit to 5
             
         except Exception as e:
             print(f"Error calculating upcoming expenses: {e}")
+            import traceback
+            traceback.print_exc()
         
         return jsonify({
             "current_period": {
