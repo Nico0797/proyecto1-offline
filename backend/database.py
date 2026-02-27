@@ -99,6 +99,8 @@ def init_db(app):
                     pending_prod.append("ALTER TABLE products ADD COLUMN low_stock_threshold FLOAT DEFAULT 5")
                 if "type" not in product_columns:
                     pending_prod.append("ALTER TABLE products ADD COLUMN type VARCHAR(20) DEFAULT 'product'")
+                if "description" not in product_columns:
+                    pending_prod.append("ALTER TABLE products ADD COLUMN description TEXT")
                 
                 if pending_prod:
                     for statement in pending_prod:

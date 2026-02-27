@@ -996,7 +996,7 @@
                 <div id="page-products" class="page hidden fade-in">
                     <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
                         <h2 class="text-2xl font-bold">Productos</h2>
-                        <button onclick="app.showProductModal()" class="btn-primary w-full md:w-auto px-4 py-2 rounded-xl font-semibold">+ Nuevo Producto</button>
+                        <button onclick="app.showProductModal()" class="btn-primary w-full md:w-auto px-4 py-2 rounded-xl font-semibold">+ Nuevo Producto/Servicio</button>
                     </div>
                     
                     <!-- Filters -->
@@ -2187,6 +2187,10 @@
                         <div>
                             <label class="block text-sm mb-1">Nombre</label>
                             <input type="text" id="product-name" class="input w-full px-4 py-2 rounded-xl">
+                        </div>
+                        <div>
+                            <label class="block text-sm mb-1">Descripción</label>
+                            <textarea id="product-description" class="input w-full px-4 py-2 rounded-xl h-24" placeholder="Detalles del producto o servicio..."></textarea>
                         </div>
                         <div>
                             <label class="block text-sm mb-1">SKU (opcional)</label>
@@ -3553,7 +3557,7 @@
             
             async loadSettings() {
                 await this.loadBusinesses();
-                await this.loadReceiptProfile();
+                // await this.loadReceiptProfile(); // Removed as it doesn't exist
                 
                 // Subscription UI Logic
                 const planContainer = document.getElementById('plan-info');
@@ -4017,13 +4021,51 @@
                                                 <div>
                                                     <p class="font-bold text-red-300">Gasto Vencido: ${exp.name}</p>
                                                     <p class="text-xs text-white/60">Venció el día ${exp.due_day} - ${this.formatMoney(exp.amount)}</p>
+                    // Recurring Expenses Alerts
+                    const recurringData = await this.api(`/businesses/${this.business.id}/recurring-expenses`);
+                    const alertsContainer = document.getElementById('dashboard-alerts');
+                    
+                    if (recurringData.recurring_expenses && recurringData.recurring_expenses.length > 0) {
+                        const today = new Date();
+                        // Normalize today to start of day
+                        const todayDate = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+                        
+                        const alerts = [];
+                        
+                        recurringData.recurring_expenses.forEach(exp => {
+                            if (!exp.is_active) return;
+                            
+                            // Determine due date
+                            let dueDate;
+                            if (exp.next_due_date) {
+                                const parts = exp.next_due_date.split('-');
+                                dueDate = new Date(parts[0], parts[1]-1, parts[2]);
+                            } else {
+                                dueDate = new Date(today.getFullYear(), today.getMonth(), exp.due_day);
+                            }
+                            
+                            const diffTime = dueDate - todayDate;
+                            const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)); 
+                            
+                            if (diffDays < 0) {
+                                // Overdue
+                                alerts.push({
+                                    type: 'overdue',
+                                    html: `<div class="bg-red-500/20 border border-red-500/50 rounded-lg p-3 flex justify-between items-center">
+                                            <div class="flex items-center gap-3">
+                                                <div class="p-2 bg-red-500/20 rounded-lg text-red-400">
+                                                    <i class="ph ph-warning-circle text-xl"></i>
+                                                </div>
+                                                <div>
+                                                    <p class="font-bold text-red-300">Gasto Vencido: ${exp.name}</p>
+                                                    <p class="text-xs text-white/60">Venció el ${this.formatDate(exp.next_due_date)} - ${this.formatMoney(exp.amount)}</p>
                                                 </div>
                                             </div>
                                             <button onclick="app.navigate('recurring_expenses')" class="text-sm bg-red-500 text-white px-3 py-1 rounded-lg hover:bg-red-600 transition-colors">Ver</button>
                                         </div>`
                                 });
-                            } else if (exp.due_day <= currentDay + 3) {
-                                // Upcoming
+                            } else if (diffDays >= 0 && diffDays <= 5) {
+                                // Upcoming (within 5 days)
                                 alerts.push({
                                     type: 'upcoming',
                                     html: `<div class="bg-yellow-500/20 border border-yellow-500/50 rounded-lg p-3 flex justify-between items-center">
@@ -4033,7 +4075,7 @@
                                                 </div>
                                                 <div>
                                                     <p class="font-bold text-yellow-300">Próximo Vencimiento: ${exp.name}</p>
-                                                    <p class="text-xs text-white/60">Vence el día ${exp.due_day} - ${this.formatMoney(exp.amount)}</p>
+                                                    <p class="text-xs text-white/60">Vence el ${this.formatDate(exp.next_due_date)} - ${this.formatMoney(exp.amount)}</p>
                                                 </div>
                                             </div>
                                             <button onclick="app.navigate('recurring_expenses')" class="text-sm bg-yellow-500/20 text-yellow-400 border border-yellow-500/50 px-3 py-1 rounded-lg hover:bg-yellow-500/30 transition-colors">Ver</button>
@@ -5059,6 +5101,7 @@
                 document.getElementById('product-modal-title').textContent = 'Nuevo Producto/Servicio';
                 this.setProductType('product');
                 document.getElementById('product-name').value = '';
+                document.getElementById('product-description').value = '';
                 document.getElementById('product-sku').value = '';
                 document.getElementById('product-price').value = '';
                 document.getElementById('product-cost').value = '';
@@ -5081,6 +5124,7 @@
                         document.getElementById('product-modal-title').textContent = 'Editar Producto/Servicio';
                         this.setProductType(data.product.type || 'product');
                         document.getElementById('product-name').value = data.product.name;
+                        document.getElementById('product-description').value = data.product.description || '';
                         document.getElementById('product-sku').value = data.product.sku || '';
                         document.getElementById('product-price').value = data.product.price;
                         document.getElementById('product-cost').value = data.product.cost || '';
@@ -5102,6 +5146,7 @@
             async saveProduct() {
                 const type = document.getElementById('product-type').value;
                 const name = document.getElementById('product-name').value;
+                const description = document.getElementById('product-description').value;
                 const sku = document.getElementById('product-sku').value;
                 const price = parseFloat(document.getElementById('product-price').value);
                 const cost = document.getElementById('product-cost').value ? parseFloat(document.getElementById('product-cost').value) : null;
@@ -5117,6 +5162,7 @@
                 const payload = { 
                     type, 
                     name, 
+                    description,
                     sku, 
                     price, 
                     cost, 

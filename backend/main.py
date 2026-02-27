@@ -893,6 +893,7 @@ def create_app(config_class=None):
         product = Product(
             business_id=business_id,
             name=name,
+            description=data.get("description", "").strip() or None,
             type=data.get("type", "product"),
             sku=data.get("sku", "").strip() or None,
             price=price,
@@ -925,7 +926,9 @@ def create_app(config_class=None):
 
         data = request.get_json() or {}
         if "name" in data:
-            product.name = data["name"].strip()
+            product.name = data["name"]
+        if "description" in data:
+            product.description = data["description"]
         if "type" in data:
             product.type = data["type"]
         if "sku" in data:

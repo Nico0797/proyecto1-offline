@@ -119,6 +119,7 @@ class Product(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     business_id = db.Column(db.Integer, db.ForeignKey("businesses.id"), nullable=False, index=True)
     name = db.Column(db.String(255), nullable=False)
+    description = db.Column(db.Text)
     type = db.Column(db.String(20), default="product")  # product, service
     sku = db.Column(db.String(50))
     price = db.Column(db.Float, nullable=False)
@@ -135,6 +136,7 @@ class Product(db.Model):
             "id": self.id,
             "business_id": self.business_id,
             "name": self.name,
+            "description": self.description,
             "type": self.type,
             "sku": self.sku,
             "price": self.price,
