@@ -4447,7 +4447,14 @@
                 overlay.classList.remove('hidden');
                 overlay.style.display = 'flex';
                 this.saleItems = [];
-                // Sales Goals Logic
+                // Initialize with one empty item
+                const itemsContainer = document.getElementById('sale-items');
+                if (itemsContainer) itemsContainer.innerHTML = '';
+                this.addSaleItem();
+                this.updateSaleTotal();
+            },
+
+            // Sales Goals Logic
             async loadSalesGoals(status = 'active') {
                 const container = document.getElementById('goals-list');
                 const proLock = document.getElementById('goals-pro-lock');
@@ -4705,13 +4712,6 @@
                 
                 modal.classList.remove('hidden');
                 // Trigger confetti if library available or just simple animation
-            },
-
-            // Initialize with one empty item
-                const itemsContainer = document.getElementById('sale-items');
-                itemsContainer.innerHTML = '';
-                this.addSaleItem();
-                this.updateSaleTotal();
             },
             
             addSaleItem(productId = '', quantity = 1, unitPrice = 0) {
