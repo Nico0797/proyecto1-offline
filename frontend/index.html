@@ -32,7 +32,12 @@
                             </div>
                             <div>
                                 <label class="block text-sm mb-1">Password</label>
-                                <input type="password" id="login-password" class="input w-full px-4 py-3 rounded-xl" placeholder="••••••••" autocomplete="new-password">
+                                <div class="relative">
+                                    <input type="password" id="login-password" class="input w-full px-4 py-3 rounded-xl" placeholder="••••••••" autocomplete="new-password">
+                                    <button type="button" aria-label="Mostrar/Ocultar contraseña" onclick="app.togglePassword('login-password', 'login-eye-icon')" class="absolute right-2 top-1/2 -translate-y-1/2 glass p-2 rounded-full border border-white/10 text-white/60 hover:text-white transition-all active:scale-95 shadow-sm">
+                                        <i id="login-eye-icon" class="ph ph-eye-slash text-lg"></i>
+                                    </button>
+                                </div>
                             </div>
                             <button type="submit" class="btn-primary w-full py-3 rounded-xl font-semibold">Iniciar Sesión</button>
                             <button type="button" onclick="app.showForgotPassword()" class="w-full py-2 rounded-xl text-blue-400">¿Olvidaste tu contraseña?</button>
@@ -55,7 +60,22 @@
                             </div>
                             <div>
                                 <label class="block text-sm mb-1">Password</label>
-                                <input type="password" id="register-password" class="input w-full px-4 py-3 rounded-xl" placeholder="Mínimo 6 caracteres">
+                                <div class="relative">
+                                    <input type="password" id="register-password" class="input w-full px-4 py-3 rounded-xl" placeholder="••••••••" oninput="app.updatePasswordChecklist(); app.updatePasswordMatch()">
+                                </div>
+                                <div id="password-checklist" class="mt-2 space-y-1 text-sm">
+                                    <div class="flex items-center gap-2" id="pw-req-length"><i class="ph ph-x-circle text-red-400"></i><span>Mínimo 8 caracteres</span></div>
+                                    <div class="flex items-center gap-2" id="pw-req-number"><i class="ph ph-x-circle text-red-400"></i><span>Al menos 1 número</span></div>
+                                    <div class="flex items-center gap-2" id="pw-req-special"><i class="ph ph-x-circle text-red-400"></i><span>Al menos 1 carácter especial</span></div>
+                                </div>
+                            </div>
+                            <div>
+                                <label class="block text-sm mb-1">Confirmar Password</label>
+                                <input type="password" id="register-password-confirm" class="input w-full px-4 py-3 rounded-xl" placeholder="Repite tu contraseña" oninput="app.updatePasswordMatch()">
+                                <div id="password-match" class="mt-2 flex items-center gap-2 text-sm">
+                                    <i class="ph ph-x-circle text-red-400"></i>
+                                    <span>Las contraseñas deben coincidir</span>
+                                </div>
                             </div>
                             <button type="submit" class="btn-primary w-full py-3 rounded-xl font-semibold">Crear Cuenta</button>
                         </div>
@@ -227,14 +247,6 @@
 
                     <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
                         <h2 class="text-2xl font-bold">Dashboard</h2>
-                        
-                        <!-- Period Selector -->
-                        <div class="flex bg-white/5 p-1 rounded-lg overflow-x-auto no-scrollbar max-w-full">
-                            <button onclick="app.setDashboardPeriod('today')" id="period-today" class="px-3 py-1.5 rounded-md text-xs font-medium transition-all text-white/60 hover:text-white whitespace-nowrap">Hoy</button>
-                            <button onclick="app.setDashboardPeriod('week')" id="period-week" class="px-3 py-1.5 rounded-md text-xs font-medium transition-all text-white/60 hover:text-white whitespace-nowrap">Semana</button>
-                            <button onclick="app.setDashboardPeriod('month')" id="period-month" class="px-3 py-1.5 rounded-md text-xs font-medium transition-all bg-white/10 text-white shadow-sm whitespace-nowrap">Mes</button>
-                            <button onclick="app.setDashboardPeriod('year')" id="period-year" class="px-3 py-1.5 rounded-md text-xs font-medium transition-all text-white/60 hover:text-white whitespace-nowrap">Año</button>
-                        </div>
                     </div>
 
                     <!-- Recurring Expense Alerts (Placed after title, before cards) -->
@@ -279,6 +291,14 @@
                         <div id="quick-notes-list" class="space-y-2 max-h-60 overflow-y-auto pr-1">
                             <!-- Notes loaded here -->
                         </div>
+                    </div>
+                    
+                    <!-- Period Selector (above Summary card) -->
+                    <div class="flex bg-white/5 p-1 rounded-lg overflow-x-auto no-scrollbar max-w-full mb-4">
+                        <button onclick="app.setDashboardPeriod('today')" id="period-today" class="px-3 py-1.5 rounded-md text-xs font-medium transition-all text-white/60 hover:text-white whitespace-nowrap">Hoy</button>
+                        <button onclick="app.setDashboardPeriod('week')" id="period-week" class="px-3 py-1.5 rounded-md text-xs font-medium transition-all text-white/60 hover:text-white whitespace-nowrap">Semana</button>
+                        <button onclick="app.setDashboardPeriod('month')" id="period-month" class="px-3 py-1.5 rounded-md text-xs font-medium transition-all bg-white/10 text-white shadow-sm whitespace-nowrap">Mes</button>
+                        <button onclick="app.setDashboardPeriod('year')" id="period-year" class="px-3 py-1.5 rounded-md text-xs font-medium transition-all text-white/60 hover:text-white whitespace-nowrap">Año</button>
                     </div>
                     
                     <!-- Monthly Summary -->

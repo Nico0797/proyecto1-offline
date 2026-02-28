@@ -15,8 +15,9 @@
     "url": "git+https://github.com/Nico0797/Cuaderno-Contable.git"
   },
   "keywords": [],
-  "author": "",
-  "license": "ISC",
+  "author": "EnCaja",
+  "license": "UNLICENSED",
+  "private": true,
   "type": "commonjs",
   "bugs": {
     "url": "https://github.com/Nico0797/Cuaderno-Contable/issues"

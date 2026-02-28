@@ -615,4 +615,5 @@ flyctl deploy
 
 ## Licencia
 
-MIT License - Uso libre para proyectos personales y comerciales.
+Copyright © 2026 EnCaja. Todos los derechos reservados.
+Este software es propietario y confidencial. No se permite su distribución, copia o modificación sin autorización expresa.

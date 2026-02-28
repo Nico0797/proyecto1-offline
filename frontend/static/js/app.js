@@ -498,6 +498,65 @@
                 }
             },
             
+            // Toggle Password Visibility
+            togglePassword(inputId, iconId) {
+                const input = document.getElementById(inputId);
+                const icon = document.getElementById(iconId);
+                
+                if (input.type === "password") {
+                    input.type = "text";
+                    icon.classList.remove('ph-eye-slash');
+                    icon.classList.add('ph-eye');
+                } else {
+                    input.type = "password";
+                    icon.classList.remove('ph-eye');
+                    icon.classList.add('ph-eye-slash');
+                }
+            },
+            
+            updatePasswordChecklist() {
+                const pwdInput = document.getElementById('register-password');
+                const pwd = pwdInput ? pwdInput.value : '';
+                const checks = {
+                    length: pwd.length >= 8,
+                    number: /\d/.test(pwd),
+                    special: /[\W_]/.test(pwd),
+                };
+                const setRow = (id, ok) => {
+                    const row = document.getElementById(id);
+                    if (!row) return;
+                    const icon = row.querySelector('i');
+                    if (icon) {
+                        icon.className = ok ? 'ph ph-check-circle text-green-400' : 'ph ph-x-circle text-red-400';
+                    }
+                    row.classList.toggle('text-white', ok);
+                    row.classList.toggle('text-white/60', !ok);
+                };
+                setRow('pw-req-length', checks.length);
+                setRow('pw-req-number', checks.number);
+                setRow('pw-req-special', checks.special);
+            },
+            
+            updatePasswordMatch() {
+                const pwdInput = document.getElementById('register-password');
+                const confirmInput = document.getElementById('register-password-confirm');
+                const row = document.getElementById('password-match');
+                const pwd = pwdInput ? pwdInput.value : '';
+                const confirm = confirmInput ? confirmInput.value : '';
+                const ok = pwd.length > 0 && confirm.length > 0 && pwd === confirm;
+                if (!row) return;
+                const icon = row.querySelector('i');
+                const text = row.querySelector('span');
+                if (icon) {
+                    icon.className = ok ? 'ph ph-check-circle text-green-400' : 'ph ph-x-circle text-red-400';
+                }
+                if (text) {
+                    text.textContent = ok ? 'Las contraseñas coinciden' : 'Las contraseñas deben coincidir';
+                }
+                row.classList.toggle('text-white', ok);
+                row.classList.toggle('text-white/60', !ok);
+            },
+
             // Auth
             async login() {
                 const email = document.getElementById('login-email').value;
@@ -527,9 +586,15 @@
                 const name = document.getElementById('register-name').value;
                 const email = document.getElementById('register-email').value;
                 const password = document.getElementById('register-password').value;
+                const confirmPassword = document.getElementById('register-password-confirm').value;
                 
-                if (!name || !email || !password) {
+                if (!name || !email || !password || !confirmPassword) {
                     showCustomAlert('Por favor completa todos los campos', 'warning');
+                    return;
+                }
+
+                if (password !== confirmPassword) {
+                    showCustomAlert('Las contraseñas no coinciden', 'error');
                     return;
                 }
                 
@@ -684,6 +749,8 @@
                 document.getElementById('verify-form').classList.add('hidden');
                 document.getElementById('forgot-form').classList.add('hidden');
                 document.getElementById('reset-form').classList.add('hidden');
+                this.updatePasswordChecklist();
+                this.updatePasswordMatch();
             },
 
             showVerify(email = '') {
@@ -1210,11 +1277,8 @@
             
             // Navigation
             navigate(page) {
-                // Force close sidebar (mobile only)
-                // Check if screen width is less than 768px (standard mobile breakpoint)
-                // AND check if sidebar is currently open to avoid unnecessary DOM manipulation
                 const sidebar = document.getElementById('sidebar');
-                if (window.innerWidth < 768 && sidebar && sidebar.classList.contains('open')) {
+                if (sidebar && sidebar.classList.contains('open')) {
                     this.closeSidebar();
                 }
                 

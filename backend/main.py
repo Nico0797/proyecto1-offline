@@ -4452,6 +4452,11 @@ def create_app(config_class=None):
     def tienda():
         """Public Store - Landing page for customers"""
         return send_from_directory("../frontend", "landing.html")
+
+    @app.route("/privacy")
+    def privacy():
+        """Privacy Policy Page"""
+        return send_from_directory("../frontend", "privacy.html")
     
     @app.route("/api/contact", methods=["POST"])
     def contact():
