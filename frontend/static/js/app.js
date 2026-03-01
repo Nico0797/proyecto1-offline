@@ -1767,112 +1767,18 @@
                     console.error('Error loading detailed dashboard:', e);
                 }
                 
-                // Recurring Expenses Alerts
                 try {
-                    const recurringData = await this.api(`/businesses/${this.business.id}/recurring-expenses`);
                     const alertsContainer = document.getElementById('dashboard-alerts');
                     const placeholder = document.getElementById('recurring-alerts-placeholder');
-                    
-                    if (recurringData.recurring_expenses && recurringData.recurring_expenses.length > 0) {
-                        const today = new Date();
-                        // Normalize today to start of day
-                        const todayDate = new Date(today.getFullYear(), today.getMonth(), today.getDate());
-                        
-                        const alerts = [];
-                        
-                        recurringData.recurring_expenses.forEach(exp => {
-                            if (!exp.is_active) return;
-                            
-                            // Determine due date
-                            let dueDate;
-                            if (exp.next_due_date) {
-                                const parts = exp.next_due_date.split('-');
-                                dueDate = new Date(parts[0], parts[1]-1, parts[2]);
-                            } else {
-                                dueDate = new Date(today.getFullYear(), today.getMonth(), exp.due_day);
-                            }
-                            
-                            const diffTime = dueDate - todayDate;
-                            const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)); 
-                            
-                            if (diffDays < 0) {
-                                // Overdue
-                                alerts.push({
-                                    type: 'overdue',
-                                    html: `<div class="bg-red-500/20 border border-red-500/50 rounded-lg p-3 flex justify-between items-center mb-2">
-                                            <div class="flex items-center gap-3">
-                                                <div class="p-2 bg-red-500/20 rounded-lg text-red-400">
-                                                    <i class="ph ph-warning-circle text-xl"></i>
-                                                </div>
-                                                <div>
-                                                    <p class="font-bold text-red-300">Gasto Vencido: ${exp.name}</p>
-                                                    <p class="text-xs text-white/60">Venció el ${this.formatDate(exp.next_due_date)} - ${this.formatMoney(exp.amount)}</p>
-                                                </div>
-                                            </div>
-                                            <button onclick="app.navigate('recurring_expenses')" class="text-sm bg-red-500 text-white px-3 py-1 rounded-lg hover:bg-red-600 transition-colors">Ver</button>
-                                        </div>`
-                                });
-                            } else if (diffDays >= 0 && diffDays <= 5) {
-                                // Upcoming (within 5 days)
-                                alerts.push({
-                                    type: 'upcoming',
-                                    html: `<div class="bg-yellow-500/20 border border-yellow-500/50 rounded-lg p-3 flex justify-between items-center mb-2">
-                                            <div class="flex items-center gap-3">
-                                                <div class="p-2 bg-yellow-500/20 rounded-lg text-yellow-400">
-                                                    <i class="ph ph-clock text-xl"></i>
-                                                </div>
-                                                <div>
-                                                    <p class="font-bold text-yellow-300">Próximo Vencimiento: ${exp.name}</p>
-                                                    <p class="text-xs text-white/60">Vence el ${this.formatDate(exp.next_due_date)} - ${this.formatMoney(exp.amount)}</p>
-                                                </div>
-                                            </div>
-                                            <button onclick="app.navigate('recurring_expenses')" class="text-sm bg-yellow-500/20 text-yellow-400 border border-yellow-500/50 px-3 py-1 rounded-lg hover:bg-yellow-500/30 transition-colors">Ver</button>
-                                        </div>`
-                                });
-                            }
-                        });
-                        
-                        if (alerts.length > 0) {
-                            // Inject into both containers to be safe, or decide on one.
-                            // The user asked for "encima del card de caja hoy".
-                            // "dashboard-alerts" is at the very top (above title).
-                            // "recurring-alerts-placeholder" is below title, above cards.
-                            // Based on request "encima del card de caja hoy", the placeholder is better.
-                            
-                            // Let's use the placeholder and clear the top one
-                            if (placeholder) {
-                                placeholder.innerHTML = alerts.map(a => a.html).join('');
-                                placeholder.classList.remove('hidden');
-                                placeholder.classList.add('mb-6');
-                            }
-                            
-                            if (alertsContainer) {
-                                alertsContainer.innerHTML = ''; 
-                                alertsContainer.classList.add('hidden');
-                            }
-                        } else {
-                            if (placeholder) {
-                                placeholder.innerHTML = '';
-                                placeholder.classList.add('hidden');
-                            }
-                            if (alertsContainer) {
-                                alertsContainer.innerHTML = '';
-                                alertsContainer.classList.add('hidden');
-                            }
-                        }
-                    } else {
-                         if (placeholder) {
-                            placeholder.innerHTML = '';
-                            placeholder.classList.add('hidden');
-                        }
-                        if (alertsContainer) {
-                            alertsContainer.innerHTML = '';
-                            alertsContainer.classList.add('hidden');
-                        }
+                    if (placeholder) {
+                        placeholder.innerHTML = '';
+                        placeholder.classList.add('hidden');
                     }
-                } catch (e) {
-                    console.error('Error loading recurring alerts:', e);
-                }
+                    if (alertsContainer) {
+                        alertsContainer.innerHTML = '';
+                        alertsContainer.classList.add('hidden');
+                    }
+                } catch (e) {}
 
                 // Top Products - Load from reports API
                 const topProductsTable = document.getElementById('top-products-table');

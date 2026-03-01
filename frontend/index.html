@@ -255,43 +255,51 @@
                     <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
                         <h2 class="text-2xl font-bold">Dashboard</h2>
                     </div>
+                    
+                    <div id="dashSectionBar" class="flex bg-white/5 p-1 rounded-lg overflow-x-auto no-scrollbar max-w-full mb-4 gap-2">
+                        <button type="button" data-dsec="hoy" onclick="setDashSection('hoy')" class="px-3 py-1.5 rounded-md text-xs font-semibold transition-all bg-white/10 text-white shadow-sm whitespace-nowrap">Hoy</button>
+                        <button type="button" data-dsec="pendientes" onclick="setDashSection('pendientes')" class="px-3 py-1.5 rounded-md text-xs font-medium transition-all text-white/60 hover:text-white whitespace-nowrap">Pendientes</button>
+                        <button type="button" data-dsec="balance" onclick="setDashSection('balance')" class="px-3 py-1.5 rounded-md text-xs font-medium transition-all text-white/60 hover:text-white whitespace-nowrap">Balance</button>
+                        <button type="button" data-dsec="analiticas" onclick="setDashSection('analiticas')" class="px-3 py-1.5 rounded-md text-xs font-medium transition-all text-white/60 hover:text-white whitespace-nowrap">Analíticas</button>
+                    </div>
 
                     <!-- Recurring Expense Alerts (Placed after title, before cards) -->
                     <div id="recurring-alerts-placeholder" class="hidden"></div>
                     
-                    <!-- Quick Stats -->
-                    <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-                        <div class="stat-card glass rounded-xl p-4">
-                            <p class="text-muted text-sm">Caja Hoy</p>
-                            <p id="stat-cash-today" class="text-xl font-bold money-positive">$0</p>
+                    <div id="dashHoyWrap">
+                        <!-- Quick Stats -->
+                        <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+                            <div class="stat-card glass rounded-xl p-4">
+                                <p class="text-muted text-sm">Caja Hoy</p>
+                                <p id="stat-cash-today" class="text-xl font-bold money-positive">$0</p>
+                            </div>
+                            <div class="stat-card glass rounded-xl p-4">
+                                <p class="text-muted text-sm">Ventas Hoy</p>
+                                <p id="stat-sales-today" class="text-xl font-bold">$0</p>
+                            </div>
+                            <div class="stat-card glass rounded-xl p-4">
+                                <p class="text-muted text-sm">Gastos Hoy</p>
+                                <p id="stat-expenses-today" class="text-xl font-bold money-negative">$0</p>
+                            </div>
+                            <div class="stat-card glass rounded-xl p-4">
+                                <p class="text-muted text-sm">Por Cobrar</p>
+                                <p id="stat-receivable" class="text-xl font-bold money-negative">$0</p>
+                            </div>
                         </div>
-                        <div class="stat-card glass rounded-xl p-4">
-                            <p class="text-muted text-sm">Ventas Hoy</p>
-                            <p id="stat-sales-today" class="text-xl font-bold">$0</p>
+                        
+                        <div id="dashboard-alerts-compact" class="glass rounded-xl p-4 mb-6 hidden">
+                            <div class="flex items-center justify-between">
+                                <p class="text-sm text-white/80">Tienes <span id="dashboard-alerts-count">0</span> alertas</p>
+                                <button onclick="app.navigate('alerts')" class="btn-primary px-3 py-2 rounded-lg text-sm">Ver Alertas</button>
+                            </div>
                         </div>
-                        <div class="stat-card glass rounded-xl p-4">
-                            <p class="text-muted text-sm">Gastos Hoy</p>
-                            <p id="stat-expenses-today" class="text-xl font-bold money-negative">$0</p>
-                        </div>
-                        <div class="stat-card glass rounded-xl p-4">
-                            <p class="text-muted text-sm">Por Cobrar</p>
-                            <p id="stat-receivable" class="text-xl font-bold money-negative">$0</p>
-                        </div>
-                    </div>
-                    
-                    <div id="dashboard-alerts-compact" class="glass rounded-xl p-4 mb-6 hidden">
-                        <div class="flex items-center justify-between">
-                            <p class="text-sm text-white/80">Tienes <span id="dashboard-alerts-count">0</span> alertas</p>
-                            <button onclick="app.navigate('alerts')" class="btn-primary px-3 py-2 rounded-lg text-sm">Ver Alertas</button>
-                        </div>
-                    </div>
 
                     <!-- Alerts & Goal -->
                     <div id="dashboard-alerts"></div>
                     <div id="dashboard-goal"></div>
                     
-                    <!-- Cash Today + Recordatorios Row -->
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                        <!-- Cash Today + Recordatorios Row -->
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
                         <!-- Caja Hoy -->
                         <div id="cash-today-card" class="glass rounded-xl p-6">
                             <h3 class="text-lg font-semibold mb-4 flex items-center gap-2">
@@ -345,6 +353,7 @@
                                 <!-- Notes loaded here -->
                             </div>
                         </div>
+                        </div>
                     </div>
                     
                     <div class="flex bg-white/5 p-1 rounded-lg overflow-x-auto no-scrollbar max-w-full mb-4 gap-2" id="dashTabBar">
@@ -354,6 +363,8 @@
                         <button type="button" data-dash="insights" onclick="setDashTab('insights')" class="px-3 py-1.5 rounded-md text-xs font-medium transition-all text-white/60 hover:text-white whitespace-nowrap">Insights</button>
                     </div>
                     
+                    <!-- Balance Section -->
+                    <div id="dashBalanceWrap" class="hidden">
                     <!-- Period Selector (above Summary card) -->
                     <div id="dashSectionResumen" class="block">
                     <div class="flex bg-white/5 p-1 rounded-lg overflow-x-auto no-scrollbar max-w-full mb-4">
@@ -361,6 +372,7 @@
                         <button onclick="app.setDashboardPeriod('week')" id="period-week" class="px-3 py-1.5 rounded-md text-xs font-medium transition-all text-white/60 hover:text-white whitespace-nowrap">Semana</button>
                         <button onclick="app.setDashboardPeriod('month')" id="period-month" class="px-3 py-1.5 rounded-md text-xs font-medium transition-all bg-white/10 text-white shadow-sm whitespace-nowrap">Mes</button>
                         <button onclick="app.setDashboardPeriod('year')" id="period-year" class="px-3 py-1.5 rounded-md text-xs font-medium transition-all text-white/60 hover:text-white whitespace-nowrap">Año</button>
+                    </div>
                     </div>
                     
                     <!-- Monthly Summary -->
@@ -436,18 +448,23 @@
                         </div>
                     </div>
                     
-                    <!-- Alertas -->
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-                        <div id="dashSectionInsightsInventory" class="hidden glass rounded-xl p-6">
-                            <h3 class="text-lg font-semibold mb-4"><i class="ph ph-warning ph-icon text-yellow-400"></i> Inventario Bajo</h3>
-                            <div id="inventory-alerts">
-                                <p class="text-muted">Cargando...</p>
+                    <!-- Pendientes Section -->
+                    <div id="dashPendientesWrap" class="hidden">
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div class="glass rounded-xl p-6">
+                                <h3 class="text-lg font-semibold mb-4"><i class="ph ph-user-circle-minus ph-icon text-red-400"></i> Por cobrar</h3>
+                                <div class="max-h-60 overflow-y-auto">
+                                    <div id="fiados-alerts"><p class="text-muted">Cargando...</p></div>
+                                </div>
                             </div>
-                        </div>
-                        <div id="dashSectionCobrosFiados" class="hidden glass rounded-xl p-6">
-                            <h3 class="text-lg font-semibold mb-4"><i class="ph ph-credit-card ph-icon text-red-400"></i> Fiados Pendientes</h3>
-                            <div id="fiados-alerts">
-                                <p class="text-muted">Cargando...</p>
+                            <div class="glass rounded-xl p-6">
+                                <h3 class="text-lg font-semibold mb-4"><i class="ph ph-warning ph-icon text-yellow-400"></i> Inventario Bajo</h3>
+                                <div class="max-h-60 overflow-y-auto" id="inventory-alerts"><p class="text-muted">Cargando...</p></div>
+                            </div>
+                            <div class="glass rounded-xl p-6 md:col-span-2">
+                                <h3 class="text-lg font-semibold mb-2"><i class="ph ph-clock ph-icon text-yellow-400"></i> Recurrentes próximos/vencidos</h3>
+                                <p class="text-sm text-white/60 mb-4">Consulta y gestiona tus gastos recurrentes en el módulo de Alertas.</p>
+                                <button onclick="app.navigate('alerts')" class="btn-primary px-4 py-2 rounded-lg">Ver Alertas</button>
                             </div>
                         </div>
                     </div>
@@ -472,7 +489,8 @@
                         </div>
                     </div>
 
-                    <!-- Analytics Section -->
+                    <!-- Analíticas Section -->
+                    <div id="dashAnaliticasWrap" class="hidden">
                     <div id="analyticsWrap" class="glass rounded-xl p-6 mb-6">
                         <h3 class="text-lg font-semibold mb-4"><i class="ph ph-graph ph-icon"></i> Analíticas del negocio</h3>
                         <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
@@ -521,6 +539,7 @@
                                 </table>
                             </div>
                         </div>
+                    </div>
                     </div>
                 </div>
                 
@@ -988,6 +1007,44 @@
                 </div>
                 
                 <script>
+                // Dashboard Sections switcher
+                function setDashSection(name) {
+                    var hoy = document.getElementById('dashHoyWrap');
+                    var pend = document.getElementById('dashPendientesWrap');
+                    var bal = document.getElementById('dashBalanceWrap');
+                    var ana = document.getElementById('dashAnaliticasWrap');
+                    if (hoy) hoy.classList.toggle('hidden', name !== 'hoy');
+                    if (pend) pend.classList.toggle('hidden', name !== 'pendientes');
+                    if (bal) bal.classList.toggle('hidden', name !== 'balance');
+                    if (ana) ana.classList.toggle('hidden', name !== 'analiticas');
+                    var bar = document.getElementById('dashSectionBar');
+                    if (bar) {
+                        Array.from(bar.querySelectorAll('button')).forEach(function(btn){
+                            var active = (btn.getAttribute('data-dsec') === name);
+                            btn.classList.toggle('font-semibold', active);
+                            btn.classList.toggle('bg-white/10', active);
+                            btn.classList.toggle('text-white', active);
+                            btn.classList.toggle('text-white/60', !active);
+                        });
+                    }
+                    if (name === 'hoy') {
+                        setTimeout(() => { try { loadCashToday(); } catch(e){} }, 200);
+                    } else if (name === 'analiticas') {
+                        setTimeout(() => { try { loadAnalytics(); } catch(e){} }, 200);
+                    }
+                }
+                // Ensure default is Hoy whenever Dashboard shows
+                (function(){
+                    var page = document.getElementById('page-dashboard');
+                    if (!page) return;
+                    var obs = new MutationObserver(() => {
+                        if (!page.classList.contains('hidden')) {
+                            setDashSection('hoy');
+                        }
+                    });
+                    obs.observe(page, { attributes:true, attributeFilter:['class'] });
+                    setDashSection('hoy');
+                })();
                 function setDashTab(tabName) {
                     var showResumen = document.getElementById('dashSectionResumen');
                     var showCobrosFiados = document.getElementById('dashSectionCobrosFiados');
