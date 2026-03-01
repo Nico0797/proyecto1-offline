@@ -278,6 +278,13 @@
                             <p id="stat-receivable" class="text-xl font-bold money-negative">$0</p>
                         </div>
                     </div>
+                    
+                    <div id="dashboard-alerts-compact" class="glass rounded-xl p-4 mb-6 hidden">
+                        <div class="flex items-center justify-between">
+                            <p class="text-sm text-white/80">Tienes <span id="dashboard-alerts-count">0</span> alertas</p>
+                            <button onclick="app.navigate('alerts')" class="btn-primary px-3 py-2 rounded-lg text-sm">Ver Alertas</button>
+                        </div>
+                    </div>
 
                     <!-- Alerts & Goal -->
                     <div id="dashboard-alerts"></div>
@@ -598,6 +605,11 @@
                         <div class="glass rounded-xl p-6 w-full max-w-md">
                             <h3 class="font-semibold mb-4">Ajustar stock</h3>
                             <div class="space-y-3">
+                                <label class="block text-sm">Modo</label>
+                                <select id="alertsStockMode" class="input w-full px-3 py-2 rounded-lg">
+                                    <option value="set">Establecer valor</option>
+                                    <option value="adjust">Sumar/Restar cantidad</option>
+                                </select>
                                 <input id="alertsStockNew" type="number" step="1" class="input w-full px-3 py-2 rounded-lg" placeholder="Nuevo stock">
                                 <input id="alertsStockThreshold" type="number" step="1" class="input w-full px-3 py-2 rounded-lg" placeholder="Umbral bajo (opcional)">
                                 <textarea id="alertsStockNote" class="input w-full px-3 py-2 rounded-lg" placeholder="Nota (opcional)"></textarea>
@@ -651,11 +663,20 @@
                                 return diff >= FIADO_OVERDUE_DAYS;
                             });
                             const now = new Date();
-                            const recurrList = (recurr.recurring_expenses || []).filter(e => {
+                            const recurrListRaw = (recurr.recurring_expenses || []);
+                            const recurrList = recurrListRaw.filter(e => {
                                 const nd = e.next_due_date ? new Date(e.next_due_date) : null;
                                 if (!nd) return false;
                                 const diff = (nd.getTime() - now.getTime()) / (1000*60*60*24);
-                                return diff < 0 || diff <= RECURR_SOON_DAYS;
+                                return diff < 0 || (diff >= 0 && diff <= RECURR_SOON_DAYS);
+                            }).map(e => {
+                                const nd = e.next_due_date ? new Date(e.next_due_date) : null;
+                                let status = 'PENDIENTE';
+                                if (nd) {
+                                    const diff = (nd.getTime() - now.getTime()) / (1000*60*60*24);
+                                    status = diff < 0 ? 'VENCIDO' : (diff <= RECURR_SOON_DAYS ? 'POR VENCER' : 'PENDIENTE');
+                                }
+                                return { ...e, _status: status };
                             });
                             const prods = (products.products || products || []);
                             const stockList = prods.filter(p => {
@@ -678,6 +699,16 @@
                                     badge.classList.add('d-none');
                                 }
                             }
+                            const dashCompact = document.getElementById('dashboard-alerts-compact');
+                            const dashCount = document.getElementById('dashboard-alerts-count');
+                            if (dashCompact && dashCount) {
+                                if (alertsTotal > 0) {
+                                    dashCount.textContent = alertsTotal;
+                                    dashCompact.classList.remove('hidden');
+                                } else {
+                                    dashCompact.classList.add('hidden');
+                                }
+                            }
                             const bF = document.getElementById('alertsFiadosBadge');
                             const bR = document.getElementById('alertsRecurrBadge');
                             const bS = document.getElementById('alertsStockBadge');
@@ -698,9 +729,9 @@
                                             <td class="money-negative">${app.formatMoney ? app.formatMoney(d.balance || 0) : (d.balance || 0)}</td>
                                             <td>${d.since ? d.since.split('T')[0] : 'N/A'}</td>
                                             <td class="flex gap-2">
-                                                <button class="btn-secondary px-2 py-1 rounded" onclick="openAlertsAbonoModal(${d.id})">Registrar abono</button>
-                                                <button class="btn-success px-2 py-1 rounded" onclick="markFiadoPaid(${d.id}, ${d.balance || 0})">Marcar cobrado</button>
-                                                <button class="px-2 py-1 rounded text-blue-400 hover:text-blue-300" onclick="app.navigate('customers')">Ver</button>
+                                                <button class="btn-secondary px-2 py-1 rounded" data-action="fiado-abono" data-id="${d.id}">Registrar abono</button>
+                                                <button class="btn-success px-2 py-1 rounded" data-action="fiado-cobrado" data-id="${d.id}" data-amount="${d.balance || 0}">Marcar cobrado</button>
+                                                <button class="px-2 py-1 rounded text-blue-400 hover:text-blue-300" data-action="fiado-ver" data-name="${d.name || ''}">Ver</button>
                                             </td>
                                         </tr>
                                     `).join('');
@@ -709,7 +740,7 @@
                             const recurrBody = document.getElementById('alertsRecurrBody');
                             if (recurrBody) {
                                 if (recurrList.length === 0) {
-                                    recurrBody.innerHTML = '<tr><td colspan="5" class="text-muted text-center py-4">No tienes alertas aquí</td></tr>';
+                                    recurrBody.innerHTML = '<tr><td colspan="6" class="text-muted text-center py-4">No tienes alertas aquí</td></tr>';
                                 } else {
                                     recurrBody.innerHTML = recurrList.map(e => `
                                         <tr>
@@ -717,11 +748,14 @@
                                             <td class="money-negative">${app.formatMoney ? app.formatMoney(e.amount || 0) : (e.amount || 0)}</td>
                                             <td>${e.next_due_date || '-'}</td>
                                             <td>${e.frequency || '-'}</td>
+                                            <td>
+                                                ${e._status === 'VENCIDO' ? '<span class="badge rounded-pill bg-danger" style="background:#dc2626; color:#fff; border-radius:9999px; padding:2px 8px;">VENCIDO</span>' : (e._status === 'POR VENCER' ? '<span class="badge rounded-pill bg-warning text-dark" style="background:#f59e0b; color:#111827; border-radius:9999px; padding:2px 8px;">POR VENCER</span>' : '<span class="badge rounded-pill bg-secondary" style="background:#6b7280; color:#fff; border-radius:9999px; padding:2px 8px;">PENDIENTE</span>')}
+                                            </td>
                                             <td class="flex gap-2">
-                                                <button class="btn-secondary px-2 py-1 rounded" onclick="openAlertsEditRecurrModal(${e.id}, '${e.name || ''}', ${e.amount || 0}, '${e.next_due_date || ''}', '${e.frequency || 'monthly'}')">Editar</button>
-                                                <button class="btn-success px-2 py-1 rounded" onclick="markRecurrPaid(${e.id}, ${e.amount || 0})">Marcar pagado</button>
-                                                <button class="px-2 py-1 rounded text-yellow-400 hover:text-yellow-300" onclick="postponeRecurr(${e.id}, 3)">Posponer +3</button>
-                                                <button class="px-2 py-1 rounded text-yellow-400 hover:text-yellow-300" onclick="postponeRecurr(${e.id}, 7)">Posponer +7</button>
+                                                <button class="btn-secondary px-2 py-1 rounded" data-action="rec-edit" data-id="${e.id}" data-name="${e.name || ''}" data-amount="${e.amount || 0}" data-next="${e.next_due_date || ''}" data-freq="${e.frequency || 'monthly'}">Editar</button>
+                                                <button class="btn-success px-2 py-1 rounded" data-action="rec-pagar" data-id="${e.id}" data-amount="${e.amount || 0}" data-freq="${e.frequency || 'monthly'}">Marcar pagado</button>
+                                                <button class="px-2 py-1 rounded text-yellow-400 hover:text-yellow-300" data-action="rec-posponer" data-id="${e.id}" data-days="3">Posponer +3</button>
+                                                <button class="px-2 py-1 rounded text-yellow-400 hover:text-yellow-300" data-action="rec-posponer" data-id="${e.id}" data-days="7">Posponer +7</button>
                                             </td>
                                         </tr>
                                     `).join('');
@@ -738,8 +772,8 @@
                                             <td class="money-negative">${Number(p.stock || 0)}</td>
                                             <td>${Number((p.low_stock_threshold != null) ? p.low_stock_threshold : LOW_STOCK_THRESHOLD)}</td>
                                             <td class="flex gap-2">
-                                                <button class="btn-secondary px-2 py-1 rounded" onclick="openAlertsStockModal(${p.id}, ${Number(p.stock || 0)}, ${Number((p.low_stock_threshold != null) ? p.low_stock_threshold : LOW_STOCK_THRESHOLD)})">Ajustar stock</button>
-                                                <button class="px-2 py-1 rounded text-blue-400 hover:text-blue-300" onclick="app.navigate('products')">Editar producto</button>
+                                                <button class="btn-secondary px-2 py-1 rounded" data-action="inv-stock" data-id="${p.id}" data-current="${Number(p.stock || 0)}" data-threshold="${Number((p.low_stock_threshold != null) ? p.low_stock_threshold : LOW_STOCK_THRESHOLD)}">Ajustar stock</button>
+                                                <button class="px-2 py-1 rounded text-blue-400 hover:text-blue-300" data-action="inv-editar" data-name="${p.name || ''}">Editar producto</button>
                                             </td>
                                         </tr>
                                     `).join('');
@@ -747,6 +781,156 @@
                             }
                         } catch (e) { console.error('loadAlerts error', e); }
                     }
+                    
+                    // Helpers & Actions
+                    function openAlertsAbonoModal(customerId) {
+                        _alertsContext.customerId = customerId;
+                        document.getElementById('alertsAbonoAmount').value = '';
+                        document.getElementById('alertsAbonoDate').value = new Date().toISOString().split('T')[0];
+                        document.getElementById('alertsAbonoMethod').value = 'cash';
+                        document.getElementById('alertsAbonoNote').value = '';
+                        document.getElementById('alertsAbonoModal').classList.remove('hidden');
+                    }
+                    function hideAlertsAbonoModal(){ document.getElementById('alertsAbonoModal').classList.add('hidden'); }
+                    async function confirmAlertsAbono() {
+                        try {
+                            const amount = parseFloat(document.getElementById('alertsAbonoAmount').value || '0');
+                            if (!(amount > 0)) { alert('Monto inválido'); return; }
+                            const payment_date = document.getElementById('alertsAbonoDate').value || '';
+                            const method = document.getElementById('alertsAbonoMethod').value || 'cash';
+                            const note = document.getElementById('alertsAbonoNote').value || '';
+                            const payload = { customer_id: _alertsContext.customerId, amount, payment_date, method, note };
+                            await app.api(`/businesses/${app.business.id}/payments`, { method:'POST', body: JSON.stringify(payload) });
+                            hideAlertsAbonoModal();
+                            await loadAlerts();
+                            alert('Abono registrado');
+                        } catch (e) { alert('Error: ' + e.message); }
+                    }
+                    async function markFiadoPaid(customerId, balance) {
+                        try {
+                            const amount = Number(balance || 0);
+                            if (amount <= 0) return;
+                            await app.api(`/businesses/${app.business.id}/payments`, { method:'POST', body: JSON.stringify({ customer_id: customerId, amount }) });
+                            await loadAlerts();
+                            alert('Saldo marcado como cobrado');
+                        } catch (e) { alert('Error: ' + e.message); }
+                    }
+                    function openAlertsEditRecurrModal(id, name, amount, nextDate, freq) {
+                        _alertsContext.recurrId = id;
+                        document.getElementById('alertsRecurrName').value = name || '';
+                        document.getElementById('alertsRecurrAmount').value = amount || 0;
+                        document.getElementById('alertsRecurrNext').value = nextDate || '';
+                        document.getElementById('alertsRecurrFreq').value = freq || 'monthly';
+                        document.getElementById('alertsEditRecurrModal').classList.remove('hidden');
+                    }
+                    function hideAlertsEditRecurrModal(){ document.getElementById('alertsEditRecurrModal').classList.add('hidden'); }
+                    async function confirmAlertsEditRecurr() {
+                        try {
+                            const payload = {
+                                name: document.getElementById('alertsRecurrName').value,
+                                amount: parseFloat(document.getElementById('alertsRecurrAmount').value || '0'),
+                                next_due_date: document.getElementById('alertsRecurrNext').value,
+                                frequency: document.getElementById('alertsRecurrFreq').value,
+                            };
+                            await app.api(`/businesses/${app.business.id}/recurring-expenses/${_alertsContext.recurrId}`, { method:'PUT', body: JSON.stringify(payload) });
+                            hideAlertsEditRecurrModal();
+                            await loadAlerts();
+                            alert('Recurrente actualizado');
+                        } catch (e) { alert('Error: ' + e.message); }
+                    }
+                    async function markRecurrPaid(id, amount, freq) {
+                        try {
+                            const today = new Date().toISOString().split('T')[0];
+                            await app.api(`/businesses/${app.business.id}/expenses`, { method:'POST', body: JSON.stringify({ expense_date: today, category: 'recurrent', amount }) });
+                            // move next_due_date based on frequency
+                            const base = new Date();
+                            let next = new Date(base);
+                            if (freq === 'weekly') next.setDate(next.getDate() + 7);
+                            else if (freq === 'biweekly') next.setDate(next.getDate() + 15);
+                            else if (freq === 'annual') next.setFullYear(next.getFullYear() + 1);
+                            else { // monthly
+                                next.setMonth(next.getMonth() + 1);
+                            }
+                            const nextStr = next.toISOString().split('T')[0];
+                            await app.api(`/businesses/${app.business.id}/recurring-expenses/${id}`, { method:'PUT', body: JSON.stringify({ next_due_date: nextStr }) });
+                            await loadAlerts();
+                            alert('Marcado como pagado y próxima fecha actualizada');
+                        } catch (e) { alert('Error: ' + e.message); }
+                    }
+                    async function postponeRecurr(id, days) {
+                        try {
+                            const today = new Date();
+                            today.setDate(today.getDate() + Number(days || 3));
+                            const next = today.toISOString().split('T')[0];
+                            await app.api(`/businesses/${app.business.id}/recurring-expenses/${id}`, { method:'PUT', body: JSON.stringify({ next_due_date: next }) });
+                            await loadAlerts();
+                            alert('Pospuesto correctamente');
+                        } catch (e) { alert('Error: ' + e.message); }
+                    }
+                    function openAlertsStockModal(productId, current, threshold) {
+                        _alertsContext.productId = productId;
+                        _alertsContext.currentStock = Number(current || 0);
+                        document.getElementById('alertsStockNew').value = current || 0;
+                        document.getElementById('alertsStockThreshold').value = threshold || LOW_STOCK_THRESHOLD;
+                        document.getElementById('alertsStockNote').value = '';
+                        document.getElementById('alertsStockModal').classList.remove('hidden');
+                    }
+                    function hideAlertsStockModal(){ document.getElementById('alertsStockModal').classList.add('hidden'); }
+                    async function confirmAlertsStock() {
+                        try {
+                            const modeEl = document.getElementById('alertsStockMode');
+                            const mode = modeEl ? modeEl.value : 'set';
+                            const qty = parseFloat(document.getElementById('alertsStockNew').value || '0');
+                            const stock = mode === 'adjust' ? (_alertsContext.currentStock + qty) : qty;
+                            const low_stock_threshold = parseFloat(document.getElementById('alertsStockThreshold').value || LOW_STOCK_THRESHOLD);
+                            await app.api(`/businesses/${app.business.id}/products/${_alertsContext.productId}`, { method:'PUT', body: JSON.stringify({ stock, low_stock_threshold }) });
+                            hideAlertsStockModal();
+                            await loadAlerts();
+                            alert('Stock actualizado');
+                        } catch (e) { alert('Error: ' + e.message); }
+                    }
+                    
+                    // Event Delegation
+                    (function(){
+                        const container = document.getElementById('page-alerts');
+                        if (!container) return;
+                        container.addEventListener('click', async function(e){
+                            const btn = e.target.closest('[data-action]');
+                            if (!btn) return;
+                            const action = btn.dataset.action;
+                            try {
+                                if (action === 'fiado-abono') {
+                                    openAlertsAbonoModal(Number(btn.dataset.id));
+                                } else if (action === 'fiado-cobrado') {
+                                    await markFiadoPaid(Number(btn.dataset.id), Number(btn.dataset.amount || 0));
+                                } else if (action === 'fiado-ver') {
+                                    app.navigate('customers');
+                                    const input = document.getElementById('customer-search');
+                                    if (input) {
+                                        input.value = btn.dataset.name || '';
+                                        if (app && app.filterCustomers) app.filterCustomers();
+                                    }
+                                } else if (action === 'rec-edit') {
+                                    openAlertsEditRecurrModal(Number(btn.dataset.id), btn.dataset.name || '', Number(btn.dataset.amount || 0), btn.dataset.next || '', btn.dataset.freq || 'monthly');
+                                } else if (action === 'rec-pagar') {
+                                    await markRecurrPaid(Number(btn.dataset.id), Number(btn.dataset.amount || 0), btn.dataset.freq || 'monthly');
+                                } else if (action === 'rec-posponer') {
+                                    await postponeRecurr(Number(btn.dataset.id), Number(btn.dataset.days || 3));
+                                } else if (action === 'inv-stock') {
+                                    openAlertsStockModal(Number(btn.dataset.id), Number(btn.dataset.current || 0), Number(btn.dataset.threshold || LOW_STOCK_THRESHOLD));
+                                } else if (action === 'inv-editar') {
+                                    app.navigate('products');
+                                    const input = document.getElementById('product-search');
+                                    if (input) {
+                                        input.value = btn.dataset.name || '';
+                                        if (app && app.filterProducts) app.filterProducts();
+                                    }
+                                }
+                            } catch (err) {
+                                alert('Error: ' + (err.message || err));
+                            }
+                        });
+                    })();
                     document.addEventListener('DOMContentLoaded', function(){
                         let saved = null;
                         try { saved = localStorage.getItem('alertsSubTab'); } catch(e){}
@@ -773,12 +957,12 @@
                     var showInsightsTop = document.getElementById('dashSectionInsightsTopProducts');
                     var showInsightsInv = document.getElementById('dashSectionInsightsInventory');
                     if (showResumen) showResumen.classList.toggle('hidden', tabName !== 'resumen');
-                    if (showCobrosFiados) showCobrosFiados.classList.toggle('hidden', tabName !== 'cobros');
-                    if (showCobros) showCobros.classList.toggle('hidden', tabName !== 'cobros');
+                    if (showCobrosFiados) showCobrosFiados.classList.add('hidden');
+                    if (showCobros) showCobros.classList.add('hidden');
                     if (showVentas) showVentas.classList.toggle('hidden', tabName !== 'ventas');
                     if (showInsights) showInsights.classList.toggle('hidden', tabName !== 'insights');
                     if (showInsightsTop) showInsightsTop.classList.toggle('hidden', tabName !== 'insights');
-                    if (showInsightsInv) showInsightsInv.classList.toggle('hidden', tabName !== 'insights');
+                    if (showInsightsInv) showInsightsInv.classList.add('hidden');
                     var tabBar = document.getElementById('dashTabBar');
                     if (tabBar) {
                         Array.from(tabBar.querySelectorAll('button')).forEach(function(btn){
