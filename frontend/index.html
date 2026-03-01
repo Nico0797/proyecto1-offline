@@ -257,11 +257,28 @@
                     </div>
                     
                     <div id="dashSectionBar" class="flex bg-white/5 p-1 rounded-lg overflow-x-auto no-scrollbar max-w-full mb-4 gap-2">
-                        <button type="button" data-dsec="hoy" onclick="setDashSection('hoy')" class="px-3 py-1.5 rounded-md text-xs font-semibold transition-all bg-white/10 text-white shadow-sm whitespace-nowrap">Hoy</button>
-                        <button type="button" data-dsec="pendientes" onclick="setDashSection('pendientes')" class="px-3 py-1.5 rounded-md text-xs font-medium transition-all text-white/60 hover:text-white whitespace-nowrap">Pendientes</button>
-                        <button type="button" data-dsec="balance" onclick="setDashSection('balance')" class="px-3 py-1.5 rounded-md text-xs font-medium transition-all text-white/60 hover:text-white whitespace-nowrap">Balance</button>
-                        <button type="button" data-dsec="analiticas" onclick="setDashSection('analiticas')" class="px-3 py-1.5 rounded-md text-xs font-medium transition-all text-white/60 hover:text-white whitespace-nowrap">Analíticas</button>
+                        <button type="button" data-dsec="hoy" onclick="setDashSection('hoy')" class="dash-pill active">Hoy</button>
+                        <button type="button" data-dsec="clientes" onclick="setDashSection('clientes')" class="dash-pill">Clientes</button>
+                        <button type="button" data-dsec="balance" onclick="setDashSection('balance')" class="dash-pill">Balance</button>
+                        <button type="button" data-dsec="analiticas" onclick="setDashSection('analiticas')" class="dash-pill">Analíticas</button>
                     </div>
+                    <style>
+                        #dashSectionBar { background: rgba(255,255,255,0.06); }
+                        #dashSectionBar .dash-pill {
+                            padding: 6px 12px;
+                            border-radius: 10px;
+                            font-size: 12px;
+                            font-weight: 500;
+                            color: rgba(255,255,255,0.7);
+                            border: 1px solid rgba(255,255,255,0.1);
+                            background: rgba(255,255,255,0.04);
+                            box-shadow: 0 1px 2px rgba(0,0,0,0.25);
+                            transition: background-color 160ms ease, color 160ms ease, box-shadow 160ms ease, border-color 160ms ease;
+                            white-space: nowrap;
+                        }
+                        #dashSectionBar .dash-pill:hover { color: #fff; border-color: rgba(255,255,255,0.2); background: rgba(255,255,255,0.08); box-shadow: 0 2px 6px rgba(0,0,0,0.25); }
+                        #dashSectionBar .dash-pill.active { color: #fff; border-color: rgba(255,255,255,0.25); background: rgba(255,255,255,0.12); box-shadow: 0 3px 10px rgba(0,0,0,0.3); }
+                    </style>
 
                     <!-- Recurring Expense Alerts (Placed after title, before cards) -->
                     <div id="recurring-alerts-placeholder" class="hidden"></div>
@@ -356,12 +373,7 @@
                         </div>
                     </div>
                     
-                    <div class="flex bg-white/5 p-1 rounded-lg overflow-x-auto no-scrollbar max-w-full mb-4 gap-2" id="dashTabBar">
-                        <button type="button" data-dash="resumen" onclick="setDashTab('resumen')" class="px-3 py-1.5 rounded-md text-xs font-semibold transition-all bg-white/10 text-white shadow-sm whitespace-nowrap">Resumen</button>
-                        <button type="button" data-dash="cobros" onclick="setDashTab('cobros')" class="px-3 py-1.5 rounded-md text-xs font-medium transition-all text-white/60 hover:text-white whitespace-nowrap">Cobros</button>
-                        <button type="button" data-dash="ventas" onclick="setDashTab('ventas')" class="px-3 py-1.5 rounded-md text-xs font-medium transition-all text-white/60 hover:text-white whitespace-nowrap">Ventas</button>
-                        <button type="button" data-dash="insights" onclick="setDashTab('insights')" class="px-3 py-1.5 rounded-md text-xs font-medium transition-all text-white/60 hover:text-white whitespace-nowrap">Insights</button>
-                    </div>
+                    <!-- old dashTabBar removed to avoid duplicate menus -->
                     
                     <!-- Balance Section -->
                     <div id="dashBalanceWrap" class="hidden">
@@ -393,38 +405,32 @@
                             </div>
                         </div>
                     </div>
-                    </div>
                     
-                    <!-- Proyecciones -->
-                    <div id="dashSectionInsights" class="hidden">
-                    <div id="widget-projections" class="glass rounded-xl p-6 mb-6 relative">
-                        <h3 class="text-lg font-semibold mb-4"><i class="ph ph-chart-line-up ph-icon"></i> Proyecciones de Ventas</h3>
-                        <div id="dashboard-projections">
-                            <p class="text-muted">Cargando...</p>
+                    <!-- Ventas Recientes Table (only in Balance) -->
+                    <div class="glass rounded-xl p-6">
+                        <h3 class="text-lg font-semibold mb-4"><i class="ph ph-clock ph-icon"></i> Ventas Recientes</h3>
+                        <div class="glass rounded-xl overflow-hidden">
+                            <table class="text-sm">
+                                <thead>
+                                    <tr>
+                                        <th>Fecha</th>
+                                        <th>Total</th>
+                                        <th>Método</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="recent-sales-table">
+                                    <tr><td colspan="3" class="text-muted text-center py-4">Sin ventas recientes</td></tr>
+                                </tbody>
+                            </table>
                         </div>
                     </div>
                     </div>
+                    
+                    <!-- Proyecciones moved into Analíticas -->
                     
                     <!-- Statistical Tables -->
                     <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
-                        <!-- Ventas Recientes Table -->
-                        <div id="dashSectionVentas" class="hidden glass rounded-xl p-6">
-                            <h3 class="text-lg font-semibold mb-4"><i class="ph ph-clock ph-icon"></i> Ventas Recientes</h3>
-                            <div class="glass rounded-xl overflow-hidden">
-                                <table class="text-sm">
-                                    <thead>
-                                        <tr>
-                                            <th>Fecha</th>
-                                            <th>Total</th>
-                                            <th>Método</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody id="recent-sales-table">
-                                        <tr><td colspan="3" class="text-muted text-center py-4">Sin ventas recientes</td></tr>
-                                    </tbody>
-                                </table>
-                            </div>
-                        </div>
+                        <!-- Ventas Recientes moved to Balance -->
                         
                         <!-- Top Productos Table -->
                         <div id="dashSectionInsightsTopProducts" class="hidden">
@@ -449,50 +455,58 @@
                     </div>
                     
                     <!-- Pendientes Section -->
-                    <div id="dashPendientesWrap" class="hidden">
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div id="dashClientesWrap" class="hidden">
+                        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
                             <div class="glass rounded-xl p-6">
-                                <h3 class="text-lg font-semibold mb-4"><i class="ph ph-user-circle-minus ph-icon text-red-400"></i> Por cobrar</h3>
-                                <div class="max-h-60 overflow-y-auto">
-                                    <div id="fiados-alerts"><p class="text-muted">Cargando...</p></div>
+                                <h3 class="text-lg font-semibold mb-4"><i class="ph ph-user-circle-minus ph-icon text-red-400"></i> Clientes que más deben (Top 10)</h3>
+                                <div class="glass rounded-xl overflow-hidden max-h-72 overflow-y-auto">
+                                    <table class="text-sm w-full">
+                                        <thead>
+                                            <tr>
+                                                <th>Cliente</th>
+                                                <th>Saldo</th>
+                                                <th>Acciones</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="debtors-list">
+                                            <tr><td colspan="3" class="text-muted text-center py-4">Sin deudores</td></tr>
+                                        </tbody>
+                                    </table>
                                 </div>
                             </div>
                             <div class="glass rounded-xl p-6">
-                                <h3 class="text-lg font-semibold mb-4"><i class="ph ph-warning ph-icon text-yellow-400"></i> Inventario Bajo</h3>
-                                <div class="max-h-60 overflow-y-auto" id="inventory-alerts"><p class="text-muted">Cargando...</p></div>
-                            </div>
-                            <div class="glass rounded-xl p-6 md:col-span-2">
-                                <h3 class="text-lg font-semibold mb-2"><i class="ph ph-clock ph-icon text-yellow-400"></i> Recurrentes próximos/vencidos</h3>
-                                <p class="text-sm text-white/60 mb-4">Consulta y gestiona tus gastos recurrentes en el módulo de Alertas.</p>
-                                <button onclick="app.navigate('alerts')" class="btn-primary px-4 py-2 rounded-lg">Ver Alertas</button>
+                                <h3 class="text-lg font-semibold mb-4"><i class="ph ph-users-three ph-icon text-green-400"></i> Mejores clientes (Top 10)</h3>
+                                <div class="glass rounded-xl overflow-hidden max-h-72 overflow-y-auto">
+                                    <table class="text-sm w-full">
+                                        <thead>
+                                            <tr>
+                                                <th>Cliente</th>
+                                                <th>Total comprado</th>
+                                                <th># compras</th>
+                                                <th>Acciones</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="best-customers-body">
+                                            <tr><td colspan="4" class="text-muted text-center py-4">Sin datos</td></tr>
+                                        </tbody>
+                                    </table>
+                                </div>
                             </div>
                         </div>
                     </div>
                     
-                    <!-- Top Debtors -->
-                    <div id="dashSectionCobros" class="hidden glass rounded-xl p-6">
-                        <h3 class="text-lg font-semibold mb-4"><i class="ph ph-user-circle-minus ph-icon text-red-400"></i> Clientes con Deuda</h3>
-                        <div class="glass rounded-xl overflow-hidden">
-                            <table class="text-sm">
-                                <thead>
-                                    <tr>
-                                        <th>Cliente</th>
-                                        <th>Deuda</th>
-                                        <th>Última Compra</th>
-                                        <th>Acción</th>
-                                    </tr>
-                                </thead>
-                                <tbody id="debtors-list">
-                                    <tr><td colspan="4" class="text-muted text-center py-4">Sin deudores</td></tr>
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
+                    <!-- Top Debtors removed (moved into Clientes section) -->
 
                     <!-- Analíticas Section -->
                     <div id="dashAnaliticasWrap" class="hidden">
                     <div id="analyticsWrap" class="glass rounded-xl p-6 mb-6">
                         <h3 class="text-lg font-semibold mb-4"><i class="ph ph-graph ph-icon"></i> Analíticas del negocio</h3>
+                        <div id="widget-projections" class="glass rounded-xl p-6 mb-6 relative">
+                            <h3 class="text-lg font-semibold mb-4"><i class="ph ph-chart-line-up ph-icon"></i> Proyecciones de Ventas</h3>
+                            <div id="dashboard-projections">
+                                <p class="text-muted">Cargando...</p>
+                            </div>
+                        </div>
                         <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
                             <div class="glass rounded-xl p-4">
                                 <h4 class="text-sm font-semibold mb-2">Ventas en el tiempo (últimos 30 días)</h4>
@@ -850,7 +864,7 @@
                         document.getElementById('alertsAbonoNote').value = '';
                         document.getElementById('alertsAbonoModal').classList.remove('hidden');
                     }
-                    function hideAlertsAbonoModal(){ document.getElementById('alertsAbonoModal').classList.add('hidden'); }
+                    function hideAlertsAbonoModal(){ document.getElementById('alertsAbonoModal').classList.add('hidden'); try { loadClientsSummary(); } catch(e){} }
                     async function confirmAlertsAbono() {
                         try {
                             const amount = parseFloat(document.getElementById('alertsAbonoAmount').value || '0');
@@ -1010,27 +1024,26 @@
                 // Dashboard Sections switcher
                 function setDashSection(name) {
                     var hoy = document.getElementById('dashHoyWrap');
-                    var pend = document.getElementById('dashPendientesWrap');
+                    var pend = document.getElementById('dashClientesWrap');
                     var bal = document.getElementById('dashBalanceWrap');
                     var ana = document.getElementById('dashAnaliticasWrap');
                     if (hoy) hoy.classList.toggle('hidden', name !== 'hoy');
-                    if (pend) pend.classList.toggle('hidden', name !== 'pendientes');
+                    if (pend) pend.classList.toggle('hidden', name !== 'clientes');
                     if (bal) bal.classList.toggle('hidden', name !== 'balance');
                     if (ana) ana.classList.toggle('hidden', name !== 'analiticas');
                     var bar = document.getElementById('dashSectionBar');
                     if (bar) {
                         Array.from(bar.querySelectorAll('button')).forEach(function(btn){
                             var active = (btn.getAttribute('data-dsec') === name);
-                            btn.classList.toggle('font-semibold', active);
-                            btn.classList.toggle('bg-white/10', active);
-                            btn.classList.toggle('text-white', active);
-                            btn.classList.toggle('text-white/60', !active);
+                            btn.classList.toggle('active', active);
                         });
                     }
                     if (name === 'hoy') {
                         setTimeout(() => { try { loadCashToday(); } catch(e){} }, 200);
                     } else if (name === 'analiticas') {
                         setTimeout(() => { try { loadAnalytics(); } catch(e){} }, 200);
+                    } else if (name === 'clientes') {
+                        setTimeout(() => { try { loadClientsSummary(); } catch(e){} }, 200);
                     }
                 }
                 // Ensure default is Hoy whenever Dashboard shows
@@ -1044,6 +1057,85 @@
                     });
                     obs.observe(page, { attributes:true, attributeFilter:['class'] });
                     setDashSection('hoy');
+                })();
+                
+                async function loadClientsSummary() {
+                    if (!window.app || !app.business || !app.business.id) return;
+                    try {
+                        const today = new Date();
+                        const pad = n => String(n).padStart(2,'0');
+                        const start = new Date(today.getFullYear(), today.getMonth(), 1);
+                        const end = new Date(today.getFullYear(), today.getMonth()+1, 0);
+                        const start_date = `${start.getFullYear()}-${pad(start.getMonth()+1)}-${pad(start.getDate())}`;
+                        const end_date = `${end.getFullYear()}-${pad(end.getMonth()+1)}-${pad(end.getDate())}`;
+                        const [debtorsResp, salesResp] = await Promise.all([
+                            app.api(`/businesses/${app.business.id}/customers/debtors`),
+                            app.api(`/businesses/${app.business.id}/sales?start_date=${start_date}&end_date=${end_date}`),
+                        ]);
+                        const debtors = (debtorsResp.debtors || []).filter(d => Number(d.balance||0) > 0).sort((a,b)=>Number(b.balance||0)-Number(a.balance||0)).slice(0,10);
+                        const dBody = document.getElementById('debtors-list');
+                        if (dBody) {
+                            if (debtors.length === 0) {
+                                dBody.innerHTML = '<tr><td colspan="3" class="text-muted text-center py-4">Sin deudores</td></tr>';
+                            } else {
+                                dBody.innerHTML = debtors.map(d => `
+                                    <tr>
+                                        <td>${d.name || '-'}</td>
+                                        <td class="money-negative">${app.formatMoney ? app.formatMoney(Number(d.balance||0)) : Number(d.balance||0)}</td>
+                                        <td class="flex gap-2">
+                                            <button class="btn-secondary px-2 py-1 rounded" data-action="client-abono" data-id="${d.id}">Registrar abono</button>
+                                            <button class="px-2 py-1 rounded text-blue-400 hover:text-blue-300" data-action="client-ver" data-name="${d.name || ''}">Ver</button>
+                                        </td>
+                                    </tr>
+                                `).join('');
+                            }
+                        }
+                        const sales = salesResp.sales || [];
+                        const map = new Map();
+                        sales.forEach(s => {
+                            const name = s.customer_name || (s.customer && s.customer.name) || s.customer || 'Cliente';
+                            const total = Number(s.total || 0);
+                            const rec = map.get(name) || { total:0, count:0 };
+                            rec.total += total; rec.count += 1;
+                            map.set(name, rec);
+                        });
+                        const top = Array.from(map.entries()).map(([name,rec])=>({name, ...rec})).sort((a,b)=>b.total-a.total).slice(0,10);
+                        const bcBody = document.getElementById('best-customers-body');
+                        if (bcBody) {
+                            if (top.length === 0) {
+                                bcBody.innerHTML = '<tr><td colspan="4" class="text-muted text-center py-4">Sin datos</td></tr>';
+                            } else {
+                                bcBody.innerHTML = top.map(r => `
+                                    <tr>
+                                        <td>${r.name}</td>
+                                        <td class="money-positive">${app.formatMoney ? app.formatMoney(r.total) : r.total}</td>
+                                        <td>${r.count}</td>
+                                        <td><button class="px-2 py-1 rounded text-blue-400 hover:text-blue-300" data-action="client-ver" data-name="${r.name}">Ver</button></td>
+                                    </tr>
+                                `).join('');
+                            }
+                        }
+                    } catch(e) { console.error('loadClientsSummary error', e); }
+                }
+                // Delegation for Clients actions
+                (function(){
+                    const wrap = document.getElementById('dashClientesWrap');
+                    if (!wrap) return;
+                    wrap.addEventListener('click', function(e){
+                        const btn = e.target.closest('[data-action]');
+                        if (!btn) return;
+                        const action = btn.dataset.action;
+                        if (action === 'client-abono') {
+                            openAlertsAbonoModal(Number(btn.dataset.id));
+                        } else if (action === 'client-ver') {
+                            app.navigate('customers');
+                            const input = document.getElementById('customer-search');
+                            if (input) {
+                                input.value = btn.dataset.name || '';
+                                if (app && app.filterCustomers) app.filterCustomers();
+                            }
+                        }
+                    });
                 })();
                 function setDashTab(tabName) {
                     var showResumen = document.getElementById('dashSectionResumen');
