@@ -514,6 +514,13 @@
                 }
             },
             
+            togglePasswordCheckbox(inputId, checkboxId) {
+                const input = document.getElementById(inputId);
+                const cb = document.getElementById(checkboxId);
+                if (!input || !cb) return;
+                input.type = cb.checked ? 'text' : 'password';
+            },
+            
             updatePasswordChecklist() {
                 const pwdInput = document.getElementById('register-password');
                 const pwd = pwdInput ? pwdInput.value : '';
@@ -739,7 +746,12 @@
                 const emailInput = document.getElementById('login-email');
                 const passwordInput = document.getElementById('login-password');
                 if (emailInput) emailInput.value = '';
-                if (passwordInput) passwordInput.value = '';
+                if (passwordInput) {
+                    passwordInput.value = '';
+                    passwordInput.type = 'password';
+                }
+                const showCb = document.getElementById('login-show-password');
+                if (showCb) showCb.checked = false;
                 this.storage.remove('password_reset_flow');
             },
             

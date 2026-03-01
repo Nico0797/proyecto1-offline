@@ -34,10 +34,11 @@
                                 <label class="block text-sm mb-1">Password</label>
                                 <div class="relative">
                                     <input type="password" id="login-password" class="input w-full px-4 py-3 rounded-xl" placeholder="••••••••" autocomplete="new-password">
-                                    <button type="button" aria-label="Mostrar/Ocultar contraseña" onclick="app.togglePassword('login-password', 'login-eye-icon')" class="absolute right-2 top-1/2 -translate-y-1/2 glass p-2 rounded-full border border-white/10 text-white/60 hover:text-white transition-all active:scale-95 shadow-sm">
-                                        <i id="login-eye-icon" class="ph ph-eye-slash text-lg"></i>
-                                    </button>
                                 </div>
+                                <label class="mt-2 flex items-center gap-2 text-white/70 text-sm">
+                                    <input type="checkbox" id="login-show-password" onchange="app.togglePasswordCheckbox('login-password','login-show-password')" class="w-4 h-4 rounded border border-white/20 bg-white/5">
+                                    <span>Mostrar contraseña</span>
+                                </label>
                             </div>
                             <button type="submit" class="btn-primary w-full py-3 rounded-xl font-semibold">Iniciar Sesión</button>
                             <button type="button" onclick="app.showForgotPassword()" class="w-full py-2 rounded-xl text-blue-400">¿Olvidaste tu contraseña?</button>
