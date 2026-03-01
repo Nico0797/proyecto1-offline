@@ -294,7 +294,15 @@
                         </div>
                     </div>
                     
+                    <div class="flex bg-white/5 p-1 rounded-lg overflow-x-auto no-scrollbar max-w-full mb-4 gap-2" id="dashTabBar">
+                        <button type="button" data-dash="resumen" onclick="setDashTab('resumen')" class="px-3 py-1.5 rounded-md text-xs font-semibold transition-all bg-white/10 text-white shadow-sm whitespace-nowrap">Resumen</button>
+                        <button type="button" data-dash="cobros" onclick="setDashTab('cobros')" class="px-3 py-1.5 rounded-md text-xs font-medium transition-all text-white/60 hover:text-white whitespace-nowrap">Cobros</button>
+                        <button type="button" data-dash="ventas" onclick="setDashTab('ventas')" class="px-3 py-1.5 rounded-md text-xs font-medium transition-all text-white/60 hover:text-white whitespace-nowrap">Ventas</button>
+                        <button type="button" data-dash="insights" onclick="setDashTab('insights')" class="px-3 py-1.5 rounded-md text-xs font-medium transition-all text-white/60 hover:text-white whitespace-nowrap">Insights</button>
+                    </div>
+                    
                     <!-- Period Selector (above Summary card) -->
+                    <div id="dashSectionResumen" class="block">
                     <div class="flex bg-white/5 p-1 rounded-lg overflow-x-auto no-scrollbar max-w-full mb-4">
                         <button onclick="app.setDashboardPeriod('today')" id="period-today" class="px-3 py-1.5 rounded-md text-xs font-medium transition-all text-white/60 hover:text-white whitespace-nowrap">Hoy</button>
                         <button onclick="app.setDashboardPeriod('week')" id="period-week" class="px-3 py-1.5 rounded-md text-xs font-medium transition-all text-white/60 hover:text-white whitespace-nowrap">Semana</button>
@@ -320,19 +328,22 @@
                             </div>
                         </div>
                     </div>
+                    </div>
                     
                     <!-- Proyecciones -->
+                    <div id="dashSectionInsights" class="hidden">
                     <div id="widget-projections" class="glass rounded-xl p-6 mb-6 relative">
                         <h3 class="text-lg font-semibold mb-4"><i class="ph ph-chart-line-up ph-icon"></i> Proyecciones de Ventas</h3>
                         <div id="dashboard-projections">
                             <p class="text-muted">Cargando...</p>
                         </div>
                     </div>
+                    </div>
                     
                     <!-- Statistical Tables -->
                     <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
                         <!-- Ventas Recientes Table -->
-                        <div class="glass rounded-xl p-6">
+                        <div id="dashSectionVentas" class="hidden glass rounded-xl p-6">
                             <h3 class="text-lg font-semibold mb-4"><i class="ph ph-clock ph-icon"></i> Ventas Recientes</h3>
                             <div class="glass rounded-xl overflow-hidden">
                                 <table class="text-sm">
@@ -351,7 +362,8 @@
                         </div>
                         
                         <!-- Top Productos Table -->
-                        <div id="dashboard-top-products" class="glass rounded-xl p-6 relative">
+                        <div id="dashSectionInsightsTopProducts" class="hidden">
+                            <div id="dashboard-top-products" class="glass rounded-xl p-6 relative">
                             <h3 class="text-lg font-semibold mb-4"><i class="ph ph-trophy ph-icon"></i> Productos Más Vendidos</h3>
                             <div class="glass rounded-xl overflow-hidden">
                                 <table class="text-sm">
@@ -367,18 +379,19 @@
                                     </tbody>
                                 </table>
                             </div>
+                            </div>
                         </div>
                     </div>
                     
                     <!-- Alertas -->
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-                        <div class="glass rounded-xl p-6">
+                        <div id="dashSectionInsightsInventory" class="hidden glass rounded-xl p-6">
                             <h3 class="text-lg font-semibold mb-4"><i class="ph ph-warning ph-icon text-yellow-400"></i> Inventario Bajo</h3>
                             <div id="inventory-alerts">
                                 <p class="text-muted">Cargando...</p>
                             </div>
                         </div>
-                        <div class="glass rounded-xl p-6">
+                        <div id="dashSectionCobrosFiados" class="hidden glass rounded-xl p-6">
                             <h3 class="text-lg font-semibold mb-4"><i class="ph ph-credit-card ph-icon text-red-400"></i> Fiados Pendientes</h3>
                             <div id="fiados-alerts">
                                 <p class="text-muted">Cargando...</p>
@@ -387,7 +400,7 @@
                     </div>
                     
                     <!-- Top Debtors -->
-                    <div class="glass rounded-xl p-6">
+                    <div id="dashSectionCobros" class="hidden glass rounded-xl p-6">
                         <h3 class="text-lg font-semibold mb-4"><i class="ph ph-user-circle-minus ph-icon text-red-400"></i> Clientes con Deuda</h3>
                         <div class="glass rounded-xl overflow-hidden">
                             <table class="text-sm">
@@ -406,6 +419,49 @@
                         </div>
                     </div>
                 </div>
+                
+                <script>
+                function setDashTab(tabName) {
+                    var showResumen = document.getElementById('dashSectionResumen');
+                    var showCobrosFiados = document.getElementById('dashSectionCobrosFiados');
+                    var showCobros = document.getElementById('dashSectionCobros');
+                    var showVentas = document.getElementById('dashSectionVentas');
+                    var showInsights = document.getElementById('dashSectionInsights');
+                    var showInsightsTop = document.getElementById('dashSectionInsightsTopProducts');
+                    var showInsightsInv = document.getElementById('dashSectionInsightsInventory');
+                    if (showResumen) showResumen.classList.toggle('hidden', tabName !== 'resumen');
+                    if (showCobrosFiados) showCobrosFiados.classList.toggle('hidden', tabName !== 'cobros');
+                    if (showCobros) showCobros.classList.toggle('hidden', tabName !== 'cobros');
+                    if (showVentas) showVentas.classList.toggle('hidden', tabName !== 'ventas');
+                    if (showInsights) showInsights.classList.toggle('hidden', tabName !== 'insights');
+                    if (showInsightsTop) showInsightsTop.classList.toggle('hidden', tabName !== 'insights');
+                    if (showInsightsInv) showInsightsInv.classList.toggle('hidden', tabName !== 'insights');
+                    var tabBar = document.getElementById('dashTabBar');
+                    if (tabBar) {
+                        Array.from(tabBar.querySelectorAll('button')).forEach(function(btn){
+                            var isActive = (btn.getAttribute('data-dash') === tabName);
+                            btn.classList.toggle('font-semibold', isActive);
+                            btn.classList.toggle('bg-white/10', isActive);
+                            btn.classList.toggle('text-white', isActive);
+                            btn.classList.toggle('shadow-sm', isActive);
+                            btn.classList.toggle('text-white/60', !isActive);
+                        });
+                    }
+                    try { localStorage.setItem('dashTab', tabName); } catch(e) {}
+                    if (tabName === 'ventas') {
+                        setTimeout(function(){
+                            if (window.salesChart && typeof window.salesChart.update === 'function') {
+                                window.salesChart.update();
+                            }
+                        }, 0);
+                    }
+                }
+                document.addEventListener('DOMContentLoaded', function(){
+                    var saved = null;
+                    try { saved = localStorage.getItem('dashTab'); } catch(e) {}
+                    setDashTab(saved || 'resumen');
+                });
+                </script>
                 
                 <!-- Sales Page -->
                 <div id="page-sales" class="page hidden fade-in">

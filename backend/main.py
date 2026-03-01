@@ -764,6 +764,30 @@ def create_app(config_class=None):
     @token_required
     def get_businesses():
         businesses = Business.query.filter_by(user_id=g.current_user.id).all()
+        default_templates = {
+            "collection_message": (
+                "Hola {cliente} 😊\n"
+                "Te escribo de *{negocio}*.\n\n"
+                "Según mi registro, tienes un saldo pendiente de *${deuda}*.\n"
+                "¿Me confirmas por favor cuándo puedes realizar el pago?\n\n"
+                "Gracias 🙌"
+            ),
+            "sale_message": (
+                "Hola {cliente}, gracias por tu compra en *{negocio}*.\n\n"
+                "*Detalle:*\n{items}\n"
+                "*TOTAL: ${total}*\n"
+                "Pagado: ${pagado}\n"
+                "Saldo: ${saldo}\n\n"
+                "¡Esperamos verte pronto! 👋"
+            )
+        }
+        changed = False
+        for b in businesses:
+            if not b.whatsapp_templates:
+                b.whatsapp_templates = default_templates
+                changed = True
+        if changed:
+            db.session.commit()
         return jsonify({"businesses": [b.to_dict() for b in businesses]})
 
     @app.route("/api/businesses", methods=["POST"])
@@ -784,12 +808,30 @@ def create_app(config_class=None):
                     "upgrade_url": "/upgrade"
                 }), 403
 
+        default_templates = {
+            "collection_message": (
+                "Hola {cliente} 😊\n"
+                "Te escribo de *{negocio}*.\n\n"
+                "Según mi registro, tienes un saldo pendiente de *${deuda}*.\n"
+                "¿Me confirmas por favor cuándo puedes realizar el pago?\n\n"
+                "Gracias 🙌"
+            ),
+            "sale_message": (
+                "Hola {cliente}, gracias por tu compra en *{negocio}*.\n\n"
+                "*Detalle:*\n{items}\n"
+                "*TOTAL: ${total}*\n"
+                "Pagado: ${pagado}\n"
+                "Saldo: ${saldo}\n\n"
+                "¡Esperamos verte pronto! 👋"
+            )
+        }
         business = Business(
             user_id=g.current_user.id,
             name=name,
             currency=data.get("currency", "COP"),
             timezone=data.get("timezone", "America/Bogota"),
-            settings=data.get("settings", {})
+            settings=data.get("settings", {}),
+            whatsapp_templates=default_templates
         )
 
         db.session.add(business)
@@ -803,6 +845,25 @@ def create_app(config_class=None):
         business = Business.query.filter_by(id=business_id, user_id=g.current_user.id).first()
         if not business:
             return jsonify({"error": "Negocio no encontrado"}), 404
+        if not business.whatsapp_templates:
+            business.whatsapp_templates = {
+                "collection_message": (
+                    "Hola {cliente} 😊\n"
+                    "Te escribo de *{negocio}*.\n\n"
+                    "Según mi registro, tienes un saldo pendiente de *${deuda}*.\n"
+                    "¿Me confirmas por favor cuándo puedes realizar el pago?\n\n"
+                    "Gracias 🙌"
+                ),
+                "sale_message": (
+                    "Hola {cliente}, gracias por tu compra en *{negocio}*.\n\n"
+                    "*Detalle:*\n{items}\n"
+                    "*TOTAL: ${total}*\n"
+                    "Pagado: ${pagado}\n"
+                    "Saldo: ${saldo}\n\n"
+                    "¡Esperamos verte pronto! 👋"
+                )
+            }
+            db.session.commit()
         return jsonify({"business": business.to_dict()})
 
     @app.route("/api/businesses/<int:business_id>", methods=["PUT"])

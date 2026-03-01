@@ -1313,6 +1313,12 @@
                     history.pushState({}, '', '/');
                 }
                 
+                const businessHeader = document.getElementById('business-header');
+                if (businessHeader) {
+                    const showHeader = (page === 'dashboard' || page === 'settings');
+                    businessHeader.classList.toggle('hidden', !showHeader);
+                }
+                
                 // Load data
                 this.loadPageData(page);
             },
