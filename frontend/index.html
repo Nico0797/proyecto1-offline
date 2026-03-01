@@ -162,6 +162,420 @@
                     </div>
                 </div>
                 
+                <!-- Alerts Page -->
+                <div id="page-alerts" class="page hidden fade-in">
+                    <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-4 gap-4">
+                        <h2 class="text-2xl font-bold flex items-center">Alertas</h2>
+                        <div id="alertsSubNav" class="flex bg-white/5 p-1 rounded-lg overflow-x-auto no-scrollbar max-w-full gap-2">
+                            <button type="button" data-alerts="fiados" onclick="setAlertsSubTab('fiados')" class="px-3 py-1.5 rounded-md text-xs font-semibold transition-all bg-white/10 text-white shadow-sm whitespace-nowrap">
+                                Fiados <span id="alertsFiadosBadge" class="badge rounded-pill bg-danger ms-2 d-none" style="margin-left:6px; display:none; background:#dc2626; color:#fff; border-radius:9999px; padding:2px 6px; font-size:11px;">0</span>
+                            </button>
+                            <button type="button" data-alerts="recurr" onclick="setAlertsSubTab('recurr')" class="px-3 py-1.5 rounded-md text-xs font-medium transition-all text-white/60 hover:text-white whitespace-nowrap">
+                                Recurrentes <span id="alertsRecurrBadge" class="badge rounded-pill bg-danger ms-2 d-none" style="margin-left:6px; display:none; background:#dc2626; color:#fff; border-radius:9999px; padding:2px 6px; font-size:11px;">0</span>
+                            </button>
+                            <button type="button" data-alerts="stock" onclick="setAlertsSubTab('stock')" class="px-3 py-1.5 rounded-md text-xs font-medium transition-all text-white/60 hover:text-white whitespace-nowrap">
+                                Inventario <span id="alertsStockBadge" class="badge rounded-pill bg-danger ms-2 d-none" style="margin-left:6px; display:none; background:#dc2626; color:#fff; border-radius:9999px; padding:2px 6px; font-size:11px;">0</span>
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div id="alertsFiadosWrap" class="glass rounded-xl p-6 mb-6">
+                        <h3 class="text-lg font-semibold mb-4">Fiados retrasados <span id="alertsFiadosCount" class="text-red-400">(0)</span></h3>
+                        <div class="glass rounded-xl overflow-hidden">
+                            <table class="text-sm w-full">
+                                <thead>
+                                    <tr>
+                                        <th>Cliente</th>
+                                        <th>Saldo</th>
+                                        <th>Desde</th>
+                                        <th>Acciones</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="alertsFiadosBody">
+                                    <tr><td colspan="4" class="text-muted text-center py-4">No tienes alertas aquí</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                    
+                    <div id="alertsRecurrWrap" class="glass rounded-xl p-6 mb-6 hidden">
+                        <h3 class="text-lg font-semibold mb-4">Recurrentes por vencer/vencidos <span id="alertsRecurrCount" class="text-yellow-400">(0)</span></h3>
+                        <div class="glass rounded-xl overflow-hidden">
+                            <table class="text-sm w-full">
+                                <thead>
+                                    <tr>
+                                        <th>Nombre</th>
+                                        <th>Monto</th>
+                                        <th>Próxima fecha</th>
+                                        <th>Frecuencia</th>
+                                        <th>Acciones</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="alertsRecurrBody">
+                                    <tr><td colspan="5" class="text-muted text-center py-4">No tienes alertas aquí</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                    
+                    <div id="alertsStockWrap" class="glass rounded-xl p-6 mb-6 hidden">
+                        <h3 class="text-lg font-semibold mb-4">Inventario bajo <span id="alertsStockCount" class="text-yellow-400">(0)</span></h3>
+                        <div class="glass rounded-xl overflow-hidden">
+                            <table class="text-sm w-full">
+                                <thead>
+                                    <tr>
+                                        <th>Producto</th>
+                                        <th>Stock</th>
+                                        <th>Umbral</th>
+                                        <th>Acciones</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="alertsStockBody">
+                                    <tr><td colspan="4" class="text-muted text-center py-4">No tienes alertas aquí</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                    
+                    <!-- Modals -->
+                    <div id="alertsAbonoModal" class="hidden fixed inset-0 z-[999] flex items-center justify-center">
+                        <div class="glass rounded-xl p-6 w-full max-w-md">
+                            <h3 class="font-semibold mb-4">Registrar abono</h3>
+                            <div class="space-y-3">
+                                <input id="alertsAbonoAmount" type="number" min="1" step="1" class="input w-full px-3 py-2 rounded-lg" placeholder="Monto">
+                                <input id="alertsAbonoDate" type="date" class="input w-full px-3 py-2 rounded-lg">
+                                <select id="alertsAbonoMethod" class="input w-full px-3 py-2 rounded-lg">
+                                    <option value="cash">Efectivo</option>
+                                    <option value="transfer">Transferencia</option>
+                                    <option value="card">Tarjeta</option>
+                                </select>
+                                <textarea id="alertsAbonoNote" class="input w-full px-3 py-2 rounded-lg" placeholder="Nota (opcional)"></textarea>
+                            </div>
+                            <div class="flex justify-end gap-2 mt-4">
+                                <button onclick="hideAlertsAbonoModal()" class="px-4 py-2 rounded-lg text-white/70 hover:text-white">Cancelar</button>
+                                <button onclick="confirmAlertsAbono()" class="btn-success px-4 py-2 rounded-lg">Guardar</button>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div id="alertsEditRecurrModal" class="hidden fixed inset-0 z-[999] flex items-center justify-center">
+                        <div class="glass rounded-xl p-6 w-full max-w-lg">
+                            <h3 class="font-semibold mb-4">Editar recurrente</h3>
+                            <div class="grid grid-cols-2 gap-3">
+                                <input id="alertsRecurrName" class="input px-3 py-2 rounded-lg" placeholder="Nombre">
+                                <input id="alertsRecurrAmount" type="number" min="0" step="0.01" class="input px-3 py-2 rounded-lg" placeholder="Monto">
+                                <input id="alertsRecurrNext" type="date" class="input px-3 py-2 rounded-lg">
+                                <select id="alertsRecurrFreq" class="input px-3 py-2 rounded-lg">
+                                    <option value="monthly">Mensual</option>
+                                    <option value="weekly">Semanal</option>
+                                    <option value="biweekly">Quincenal</option>
+                                    <option value="annual">Anual</option>
+                                </select>
+                            </div>
+                            <div class="flex justify-end gap-2 mt-4">
+                                <button onclick="hideAlertsEditRecurrModal()" class="px-4 py-2 rounded-lg text-white/70 hover:text-white">Cancelar</button>
+                                <button onclick="confirmAlertsEditRecurr()" class="btn-success px-4 py-2 rounded-lg">Guardar</button>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div id="alertsStockModal" class="hidden fixed inset-0 z-[999] flex items-center justify-center">
+                        <div class="glass rounded-xl p-6 w-full max-w-md">
+                            <h3 class="font-semibold mb-4">Ajustar stock</h3>
+                            <div class="space-y-3">
+                                <input id="alertsStockNew" type="number" step="1" class="input w-full px-3 py-2 rounded-lg" placeholder="Nuevo stock">
+                                <input id="alertsStockThreshold" type="number" step="1" class="input w-full px-3 py-2 rounded-lg" placeholder="Umbral bajo (opcional)">
+                                <textarea id="alertsStockNote" class="input w-full px-3 py-2 rounded-lg" placeholder="Nota (opcional)"></textarea>
+                            </div>
+                            <div class="flex justify-end gap-2 mt-4">
+                                <button onclick="hideAlertsStockModal()" class="px-4 py-2 rounded-lg text-white/70 hover:text-white">Cancelar</button>
+                                <button onclick="confirmAlertsStock()" class="btn-success px-4 py-2 rounded-lg">Guardar</button>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <script>
+                    const FIADO_OVERDUE_DAYS = 7;
+                    const RECURR_SOON_DAYS = 3;
+                    const LOW_STOCK_THRESHOLD = 5;
+                    let _alertsContext = { customerId: null, productId: null, recurrId: null };
+                    
+                    function setAlertsSubTab(tab) {
+                        const sections = {
+                            fiados: document.getElementById('alertsFiadosWrap'),
+                            recurr: document.getElementById('alertsRecurrWrap'),
+                            stock: document.getElementById('alertsStockWrap'),
+                        };
+                        Object.keys(sections).forEach(k => {
+                            if (sections[k]) sections[k].classList.toggle('hidden', k !== tab);
+                        });
+                        const subNav = document.getElementById('alertsSubNav');
+                        if (subNav) {
+                            Array.from(subNav.querySelectorAll('button')).forEach(btn => {
+                                const active = btn.getAttribute('data-alerts') === tab;
+                                btn.classList.toggle('font-semibold', active);
+                                btn.classList.toggle('bg-white/10', active);
+                                btn.classList.toggle('text-white', active);
+                                btn.classList.toggle('text-white/60', !active);
+                            });
+                        }
+                        try { localStorage.setItem('alertsSubTab', tab); } catch(e) {}
+                    }
+                    
+                    async function loadAlerts() {
+                        if (!window.app || !app.business || !app.business.id) return;
+                        try {
+                            const [debtors, recurr, products] = await Promise.all([
+                                app.api(`/businesses/${app.business.id}/customers/debtors`),
+                                app.api(`/businesses/${app.business.id}/recurring-expenses`),
+                                app.api(`/businesses/${app.business.id}/products`),
+                            ]);
+                            
+                            const fiados = (debtors.debtors || []).filter(d => {
+                                if (!d.balance || d.balance <= 0) return false;
+                                if (!d.since) {
+                                    // Plan B: older than FIADO_OVERDUE_DAYS
+                                    return true; // We'll flag; refine below
+                                }
+                                const since = new Date(d.since);
+                                const diff = (Date.now() - since.getTime()) / (1000*60*60*24);
+                                return diff >= FIADO_OVERDUE_DAYS;
+                            }).map(d => {
+                                // refine plan B: if no since, assume overdue
+                                return d;
+                            });
+                            
+                            const now = new Date();
+                            const soonDays = RECURR_SOON_DAYS;
+                            const recurrList = (recurr.recurring_expenses || []).filter(e => {
+                                const nd = e.next_due_date ? new Date(e.next_due_date) : null;
+                                if (!nd) return false;
+                                const diff = (nd.getTime() - now.getTime()) / (1000*60*60*24);
+                                return diff < 0 || diff <= soonDays;
+                            });
+                            
+                            const prods = (products.products || products || []);
+                            const stockList = prods.filter(p => {
+                                const threshold = (p.low_stock_threshold != null) ? Number(p.low_stock_threshold) : LOW_STOCK_THRESHOLD;
+                                return Number(p.stock || 0) <= threshold;
+                            });
+                            
+                            const alertsFiadosCount = fiados.length;
+                            const alertsRecurrCount = recurrList.length;
+                            const alertsStockCount = stockList.length;
+                            const alertsTotal = alertsFiadosCount + alertsRecurrCount + alertsStockCount;
+                            
+                            const badge = document.getElementById('alertsBadge');
+                            if (badge) {
+                                if (alertsTotal > 0) {
+                                    badge.textContent = alertsTotal;
+                                    badge.style.display = 'inline-block';
+                                    badge.classList.remove('d-none');
+                                } else {
+                                    badge.textContent = '0';
+                                    badge.style.display = 'none';
+                                    badge.classList.add('d-none');
+                                }
+                            }
+                            const bF = document.getElementById('alertsFiadosBadge');
+                            const bR = document.getElementById('alertsRecurrBadge');
+                            const bS = document.getElementById('alertsStockBadge');
+                            if (bF) { bF.textContent = alertsFiadosCount; bF.style.display = alertsFiadosCount>0?'inline-block':'none'; }
+                            if (bR) { bR.textContent = alertsRecurrCount; bR.style.display = alertsRecurrCount>0?'inline-block':'none'; }
+                            if (bS) { bS.textContent = alertsStockCount; bS.style.display = alertsStockCount>0?'inline-block':'none'; }
+                            
+                            document.getElementById('alertsFiadosCount').textContent = `(${alertsFiadosCount})`;
+                            document.getElementById('alertsRecurrCount').textContent = `(${alertsRecurrCount})`;
+                            document.getElementById('alertsStockCount').textContent = `(${alertsStockCount})`;
+                            
+                            const fiadosBody = document.getElementById('alertsFiadosBody');
+                            if (fiadosBody) {
+                                if (fiados.length === 0) {
+                                    fiadosBody.innerHTML = '<tr><td colspan="4" class="text-muted text-center py-4">No tienes alertas aquí</td></tr>';
+                                } else {
+                                    fiadosBody.innerHTML = fiados.map(d => `
+                                        <tr>
+                                            <td>${d.name || '-'}</td>
+                                            <td class="money-negative">${app.formatMoney ? app.formatMoney(d.balance || 0) : (d.balance || 0)}</td>
+                                            <td>${d.since ? d.since.split('T')[0] : 'N/A'}</td>
+                                            <td class="flex gap-2">
+                                                <button class="btn-secondary px-2 py-1 rounded" onclick="openAlertsAbonoModal(${d.id})">Registrar abono</button>
+                                                <button class="btn-success px-2 py-1 rounded" onclick="markFiadoPaid(${d.id}, ${d.balance || 0})">Marcar cobrado</button>
+                                                <button class="px-2 py-1 rounded text-blue-400 hover:text-blue-300" onclick="app.navigate('customers')">Ver</button>
+                                            </td>
+                                        </tr>
+                                    `).join('');
+                                }
+                            }
+                            
+                            const recurrBody = document.getElementById('alertsRecurrBody');
+                            if (recurrBody) {
+                                if (recurrList.length === 0) {
+                                    recurrBody.innerHTML = '<tr><td colspan="5" class="text-muted text-center py-4">No tienes alertas aquí</td></tr>';
+                                } else {
+                                    recurrBody.innerHTML = recurrList.map(e => `
+                                        <tr>
+                                            <td>${e.name || '-'}</td>
+                                            <td class="money-negative">${app.formatMoney ? app.formatMoney(e.amount || 0) : (e.amount || 0)}</td>
+                                            <td>${e.next_due_date || '-'}</td>
+                                            <td>${e.frequency || '-'}</td>
+                                            <td class="flex gap-2">
+                                                <button class="btn-secondary px-2 py-1 rounded" onclick="openAlertsEditRecurrModal(${e.id}, '${e.name || ''}', ${e.amount || 0}, '${e.next_due_date || ''}', '${e.frequency || 'monthly'}')">Editar</button>
+                                                <button class="btn-success px-2 py-1 rounded" onclick="markRecurrPaid(${e.id}, ${e.amount || 0})">Marcar pagado</button>
+                                                <button class="px-2 py-1 rounded text-yellow-400 hover:text-yellow-300" onclick="postponeRecurr(${e.id}, 3)">Posponer +3</button>
+                                                <button class="px-2 py-1 rounded text-yellow-400 hover:text-yellow-300" onclick="postponeRecurr(${e.id}, 7)">Posponer +7</button>
+                                            </td>
+                                        </tr>
+                                    `).join('');
+                                }
+                            }
+                            
+                            const stockBody = document.getElementById('alertsStockBody');
+                            if (stockBody) {
+                                if (stockList.length === 0) {
+                                    stockBody.innerHTML = '<tr><td colspan="4" class="text-muted text-center py-4">No tienes alertas aquí</td></tr>';
+                                } else {
+                                    stockBody.innerHTML = stockList.map(p => `
+                                        <tr>
+                                            <td>${p.name || '-'}</td>
+                                            <td class="money-negative">${Number(p.stock || 0)}</td>
+                                            <td>${Number((p.low_stock_threshold != null) ? p.low_stock_threshold : LOW_STOCK_THRESHOLD)}</td>
+                                            <td class="flex gap-2">
+                                                <button class="btn-secondary px-2 py-1 rounded" onclick="openAlertsStockModal(${p.id}, ${Number(p.stock || 0)}, ${Number((p.low_stock_threshold != null) ? p.low_stock_threshold : LOW_STOCK_THRESHOLD)})">Ajustar stock</button>
+                                                <button class="px-2 py-1 rounded text-blue-400 hover:text-blue-300" onclick="app.navigate('products')">Editar producto</button>
+                                            </td>
+                                        </tr>
+                                    `).join('');
+                                }
+                            }
+                        } catch (e) {
+                            console.error('loadAlerts error', e);
+                        }
+                    }
+                    
+                    // Abono modal
+                    function openAlertsAbonoModal(customerId) {
+                        _alertsContext.customerId = customerId;
+                        document.getElementById('alertsAbonoAmount').value = '';
+                        document.getElementById('alertsAbonoDate').value = new Date().toISOString().split('T')[0];
+                        document.getElementById('alertsAbonoMethod').value = 'cash';
+                        document.getElementById('alertsAbonoNote').value = '';
+                        document.getElementById('alertsAbonoModal').classList.remove('hidden');
+                    }
+                    function hideAlertsAbonoModal(){ document.getElementById('alertsAbonoModal').classList.add('hidden'); }
+                    async function confirmAlertsAbono() {
+                        try {
+                            const amount = parseFloat(document.getElementById('alertsAbonoAmount').value || '0');
+                            if (!(amount > 0)) { alert('Monto inválido'); return; }
+                            const payment_date = document.getElementById('alertsAbonoDate').value || '';
+                            const method = document.getElementById('alertsAbonoMethod').value || 'cash';
+                            const note = document.getElementById('alertsAbonoNote').value || '';
+                            const payload = { customer_id: _alertsContext.customerId, amount, payment_date, method, note };
+                            await app.api(`/businesses/${app.business.id}/payments`, { method:'POST', body: JSON.stringify(payload) });
+                            hideAlertsAbonoModal();
+                            await loadAlerts();
+                            alert('Abono registrado');
+                        } catch (e) { alert('Error: ' + e.message); }
+                    }
+                    async function markFiadoPaid(customerId, balance) {
+                        try {
+                            const amount = Number(balance || 0);
+                            if (amount <= 0) return;
+                            await app.api(`/businesses/${app.business.id}/payments`, { method:'POST', body: JSON.stringify({ customer_id: customerId, amount }) });
+                            await loadAlerts();
+                            alert('Saldo marcado como cobrado');
+                        } catch (e) { alert('Error: ' + e.message); }
+                    }
+                    
+                    // Recurrentes modal
+                    function openAlertsEditRecurrModal(id, name, amount, nextDate, freq) {
+                        _alertsContext.recurrId = id;
+                        document.getElementById('alertsRecurrName').value = name || '';
+                        document.getElementById('alertsRecurrAmount').value = amount || 0;
+                        document.getElementById('alertsRecurrNext').value = nextDate || '';
+                        document.getElementById('alertsRecurrFreq').value = freq || 'monthly';
+                        document.getElementById('alertsEditRecurrModal').classList.remove('hidden');
+                    }
+                    function hideAlertsEditRecurrModal(){ document.getElementById('alertsEditRecurrModal').classList.add('hidden'); }
+                    async function confirmAlertsEditRecurr() {
+                        try {
+                            const payload = {
+                                name: document.getElementById('alertsRecurrName').value,
+                                amount: parseFloat(document.getElementById('alertsRecurrAmount').value || '0'),
+                                next_due_date: document.getElementById('alertsRecurrNext').value,
+                                frequency: document.getElementById('alertsRecurrFreq').value,
+                            };
+                            await app.api(`/businesses/${app.business.id}/recurring-expenses/${_alertsContext.recurrId}`, { method:'PUT', body: JSON.stringify(payload) });
+                            hideAlertsEditRecurrModal();
+                            await loadAlerts();
+                            alert('Recurrente actualizado');
+                        } catch (e) { alert('Error: ' + e.message); }
+                    }
+                    async function markRecurrPaid(id, amount) {
+                        try {
+                            const today = new Date().toISOString().split('T')[0];
+                            await app.api(`/businesses/${app.business.id}/expenses`, { method:'POST', body: JSON.stringify({ expense_date: today, category: 'recurrent', amount }) });
+                            // move next_due_date + frequency simple bump (+30 days monthly, +7 weekly)
+                            const bumpDays =  (document.getElementById('alertsRecurrFreq').value === 'weekly') ? 7 : (document.getElementById('alertsRecurrFreq').value === 'biweekly' ? 15 : (document.getElementById('alertsRecurrFreq').value === 'annual' ? 365 : 30));
+                            const cur = document.getElementById('alertsRecurrNext').value ? new Date(document.getElementById('alertsRecurrNext').value) : new Date();
+                            cur.setDate(cur.getDate() + bumpDays);
+                            const next = cur.toISOString().split('T')[0];
+                            await app.api(`/businesses/${app.business.id}/recurring-expenses/${id}`, { method:'PUT', body: JSON.stringify({ next_due_date: next }) });
+                            await loadAlerts();
+                            alert('Marcado como pagado y próxima fecha actualizada');
+                        } catch (e) { alert('Error: ' + e.message); }
+                    }
+                    async function postponeRecurr(id, days) {
+                        try {
+                            // get current date from table? fallback: today + days
+                            const today = new Date();
+                            today.setDate(today.getDate() + Number(days || 3));
+                            const next = today.toISOString().split('T')[0];
+                            await app.api(`/businesses/${app.business.id}/recurring-expenses/${id}`, { method:'PUT', body: JSON.stringify({ next_due_date: next }) });
+                            await loadAlerts();
+                            alert('Pospuesto correctamente');
+                        } catch (e) { alert('Error: ' + e.message); }
+                    }
+                    
+                    // Stock modal
+                    function openAlertsStockModal(productId, current, threshold) {
+                        _alertsContext.productId = productId;
+                        document.getElementById('alertsStockNew').value = current || 0;
+                        document.getElementById('alertsStockThreshold').value = threshold || LOW_STOCK_THRESHOLD;
+                        document.getElementById('alertsStockNote').value = '';
+                        document.getElementById('alertsStockModal').classList.remove('hidden');
+                    }
+                    function hideAlertsStockModal(){ document.getElementById('alertsStockModal').classList.add('hidden'); }
+                    async function confirmAlertsStock() {
+                        try {
+                            const stock = parseFloat(document.getElementById('alertsStockNew').value || '0');
+                            const low_stock_threshold = parseFloat(document.getElementById('alertsStockThreshold').value || LOW_STOCK_THRESHOLD);
+                            await app.api(`/businesses/${app.business.id}/products/${_alertsContext.productId}`, { method:'PUT', body: JSON.stringify({ stock, low_stock_threshold }) });
+                            hideAlertsStockModal();
+                            await loadAlerts();
+                            alert('Stock actualizado');
+                        } catch (e) { alert('Error: ' + e.message); }
+                    }
+                    
+                    // Auto refresh when page is shown
+                    document.addEventListener('DOMContentLoaded', function(){
+                        let saved = null;
+                        try { saved = localStorage.getItem('alertsSubTab'); } catch(e){}
+                        setAlertsSubTab(saved || 'fiados');
+                        const page = document.getElementById('page-alerts');
+                        if (page) {
+                            const obs = new MutationObserver(() => {
+                                if (!page.classList.contains('hidden')) {
+                                    loadAlerts();
+                                }
+                            });
+                            obs.observe(page, { attributes:true, attributeFilter:['class'] });
+                        }
+                        // Initial attempt if business ready
+                        setTimeout(() => loadAlerts(), 1000);
+                    });
+                    </script>
+                </div>
                 <nav class="space-y-1 flex-1 px-4">
                     <a href="#" onclick="event.preventDefault(); app.navigate('dashboard')" class="nav-item block px-4 py-2 rounded-lg text-white/80 hover:bg-white/5" data-page="dashboard">
                         <i class="ph ph-chart-pie-slice ph-icon"></i> Dashboard
@@ -192,6 +606,11 @@
                     </a>
                     <a href="#" onclick="event.preventDefault(); app.navigate('reports')" class="nav-item block px-4 py-2 rounded-lg text-white/80 hover:bg-white/5" data-page="reports">
                         <i class="ph ph-chart-line-up ph-icon"></i> Reportes
+                    </a>
+                    <a href="#" onclick="event.preventDefault(); app.navigate('alerts')" class="nav-item block px-4 py-2 rounded-lg text-white/80 hover:bg-white/5 flex items-center" data-page="alerts">
+                        <i class="ph ph-bell-simple ph-icon"></i>
+                        <span class="ml-2">Alertas</span>
+                        <span id="alertsBadge" class="badge rounded-pill bg-danger ms-2 d-none" style="margin-left:8px; display:none; background:#dc2626; color:#fff; border-radius:9999px; padding:2px 8px; font-size:12px;">0</span>
                     </a>
                     <a href="#" onclick="event.preventDefault(); app.navigate('settings')" class="nav-item block px-4 py-2 rounded-lg text-white/80 hover:bg-white/5" data-page="settings">
                         <i class="ph ph-gear ph-icon"></i> Configuración
