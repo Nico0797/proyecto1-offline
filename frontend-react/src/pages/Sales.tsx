@@ -14,14 +14,15 @@ import { ReceivablesTab } from '../components/Sales/ReceivablesTab';
 import { Sale } from '../types';
 import { DateRange, getPeriodPreference } from '../utils/dateRange.utils';
 import { FEATURES, FREE_LIMITS } from '../auth/plan';
-import { PageLayout, PageHeader, PageFilters, PageBody } from '../components/Layout/PageLayout';
+import { SwipePager } from '../components/ui/SwipePager';
+import { PageFilters } from '../components/Layout/PageLayout';
 
 export const Sales = () => {
   const { activeBusiness } = useBusinessStore();
   const { sales, loading, fetchSales, deleteSale } = useSaleStore();
   const { user } = useAuthStore();
   
-  const [activeTab, setActiveTab] = useState<'list' | 'receivables'>('list');
+  const [activeTab, setActiveTab] = useState<string>('list');
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [dateRange, setDateRange] = useState<DateRange>(() => getPeriodPreference('sales'));
@@ -107,88 +108,91 @@ export const Sales = () => {
   };
 
   return (
-    <PageLayout>
+    <div className="h-full flex flex-col overflow-hidden" data-tour="sales.panel">
       <UpgradeModal
         isOpen={showUpgradeModal}
         onClose={() => setShowUpgradeModal(false)}
         feature={FEATURES.LIMIT_SALES}
       />
       
-      <PageHeader 
-        title="Ventas" 
-        description="Gestiona tus transacciones y cuentas por cobrar."
-        action={
+      <div className="shrink-0 px-4 sm:px-6 lg:px-8 py-4 bg-white dark:bg-gray-900 z-10 border-b border-gray-200 dark:border-gray-800">
+          <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+            <div>
+              <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Ventas</h1>
+              <p className="text-sm text-gray-500 dark:text-gray-400">Gestiona tus transacciones y cuentas por cobrar.</p>
+            </div>
             <div className="flex gap-2">
                 <Button variant="secondary" onClick={handleNewSale} className="hidden sm:flex">
                     Venta Rápida
                 </Button>
-                <Button onClick={handleNewSale} data-tour="sales.primaryAction">
+                <Button onClick={handleNewSale} className="hidden sm:flex" data-tour="sales.primaryAction.desktop">
                     <Plus className="w-4 h-4 mr-2" />
-                    <span className="hidden sm:inline">Nueva Venta</span>
-                    <span className="sm:hidden">Nueva</span>
+                    <span>Nueva Venta</span>
+                </Button>
+                <Button onClick={handleNewSale} className="sm:hidden" data-tour="sales.primaryAction.mobile">
+                    <Plus className="w-4 h-4" />
+                    <span>Nueva</span>
                 </Button>
             </div>
-        }
-      />
-
-      {/* Tabs - Always visible */}
-      <div className="bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800 shrink-0 px-4">
-        <div className="flex gap-6 overflow-x-auto custom-scrollbar">
-          <button
-            className={`py-3 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${activeTab === 'list' ? 'border-blue-500 text-blue-600 dark:text-blue-400' : 'border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400'}`}
-            onClick={() => setActiveTab('list')}
-          >
-            Listado de Ventas
-          </button>
-          <button
-            className={`py-3 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${activeTab === 'receivables' ? 'border-blue-500 text-blue-600 dark:text-blue-400' : 'border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400'}`}
-            onClick={() => setActiveTab('receivables')}
-            data-tour="sales.hold"
-          >
-            Cuentas por Cobrar
-          </button>
         </div>
       </div>
 
-      {activeTab === 'list' && (
-          <PageFilters>
-            <SalesToolbar 
-                search={searchTerm}
-                onSearchChange={setSearchTerm}
-                statusFilter={statusFilter}
-                onStatusFilterChange={setStatusFilter}
-                dateRange={dateRange}
-                onDateRangeChange={setDateRange}
-                onExport={handleExport}
-            />
-          </PageFilters>
-      )}
-
-      <PageBody>
-          <div className="space-y-6">
-            <div data-tour="sales.kpis">
-                <SalesKpis sales={sales} />
-            </div>
-
-            {activeTab === 'list' && (
-                <div data-tour="sales.table">
-                    <SalesTable 
-                        sales={filteredSales}
-                        loading={loading}
-                        onView={setSelectedSale}
-                        onDelete={handleDelete}
+      <SwipePager 
+        activePageId={activeTab}
+        onPageChange={setActiveTab}
+        className="flex-1"
+        pages={[
+            {
+                id: 'list',
+                title: 'Listado de Ventas',
+                content: (
+                    <div className="space-y-6">
+                        <div data-tour="sales.table">
+                             <PageFilters>
+                                <SalesToolbar 
+                                    search={searchTerm}
+                                    onSearchChange={setSearchTerm}
+                                    statusFilter={statusFilter}
+                                    onStatusFilterChange={setStatusFilter}
+                                    dateRange={dateRange}
+                                    onDateRangeChange={setDateRange}
+                                    onExport={handleExport}
+                                />
+                             </PageFilters>
+                             
+                            <SalesTable 
+                                sales={filteredSales}
+                                loading={loading}
+                                onView={setSelectedSale}
+                                onDelete={handleDelete}
+                            />
+                        </div>
+                    </div>
+                )
+            },
+            {
+                id: 'receivables',
+                title: 'Fiados (Cuentas por Cobrar)',
+                content: (
+                    <ReceivablesTab 
+                        sales={sales}
+                        onView={(sale) => setSelectedSale(sale)}
                     />
-                </div>
-            )}
-
-            {activeTab === 'receivables' && (
-                <ReceivablesTab 
-                    sales={sales}
-                    onView={(sale) => setSelectedSale(sale)}
-                />
-            )}
-          </div>
-      </PageBody>
+                )
+            },
+            {
+                id: 'insights',
+                title: 'Insights',
+                content: (
+                    <div className="space-y-6">
+                        <div data-tour="sales.kpis">
+                            <SalesKpis sales={sales} />
+                        </div>
+                    </div>
+                )
+            }
+        ]}
+      />
 
       <CreateSaleModal
         isOpen={isCreateModalOpen}
@@ -201,6 +205,6 @@ export const Sales = () => {
         onClose={() => setSelectedSale(null)}
         sale={selectedSale}
       />
-    </PageLayout>
+    </div>
   );
 };

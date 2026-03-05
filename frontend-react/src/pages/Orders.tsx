@@ -5,6 +5,7 @@ import { useOrderStore, Order } from '../store/orderStore';
 import { Button } from '../components/ui/Button';
 import { Plus, Settings } from 'lucide-react';
 import { CreateOrderModal } from '../components/Orders/CreateOrderModal';
+import { OrderSettingsModal } from '../components/Orders/OrderSettingsModal';
 import { OrdersKpis } from '../components/Orders/OrdersKpis';
 import { OrdersToolbar } from '../components/Orders/OrdersToolbar';
 import { OrdersTable } from '../components/Orders/OrdersTable';
@@ -14,16 +15,25 @@ import { CompleteOrderModal } from '../components/Orders/CompleteOrderModal';
 import { DateRange, getPeriodPreference } from '../utils/dateRange.utils';
 import { DataTableContainer } from '../components/ui/DataTableContainer';
 
+import { SwipePager } from '../components/ui/SwipePager';
+import { useBreakpoint } from '../tour/useBreakpoint';
+import { Clock, CheckCircle, XCircle, Loader2, Circle } from 'lucide-react';
+import { useOrderSettings } from '../store/orderSettingsStore';
+
 export const Orders = () => {
   const { activeBusiness } = useBusinessStore();
   const { orders, loading, fetchOrders, updateOrderStatus, deleteOrder } = useOrderStore();
+  const { isMobile } = useBreakpoint();
+  const { columns } = useOrderSettings();
   
   const [activeTab, setActiveTab] = useState<'kanban' | 'table'>('kanban');
+  const [activeKanbanColumn, setActiveKanbanColumn] = useState(columns.find(c => c.visible)?.id || 'pending');
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [dateRange, setDateRange] = useState<DateRange>(() => getPeriodPreference('orders'));
   
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const [completingOrder, setCompletingOrder] = useState<Order | null>(null);
   const { isAuthenticated } = useAuthStore();
@@ -126,15 +136,25 @@ export const Orders = () => {
     return matchesSearch && matchesStatus && matchesDate;
   });
 
+  const getIcon = (id: string) => {
+    switch (id) {
+      case 'pending': return Clock;
+      case 'completed': return CheckCircle;
+      case 'cancelled': return XCircle;
+      case 'in_progress': return Loader2;
+      default: return Circle;
+    }
+  };
+
   return (
-    <div className="flex flex-col h-[calc(100vh-6rem)] space-y-6" data-tour="orders.panel">
+    <div className="flex flex-col h-auto md:h-[calc(100vh-6rem)] min-h-[calc(100vh-6rem)] space-y-6 px-4 sm:px-6 lg:px-8 py-4" data-tour="orders.panel">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 flex-shrink-0">
         <div>
            <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Pedidos</h1>
            <p className="text-gray-500 dark:text-gray-400 text-sm">Gestiona el flujo de trabajo y entregas.</p>
         </div>
         <div className="flex gap-2">
-            <Button variant="secondary" onClick={() => {}} className="gap-2" data-tour="orders.settings">
+            <Button variant="secondary" onClick={() => setIsSettingsOpen(true)} className="gap-2" data-tour="orders.settings">
                 <Settings className="w-4 h-4" />
                 Configuración
             </Button>
@@ -182,14 +202,38 @@ export const Orders = () => {
 
           <div className="flex-1 min-h-0">
              {activeTab === 'kanban' && (
-                 <div data-tour="orders.board" className="h-full overflow-x-auto">
-                 <OrdersKanban 
-                    orders={filteredOrders}
-                    onView={setSelectedOrder}
-                    onUpdateStatus={handleUpdateStatus}
-                    onDelete={handleDelete}
-                 />
-                 </div>
+                 isMobile ? (
+                   <SwipePager
+                     activePageId={activeKanbanColumn}
+                     onPageChange={setActiveKanbanColumn}
+                     pages={columns.filter(c => c.visible).map(col => ({
+                       id: col.id,
+                       title: col.label,
+                       icon: getIcon(col.id),
+                       content: (
+                         <div className="h-full">
+                           <OrdersKanban 
+                              orders={filteredOrders.filter(o => o.status === col.id)}
+                              onView={setSelectedOrder}
+                              onUpdateStatus={handleUpdateStatus}
+                              onDelete={handleDelete}
+                              singleColumn={true}
+                           />
+                         </div>
+                       )
+                     }))}
+                     className="h-full"
+                   />
+                 ) : (
+                   <div data-tour="orders.board" className="h-full w-full min-w-0">
+                   <OrdersKanban 
+                      orders={filteredOrders}
+                      onView={setSelectedOrder}
+                      onUpdateStatus={handleUpdateStatus}
+                      onDelete={handleDelete}
+                   />
+                   </div>
+                 )
              )}
 
              {activeTab === 'table' && (
@@ -223,6 +267,11 @@ export const Orders = () => {
         order={completingOrder}
         onClose={() => setCompletingOrder(null)}
         onConfirm={handleCompleteOrder}
+      />
+
+      <OrderSettingsModal
+        isOpen={isSettingsOpen}
+        onClose={() => setIsSettingsOpen(false)}
       />
     </div>
   );

@@ -8,10 +8,11 @@ interface TopCustomersCardProps {
     onSelectCustomer: (c: Customer) => void;
 }
 
-export const TopCustomersCard: React.FC<TopCustomersCardProps> = ({ customers, sales, onSelectCustomer }) => {
+export const TopCustomersCard: React.FC<TopCustomersCardProps> = ({ customers, sales = [], onSelectCustomer }) => {
     const [period, setPeriod] = useState<7 | 30 | 90 | 365>(30);
 
     const topCustomers = React.useMemo(() => {
+        if (!sales) return []; // Defensive check
         const now = new Date();
         const cutoff = new Date();
         cutoff.setDate(now.getDate() - period);

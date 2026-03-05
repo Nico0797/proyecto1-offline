@@ -8,7 +8,7 @@ export const Help = () => {
   const [, setQuery] = useState('');
 
   return (
-    <div className="min-h-screen bg-gray-50/50 dark:bg-gray-900/50 -m-6 p-6">
+    <div className="min-h-screen bg-gray-50/50 dark:bg-gray-900/50 px-4 sm:px-6 lg:px-8 py-4">
       <div className="max-w-7xl mx-auto space-y-6">
         {/* Header */}
         <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">

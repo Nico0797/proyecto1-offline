@@ -29,7 +29,7 @@ export const HelpTutorialsSection = () => {
   };
 
   const playInitial = () => {
-    start('sales.quick');
+    start('sales.expert');
   };
 
   const playTour = (tourId: string) => {

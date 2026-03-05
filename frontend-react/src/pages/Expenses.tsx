@@ -18,6 +18,7 @@ import { DateRange, getPeriodPreference } from '../utils/dateRange.utils';
 import { DataTableContainer } from '../components/ui/DataTableContainer';
 import { ProGate } from '../components/ui/ProGate';
 import { FEATURES, FREE_LIMITS } from '../auth/plan';
+import { SwipePager } from '../components/ui/SwipePager';
 
 const DEFAULT_CATEGORIES = ['Servicios', 'Nómina', 'Arriendo', 'Insumos', 'Transporte', 'Marketing', 'Mantenimiento', 'Impuestos', 'Otros'];
 
@@ -27,7 +28,7 @@ export const Expenses = () => {
   const { recurringExpenses, fetchRecurringExpenses } = useRecurringExpenseStore();
   const { user } = useAuthStore();
   
-  const [activeTab, setActiveTab] = useState<'movements' | 'recurring' | 'analytics' | 'categories'>('movements');
+  const [activeTab, setActiveTab] = useState<string>('movements');
   const [searchTerm, setSearchTerm] = useState('');
   const [categoryFilter, setCategoryFilter] = useState('all');
   const [dateRange, setDateRange] = useState<DateRange>(() => getPeriodPreference('expenses'));
@@ -112,9 +113,6 @@ export const Expenses = () => {
     let matchesCategory = true;
     if (categoryFilter !== 'all') matchesCategory = expense.category === categoryFilter;
 
-    // Backend already filters by date, but we can keep this for safety if store has mixed data (unlikely with replace)
-    // or if we want to support switching presets without refetch (not possible if we only fetch range)
-    // So redundant but safe.
     let matchesDate = true;
     if (dateRange.start) {
         matchesDate = matchesDate && new Date(expense.expense_date) >= new Date(dateRange.start);
@@ -136,121 +134,98 @@ export const Expenses = () => {
   };
 
   return (
-    <div className="space-y-6 h-[calc(100vh-6rem)] flex flex-col" data-tour="expenses.panel">
+    <div className="h-full flex flex-col overflow-hidden" data-tour="expenses.panel">
       <UpgradeModal
         isOpen={showUpgradeModal}
         onClose={() => setShowUpgradeModal(false)}
         feature={FEATURES.LIMIT_EXPENSES}
       />
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 flex-shrink-0">
-        <div>
-           <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Gastos</h1>
-           <p className="text-gray-500 dark:text-gray-400 text-sm">Controla tus egresos y pagos recurrentes.</p>
-        </div>
-        <div className="flex gap-2">
-            <Button variant="secondary" onClick={() => setActiveTab('recurring')} data-tour="expenses.recurring">
-                <RefreshCw className="w-4 h-4 mr-2" /> Recurrentes
-            </Button>
-            <Button onClick={handleNewExpense} data-tour="expenses.primaryAction">
-                <Plus className="w-4 h-4 mr-2" /> Nuevo Gasto
-            </Button>
-        </div>
-      </div>
-
-      <div data-tour="expenses.kpis" className="flex-shrink-0">
-        <ExpensesKpis expenses={expenses} recurringExpenses={recurringExpenses} />
-      </div>
-
-      {/* Tabs */}
-      <div className="border-b border-gray-200 dark:border-gray-700 flex-shrink-0" data-tour="expenses.tabs">
-        <div className="flex gap-6 overflow-x-auto">
-          <button
-            className={`pb-3 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${activeTab === 'movements' ? 'border-blue-500 text-blue-600 dark:text-blue-400' : 'border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400'}`}
-            onClick={() => setActiveTab('movements')}
-          >
-            Movimientos
-          </button>
-          <div className="relative">
-            <button
-              className={`pb-3 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${activeTab === 'recurring' ? 'border-blue-500 text-blue-600 dark:text-blue-400' : 'border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400'}`}
-              onClick={() => setActiveTab('recurring')}
-            >
-              Recurrentes y Agenda
-            </button>
-            <span className="absolute -top-1 -right-6 bg-gradient-to-r from-indigo-500 to-purple-500 text-white text-[9px] px-1.5 py-0.5 rounded-full font-bold shadow-sm">
-              PRO
-            </span>
-          </div>
-          <button
-            className={`pb-3 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${activeTab === 'analytics' ? 'border-blue-500 text-blue-600 dark:text-blue-400' : 'border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400'}`}
-            onClick={() => setActiveTab('analytics')}
-          >
-            Analítica
-          </button>
-           <button
-            className={`pb-3 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${activeTab === 'categories' ? 'border-blue-500 text-blue-600 dark:text-blue-400' : 'border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400'}`}
-            onClick={() => setActiveTab('categories')}
-          >
-            Categorías
-          </button>
+      <div className="shrink-0 px-4 sm:px-6 lg:px-8 py-4 bg-white dark:bg-gray-900 z-10 border-b border-gray-200 dark:border-gray-800">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+            <div>
+            <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Gastos</h1>
+            <p className="text-gray-500 dark:text-gray-400 text-sm">Controla tus egresos y pagos recurrentes.</p>
+            </div>
+            <div className="flex gap-2">
+                <Button variant="secondary" onClick={() => setActiveTab('recurring')} data-tour="expenses.recurring">
+                    <RefreshCw className="w-4 h-4 mr-2" /> Recurrentes
+                </Button>
+                <Button onClick={handleNewExpense} data-tour="expenses.primaryAction">
+                    <Plus className="w-4 h-4 mr-2" /> Nuevo Gasto
+                </Button>
+            </div>
         </div>
       </div>
 
-      <div className="flex-1 min-h-0 flex flex-col">
-          {activeTab === 'movements' && (
-              <>
-                <div className="flex-shrink-0" data-tour="expenses.filters">
-                <ExpensesToolbar 
-                    search={searchTerm}
-                    onSearchChange={setSearchTerm}
-                    categoryFilter={categoryFilter}
-                    onCategoryFilterChange={setCategoryFilter}
-                    dateRange={dateRange}
-                    onDateRangeChange={setDateRange}
-                    onExport={handleExport}
-                    categories={customCategories}
-                />
-                </div>
-                <div className="flex-1 min-h-0" data-tour="expenses.table">
-                    <DataTableContainer>
-                    <ExpensesTable 
-                        expenses={filteredExpenses}
-                        loading={expensesLoading}
-                        onEdit={(exp) => { setEditingExpense(exp); setIsCreateModalOpen(true); }}
-                        onDelete={handleDeleteExpense}
+      <SwipePager 
+        activePageId={activeTab}
+        onPageChange={setActiveTab}
+        className="flex-1"
+        pages={[
+            {
+                id: 'movements',
+                title: 'Movimientos',
+                content: (
+                    <div className="space-y-6">
+                        <div data-tour="expenses.kpis">
+                            <ExpensesKpis expenses={expenses} recurringExpenses={recurringExpenses} />
+                        </div>
+                        <div data-tour="expenses.filters">
+                            <ExpensesToolbar 
+                                search={searchTerm}
+                                onSearchChange={setSearchTerm}
+                                categoryFilter={categoryFilter}
+                                onCategoryFilterChange={setCategoryFilter}
+                                dateRange={dateRange}
+                                onDateRangeChange={setDateRange}
+                                onExport={handleExport}
+                                categories={customCategories}
+                            />
+                        </div>
+                        <div data-tour="expenses.table" className="overflow-hidden">
+                            <DataTableContainer>
+                                <ExpensesTable 
+                                    expenses={filteredExpenses}
+                                    loading={expensesLoading}
+                                    onEdit={(exp) => { setEditingExpense(exp); setIsCreateModalOpen(true); }}
+                                    onDelete={handleDeleteExpense}
+                                />
+                            </DataTableContainer>
+                        </div>
+                    </div>
+                )
+            },
+            {
+                id: 'recurring',
+                title: 'Recurrentes',
+                badge: 'PRO',
+                content: (
+                    <ProGate feature={FEATURES.RECURRING_EXPENSES} mode="block">
+                        <RecurringTab 
+                            recurringExpenses={recurringExpenses}
+                            onRefresh={() => activeBusiness && fetchRecurringExpenses(activeBusiness.id)}
+                        />
+                    </ProGate>
+                )
+            },
+            {
+                id: 'analytics',
+                title: 'Analítica',
+                content: <ExpensesAnalyticsTab expenses={filteredExpenses} />
+            },
+            {
+                id: 'categories',
+                title: 'Categorías',
+                content: (
+                    <CategoriesTab 
+                        categories={customCategories}
+                        onAddCategory={handleAddCategory}
+                        onRemoveCategory={handleRemoveCategory}
                     />
-                    </DataTableContainer>
-                </div>
-              </>
-          )}
-
-          {activeTab === 'recurring' && (
-              <div className="flex-1 overflow-y-auto">
-                <ProGate feature={FEATURES.RECURRING_EXPENSES} mode="block">
-                  <RecurringTab 
-                      recurringExpenses={recurringExpenses}
-                      onRefresh={() => activeBusiness && fetchRecurringExpenses(activeBusiness.id)}
-                  />
-                </ProGate>
-              </div>
-          )}
-
-          {activeTab === 'analytics' && (
-              <div className="flex-1 overflow-y-auto">
-                  <ExpensesAnalyticsTab expenses={filteredExpenses} />
-              </div>
-          )}
-
-           {activeTab === 'categories' && (
-              <div className="flex-1 overflow-y-auto">
-                  <CategoriesTab 
-                      categories={customCategories}
-                      onAddCategory={handleAddCategory}
-                      onRemoveCategory={handleRemoveCategory}
-                  />
-              </div>
-          )}
-      </div>
+                )
+            }
+        ]}
+      />
 
       <CreateExpenseModal
         isOpen={isCreateModalOpen}

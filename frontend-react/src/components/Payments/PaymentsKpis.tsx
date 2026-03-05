@@ -54,22 +54,22 @@ export const PaymentsKpis: React.FC<KpiProps> = ({
   ];
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+    <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
       {kpis.map((kpi, index) => (
         <Card key={index} className={cn("border transition-all hover:shadow-md cursor-pointer", kpi.border)}>
-          <CardContent className="p-4 flex items-center justify-between">
+          <CardContent className="p-3 flex items-center justify-between">
             <div>
-              <p className="text-sm font-medium text-gray-500 dark:text-gray-400">{kpi.label}</p>
+              <p className="text-xs font-medium text-gray-500 dark:text-gray-400">{kpi.label}</p>
               {loading ? (
-                <div className="h-6 w-24 bg-gray-200 dark:bg-gray-700 rounded animate-pulse mt-1" />
+                <div className="h-6 w-20 bg-gray-200 dark:bg-gray-700 rounded animate-pulse mt-1" />
               ) : (
-                <p className="text-2xl font-bold text-gray-900 dark:text-white mt-1">
+                <p className="text-lg font-bold text-gray-900 dark:text-white mt-1">
                   ${kpi.value.toLocaleString()}
                 </p>
               )}
             </div>
-            <div className={cn("p-3 rounded-full", kpi.bg)}>
-              <kpi.icon className={cn("w-6 h-6", kpi.color)} />
+            <div className={cn("p-1.5 rounded-lg", kpi.bg)}>
+              <kpi.icon className={cn("w-4 h-4", kpi.color)} />
             </div>
           </CardContent>
         </Card>

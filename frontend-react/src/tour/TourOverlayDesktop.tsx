@@ -1,5 +1,5 @@
 import { TourStep } from './tourRegistry';
-import { X, ChevronLeft, ChevronRight, MousePointerClick } from 'lucide-react';
+import { X, ChevronLeft, ChevronRight, MousePointerClick, AlertCircle } from 'lucide-react';
 import { forwardRef } from 'react';
 
 interface TourOverlayDesktopProps {
@@ -48,11 +48,14 @@ export const TourOverlayDesktop = forwardRef<HTMLDivElement, TourOverlayDesktopP
 
   const arrow = getArrowStyle();
 
+  const borderColor = isFallback ? 'border-amber-500/50' : 'border-gray-700';
+  const shadowColor = isFallback ? 'shadow-amber-900/20' : 'shadow-2xl';
+
   return (
     <div
       ref={ref}
       role="dialog"
-      className="absolute pointer-events-auto w-[380px] max-w-[90vw] bg-gray-900 text-white border border-gray-700 rounded-xl shadow-2xl p-0 overflow-visible transition-all duration-300 ease-out z-[2147483648]"
+      className={`absolute pointer-events-auto w-[380px] max-w-[90vw] bg-gray-900 text-white border ${borderColor} rounded-xl ${shadowColor} p-0 overflow-visible transition-all duration-300 ease-out z-[100]`}
       style={{ 
         top: position.top, 
         left: position.left,
@@ -70,7 +73,7 @@ export const TourOverlayDesktop = forwardRef<HTMLDivElement, TourOverlayDesktopP
       {/* Header */}
       <div className="px-5 py-4 border-b border-gray-800 flex justify-between items-start">
         <h3 className="font-bold text-lg text-white flex items-center gap-2">
-           {isFallback && <span className="text-amber-400 text-xs px-1.5 py-0.5 border border-amber-400/30 bg-amber-400/10 rounded">Info</span>}
+           {isFallback && <AlertCircle className="w-5 h-5 text-amber-500 shrink-0" />}
            {step.title}
         </h3>
         <button onClick={onSkip} className="text-gray-400 hover:text-white transition-colors">
@@ -81,8 +84,8 @@ export const TourOverlayDesktop = forwardRef<HTMLDivElement, TourOverlayDesktopP
       {/* Body */}
       <div className="px-5 py-4">
         {isFallback && (
-          <div className="mb-4 p-3 rounded-lg bg-amber-500/10 border border-amber-500/20 text-amber-200 text-sm">
-            No encontramos el elemento resaltado en tu pantalla, pero aquí tienes la explicación del paso.
+          <div className="mb-4 p-3 rounded-lg bg-amber-500/10 border border-amber-500/20 text-amber-200 text-sm flex gap-2 items-start">
+             <span>No encontramos el elemento resaltado en tu pantalla. Puede que esté oculto o no disponible en esta vista.</span>
           </div>
         )}
         <ul className="space-y-3">
@@ -120,12 +123,9 @@ export const TourOverlayDesktop = forwardRef<HTMLDivElement, TourOverlayDesktopP
               if (isLast) onStop();
               else onNext();
             }}
-            disabled={waitingAction}
             className={`
               px-4 py-2 rounded-lg text-sm font-semibold flex items-center gap-2 transition-all
-              ${waitingAction 
-                ? 'bg-gray-800 text-gray-500 cursor-not-allowed' 
-                : 'bg-cyan-600 hover:bg-cyan-500 text-white shadow-lg shadow-cyan-900/20'}
+              bg-cyan-600 hover:bg-cyan-500 text-white shadow-lg shadow-cyan-900/20
             `}
           >
             {isLast ? 'Finalizar' : 'Siguiente'}

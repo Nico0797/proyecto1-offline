@@ -47,7 +47,7 @@ export const Settings = () => {
   ];
 
   return (
-    <div className="flex flex-col lg:flex-row gap-8 min-h-[80vh]" data-tour="settings.panel">
+    <div className="flex flex-col lg:flex-row gap-8 min-h-[80vh] px-4 sm:px-6 lg:px-8 py-4" data-tour="settings.panel">
       {/* Sidebar Navigation */}
       <aside className="w-full lg:w-64 flex-shrink-0 flex flex-col lg:justify-between lg:h-[calc(100vh-120px)] lg:sticky lg:top-6">
         <div className="space-y-8">

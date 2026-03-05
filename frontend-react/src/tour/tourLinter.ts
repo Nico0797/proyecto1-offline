@@ -8,7 +8,12 @@ export type TourLintResult = {
   selectorKey: string;
   required: boolean;
   found: boolean;
-  status: 'FOUND' | 'MISSING' | 'WRONG_ROUTE' | 'OPTIONAL_MISSING' | 'WAIT_FOR';
+  status: 'FOUND' | 'MISSING' | 'WRONG_ROUTE' | 'OPTIONAL_MISSING' | 'WAIT_FOR' | 'FALLBACK';
+  mode: 'desktop' | 'mobile';
+};
+
+type LintOptions = {
+    mode?: 'desktop' | 'mobile';
 };
 
 /**
@@ -16,27 +21,30 @@ export type TourLintResult = {
  * Runs in both DEV and PROD for diagnosis.
  * Checks if targets exist in the current route.
  */
-export const lintTours = (): TourLintResult[] => {
+export const lintTours = (options: LintOptions = {}): TourLintResult[] => {
   // In production, we might want to skip this or only run on demand
   // For now, let's keep it restricted to DEV or if explicitly requested
   if (!import.meta.env.DEV && !(window as any).ENABLE_TOUR_LINT) return [];
 
+  const mode = options.mode || (window.innerWidth < 768 ? 'mobile' : 'desktop');
   const results: TourLintResult[] = [];
   const currentPath = window.location.pathname;
 
-  console.group('🔍 Tour Linter Diagnosis');
+  console.group(`🔍 Tour Linter Diagnosis (${mode})`);
   console.log(`Current Route: ${currentPath}`);
 
   // List ALL data-tour attributes on the page
   const allTourElements = document.querySelectorAll('[data-tour]');
   console.log(`Found ${allTourElements.length} elements with data-tour attribute:`);
-  allTourElements.forEach(el => {
+  // Only log first 20 to avoid spam
+  Array.from(allTourElements).slice(0, 20).forEach(el => {
     console.log(`  - ${el.getAttribute('data-tour')}`);
   });
+  if (allTourElements.length > 20) console.log(`  ... and ${allTourElements.length - 20} more.`);
 
   Object.values(tourModules).forEach((module) => {
     // Check Tour
-    checkTour(module.tour, module.route || '', currentPath, results);
+    checkTour(module.tour, module.route || '', currentPath, results, mode);
   });
 
   // Group by status for better visibility
@@ -45,6 +53,7 @@ export const lintTours = (): TourLintResult[] => {
   const wrongRoute = results.filter(r => r.status === 'WRONG_ROUTE');
   const optionalMissing = results.filter(r => r.status === 'OPTIONAL_MISSING');
   const waitFor = results.filter(r => r.status === 'WAIT_FOR');
+  const fallback = results.filter(r => r.status === 'FALLBACK');
 
   if (missing.length > 0) {
     console.error(`❌ Found ${missing.length} missing required targets on current route!`);
@@ -63,6 +72,11 @@ export const lintTours = (): TourLintResult[] => {
     console.table(optionalMissing.map(({ tourId, stepId, selectorKey }) => ({ tourId, stepId, selectorKey })));
   }
 
+  if (fallback.length > 0) {
+      console.warn(`⚠️ Found ${fallback.length} targets using fallback (desktop target in mobile or vice versa).`);
+      console.table(fallback.map(({ tourId, stepId, selectorKey }) => ({ tourId, stepId, selectorKey })));
+  }
+
   console.log(`ℹ️ Verified ${found.length} targets.`);
   console.log(`ℹ️ Skipped ${wrongRoute.length} targets due to route mismatch.`);
 
@@ -70,21 +84,46 @@ export const lintTours = (): TourLintResult[] => {
   return results;
 };
 
-const checkTour = (tour: Tour, moduleRoute: string, currentPath: string, results: TourLintResult[]) => {
+const checkTour = (tour: Tour, moduleRoute: string, currentPath: string, results: TourLintResult[], mode: 'desktop' | 'mobile') => {
   tour.steps.forEach((step: TourStep) => {
-    if (!step.selector) return;
+    // Resolve selector
+    let selector = step.selector;
+    let isFallback = false;
+
+    if (step.targets) {
+        if (mode === 'mobile') {
+            if (step.targets.mobile?.selector) {
+                selector = step.targets.mobile.selector;
+            } else if (step.targets.desktop?.selector) {
+                selector = step.targets.desktop.selector;
+                isFallback = true;
+            }
+        } else {
+            if (step.targets.desktop?.selector) {
+                selector = step.targets.desktop.selector;
+            } else if (step.targets.mobile?.selector) {
+                selector = step.targets.mobile.selector;
+                isFallback = true;
+            }
+        }
+    }
+
+    if (!selector) return;
 
     const targetRoute = step.route || moduleRoute;
-    const isCurrentRoute = targetRoute === currentPath;
+    // Simple check: currentPath starts with targetRoute? 
+    // Or exact match? Usually exact match for pages, but sub-routes...
+    // Let's assume exact match or simple prefix if defined.
+    const isCurrentRoute = currentPath === targetRoute || (targetRoute !== '/' && currentPath.startsWith(targetRoute));
 
     let found = false;
     let status: TourLintResult['status'] = 'WRONG_ROUTE';
 
     if (isCurrentRoute) {
-      const element = document.querySelector(step.selector);
+      const element = document.querySelector(selector);
       found = !!element;
       if (found) {
-        status = 'FOUND';
+        status = isFallback ? 'FALLBACK' : 'FOUND';
       } else if (step.waitFor) {
         // If it has waitFor, we assume it's valid to be missing initially
         status = 'WAIT_FOR';
@@ -95,17 +134,18 @@ const checkTour = (tour: Tour, moduleRoute: string, currentPath: string, results
 
     // Only log significant issues or if verbose mode is desired (can add flag later)
     if (status === 'MISSING') {
-       console.warn(`[Lint] ❌ Missing target: ${step.selector} in tour ${tour.id} (step ${step.id})`);
+       console.warn(`[Lint] ❌ Missing target: ${selector} in tour ${tour.id} (step ${step.id})`);
     }
 
     results.push({
       tourId: tour.id,
-      route: targetRoute,
+      route: targetRoute || currentPath,
       stepId: step.id,
-      selectorKey: step.selector,
+      selectorKey: selector,
       required: !step.optional,
       found,
-      status
+      status,
+      mode
     });
   });
 };

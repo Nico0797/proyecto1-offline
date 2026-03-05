@@ -113,7 +113,7 @@ export const Alerts = () => {
   const criticalCount = items.filter(i => i.severity==='critical').length;
 
   return (
-    <div className="space-y-6" data-tour="alerts.panel">
+    <div className="space-y-6 px-4 sm:px-6 lg:px-8 py-4" data-tour="alerts.panel">
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         <div className="flex items-center gap-3">
           <h1 className="text-3xl font-bold text-white">Alertas</h1>

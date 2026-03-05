@@ -41,7 +41,7 @@ export const SalesTable: React.FC<SalesTableProps> = ({ sales, loading, onView, 
   return (
     <>
       {/* Mobile Card List */}
-      <div className="lg:hidden space-y-3">
+      <div className="lg:hidden space-y-3" data-tour="sales.list.mobile">
         {sales.map((sale) => (
           <div 
             key={sale.id} 
@@ -79,7 +79,7 @@ export const SalesTable: React.FC<SalesTableProps> = ({ sales, loading, onView, 
       </div>
 
       {/* Desktop Table */}
-      <div className="hidden lg:block">
+      <div className="hidden lg:block" data-tour="sales.table.desktop">
         <DataTableContainer>
             <table className="w-full text-left text-sm">
             <thead className="bg-gray-50 dark:bg-gray-900 text-gray-500 dark:text-gray-400 font-medium border-b border-gray-200 dark:border-gray-700 sticky top-0 z-10 shadow-sm">

@@ -4,6 +4,7 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { useTourStore } from './tourStore';
 import { TourOverlay } from './TourOverlay';
 import { tours } from './tourRegistry';
+import { useBreakpoint } from './useBreakpoint';
 
 type TourContextType = {
   start: (tourId: string) => void;
@@ -24,6 +25,7 @@ export const TourProvider = ({ children }: { children?: ReactNode }) => {
   const [pendingTourId, setPendingTourId] = useState<string | null>(null);
   const location = useLocation();
   const navigate = useNavigate();
+  const { isMobile } = useBreakpoint();
 
   // Helper: waitForSelector
   const waitForSelector = (selector: string, timeout = 4000): Promise<Element | null> => {
@@ -73,9 +75,20 @@ export const TourProvider = ({ children }: { children?: ReactNode }) => {
     // We only wait for the first step if it has a selector, just to be nice,
     // but we don't block start if it fails.
     const firstStep = tour.steps[0];
-    if (firstStep?.selector) {
+    let selector = firstStep?.selector;
+
+    // Resolve selector based on breakpoint
+    if (firstStep?.targets) {
+      if (isMobile) {
+        selector = firstStep.targets.mobile?.selector || firstStep.targets.desktop?.selector;
+      } else {
+        selector = firstStep.targets.desktop?.selector || firstStep.targets.mobile?.selector;
+      }
+    }
+
+    if (selector) {
       // Try to wait, but ignore result
-      await waitForSelector(firstStep.selector, 2000); 
+      await waitForSelector(selector, 2000); 
     }
     
     startStoreTour(tourId);

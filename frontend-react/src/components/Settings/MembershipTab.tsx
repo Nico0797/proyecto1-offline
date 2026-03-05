@@ -1,15 +1,27 @@
 import { useState, useEffect } from 'react';
 import { useAuthStore } from '../../store/authStore';
 import { Button } from '../ui/Button';
-import { Star, ShieldCheck, CreditCard, Calendar, Download, AlertTriangle, Loader2 } from 'lucide-react';
-import { wompiService } from '../../services/wompiService';
-import { membershipService, MembershipInfo } from '../../services/membershipService';
+import { Star, ShieldCheck, CreditCard, Calendar, Download, AlertTriangle, Loader2, ExternalLink } from 'lucide-react';
+import { membershipService, MembershipInfo, Pricing } from '../../services/membershipService';
 import { Modal } from '../ui/Modal';
+
+const ALLOWED_HOSTS = ['checkout.wompi.co', 'billing.wompi.co', 'production.wompi.co', 'sandbox.wompi.co', window.location.hostname];
+
+const isValidUrl = (url: string) => {
+    if (url.startsWith('/')) return true; // Relative URLs are safe
+    try {
+        const parsed = new URL(url);
+        return parsed.protocol === 'https:' && ALLOWED_HOSTS.some(h => parsed.hostname.endsWith(h) || parsed.hostname === h);
+    } catch {
+        return false;
+    }
+};
 
 export const MembershipTab = () => {
   const { user } = useAuthStore();
   const [loading, setLoading] = useState(true);
   const [membership, setMembership] = useState<MembershipInfo | null>(null);
+  const [pricing, setPricing] = useState<Pricing | null>(null);
   const [processing, setProcessing] = useState(false);
   
   // Modals
@@ -18,32 +30,107 @@ export const MembershipTab = () => {
 
   useEffect(() => {
     if (user?.plan === 'pro') {
-      loadMembership();
+      loadData();
     }
   }, [user]);
 
-  const loadMembership = async () => {
+  const loadData = async () => {
     setLoading(true);
     try {
-      const data = await membershipService.getMembership();
-      setMembership(data);
+      const [membData, priceData] = await Promise.all([
+          membershipService.getMembership(),
+          membershipService.getPricing()
+      ]);
+      setMembership(membData);
+      setPricing(priceData);
     } catch (error) {
-      console.error('Error loading membership:', error);
-      // Fallback data for testing/error recovery
-      setMembership({
-          plan: 'pro',
-          status: 'active',
-          nextBillingDate: new Date().toISOString(),
-          billingCycle: 'monthly',
-          invoices: []
-      });
+      console.error('Error loading membership data:', error);
+      // Fallback only if absolutely necessary, but preferably show error state
     } finally {
       setLoading(false);
     }
   };
 
+  const handleRedirect = (url: string) => {
+      if (isValidUrl(url)) {
+          if (url.startsWith('/')) {
+              window.location.href = url;
+          } else {
+              window.location.href = url; // Redirect in same tab usually better for payment flows, or use _blank if portal
+          }
+      } else {
+          console.error('Blocked invalid redirect:', url);
+          alert('Error de seguridad: URL de redirección no permitida.');
+      }
+  };
+
+  const handleManageSubscription = async () => {
+      setProcessing(true);
+      try {
+          const url = await membershipService.getPortalUrl();
+          handleRedirect(url);
+      } catch (error) {
+          alert('No se pudo acceder al portal de suscripción.');
+      } finally {
+          setProcessing(false);
+      }
+  };
+
+  const handleUpdatePaymentMethod = async () => {
+    setProcessing(true);
+    try {
+        const url = await membershipService.getUpdatePaymentUrl();
+        handleRedirect(url);
+    } catch (error) {
+        alert('Error al generar enlace de actualización.');
+    } finally {
+        setProcessing(false);
+    }
+  };
+
+  const handleDownloadInvoice = async (invoiceId: string) => {
+      try {
+          const url = await membershipService.getInvoicePdf(invoiceId);
+          window.open(url, '_blank');
+      } catch (error) {
+          alert('Error al descargar la factura');
+      }
+  };
+
+  const confirmChangeCycle = async (cycle: 'monthly' | 'quarterly' | 'yearly') => {
+      setProcessing(true);
+      try {
+          const url = await membershipService.changeCycle(cycle);
+          if (url) {
+              handleRedirect(url);
+          } else {
+              // If backend handled it without redirect (e.g. immediate switch if credit available)
+              await loadData();
+              alert('Ciclo de facturación actualizado correctamente.');
+              setShowCycleModal(false);
+          }
+      } catch (error) {
+          alert('Error al cambiar el ciclo.');
+      } finally {
+          setProcessing(false);
+      }
+  };
+
+  const confirmCancel = async () => {
+      setProcessing(true);
+      try {
+          await membershipService.cancelSubscription('User requested');
+          await loadData();
+          alert('Tu suscripción ha sido cancelada. Tendrás acceso hasta el final del periodo.');
+      } catch (error) {
+          alert('Error al cancelar la suscripción.');
+      } finally {
+          setProcessing(false);
+          setShowCancelModal(false);
+      }
+  };
+
   if (user?.plan !== 'pro') {
-      // Redirect or show lock
       return (
           <div className="flex flex-col items-center justify-center p-12 text-center">
               <Star className="w-16 h-16 text-gray-600 mb-4" />
@@ -57,83 +144,6 @@ export const MembershipTab = () => {
   if (loading) {
       return <div className="flex justify-center p-12 text-white"><Loader2 className="w-8 h-8 animate-spin text-blue-500 mr-2" /> Cargando información...</div>;
   }
-
-  // Action Handlers
-  const handleUpdatePaymentMethod = () => {
-    setProcessing(true);
-    // Open Wompi Widget for card update (tokenization)
-    wompiService.openCheckout({
-        currency: 'COP',
-        amountInCents: 100000, // Small auth amount or validation
-        reference: `UPDATE_CARD_${user.id}_${Date.now()}`,
-        redirectUrl: window.location.href, 
-        customerData: {
-            email: user.email || 'usuario@ejemplo.com',
-            fullName: user.name || 'Usuario',
-            phoneNumber: '3000000000', 
-            phoneNumberPrefix: '+57',
-            legalId: '123456789', 
-            legalIdType: 'CC'
-        }
-    });
-    setProcessing(false);
-  };
-
-  const handleDownloadInvoice = async (invoiceId: string) => {
-      // Logic to download invoice
-      try {
-          const url = await membershipService.getInvoicePdf(invoiceId);
-          window.open(url, '_blank');
-      } catch (error) {
-          alert('Error al descargar la factura');
-      }
-  };
-
-  const confirmChangeCycle = async (cycle: 'monthly' | 'yearly') => {
-      setProcessing(true);
-      try {
-          // If changing to annual, might need immediate payment via Wompi
-          if (cycle === 'yearly') {
-               wompiService.openCheckout({
-                currency: 'COP',
-                amountInCents: 29000000, // $290.000 COP
-                reference: `CHANGE_CYCLE_${user.id}_${Date.now()}`,
-                redirectUrl: window.location.href,
-                customerData: {
-                    email: user.email || 'usuario@ejemplo.com',
-                    fullName: user.name || 'Usuario',
-                    phoneNumber: '3000000000',
-                    phoneNumberPrefix: '+57',
-                    legalId: '123456789',
-                    legalIdType: 'CC'
-                }
-            });
-          } else {
-              await membershipService.changeCycle(cycle);
-              await loadMembership();
-              alert('Ciclo de facturación actualizado correctamente.');
-          }
-      } catch (error) {
-          alert('Error al cambiar el ciclo.');
-      } finally {
-          setProcessing(false);
-          setShowCycleModal(false);
-      }
-  };
-
-  const confirmCancel = async () => {
-      setProcessing(true);
-      try {
-          await membershipService.cancelSubscription('User requested');
-          await loadMembership();
-          alert('Tu suscripción ha sido cancelada. Tendrás acceso hasta el final del periodo.');
-      } catch (error) {
-          alert('Error al cancelar la suscripción.');
-      } finally {
-          setProcessing(false);
-          setShowCancelModal(false);
-      }
-  };
 
   return (
     <div className="space-y-8 animate-in fade-in duration-300">
@@ -151,9 +161,12 @@ export const MembershipTab = () => {
                     <span className="bg-yellow-500 text-black text-xs font-bold px-2 py-1 rounded uppercase tracking-wider">Premium</span>
                 </div>
                 <p className="text-gray-400">
-                    Tu próximo cobro será el <span className="text-white font-medium">{new Date(membership?.nextBillingDate || '').toLocaleDateString()}</span>
-                    <span className="ml-2 text-sm opacity-70">({membership?.billingCycle === 'monthly' ? 'Mensual' : 'Anual'})</span>
+                    Tu próximo cobro será el <span className="text-white font-medium">{membership?.nextBillingDate ? new Date(membership.nextBillingDate).toLocaleDateString() : 'N/A'}</span>
+                    <span className="ml-2 text-sm opacity-70">({membership?.billingCycle === 'monthly' ? 'Mensual' : membership?.billingCycle === 'quarterly' ? 'Trimestral' : 'Anual'})</span>
                 </p>
+                {!membership?.status || membership.status === 'inactive' && (
+                     <p className="text-red-400 text-sm mt-1 font-semibold">Suscripción cancelada (acceso hasta fin de periodo)</p>
+                )}
             </div>
             <div className="flex gap-3">
                 <Button 
@@ -165,9 +178,11 @@ export const MembershipTab = () => {
                     Cambiar Ciclo
                 </Button>
                 <Button 
-                    onClick={() => window.open('https://billing.wompi.co/portal', '_blank')} 
-                    className="bg-yellow-500 hover:bg-yellow-600 text-black font-bold border-none"
+                    onClick={handleManageSubscription}
+                    disabled={processing}
+                    className="bg-yellow-500 hover:bg-yellow-600 text-black font-bold border-none flex items-center gap-2"
                 >
+                    {processing ? <Loader2 className="w-4 h-4 animate-spin" /> : <ExternalLink className="w-4 h-4" />}
                     Gestionar Suscripción
                 </Button>
             </div>
@@ -187,11 +202,18 @@ export const MembershipTab = () => {
                         <span className="text-blue-600 font-bold text-xs">{membership?.paymentMethod?.brand || 'CARD'}</span>
                     </div>
                     <div>
-                        <p className="text-white font-medium">•••• {membership?.paymentMethod?.last4 || '0000'}</p>
-                        <p className="text-xs text-gray-500">Expira {membership?.paymentMethod?.expMonth}/{membership?.paymentMethod?.expYear}</p>
+                        <p className="text-white font-medium">•••• {membership?.paymentMethod?.last4 || '****'}</p>
+                        {/* Wompi doesn't always return exp date on tokenization without full query, so conditional render */}
+                        {membership?.paymentMethod?.expYear ? (
+                             <p className="text-xs text-gray-500">Expira {membership.paymentMethod.expMonth}/{membership.paymentMethod.expYear}</p>
+                        ) : (
+                             <p className="text-xs text-gray-500">Tarjeta vinculada</p>
+                        )}
                     </div>
                 </div>
-                <button onClick={handleUpdatePaymentMethod} className="text-sm text-blue-400 hover:text-blue-300">Actualizar</button>
+                <button onClick={handleUpdatePaymentMethod} disabled={processing} className="text-sm text-blue-400 hover:text-blue-300 disabled:opacity-50">
+                    {processing ? '...' : 'Actualizar'}
+                </button>
             </div>
             
             <h4 className="text-lg font-semibold text-white mb-4 flex items-center gap-2 mt-8">
@@ -199,10 +221,10 @@ export const MembershipTab = () => {
                 Historial de Facturación
             </h4>
             <div className="space-y-2 max-h-60 overflow-y-auto pr-2">
-                {membership?.invoices.map((inv) => (
+                {membership?.invoices?.map((inv) => (
                     <div key={inv.id} className="flex justify-between items-center p-3 hover:bg-gray-700/30 rounded-lg transition-colors">
                         <div>
-                            <p className="text-sm text-white">Pago {membership.billingCycle === 'monthly' ? 'Mensual' : 'Anual'} PRO</p>
+                            <p className="text-sm text-white">Factura #{inv.id}</p>
                             <p className="text-xs text-gray-500">{new Date(inv.date).toLocaleDateString()}</p>
                         </div>
                         <div className="flex items-center gap-3">
@@ -243,10 +265,6 @@ export const MembershipTab = () => {
                         <div className="w-2 h-2 bg-green-500 rounded-full" />
                         Múltiples usuarios y roles
                     </li>
-                    <li className="flex items-center gap-3 text-gray-300 text-sm">
-                        <div className="w-2 h-2 bg-green-500 rounded-full" />
-                        Sin publicidad
-                    </li>
                 </ul>
             </div>
 
@@ -270,25 +288,41 @@ export const MembershipTab = () => {
       <Modal isOpen={showCycleModal} onClose={() => setShowCycleModal(false)} title="Cambiar Ciclo de Facturación">
           <div className="space-y-4">
               <p className="text-gray-300">Selecciona tu nuevo ciclo de facturación:</p>
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  {/* Monthly */}
                   <button 
                     onClick={() => confirmChangeCycle('monthly')}
+                    disabled={processing}
                     className={`p-4 rounded-xl border-2 text-center transition-all ${membership?.billingCycle === 'monthly' ? 'border-blue-500 bg-blue-500/10' : 'border-gray-600 hover:border-gray-500'}`}
                   >
                       <p className="font-bold text-white">Mensual</p>
-                      <p className="text-sm text-gray-400">$29.000 / mes</p>
+                      <p className="text-sm text-gray-400">${pricing?.monthly?.toLocaleString() || '...'} / mes</p>
                   </button>
+                  
+                  {/* Quarterly */}
+                  <button 
+                    onClick={() => confirmChangeCycle('quarterly')}
+                    disabled={processing}
+                    className={`p-4 rounded-xl border-2 text-center transition-all ${membership?.billingCycle === 'quarterly' ? 'border-blue-500 bg-blue-500/10' : 'border-gray-600 hover:border-gray-500'}`}
+                  >
+                      <p className="font-bold text-white">Trimestral</p>
+                      <p className="text-sm text-gray-400">${pricing?.quarterly?.toLocaleString() || '...'} / 3 meses</p>
+                      <span className="text-xs text-green-400 font-bold block mt-1">Ahorra 10%</span>
+                  </button>
+
+                  {/* Annual */}
                   <button 
                     onClick={() => confirmChangeCycle('yearly')}
+                    disabled={processing}
                     className={`p-4 rounded-xl border-2 text-center transition-all ${membership?.billingCycle === 'yearly' ? 'border-blue-500 bg-blue-500/10' : 'border-gray-600 hover:border-gray-500'}`}
                   >
                       <p className="font-bold text-white">Anual</p>
-                      <p className="text-sm text-gray-400">$290.000 / año</p>
-                      <span className="text-xs text-green-400 font-bold">Ahorras 2 meses</span>
+                      <p className="text-sm text-gray-400">${pricing?.annual?.toLocaleString() || '...'} / año</p>
+                      <span className="text-xs text-green-400 font-bold block mt-1">Ahorra 15%</span>
                   </button>
               </div>
               <div className="flex justify-end gap-3 pt-4">
-                  <Button variant="secondary" onClick={() => setShowCycleModal(false)}>Cancelar</Button>
+                  <Button variant="secondary" onClick={() => setShowCycleModal(false)} disabled={processing}>Cancelar</Button>
               </div>
           </div>
       </Modal>
@@ -298,14 +332,14 @@ export const MembershipTab = () => {
               <div className="flex items-start gap-3 bg-red-500/10 p-4 rounded-lg">
                   <AlertTriangle className="w-6 h-6 text-red-500 flex-shrink-0" />
                   <p className="text-sm text-red-200">
-                      Estás a punto de cancelar tu suscripción PRO. Perderás el acceso a reportes avanzados, metas y soporte prioritario al finalizar tu ciclo actual.
+                      Estás a punto de cancelar tu suscripción PRO. Perderás el acceso a reportes avanzados, metas y soporte prioritario al finalizar tu ciclo actual ({membership?.nextBillingDate ? new Date(membership.nextBillingDate).toLocaleDateString() : ''}).
                   </p>
               </div>
               <p className="text-gray-300 text-sm">Por favor confirma que deseas proceder.</p>
               
               <div className="flex justify-end gap-3 pt-4">
-                  <Button variant="secondary" onClick={() => setShowCancelModal(false)}>Mantener mi Plan</Button>
-                  <Button onClick={confirmCancel} className="bg-red-600 hover:bg-red-700 text-white border-none">
+                  <Button variant="secondary" onClick={() => setShowCancelModal(false)} disabled={processing}>Mantener mi Plan</Button>
+                  <Button onClick={confirmCancel} className="bg-red-600 hover:bg-red-700 text-white border-none" disabled={processing}>
                       {processing ? 'Cancelando...' : 'Confirmar Cancelación'}
                   </Button>
               </div>

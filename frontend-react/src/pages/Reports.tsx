@@ -15,7 +15,6 @@ import {
   FileText
 } from 'lucide-react';
 import { Button } from '../components/ui/Button';
-import { Card, CardContent } from '../components/ui/Card';
 import { cn } from '../utils/cn';
 import { format, subDays } from 'date-fns';
 import { PeriodFilter } from '../components/ui/PeriodFilter';
@@ -29,15 +28,14 @@ import {
   ExpensesReportTab,
   ReceivablesReportTab
 } from '../components/Reports';
-
-type ReportTab = 'executive' | 'sales' | 'clients' | 'products' | 'expenses' | 'receivables';
+import { SwipePager } from '../components/ui/SwipePager';
 
 export const Reports = () => {
   const { activeBusiness } = useBusinessStore();
   const { savePreset } = useReportPresetsStore();
 
   // --- State ---
-  const [activeTab, setActiveTab] = useState<ReportTab>('executive');
+  const [activeTab, setActiveTab] = useState<string>('executive');
   const [loading, setLoading] = useState(false);
   // Filters
   const [dateRange, setDateRange] = useState<DateRange>(() => getPeriodPreference('reports'));
@@ -58,7 +56,7 @@ export const Reports = () => {
       const start = new Date(startDate);
       const end = new Date(endDate);
       const diffTime = Math.abs(end.getTime() - start.getTime());
-      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1; // +1 to include start day
+      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
       
       const prevEnd = subDays(start, 1);
       const prevStart = subDays(prevEnd, diffDays - 1);
@@ -78,7 +76,7 @@ export const Reports = () => {
             label: 'Previous' 
           }
         ),
-        analyticsService.getSalesTrend(activeBusiness.id, 30), // This takes 'days', maybe adapt to range?
+        analyticsService.getSalesTrend(activeBusiness.id, diffDays),
         analyticsService.getTopProducts(activeBusiness.id, startDate, endDate),
         analyticsService.getExpensesByCategory(activeBusiness.id, startDate, endDate),
         analyticsService.getClientStats(activeBusiness.id, startDate, endDate)
@@ -109,7 +107,7 @@ export const Reports = () => {
   const handleExport = () => {
     if (!reportData) return;
     
-    // CSV Export for active tab
+    // CSV Export logic
     const headers: string[] = [];
     let rows: any[] = [];
     
@@ -177,134 +175,126 @@ export const Reports = () => {
     if (name) {
       savePreset({
         name,
-        tab: activeTab,
+        tab: activeTab as any,
         filters: { period: dateRange.preset, startDate: dateRange.start, endDate: dateRange.end, comparePeriod }
       });
     }
   };
 
-  const tabs = [
-    { id: 'executive', label: 'Resumen', icon: LayoutDashboard },
-    { id: 'sales', label: 'Ventas', icon: ShoppingCart },
-    { id: 'clients', label: 'Clientes', icon: Users },
-    { id: 'products', label: 'Productos', icon: Store },
-    { id: 'expenses', label: 'Gastos', icon: Wallet },
-    { id: 'receivables', label: 'Cartera', icon: FileText },
-  ];
-
   if (!activeBusiness) return <div className="p-8 text-center text-gray-500">Selecciona un negocio.</div>;
 
   return (
-    <div className="space-y-6 pb-20 animate-in fade-in duration-500" data-tour="reports.panel">
+    <div className="h-full flex flex-col overflow-hidden" data-tour="reports.panel">
       {/* Header */}
-      <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900 dark:text-white flex items-center gap-3">
-            <BarChart2 className="w-8 h-8 text-blue-500" />
-            Report Studio
-          </h1>
-          <p className="text-gray-500 dark:text-gray-400 mt-1">Análisis profundo y métricas de tu negocio</p>
-        </div>
-        
-        <div className="flex flex-wrap gap-2 w-full lg:w-auto">
-          <Button variant="outline" size="sm" onClick={handleSavePreset} className="flex-1 lg:flex-none">
-            <Save className="w-4 h-4 mr-2" />
-            Guardar
-          </Button>
-          <Button variant="outline" size="sm" onClick={handleExport} className="flex-1 lg:flex-none" data-tour="reports.export">
-            <Download className="w-4 h-4 mr-2" />
-            Exportar
-          </Button>
-          <Button size="sm" onClick={fetchData} disabled={loading} className="flex-1 lg:flex-none">
-            <RefreshCw className={cn("w-4 h-4 mr-2", loading && "animate-spin")} />
-            Generar
-          </Button>
-        </div>
-      </div>
-
-      {/* Filters Panel */}
-      <Card className="border-none bg-white/50 dark:bg-gray-800/50 backdrop-blur-md shadow-sm" data-tour="reports.filters">
-        <CardContent className="p-4">
-          <div className="flex flex-col lg:flex-row gap-6 items-center">
-            {/* Period Selector */}
-            <div className="w-full lg:w-auto">
-              <PeriodFilter 
-                moduleId="reports"
-                value={dateRange}
-                onChange={setDateRange}
-              />
+      <div className="shrink-0 px-4 sm:px-6 lg:px-8 py-4 bg-white dark:bg-gray-900 z-10 border-b border-gray-200 dark:border-gray-800">
+          <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
+            <div>
+              <h1 className="text-2xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
+                <BarChart2 className="w-6 h-6 text-blue-500" />
+                Report Studio
+              </h1>
+              <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Análisis profundo y métricas de tu negocio</p>
             </div>
-
-            {/* Compare Toggle */}
-            <div className="flex items-center gap-3 pb-2 ml-auto">
-               <label className="flex items-center cursor-pointer gap-2">
-                  <div className="relative">
-                    <input 
-                      type="checkbox" 
-                      className="sr-only" 
-                      checked={comparePeriod}
-                      onChange={(e) => setComparePeriod(e.target.checked)}
-                    />
-                    <div className={cn(
-                      "block w-10 h-6 rounded-full transition-colors",
-                      comparePeriod ? "bg-blue-600" : "bg-gray-300 dark:bg-gray-700"
-                    )}></div>
-                    <div className={cn(
-                      "absolute left-1 top-1 bg-white w-4 h-4 rounded-full transition-transform",
-                      comparePeriod && "translate-x-4"
-                    )}></div>
-                  </div>
-                  <span className="text-sm font-medium text-gray-600 dark:text-gray-400">Comparar vs anterior</span>
-               </label>
+            
+            <div className="flex flex-wrap gap-2 w-full lg:w-auto">
+              <Button variant="outline" size="sm" onClick={handleSavePreset} className="flex-1 lg:flex-none">
+                <Save className="w-4 h-4 mr-2" />
+                Guardar
+              </Button>
+              <Button variant="outline" size="sm" onClick={handleExport} className="flex-1 lg:flex-none" data-tour="reports.export">
+                <Download className="w-4 h-4 mr-2" />
+                Exportar
+              </Button>
+              <Button size="sm" onClick={fetchData} disabled={loading} className="flex-1 lg:flex-none">
+                <RefreshCw className={cn("w-4 h-4 mr-2", loading && "animate-spin")} />
+                Generar
+              </Button>
             </div>
           </div>
-        </CardContent>
-      </Card>
 
-      {/* Tabs Navigation */}
-      <div className="flex overflow-x-auto no-scrollbar border-b border-gray-200 dark:border-gray-800 gap-8">
-        {tabs.map((tab) => (
-          <button
-            key={tab.id}
-            onClick={() => setActiveTab(tab.id as ReportTab)}
-            data-tour={
-              tab.id === 'executive' ? 'reports.dashboard' :
-              tab.id === 'sales' ? 'reports.sales' :
-              tab.id === 'products' ? 'reports.inventory' :
-              undefined
+          {/* Filters Panel */}
+          <div className="mt-4" data-tour="reports.filters">
+              <div className="flex flex-col sm:flex-row gap-4 items-center bg-gray-50 dark:bg-gray-800/50 p-3 rounded-lg border border-gray-100 dark:border-gray-700">
+                <div className="w-full sm:w-auto flex-1">
+                  <PeriodFilter 
+                    moduleId="reports"
+                    value={dateRange}
+                    onChange={setDateRange}
+                  />
+                </div>
+
+                <div className="flex items-center gap-2">
+                   <label className="flex items-center cursor-pointer gap-2 select-none">
+                      <div className="relative">
+                        <input 
+                          type="checkbox" 
+                          className="sr-only" 
+                          checked={comparePeriod}
+                          onChange={(e) => setComparePeriod(e.target.checked)}
+                        />
+                        <div className={cn(
+                          "block w-8 h-5 rounded-full transition-colors",
+                          comparePeriod ? "bg-blue-600" : "bg-gray-300 dark:bg-gray-700"
+                        )}></div>
+                        <div className={cn(
+                          "absolute left-1 top-1 bg-white w-3 h-3 rounded-full transition-transform",
+                          comparePeriod && "translate-x-3"
+                        )}></div>
+                      </div>
+                      <span className="text-xs font-medium text-gray-600 dark:text-gray-400">Comparar</span>
+                   </label>
+                </div>
+              </div>
+          </div>
+      </div>
+
+      <SwipePager 
+        activePageId={activeTab}
+        onPageChange={setActiveTab}
+        className="flex-1"
+        pages={[
+            {
+                id: 'executive',
+                title: 'Resumen',
+                icon: LayoutDashboard,
+                content: (
+                    <div className="space-y-6">
+                        <ExecutiveSummaryTab data={reportData} loading={loading} />
+                    </div>
+                )
+            },
+            {
+                id: 'sales',
+                title: 'Ventas',
+                icon: ShoppingCart,
+                content: <SalesReportTab data={reportData} loading={loading} />
+            },
+            {
+                id: 'clients',
+                title: 'Clientes',
+                icon: Users,
+                content: <ClientsReportTab data={reportData} loading={loading} />
+            },
+            {
+                id: 'products',
+                title: 'Stock',
+                icon: Store,
+                content: <ProductsReportTab data={reportData} loading={loading} />
+            },
+            {
+                id: 'expenses',
+                title: 'Gastos', // Shortened from ExpensesReportTab default
+                icon: Wallet,
+                content: <ExpensesReportTab data={reportData} loading={loading} />
+            },
+            {
+                id: 'receivables',
+                title: 'Cobros', 
+                icon: FileText,
+                content: <ReceivablesReportTab data={reportData} loading={loading} />
             }
-            className={cn(
-              "flex items-center gap-2 py-4 text-sm font-medium border-b-2 transition-all whitespace-nowrap",
-              activeTab === tab.id
-                ? "border-blue-500 text-blue-600 dark:text-blue-400"
-                : "border-transparent text-gray-500 hover:text-gray-700 dark:hover:text-gray-300"
-            )}
-          >
-            <tab.icon className="w-4 h-4" />
-            {tab.label}
-          </button>
-        ))}
-      </div>
-
-      {/* Tab Content */}
-      <div className="min-h-[400px]">
-        {loading ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            {[1, 2, 3, 4].map(i => (
-              <div key={i} className="h-32 bg-gray-100 dark:bg-gray-800 animate-pulse rounded-xl" />
-            ))}
-          </div>
-        ) : (
-          <>
-            {activeTab === 'executive' && <ExecutiveSummaryTab data={reportData} loading={loading} />}
-            {activeTab === 'sales' && <SalesReportTab data={reportData} loading={loading} />}
-            {activeTab === 'clients' && <ClientsReportTab data={reportData} loading={loading} />}
-            {activeTab === 'products' && <ProductsReportTab data={reportData} loading={loading} />}
-            {activeTab === 'expenses' && <ExpensesReportTab data={reportData} loading={loading} />}
-            {activeTab === 'receivables' && <ReceivablesReportTab data={reportData} loading={loading} />}
-          </>
-        )}
-      </div>
+        ]}
+      />
     </div>
   );
 };

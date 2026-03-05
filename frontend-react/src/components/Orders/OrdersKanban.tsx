@@ -1,28 +1,43 @@
 import React from 'react';
 import { Order } from '../../types';
 import { formatCOP, getOrderStatusColor, getOrderStatusLabel } from './helpers';
-import { Clock, CheckCircle, XCircle, Trash2, MessageCircle, Copy } from 'lucide-react';
+import { Clock, CheckCircle, XCircle, Trash2, MessageCircle, Copy, Loader2, Circle } from 'lucide-react';
+import { useOrderSettings } from '../../store/orderSettingsStore';
 
 interface OrdersKanbanProps {
   orders: Order[];
   onView: (order: Order) => void;
   onUpdateStatus: (order: Order, status: string) => void;
   onDelete: (id: number) => void;
+  singleColumn?: boolean;
 }
 
-export const OrdersKanban: React.FC<OrdersKanbanProps> = ({ orders, onView, onUpdateStatus, onDelete }) => {
-  const pendingOrders = orders.filter(o => o.status === 'pending');
-  const completedOrders = orders.filter(o => o.status === 'completed');
-  const cancelledOrders = orders.filter(o => o.status === 'cancelled');
+export const OrdersKanban: React.FC<OrdersKanbanProps> = ({ orders, onView, onUpdateStatus, onDelete, singleColumn = false }) => {
+  const { columns } = useOrderSettings();
+
+  const getIcon = (id: string) => {
+    switch (id) {
+      case 'pending': return <Clock className="w-4 h-4 text-yellow-500" />;
+      case 'completed': return <CheckCircle className="w-4 h-4 text-green-500" />;
+      case 'cancelled': return <XCircle className="w-4 h-4 text-red-500" />;
+      case 'in_progress': return <Loader2 className="w-4 h-4 text-blue-500" />;
+      default: return <Circle className="w-4 h-4 text-gray-500" />;
+    }
+  };
+
+  const getStatusLabel = (status: string) => {
+    const col = columns.find(c => c.id === status);
+    return col ? col.label : getOrderStatusLabel(status);
+  };
 
   const renderCard = (order: Order) => (
     <div key={order.id} className="bg-white dark:bg-gray-800 p-4 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-md transition-all mb-3 group cursor-pointer" onClick={() => onView(order)} data-tour="orders.card">
       <div className="flex justify-between items-start mb-2">
         <span className="font-bold text-gray-900 dark:text-white truncate max-w-[70%]">
-            {order.customer_name || 'Cliente Casual'}
+          {order.customer_name || 'Cliente Casual'}
         </span>
         <span className="text-xs text-gray-500 dark:text-gray-400">
-            #{order.id}
+          #{order.id}
         </span>
       </div>
       
@@ -37,7 +52,7 @@ export const OrdersKanban: React.FC<OrdersKanbanProps> = ({ orders, onView, onUp
 
       <div className="flex justify-between items-center pt-3 border-t border-gray-100 dark:border-gray-700">
          <span className={`text-xs px-2 py-1 rounded-full ${getOrderStatusColor(order.status)}`}>
-             {getOrderStatusLabel(order.status)}
+             {getStatusLabel(order.status)}
          </span>
          
          <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity" onClick={(e) => e.stopPropagation()}>
@@ -84,61 +99,48 @@ export const OrdersKanban: React.FC<OrdersKanbanProps> = ({ orders, onView, onUp
     </div>
   );
 
+  const visibleColumns = columns.filter(col => col.visible);
+
+  if (singleColumn) {
+    return (
+      <div className="h-full flex flex-col gap-3 pb-24">
+        {orders.map(renderCard)}
+        {orders.length === 0 && (
+          <div className="text-center py-12 text-gray-400 text-sm italic flex flex-col items-center justify-center h-full">
+            <div className="p-4 bg-gray-50 dark:bg-gray-800 rounded-full mb-3">
+               <Circle className="w-8 h-8 text-gray-300" />
+            </div>
+            No hay pedidos en esta categoría
+          </div>
+        )}
+      </div>
+    );
+  }
+
   return (
-    <div className="grid grid-cols-1 md:grid-cols-3 gap-6 h-full md:overflow-hidden overflow-y-auto pb-20 md:pb-0">
-      {/* Pending Column */}
-      <div className="flex flex-col md:h-full h-auto bg-gray-50 dark:bg-gray-900/50 rounded-xl p-4 border border-gray-200 dark:border-gray-700 shrink-0 md:min-h-0">
-        <div className="flex justify-between items-center mb-4">
-            <h3 className="font-bold text-gray-700 dark:text-gray-300 flex items-center gap-2">
-                <Clock className="w-4 h-4 text-yellow-500" /> Pendientes
-            </h3>
-            <span className="bg-white dark:bg-gray-800 px-2 py-0.5 rounded-full text-xs font-bold text-gray-500 border border-gray-200 dark:border-gray-700">
-                {pendingOrders.length}
-            </span>
-        </div>
-        <div className="md:flex-1 md:overflow-y-auto md:pr-2 md:min-h-0 custom-scrollbar">
-            {pendingOrders.map(renderCard)}
-            {pendingOrders.length === 0 && (
-                <div className="text-center py-8 text-gray-400 text-sm italic">No hay pedidos pendientes</div>
-            )}
-        </div>
-      </div>
-
-      {/* Completed Column */}
-      <div className="flex flex-col md:h-full h-auto bg-gray-50 dark:bg-gray-900/50 rounded-xl p-4 border border-gray-200 dark:border-gray-700 shrink-0 md:min-h-0">
-        <div className="flex justify-between items-center mb-4">
-            <h3 className="font-bold text-gray-700 dark:text-gray-300 flex items-center gap-2">
-                <CheckCircle className="w-4 h-4 text-green-500" /> Completados
-            </h3>
-            <span className="bg-white dark:bg-gray-800 px-2 py-0.5 rounded-full text-xs font-bold text-gray-500 border border-gray-200 dark:border-gray-700">
-                {completedOrders.length}
-            </span>
-        </div>
-        <div className="md:flex-1 md:overflow-y-auto md:pr-2 md:min-h-0 custom-scrollbar">
-            {completedOrders.map(renderCard)}
-             {completedOrders.length === 0 && (
-                <div className="text-center py-8 text-gray-400 text-sm italic">No hay pedidos completados</div>
-            )}
-        </div>
-      </div>
-
-      {/* Cancelled Column */}
-      <div className="flex flex-col md:h-full h-auto bg-gray-50 dark:bg-gray-900/50 rounded-xl p-4 border border-gray-200 dark:border-gray-700 shrink-0 md:min-h-0">
-        <div className="flex justify-between items-center mb-4">
-            <h3 className="font-bold text-gray-700 dark:text-gray-300 flex items-center gap-2">
-                <XCircle className="w-4 h-4 text-red-500" /> Cancelados
-            </h3>
-            <span className="bg-white dark:bg-gray-800 px-2 py-0.5 rounded-full text-xs font-bold text-gray-500 border border-gray-200 dark:border-gray-700">
-                {cancelledOrders.length}
-            </span>
-        </div>
-        <div className="md:flex-1 md:overflow-y-auto md:pr-2 md:min-h-0 custom-scrollbar">
-            {cancelledOrders.map(renderCard)}
-             {cancelledOrders.length === 0 && (
-                <div className="text-center py-8 text-gray-400 text-sm italic">No hay pedidos cancelados</div>
-            )}
-        </div>
-      </div>
+    <div className="flex h-full min-h-[65vh] gap-4 overflow-x-auto pb-24 md:pb-4 snap-x snap-mandatory -mx-4 px-4 md:mx-0 md:px-0">
+      {visibleColumns.map((col) => {
+        const colOrders = orders.filter(o => o.status === col.id);
+        
+        return (
+          <div key={col.id} className="flex flex-col h-full bg-gray-50 dark:bg-gray-900/50 rounded-xl p-4 border border-gray-200 dark:border-gray-700 shrink-0 w-[85vw] md:w-[320px] lg:w-[350px] snap-center">
+            <div className="flex justify-between items-center mb-4 shrink-0">
+              <h3 className="font-bold text-gray-700 dark:text-gray-300 flex items-center gap-2">
+                {getIcon(col.id)} {col.label}
+              </h3>
+              <span className="bg-white dark:bg-gray-800 px-2 py-0.5 rounded-full text-xs font-bold text-gray-500 border border-gray-200 dark:border-gray-700">
+                {colOrders.length}
+              </span>
+            </div>
+            <div className="flex-1 overflow-y-auto min-h-0 custom-scrollbar pr-1 pb-16 md:pb-0 touch-pan-y">
+              {colOrders.map(renderCard)}
+              {colOrders.length === 0 && (
+                <div className="text-center py-8 text-gray-400 text-sm italic">No hay pedidos en {col.label}</div>
+              )}
+            </div>
+          </div>
+        );
+      })}
     </div>
   );
 };

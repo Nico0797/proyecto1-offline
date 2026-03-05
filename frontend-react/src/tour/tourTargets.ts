@@ -7,7 +7,10 @@ export const TOUR_TARGETS = {
     filters: 'sales.filters',
     filtersSearch: 'sales.filters.search',
     table: 'sales.table',
-    primaryAction: 'sales.primaryAction',
+    primaryAction: {
+        desktop: 'sales.primaryAction.desktop',
+        mobile: 'sales.primaryAction.mobile',
+    },
     kpis: 'sales.kpis',
     hold: 'sales.hold',
     export: 'sales.export',
@@ -25,11 +28,19 @@ export const TOUR_TARGETS = {
       receipt: 'sales.modal.receipt',
     },
   },
+  nav: {
+    sidebar: 'nav.sidebar.desktop',
+    drawer: 'nav.drawer.mobile',
+    bottom: 'nav.bottom.mobile',
+  },
   customers: {
     panel: 'customers.panel',
     filters: 'customers.filters',
     table: 'customers.table',
-    primaryAction: 'customers.primaryAction',
+    primaryAction: {
+        desktop: 'customers.primaryAction.desktop',
+        mobile: 'customers.primaryAction.mobile',
+    },
     search: 'customers.search',
     listItem: 'customers.listItem',
     balance: 'customers.balance',
@@ -47,7 +58,10 @@ export const TOUR_TARGETS = {
     panel: 'payments.panel',
     filters: 'payments.filters',
     table: 'payments.table',
-    primaryAction: 'payments.primaryAction',
+    primaryAction: {
+        desktop: 'payments.primaryAction.desktop',
+        mobile: 'payments.primaryAction.mobile',
+    },
     tabs: {
       overdue: 'payments.tabs.overdue',
       all: 'payments.tabs.all',

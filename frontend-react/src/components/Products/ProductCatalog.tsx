@@ -167,7 +167,7 @@ export const ProductCatalog: React.FC = () => {
   };
 
   return (
-    <div className="space-y-6 h-full flex flex-col" data-tour="products.panel">
+    <div className="space-y-6 h-full flex flex-col px-4 sm:px-6 lg:px-8 py-4">
       <UpgradeModal
         isOpen={showUpgradeModal}
         onClose={() => setShowUpgradeModal(false)}
@@ -184,13 +184,13 @@ export const ProductCatalog: React.FC = () => {
            <Button variant="secondary" onClick={handleExport} data-tour="products.export">
              <Download className="w-4 h-4 mr-2" /> Exportar
            </Button>
-           <Button onClick={handleNewProduct} data-tour="products.addBtn">
+           <Button onClick={handleNewProduct} data-tour="products.primaryAction">
              <Plus className="w-4 h-4 mr-2" /> Nuevo
            </Button>
         </div>
       </div>
 
-      <div data-tour="products-kpis" className="flex-shrink-0">
+      <div data-tour="products.kpis" className="flex-shrink-0">
         <ProductKpiStrip products={products} />
       </div>
 

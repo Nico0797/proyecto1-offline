@@ -525,6 +525,16 @@ def create_app(config_class=None):
             payment_method = payment_method_info.get("type")
             
             if status == "APPROVED":
+                # Check if it's a card update validation (small amount)
+                if "update-card" in reference:
+                     # Just log it, maybe store the token if we were doing server-side recurring
+                     # For now, we just treat it as success
+                     return jsonify({
+                        "success": True,
+                        "message": "Método de pago actualizado correctamente",
+                        "type": "update_payment"
+                     })
+
                 plan = "pro_monthly"
                 if "pro_annual" in reference:
                     plan = "pro_annual"
@@ -585,6 +595,239 @@ def create_app(config_class=None):
                  
         except Exception as e:
             return jsonify({"error": f"Error verificando pago: {str(e)}"}), 500
+
+    # ========== BILLING ROUTES ==========
+    @app.route("/api/billing/status", methods=["GET"])
+    @token_required
+    def get_billing_status():
+        """Estado de la suscripción"""
+        user = g.current_user
+        
+        # Get latest payment for method info
+        last_payment = SubscriptionPayment.query.filter_by(user_id=user.id).order_by(SubscriptionPayment.created_at.desc()).first()
+        
+        method_info = {
+            "brand": "Card", # Placeholder
+            "last4": "****",
+            "expMonth": 0,
+            "expYear": 0
+        }
+        
+        if last_payment:
+            method_info["brand"] = last_payment.payment_method or "Card"
+        
+        # Get invoices
+        payments = SubscriptionPayment.query.filter_by(user_id=user.id).order_by(SubscriptionPayment.created_at.desc()).limit(10).all()
+        invoices = []
+        for p in payments:
+            invoices.append({
+                "id": str(p.id),
+                "date": p.created_at.isoformat(),
+                "amount": p.amount,
+                "status": "paid" if p.status == "completed" else p.status,
+                "pdfUrl": f"/api/billing/invoices/{p.id}/download"
+            })
+            
+        return jsonify({
+            "plan": user.plan,
+            "status": "active" if user.plan == "pro" else "inactive",
+            "nextBillingDate": user.membership_end.isoformat() if user.membership_end else None,
+            "billingCycle": "monthly" if "monthly" in (user.membership_plan or "") else "yearly",
+            "paymentMethod": method_info,
+            "invoices": invoices
+        })
+
+    @app.route("/api/billing/pricing", methods=["GET"])
+    def get_billing_pricing():
+        """Retorna precios centralizados"""
+        return jsonify({
+            "currency": "COP",
+            "monthly": 29000,
+            "quarterly": 78300,   # 3*29000*0.90
+            "annual": 295800,     # 12*29000*0.85
+            "discounts": { "quarterly": 0.10, "annual": 0.15 }
+        })
+
+    @app.route("/api/billing/portal", methods=["POST"])
+    @token_required
+    def billing_portal():
+        """Retorna URL para gestionar suscripción"""
+        # Al no tener portal externo, retornamos la URL interna
+        base_url = os.getenv("APP_URL") or "http://localhost:5173"
+        return jsonify({ "url": f"{base_url}/settings/membership" })
+
+    @app.route("/api/billing/update-payment-method", methods=["POST"])
+    @token_required
+    def update_payment_method():
+        """Genera link para actualizar método de pago (Cobro de validación)"""
+        user = g.current_user
+        try:
+            import requests, uuid
+            
+            # Config Wompi
+            wompi_pk = (os.getenv("WOMPI_PUBLIC_KEY") or app.config.get("WOMPI_PUBLIC_KEY") or "").strip()
+            wompi_sk = (os.getenv("WOMPI_PRIVATE_KEY") or app.config.get("WOMPI_PRIVATE_KEY") or "").strip()
+            wompi_env = "test" if wompi_pk and "pub_test" in wompi_pk else "prod"
+            wompi_base = "https://production.wompi.co" if wompi_env == "prod" else "https://sandbox.wompi.co"
+            
+            if not wompi_pk or not wompi_sk:
+                 return jsonify({"error": "Wompi no configurado"}), 500
+
+            reference = f"update-card-{user.id}-{uuid.uuid4().hex[:10]}"
+            redirect_url = (os.getenv("MP_SUCCESS_URL") or app.config.get("MP_SUCCESS_URL") or "http://localhost:5000")
+            
+            # Payload para validación ($1000 COP)
+            payload = {
+                "name": "Validación Tarjeta",
+                "description": "Actualización de método de pago",
+                "single_use": False,
+                "collect_shipping": False,
+                "currency": "COP",
+                "amount_in_cents": 100000, # $1000.00
+                "redirect_url": redirect_url
+            }
+            
+            h = {"Authorization": f"Bearer {wompi_sk}", "Content-Type": "application/json"}
+            resp = requests.post(f"{wompi_base}/v1/payment_links", json=payload, headers=h, timeout=30)
+            resp.raise_for_status()
+            
+            data = resp.json().get("data", {})
+            url = data.get("url") or f"https://checkout.wompi.co/l/{data.get('id')}"
+            
+            return jsonify({ "url": url })
+            
+        except Exception as e:
+            app.logger.error(f"Error creating update payment link: {e}")
+            return jsonify({"error": "No se pudo generar el link de actualización"}), 500
+
+    @app.route("/api/billing/change-cycle", methods=["POST"])
+    @token_required
+    def change_billing_cycle():
+        """Cambia el ciclo de facturación (Genera nuevo pago)"""
+        user = g.current_user
+        data = request.get_json() or {}
+        cycle = data.get("cycle")
+        
+        if cycle not in ["monthly", "quarterly", "annual"]:
+            return jsonify({"error": "Ciclo inválido"}), 400
+            
+        # Precios
+        prices = {
+            "monthly": 29000,
+            "quarterly": 78300,
+            "annual": 295800
+        }
+        amount = prices.get(cycle)
+        plan_code = f"pro_{cycle}" if cycle != "annual" else "pro_annual" # map to pro_monthly, pro_quarterly, pro_annual
+        if cycle == "quarterly": plan_code = "pro_quarterly"
+        if cycle == "monthly": plan_code = "pro_monthly"
+        
+        try:
+            import requests, uuid
+            
+            # Config Wompi
+            wompi_pk = (os.getenv("WOMPI_PUBLIC_KEY") or app.config.get("WOMPI_PUBLIC_KEY") or "").strip()
+            wompi_sk = (os.getenv("WOMPI_PRIVATE_KEY") or app.config.get("WOMPI_PRIVATE_KEY") or "").strip()
+            wompi_env = "test" if wompi_pk and "pub_test" in wompi_pk else "prod"
+            wompi_base = "https://production.wompi.co" if wompi_env == "prod" else "https://sandbox.wompi.co"
+            
+            reference = f"sub-{plan_code}-{uuid.uuid4().hex[:10]}"
+            redirect_url = (os.getenv("MP_SUCCESS_URL") or app.config.get("MP_SUCCESS_URL") or "http://localhost:5000")
+            
+            payload = {
+                "name": f"EnCaja {cycle.capitalize()}",
+                "description": f"Cambio de plan a {cycle}",
+                "single_use": False,
+                "collect_shipping": False,
+                "currency": "COP",
+                "amount_in_cents": int(amount * 100),
+                "redirect_url": redirect_url
+            }
+            
+            h = {"Authorization": f"Bearer {wompi_sk}", "Content-Type": "application/json"}
+            resp = requests.post(f"{wompi_base}/v1/payment_links", json=payload, headers=h, timeout=30)
+            resp.raise_for_status()
+            
+            data = resp.json().get("data", {})
+            url = data.get("url") or f"https://checkout.wompi.co/l/{data.get('id')}"
+            
+            return jsonify({ "url": url })
+            
+        except Exception as e:
+            app.logger.error(f"Error creating change cycle link: {e}")
+            return jsonify({"error": "No se pudo generar el link de pago"}), 500
+
+    @app.route("/api/billing/invoices", methods=["GET"])
+    @token_required
+    def get_invoices():
+        """Lista facturas"""
+        user = g.current_user
+        payments = SubscriptionPayment.query.filter_by(user_id=user.id).order_by(SubscriptionPayment.created_at.desc()).limit(20).all()
+        return jsonify([p.to_dict() for p in payments])
+
+    @app.route("/api/billing/invoices/<int:invoice_id>/download", methods=["GET"])
+    @token_required
+    def download_invoice(invoice_id):
+        """Descarga factura PDF"""
+        user = g.current_user
+        payment = SubscriptionPayment.query.filter_by(id=invoice_id, user_id=user.id).first()
+        if not payment:
+            return jsonify({"error": "Factura no encontrada"}), 404
+            
+        # Generar PDF simple
+        try:
+            from xhtml2pdf import pisa
+            from io import BytesIO
+            
+            template = f"""
+            <html>
+            <head>
+                <style>
+                    body {{ font-family: Helvetica, sans-serif; padding: 20px; }}
+                    h1 {{ color: #333; }}
+                    .details {{ margin-top: 20px; }}
+                    .row {{ margin-bottom: 10px; }}
+                    .label {{ font-weight: bold; }}
+                </style>
+            </head>
+            <body>
+                <h1>Factura de Suscripción</h1>
+                <p>EnCaja App</p>
+                <div class="details">
+                    <div class="row"><span class="label">Fecha:</span> {payment.created_at.strftime('%Y-%m-%d')}</div>
+                    <div class="row"><span class="label">Referencia:</span> {payment.transaction_id}</div>
+                    <div class="row"><span class="label">Plan:</span> {payment.plan}</div>
+                    <div class="row"><span class="label">Monto:</span> ${payment.amount:,.2f} {payment.currency}</div>
+                    <div class="row"><span class="label">Estado:</span> {payment.status}</div>
+                    <div class="row"><span class="label">Cliente:</span> {user.name} ({user.email})</div>
+                </div>
+            </body>
+            </html>
+            """
+            
+            pdf_data = BytesIO()
+            pisa.CreatePDF(BytesIO(template.encode('utf-8')), pdf_data)
+            pdf_data.seek(0)
+            
+            return send_file(
+                pdf_data,
+                mimetype='application/pdf',
+                as_attachment=True,
+                download_name=f'invoice_{invoice_id}.pdf'
+            )
+        except Exception as e:
+             app.logger.error(f"PDF Error: {e}")
+             return jsonify({"error": "Error generando PDF"}), 500
+
+    @app.route("/api/billing/cancel", methods=["POST"])
+    @token_required
+    def cancel_subscription():
+        """Cancela renovación"""
+        user = g.current_user
+        user.membership_auto_renew = False
+        db.session.commit()
+        return jsonify({"success": True, "message": "Suscripción cancelada exitosamente"})
+
 
     @app.route("/api/upgrade-to-pro", methods=["POST"])
     @token_required

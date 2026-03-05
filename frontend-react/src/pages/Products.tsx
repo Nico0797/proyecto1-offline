@@ -3,7 +3,7 @@ import { ProductCatalog } from '../components/Products/ProductCatalog';
 
 export const Products: React.FC = () => {
   return (
-    <div className="h-full flex flex-col">
+    <div className="h-full flex flex-col" data-tour="products.panel">
       <ProductCatalog />
     </div>
   );

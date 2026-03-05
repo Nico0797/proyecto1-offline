@@ -6,16 +6,35 @@ import { useVisualViewport } from './useVisualViewport';
 import { useTourPositioning } from './useTourPositioning';
 import { TourSheetMobile } from './TourSheetMobile';
 import { TourOverlayDesktop } from './TourOverlayDesktop';
+import { useBreakpoint } from './useBreakpoint';
 
 // Check if element is in viewport (simple check)
-function isInViewport(rect: DOMRect) {
+function isInViewport(rect: DOMRect, bottomOffset = 0) {
   return (
     rect.top >= 0 &&
     rect.left >= 0 &&
-    rect.bottom <= (window.innerHeight || document.documentElement.clientHeight) &&
+    rect.bottom <= ((window.innerHeight || document.documentElement.clientHeight) - bottomOffset) &&
     rect.right <= (window.innerWidth || document.documentElement.clientWidth)
   );
 }
+
+// Helper to find scrollable parent
+const getScrollParent = (node: HTMLElement | null): HTMLElement | null => {
+  if (!node) return null;
+  
+  const isScrollable = (el: HTMLElement) => {
+    const hasScrollableContent = el.scrollHeight > el.clientHeight;
+    const overflowY = window.getComputedStyle(el).overflowY;
+    const isOverflowScroll = overflowY.includes('auto') || overflowY.includes('scroll');
+    return hasScrollableContent && isOverflowScroll;
+  };
+
+  if (isScrollable(node)) {
+    return node;
+  }
+  
+  return getScrollParent(node.parentElement);
+};
 
 export const TourOverlay = () => {
   const navigate = useNavigate();
@@ -33,13 +52,40 @@ export const TourOverlay = () => {
   const observerRef = useRef<ResizeObserver | null>(null);
 
   const viewport = useVisualViewport();
-  const isMobile = viewport.width < 768;
+  const { isMobile } = useBreakpoint();
 
   // We use getTourById to support the new registry structure
-  // For now, if getTourById doesn't exist (because I haven't updated registry yet),
-  // I will fallback to `tours[activeTourId]` but `tours` will change type.
-  // So I need to update registry ASAP.
   const tour = useMemo(() => (activeTourId ? getTourById(activeTourId) : null), [activeTourId]);
+
+  // Resolve current step properties based on breakpoint
+  const resolvedStep: TourStep | null = useMemo(() => {
+     if (!step) return null;
+     
+     const s = step;
+     const selector = s.targets 
+        ? (isMobile ? s.targets.mobile?.selector || s.targets.desktop?.selector : s.targets.desktop?.selector || s.targets.mobile?.selector)
+        : s.selector;
+
+     const placement = s.targets
+        ? (isMobile ? s.targets.mobile?.placement || s.targets.desktop?.placement : s.targets.desktop?.placement || s.targets.mobile?.placement)
+        : s.placement;
+
+     const title = s.targets
+        ? (isMobile ? s.targets.mobile?.title || s.targets.desktop?.title : s.targets.desktop?.title || s.targets.mobile?.title) || s.title
+        : s.title;
+
+     const body = s.targets
+        ? (isMobile ? s.targets.mobile?.body || s.targets.desktop?.body : s.targets.desktop?.body || s.targets.mobile?.body) || s.body
+        : s.body;
+
+     return {
+        ...s,
+        selector,
+        placement,
+        title,
+        body
+     } as TourStep;
+  }, [step, isMobile]);
 
   // Sync step
   useEffect(() => {
@@ -74,6 +120,10 @@ export const TourOverlay = () => {
     let rafId: number | null = null;
     let clickHandler: (() => void) | null = null;
     
+    // Resolve selector based on breakpoint
+    const resolvedSelector = resolvedStep?.selector;
+    const resolvedPlacement = resolvedStep?.placement;
+
     // Cleanup function
     const cleanup = () => {
       if (mutationObserver) mutationObserver.disconnect();
@@ -81,8 +131,16 @@ export const TourOverlay = () => {
       if (rafId) cancelAnimationFrame(rafId);
       if (observerRef.current) observerRef.current.disconnect();
       
-      if (targetRef.current && clickHandler) {
-        targetRef.current.removeEventListener('click', clickHandler);
+      if (targetRef.current) {
+        if (clickHandler) targetRef.current.removeEventListener('click', clickHandler);
+        
+        // Restore padding if we added it
+        const scrollParent = getScrollParent(targetRef.current);
+        if (scrollParent && scrollParent.dataset.tourPadding) {
+             scrollParent.style.paddingBottom = scrollParent.dataset.originalPadding || '';
+             delete scrollParent.dataset.tourPadding;
+             delete scrollParent.dataset.originalPadding;
+        }
       }
       targetRef.current = null;
     };
@@ -141,8 +199,18 @@ export const TourOverlay = () => {
       
       // Scroll if needed
       const r = el.getBoundingClientRect();
-      if (!isInViewport(r)) {
-        el.scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'center' });
+      const sheetHeight = isMobile ? 300 : 0;
+      
+      if (!isInViewport(r, sheetHeight)) {
+         if (isMobile) {
+             const scrollParent = getScrollParent(el);
+             if (scrollParent && !scrollParent.dataset.tourPadding) {
+                 scrollParent.dataset.tourPadding = 'true';
+                 scrollParent.dataset.originalPadding = scrollParent.style.paddingBottom;
+                 scrollParent.style.paddingBottom = '370px';
+             }
+         }
+         el.scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'center' });
       }
 
       // Handle interaction
@@ -162,7 +230,7 @@ export const TourOverlay = () => {
 
     // Optimized waitForTarget
     const waitForTarget = () => {
-      const waitSelector = step.waitFor || step.selector;
+      const waitSelector = step.waitFor || resolvedSelector;
       if (!waitSelector) {
           setRect(null);
           setTargetNotFound(false);
@@ -170,7 +238,7 @@ export const TourOverlay = () => {
       }
 
       // 1. Fast path: Check immediately
-      let el = step.selector ? document.querySelector(step.selector) as HTMLElement : null;
+      let el = resolvedSelector ? document.querySelector(resolvedSelector) as HTMLElement : null;
       if (step.waitFor && !document.querySelector(step.waitFor)) el = null; // If wait condition not met, ignore target
 
       if (el) {
@@ -185,7 +253,7 @@ export const TourOverlay = () => {
       mutationObserver = new MutationObserver((mutations) => {
         // Debounce or check efficiently? 
         // For now, just check again. Browser is fast enough for querySelector.
-        let found = step.selector ? document.querySelector(step.selector) as HTMLElement : null;
+        let found = resolvedSelector ? document.querySelector(resolvedSelector) as HTMLElement : null;
         if (step.waitFor && !document.querySelector(step.waitFor)) found = null;
 
         if (found) {
@@ -202,7 +270,7 @@ export const TourOverlay = () => {
 
       // 3. Fallback polling (rarely needed if Observer works, but good for computed styles/visibility)
       const intervalId = setInterval(() => {
-         let found = step.selector ? document.querySelector(step.selector) as HTMLElement : null;
+         let found = resolvedSelector ? document.querySelector(resolvedSelector) as HTMLElement : null;
          if (step.waitFor && !document.querySelector(step.waitFor)) found = null;
          
          if (found) {
@@ -232,7 +300,7 @@ export const TourOverlay = () => {
     waitForTarget();
 
     return cleanup;
-  }, [step, isActive, location.pathname, next]);
+  }, [step, isActive, location.pathname, next, isMobile]);
 
   // Keyboard navigation
   useEffect(() => {
@@ -246,32 +314,32 @@ export const TourOverlay = () => {
     return () => window.removeEventListener('keydown', onKey);
   }, [isActive, waitingAction, activeTourId, next, prev, markSkipped]);
 
-  if (!isActive || !tour || !step) return null;
+  if (!isActive || !tour || !step || !resolvedStep) return null;
 
-  const position = useTourPositioning(rect, popoverRect, step.placement || 'auto', viewport);
+  const position = useTourPositioning(rect, popoverRect, resolvedStep.placement || 'auto', viewport);
   const total = tour.steps.length;
 
   return (
-    <div className="fixed inset-0 z-[2147483647] pointer-events-none text-left" aria-live="polite">
+    <div className="fixed inset-0 z-[99999] pointer-events-none text-left" aria-live="polite">
       {/* MASK LAYERS - The "Hole" approach */}
       {rect && !targetNotFound && (
         <>
           {/* Top */}
-          <div className="absolute bg-black/60 transition-all duration-300 ease-out pointer-events-auto" 
+          <div className="absolute bg-black/60 transition-all duration-300 ease-out pointer-events-auto z-[10]" 
                style={{ top: 0, left: 0, right: 0, height: rect.top }} />
           {/* Bottom */}
-          <div className="absolute bg-black/60 transition-all duration-300 ease-out pointer-events-auto" 
+          <div className="absolute bg-black/60 transition-all duration-300 ease-out pointer-events-auto z-[10]" 
                style={{ top: rect.bottom, left: 0, right: 0, bottom: 0 }} />
           {/* Left */}
-          <div className="absolute bg-black/60 transition-all duration-300 ease-out pointer-events-auto" 
+          <div className="absolute bg-black/60 transition-all duration-300 ease-out pointer-events-auto z-[10]" 
                style={{ top: rect.top, left: 0, width: rect.left, height: rect.height }} />
           {/* Right */}
-          <div className="absolute bg-black/60 transition-all duration-300 ease-out pointer-events-auto" 
+          <div className="absolute bg-black/60 transition-all duration-300 ease-out pointer-events-auto z-[10]" 
                style={{ top: rect.top, left: rect.right, right: 0, height: rect.height }} />
           
           {/* Highlight Border (The "Spotlight") */}
           <div 
-            className="absolute border-2 border-cyan-400 rounded-lg shadow-[0_0_0_4px_rgba(34,211,238,0.2)] transition-all duration-300 ease-out pointer-events-none z-[2147483649]"
+            className="absolute border-2 border-cyan-400 rounded-lg shadow-[0_0_0_4px_rgba(34,211,238,0.2)] transition-all duration-300 ease-out pointer-events-none z-[20]"
             style={{ 
               top: rect.top - (isMobile ? 8 : 4), // Larger padding on mobile
               left: rect.left - (isMobile ? 8 : 4), 
@@ -285,8 +353,8 @@ export const TourOverlay = () => {
           </div>
           
           {/* Allow interaction zone if enabled */}
-          {!step.allowInteraction && (
-            <div className="absolute pointer-events-auto"
+          {!resolvedStep.allowInteraction && (
+            <div className="absolute pointer-events-auto z-[25]"
                  style={{ top: rect.top, left: rect.left, width: rect.width, height: rect.height }}
             />
           )}
@@ -294,12 +362,12 @@ export const TourOverlay = () => {
       )}
 
       {/* Full screen backdrop if no rect (fallback) */}
-      {(!rect || targetNotFound) && <div className="absolute inset-0 bg-black/60 pointer-events-auto" />}
+      {(!rect || targetNotFound) && <div className="absolute inset-0 bg-black/60 pointer-events-auto z-[10]" />}
 
       {/* Render Mobile Sheet or Desktop Popover */}
       {isMobile ? (
         <TourSheetMobile 
-          step={step}
+          step={resolvedStep}
           stepIndex={stepIndex}
           totalSteps={total}
           onNext={next}
@@ -312,7 +380,7 @@ export const TourOverlay = () => {
       ) : (
         <TourOverlayDesktop 
           ref={popoverRef}
-          step={step}
+          step={resolvedStep}
           stepIndex={stepIndex}
           totalSteps={total}
           onNext={next}

@@ -18,12 +18,16 @@ export const Hero = () => {
           <div className="flex flex-col items-center gap-6 mb-8 animate-fade-in-up">
              {/* Logo */}
              <div className="flex flex-col md:flex-row items-center gap-4 md:gap-6">
-                <img src={logo} alt="EnCaja Logo" className="h-80 w-auto md:h-100 drop-shadow-2xl -mt-0" />
+                <img 
+                  src={logo} 
+                  alt="EnCaja Logo" 
+                  className="w-48 sm:w-64 md:w-80 lg:w-96 h-auto object-contain drop-shadow-2xl"
+                />
                 
              </div>
 
              {/* Badge */}
-             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/5 border border-white/10 backdrop-blur-sm -mt-20">
+             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/5 border border-white/10 backdrop-blur-sm -mt-10">
                 <span className="flex h-2 w-2 rounded-full bg-blue-500"></span>
                 <span className="text-sm text-gray-300 font-medium">Nueva versión 2.0 disponible</span>
              </div>

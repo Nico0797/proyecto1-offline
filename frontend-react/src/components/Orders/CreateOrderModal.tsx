@@ -251,7 +251,7 @@ export const CreateOrderModal: React.FC<CreateOrderModalProps> = ({
                       )}
                     </div>
 
-                    <div className="flex-1 bg-gray-50 dark:bg-gray-800/50 rounded-xl border border-gray-200 dark:border-gray-700 p-4 overflow-y-auto">
+                    <div className="flex-1 bg-gray-50 dark:bg-gray-800/50 rounded-xl border border-gray-200 dark:border-gray-700 p-4 overflow-y-auto" data-tour="orders.modal.cart">
                         {orderItems.length === 0 ? (
                             <div className="h-full flex flex-col items-center justify-center text-gray-400 opacity-60">
                                 <ShoppingCart className="w-12 h-12 mb-2" />

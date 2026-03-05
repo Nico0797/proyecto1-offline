@@ -1,12 +1,23 @@
 import { TOUR_TARGETS, tourSel } from './tourTargets';
 
+export type StepTarget = { 
+  selector: string; 
+  placement?: 'top' | 'right' | 'bottom' | 'left' | 'auto';
+  title?: string;
+  body?: string[];
+};
+
 export type TourStep = {
   id: string;
   title: string;
   body: string[];
-  selector?: string;
+  selector?: string; // Deprecated, use targets instead
   route?: string;
-  placement?: 'top' | 'right' | 'bottom' | 'left' | 'auto';
+  placement?: 'top' | 'right' | 'bottom' | 'left' | 'auto'; // Default placement
+  targets?: {
+    desktop?: StepTarget;
+    mobile?: StepTarget;
+  };
   allowInteraction?: boolean;
   optional?: boolean;
   waitFor?: string; // Selector to wait for before showing the step
@@ -50,8 +61,10 @@ const salesModule: TourModule = {
           id: 'e1_5',
           title: 'Funciones Avanzadas',
           body: ['Para ver las opciones avanzadas, necesitamos abrir una nueva venta.', 'Haz clic aquí para continuar.'],
-          selector: tourSel(TOUR_TARGETS.sales.primaryAction),
-          placement: 'left',
+          targets: {
+            desktop: { selector: tourSel(TOUR_TARGETS.sales.primaryAction.desktop), placement: 'left' },
+            mobile: { selector: tourSel(TOUR_TARGETS.sales.primaryAction.mobile), placement: 'bottom' }
+          },
           allowInteraction: true
         },
         {
@@ -183,23 +196,91 @@ const customersModule: TourModule = {
 const dashboardModule: TourModule = {
   id: 'dashboard',
   title: 'Dashboard',
-  description: 'Navega Hoy, Balance, Analíticas y gestiona recordatorios.',
+  description: 'Domina tu negocio: KPIs, Balance, Analíticas y Recordatorios.',
   route: '/dashboard',
   plan: 'pro',
   tour: {
       id: 'dashboard.expert',
-      title: 'Análisis Profundo',
-      duration: '5 min',
+      title: 'Centro de Comando',
+      duration: '6 min',
       steps: [
-        { id: 'de1', title: 'Navegación por Pestañas', body: ['El Dashboard tiene 4 vistas principales.', 'Usa estas pestañas para cambiar entre Hoy, Balance, Analíticas y Recordatorios.'], selector: tourSel(TOUR_TARGETS.dashboard.periodSelector), route: '/dashboard', placement: 'bottom' },
-        { id: 'de2', title: 'Vista de Hoy', body: ['Muestra lo que está pasando ahora mismo.', 'Ventas en tiempo real, caja y alertas inmediatas.'], selector: tourSel(TOUR_TARGETS.dashboard.tabs.hoy), placement: 'bottom', allowInteraction: true },
-        { id: 'de3', title: 'Balance Financiero', body: ['Haz clic para ver ingresos vs egresos.', 'Ideal para cierre de mes.'], selector: tourSel(TOUR_TARGETS.dashboard.tabs.balance), placement: 'bottom', allowInteraction: true },
-        { id: 'de3_inner', title: 'Resumen Financiero', body: ['Aquí verás la evolución de tus finanzas.', 'Gráfico de barras comparativo.'], selector: tourSel(TOUR_TARGETS.dashboard.balance.summary), placement: 'top', waitFor: tourSel(TOUR_TARGETS.dashboard.balance.summary) },
-        
-        { id: 'de4', title: 'Analíticas Avanzadas', body: ['Gráficos de tendencia y productos top.', 'Toma decisiones basadas en datos.'], selector: tourSel(TOUR_TARGETS.dashboard.tabs.analytics), placement: 'bottom', allowInteraction: true },
-        { id: 'de4_inner', title: 'Tendencia de Ventas', body: ['Analiza cómo se comportan tus ventas en el tiempo.', 'Detecta picos y caídas.'], selector: tourSel(TOUR_TARGETS.dashboard.analytics.salesChart), placement: 'top', waitFor: tourSel(TOUR_TARGETS.dashboard.analytics.salesChart) },
-        
-        { id: 'de5', title: 'Centro de Recordatorios', body: ['Nunca olvides un pago o cobro.', 'Gestiona tus tareas pendientes aquí.'], selector: tourSel(TOUR_TARGETS.dashboard.tabs.reminders), placement: 'bottom', allowInteraction: true }
+        { 
+          id: 'de_start', 
+          title: 'Visión General', 
+          body: ['Bienvenido a tu centro de control.', 'Aquí tienes un resumen en tiempo real de tu negocio.'], 
+          selector: tourSel(TOUR_TARGETS.dashboard.panel), 
+          route: '/dashboard', 
+          placement: 'bottom' 
+        },
+        { 
+            id: 'de_kpis', 
+            title: 'Indicadores Clave', 
+            body: ['Revisa tus ventas totales, ganancias y efectivo en caja al instante.'], 
+            selector: tourSel(TOUR_TARGETS.dashboard.kpis), 
+            placement: 'bottom' 
+        },
+        { 
+            id: 'de_tabs', 
+            title: 'Navegación Estratégica', 
+            body: ['El Dashboard se divide en 4 áreas vitales.', 'Exploremos cada una.'], 
+            selector: tourSel(TOUR_TARGETS.dashboard.periodSelector), 
+            placement: 'bottom' 
+        },
+        { 
+            id: 'de_hoy', 
+            title: 'Pestaña: Hoy', 
+            body: ['Aquí ves la operación del día en curso.', 'Haz clic para ver detalles diarios.'], 
+            selector: tourSel(TOUR_TARGETS.dashboard.tabs.hoy), 
+            placement: 'bottom', 
+            allowInteraction: true 
+        },
+        { 
+            id: 'de_balance', 
+            title: 'Pestaña: Balance', 
+            body: ['Analiza la salud financiera.', 'Ingresos vs Gastos y Margen de ganancia.', 'Haz clic para entrar.'], 
+            selector: tourSel(TOUR_TARGETS.dashboard.tabs.balance), 
+            placement: 'bottom', 
+            allowInteraction: true 
+        },
+        { 
+            id: 'de_balance_detail', 
+            title: 'Resumen Financiero', 
+            body: ['Visualiza la evolución de tus finanzas mes a mes.', 'Identifica tendencias de crecimiento.'], 
+            selector: tourSel(TOUR_TARGETS.dashboard.balance.summary), 
+            placement: 'top', 
+            waitFor: tourSel(TOUR_TARGETS.dashboard.balance.summary) 
+        },
+        { 
+            id: 'de_analytics', 
+            title: 'Pestaña: Analíticas', 
+            body: ['Toma decisiones basadas en datos.', 'Productos top, mejores clientes y más.', 'Haz clic para explorar.'], 
+            selector: tourSel(TOUR_TARGETS.dashboard.tabs.analytics), 
+            placement: 'bottom', 
+            allowInteraction: true 
+        },
+        { 
+            id: 'de_analytics_chart', 
+            title: 'Gráficos de Tendencia', 
+            body: ['Entiende los picos y valles de tu venta.', '¿Qué días vendes más?'], 
+            selector: tourSel(TOUR_TARGETS.dashboard.analytics.salesChart), 
+            placement: 'top', 
+            waitFor: tourSel(TOUR_TARGETS.dashboard.analytics.salesChart) 
+        },
+         { 
+            id: 'de_top_products', 
+            title: 'Productos Estrella', 
+            body: ['Descubre cuáles son tus productos más vendidos.', '¡Nunca te quedes sin stock de estos!'], 
+            selector: tourSel(TOUR_TARGETS.dashboard.topProducts), 
+            placement: 'left'
+        },
+        { 
+            id: 'de_reminders', 
+            title: 'Pestaña: Recordatorios', 
+            body: ['Tu asistente personal.', 'Cobros pendientes, pagos a proveedores y tareas.'], 
+            selector: tourSel(TOUR_TARGETS.dashboard.tabs.reminders), 
+            placement: 'bottom', 
+            allowInteraction: true 
+        }
       ]
   }
 };
@@ -207,21 +288,81 @@ const dashboardModule: TourModule = {
 const productsModule: TourModule = {
   id: 'products',
   title: 'Productos',
-  description: 'Gestiona inventario, precios y ajustes masivos.',
+  description: 'Inventario inteligente, precios dinámicos y control total.',
   route: '/products',
   tour: {
       id: 'products.expert',
-      title: 'Gestión de Inventario',
-      duration: '5 min',
+      title: 'Maestría en Inventario',
+      duration: '7 min',
       steps: [
-        { id: 'p1', title: 'Nuevo Producto', body: ['Crea productos o servicios.'], selector: tourSel(TOUR_TARGETS.products.primaryAction), route: '/products', placement: 'left' },
-        { id: 'p2', title: 'Listado', body: ['Visualiza tu inventario actual.'], selector: tourSel(TOUR_TARGETS.products.table), placement: 'top' },
-        { id: 'p3', title: 'Búsqueda', body: ['Encuentra por nombre o código.'], selector: tourSel(TOUR_TARGETS.products.search), placement: 'bottom' },
-        { id: 'pe1', title: 'Control de Stock', body: ['Haz clic para gestionar existencias.'], selector: tourSel(TOUR_TARGETS.products.tabs.inventory), placement: 'bottom', allowInteraction: true },
-        { id: 'pe1_inner', title: 'Ajuste Rápido', body: ['Suma o resta unidades sin editar el producto.'], selector: tourSel(TOUR_TARGETS.products.inventory.quickAdjust), placement: 'left', waitFor: tourSel(TOUR_TARGETS.products.inventory.table) },
-        { id: 'pe2', title: 'Precios Masivos', body: ['Haz clic para herramientas de precios.'], selector: tourSel(TOUR_TARGETS.products.tabs.pricing), placement: 'bottom', allowInteraction: true },
-        { id: 'pe2_inner', title: 'Calculadora', body: ['Aumenta precios por porcentaje masivamente.'], selector: tourSel(TOUR_TARGETS.products.pricing.calculator), placement: 'right', waitFor: tourSel(TOUR_TARGETS.products.pricing.calculator) },
-        { id: 'pe4', title: 'Importar/Exportar', body: ['Carga masiva desde Excel.'], selector: tourSel(TOUR_TARGETS.products.export), placement: 'left' }
+        { 
+            id: 'p_start', 
+            title: 'Gestión de Productos', 
+            body: ['Aquí nace tu catálogo.', 'Controla precios, costos y existencias.'], 
+            selector: tourSel(TOUR_TARGETS.products.panel), 
+            route: '/products', 
+            placement: 'bottom' 
+        },
+        { 
+            id: 'p_new', 
+            title: 'Crear Producto', 
+            body: ['Agrega nuevos productos o servicios.', 'Soporta códigos de barra y categorías.'], 
+            selector: tourSel(TOUR_TARGETS.products.primaryAction), 
+            placement: 'left' 
+        },
+        { 
+            id: 'p_kpis', 
+            title: 'Valor del Inventario', 
+            body: ['Conoce cuánto dinero tienes invertido en mercancía.', 'Dato clave para tu balance.'], 
+            selector: tourSel(TOUR_TARGETS.products.kpis), 
+            placement: 'bottom' 
+        },
+        { 
+            id: 'p_search', 
+            title: 'Búsqueda Inteligente', 
+            body: ['Encuentra cualquier item por nombre, código o categoría.', 'Filtra para ver solo los de bajo stock.'], 
+            selector: tourSel(TOUR_TARGETS.products.search), 
+            placement: 'bottom' 
+        },
+        { 
+            id: 'p_tabs_inventory', 
+            title: 'Control de Stock', 
+            body: ['Gestiona entradas y salidas rápidamente.', 'Haz clic para ver la tabla de inventario.'], 
+            selector: tourSel(TOUR_TARGETS.products.tabs.inventory), 
+            placement: 'bottom', 
+            allowInteraction: true 
+        },
+        { 
+            id: 'p_inventory_adjust', 
+            title: 'Ajuste Rápido', 
+            body: ['¿Llegó mercancía? Súmala aquí sin entrar a editar.', 'Ahorra tiempo en la recepción.'], 
+            selector: tourSel(TOUR_TARGETS.products.inventory.quickAdjust), 
+            placement: 'left', 
+            waitFor: tourSel(TOUR_TARGETS.products.inventory.table) 
+        },
+        { 
+            id: 'p_tabs_pricing', 
+            title: 'Estrategia de Precios', 
+            body: ['Herramientas para calcular márgenes y precios masivos.', 'Haz clic para optimizar tus ganancias.'], 
+            selector: tourSel(TOUR_TARGETS.products.tabs.pricing), 
+            placement: 'bottom', 
+            allowInteraction: true 
+        },
+        { 
+            id: 'p_pricing_calc', 
+            title: 'Calculadora de Precios', 
+            body: ['Ajusta tus precios base o por porcentaje.', 'Ideal para cambios por inflación o temporada.'], 
+            selector: tourSel(TOUR_TARGETS.products.pricing.calculator), 
+            placement: 'right', 
+            waitFor: tourSel(TOUR_TARGETS.products.pricing.calculator) 
+        },
+        { 
+            id: 'p_export', 
+            title: 'Importar y Exportar', 
+            body: ['Maneja tu catálogo en Excel.', 'Útil para cargas iniciales o respaldos.'], 
+            selector: tourSel(TOUR_TARGETS.products.export), 
+            placement: 'left' 
+        }
       ]
   }
 };
@@ -229,22 +370,92 @@ const productsModule: TourModule = {
 const ordersModule: TourModule = {
   id: 'orders',
   title: 'Pedidos',
-  description: 'Gestiona pedidos con tablero, arrastra y cambia estados.',
+  description: 'Flujo de trabajo visual, seguimiento y entregas perfectas.',
   route: '/orders',
   plan: 'pro',
   tour: {
       id: 'orders.expert',
-      title: 'Logística y Seguimiento',
-      duration: '5 min',
+      title: 'Logística Pro',
+      duration: '6 min',
       steps: [
-        { id: 'oe1', title: 'Nuevo Pedido', body: ['Crea un pedido desde aquí.'], selector: tourSel(TOUR_TARGETS.orders.primaryAction), route: '/orders', placement: 'left', allowInteraction: true },
-        { id: 'oe2', title: 'Selección de Productos', body: ['Busca y selecciona los productos del pedido.'], selector: tourSel(TOUR_TARGETS.orders.modal.products), placement: 'right', waitFor: tourSel(TOUR_TARGETS.orders.modal.products), allowInteraction: true },
-        { id: 'oe3', title: 'Resumen', body: ['Revisa las cantidades en el carrito.'], selector: tourSel(TOUR_TARGETS.orders.modal.cart), placement: 'left', allowInteraction: true },
-        { id: 'oe4', title: 'Siguiente', body: ['Avanza a los detalles del cliente.'], selector: tourSel(TOUR_TARGETS.orders.modal.next), placement: 'top', allowInteraction: true },
-        { id: 'oe5', title: 'Cliente y Estado', body: ['Asigna el cliente y el estado inicial (Pendiente/Completado).', 'También puedes añadir notas.'], selector: tourSel(TOUR_TARGETS.orders.modal.client), placement: 'bottom', waitFor: tourSel(TOUR_TARGETS.orders.modal.client) },
-        { id: 'oe6', title: 'Cerrar Modal', body: ['Cierra la ventana para volver al tablero.'], selector: tourSel(TOUR_TARGETS.common.modalClose), placement: 'left', allowInteraction: true },
-        { id: 'oe7', title: 'Tablero Kanban', body: ['Visualiza tus pedidos por estado.'], selector: tourSel(TOUR_TARGETS.orders.board), placement: 'top' },
-        { id: 'oe8', title: 'Configuración', body: ['Personaliza tu flujo de trabajo.'], selector: tourSel(TOUR_TARGETS.orders.settings), placement: 'bottom' }
+        { 
+            id: 'o_start', 
+            title: 'Tablero de Pedidos', 
+            body: ['Gestiona el ciclo de vida de tus pedidos.', 'Desde la solicitud hasta la entrega.'], 
+            selector: tourSel(TOUR_TARGETS.orders.panel), 
+            route: '/orders', 
+            placement: 'bottom' 
+        },
+        { 
+            id: 'o_new', 
+            title: 'Crear Pedido', 
+            body: ['Registra un nuevo pedido manualmente.', 'Vamos a crear uno juntos.'], 
+            selector: tourSel(TOUR_TARGETS.orders.primaryAction), 
+            placement: 'left', 
+            allowInteraction: true 
+        },
+        { 
+            id: 'o_modal_products', 
+            title: 'Selección de Productos', 
+            body: ['Busca y agrega los productos solicitados.', 'Puedes ver el stock disponible.'], 
+            selector: tourSel(TOUR_TARGETS.orders.modal.products), 
+            placement: 'right', 
+            waitFor: tourSel(TOUR_TARGETS.orders.modal.products), 
+            allowInteraction: true 
+        },
+        { 
+            id: 'o_modal_cart', 
+            title: 'Resumen del Pedido', 
+            body: ['Verifica cantidades y precios.', 'Asegúrate que todo esté correcto.'], 
+            selector: tourSel(TOUR_TARGETS.orders.modal.cart), 
+            placement: 'left', 
+            allowInteraction: true 
+        },
+        { 
+            id: 'o_modal_next', 
+            title: 'Datos del Cliente', 
+            body: ['Avanza para asignar el pedido a un cliente.', 'Haz clic en Siguiente.'], 
+            selector: tourSel(TOUR_TARGETS.orders.modal.next), 
+            placement: 'top', 
+            allowInteraction: true 
+        },
+        { 
+            id: 'o_modal_client', 
+            title: 'Asignación y Estado', 
+            body: ['Elige el cliente y define si es para entrega o retiro.', 'Añade notas importantes.'], 
+            selector: tourSel(TOUR_TARGETS.orders.modal.client), 
+            placement: 'bottom', 
+            waitFor: tourSel(TOUR_TARGETS.orders.modal.client) 
+        },
+        { 
+            id: 'o_modal_close', 
+            title: 'Volver al Tablero', 
+            body: ['Cierra el modal para ver cómo quedó en el tablero.'], 
+            selector: tourSel(TOUR_TARGETS.common.modalClose), 
+            placement: 'left', 
+            allowInteraction: true 
+        },
+        { 
+            id: 'o_board', 
+            title: 'Vista Kanban', 
+            body: ['Visualiza el progreso de cada pedido.', 'Arrastra y suelta para cambiar de estado.'], 
+            selector: tourSel(TOUR_TARGETS.orders.board), 
+            placement: 'top' 
+        },
+        { 
+            id: 'o_card_actions', 
+            title: 'Acciones Rápidas', 
+            body: ['Contacta al cliente por WhatsApp directamente desde la tarjeta.', 'Duplica pedidos recurrentes.'], 
+            selector: tourSel(TOUR_TARGETS.orders.whatsapp),
+            placement: 'right' 
+        },
+        { 
+            id: 'o_settings', 
+            title: 'Configuración del Flujo', 
+            body: ['Personaliza tus columnas y estados.', 'Adapta el tablero a tu proceso real.'], 
+            selector: tourSel(TOUR_TARGETS.orders.settings), 
+            placement: 'bottom' 
+        }
       ]
   }
 };
@@ -281,7 +492,17 @@ const paymentsModule: TourModule = {
       title: 'Gestión de Cartera',
       duration: '4 min',
       steps: [
-        { id: 'py1', title: 'Registrar Pago', body: ['Comienza registrando un abono o pago total.'], selector: tourSel(TOUR_TARGETS.payments.primaryAction), route: '/payments', placement: 'left', allowInteraction: true },
+        {
+          id: 'py1',
+          title: 'Registrar Pago',
+          body: ['Comienza registrando un abono o pago total.'],
+          targets: {
+            desktop: { selector: tourSel(TOUR_TARGETS.payments.primaryAction.desktop), placement: 'left' },
+            mobile: { selector: tourSel(TOUR_TARGETS.payments.primaryAction.mobile), placement: 'bottom' }
+          },
+          route: '/payments',
+          allowInteraction: true
+        },
         { id: 'py2', title: 'Selección de Cliente', body: ['Busca al cliente que realiza el pago.'], selector: tourSel(TOUR_TARGETS.payments.modal.clientSearch), placement: 'bottom', waitFor: tourSel(TOUR_TARGETS.payments.modal.clientSearch), allowInteraction: true },
         { id: 'py3', title: 'Lista de Clientes', body: ['Haz clic en el cliente para continuar.'], selector: tourSel(TOUR_TARGETS.payments.modal.clientList), placement: 'right', allowInteraction: true },
         { id: 'py4', title: 'Monto y Fecha', body: ['Ingresa el valor recibido y la fecha del pago.'], selector: tourSel(TOUR_TARGETS.payments.modal.details), placement: 'bottom', waitFor: tourSel(TOUR_TARGETS.payments.modal.details) },

@@ -160,7 +160,7 @@ export const SalesGoals = () => {
   const overallProgress = totalTarget > 0 ? (totalCurrent / totalTarget) * 100 : 0;
 
   return (
-    <div className="space-y-8 pb-10">
+    <div className="space-y-8 pb-10 px-4 sm:px-6 lg:px-8 py-4">
       {/* Header & Summary */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>

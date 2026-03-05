@@ -30,28 +30,28 @@ export const SummaryCard: React.FC<SummaryCardProps> = ({
 
   return (
     <div 
-      className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-6 hover:border-gray-300 dark:hover:border-gray-600 transition-colors"
+      className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-4 hover:border-gray-300 dark:hover:border-gray-600 transition-colors shadow-sm"
       {...props}
     >
       <div className="flex items-start justify-between">
         <div>
-          <p className="text-sm font-medium text-gray-500 dark:text-gray-400">{title}</p>
-          <h3 className="text-2xl font-bold text-gray-900 dark:text-white mt-2">{value}</h3>
+          <p className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide">{title}</p>
+          <h3 className="text-xl font-bold text-gray-900 dark:text-white mt-1">{value}</h3>
         </div>
-        <div className={cn("p-3 rounded-lg border", colorStyles[color])}>
-          <Icon className="w-6 h-6" />
+        <div className={cn("p-2 rounded-lg border", colorStyles[color])}>
+          <Icon className="w-4 h-4" />
         </div>
       </div>
       
       {trend && (
-        <div className="mt-4 flex items-center text-sm">
+        <div className="mt-2 flex items-center text-xs">
           <span className={cn(
             "font-medium",
             trend.value >= 0 ? "text-green-600 dark:text-green-500" : "text-red-600 dark:text-red-500"
           )}>
             {trend.value > 0 ? '+' : ''}{trend.value}%
           </span>
-          <span className="text-gray-500 dark:text-gray-500 ml-2">{trend.label}</span>
+          <span className="text-gray-500 dark:text-gray-500 ml-1.5">{trend.label}</span>
         </div>
       )}
     </div>

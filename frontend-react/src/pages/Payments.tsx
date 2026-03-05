@@ -17,7 +17,8 @@ import { computeClientReceivables, ClientReceivable } from '../utils/receivables
 import { CreditSettingsModal } from '../components/Customers/CreditSettingsModal';
 import { settingsService } from '../services/settingsService';
 import { DateRange, getPeriodPreference } from '../utils/dateRange.utils';
-import { PageLayout, PageHeader, PageFilters, PageBody } from '../components/Layout/PageLayout';
+import { PageLayout, PageHeader, PageFilters } from '../components/Layout/PageLayout';
+import { SwipePager } from '../components/ui/SwipePager';
 
 export const Payments = () => {
   const { activeBusiness } = useBusinessStore();
@@ -169,7 +170,7 @@ export const Payments = () => {
   const loading = loadingPayments || loadingCustomers || loadingSales;
 
   return (
-    <PageLayout>
+    <div className="h-full flex flex-col overflow-hidden" data-tour="payments.panel">
       <PageHeader 
         title="Cartera y Pagos" 
         description="Gestiona cobros, abonos y estado de cuenta"
@@ -178,39 +179,17 @@ export const Payments = () => {
                 <Button variant="secondary" onClick={() => setIsSettingsModalOpen(true)} className="hidden sm:flex">
                     Config. Plazos
                 </Button>
-                <Button onClick={() => { setQuickPayClient(undefined); setIsRegisterModalOpen(true); }} data-tour="payments.primaryAction">
+                <Button onClick={() => { setQuickPayClient(undefined); setIsRegisterModalOpen(true); }} className="hidden sm:flex" data-tour="payments.primaryAction.desktop">
                     <Plus className="w-4 h-4 mr-2" />
-                    <span className="hidden sm:inline">Registrar Pago</span>
-                    <span className="sm:hidden">Pago</span>
+                    <span>Registrar Pago</span>
+                </Button>
+                <Button onClick={() => { setQuickPayClient(undefined); setIsRegisterModalOpen(true); }} className="sm:hidden" data-tour="payments.primaryAction.mobile">
+                    <Plus className="w-4 h-4" />
+                    <span>Pago</span>
                 </Button>
             </div>
         }
       />
-
-      {/* Tabs */}
-      <div className="bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800 shrink-0 px-4">
-        <div className="flex gap-6 overflow-x-auto custom-scrollbar">
-          <button
-            className={`py-3 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${currentTab === 'clients' ? 'border-blue-500 text-blue-600 dark:text-blue-400' : 'border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400'}`}
-            onClick={() => setCurrentTab('clients')}
-          >
-            Por Cliente
-          </button>
-          <button
-            className={`py-3 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${currentTab === 'transactions' ? 'border-blue-500 text-blue-600 dark:text-blue-400' : 'border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400'}`}
-            onClick={() => setCurrentTab('transactions')}
-          >
-            Transacciones
-          </button>
-          <button
-            className={`py-3 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${currentTab === 'overdue' ? 'border-red-500 text-red-600 dark:text-red-400' : 'border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400'}`}
-            onClick={() => setCurrentTab('overdue')}
-            data-tour="payments.tabs.overdue"
-          >
-            Vencidas
-          </button>
-        </div>
-      </div>
 
       <PageFilters>
         <PaymentsToolbar 
@@ -223,43 +202,65 @@ export const Payments = () => {
         />
       </PageFilters>
 
-      <PageBody>
-        <div className="space-y-6">
-            <div data-tour="payments.kpis">
-                <PaymentsKpis {...kpis} loading={loading} />
-            </div>
-
-            <div className="animate-in fade-in slide-in-from-bottom-4 duration-500" data-tour="payments.list">
-                {currentTab === 'clients' && (
+      <SwipePager
+        activePageId={currentTab}
+        onPageChange={setCurrentTab}
+        className="flex-1"
+        pages={[
+          {
+            id: 'clients',
+            title: 'Por Cliente',
+            content: (
+              <div className="space-y-6">
+                <div data-tour="payments.kpis">
+                    <PaymentsKpis {...kpis} loading={loading} />
+                </div>
                 <ByClientTab 
-                    data={filteredClients}  
-                    loading={loading}
-                    onSelectClient={handleSelectClient}
-                    onQuickPay={handleQuickPay}
-                    onWhatsApp={handleWhatsApp}
+                  data={filteredClients}  
+                  loading={loading}
+                  onSelectClient={handleSelectClient}
+                  onQuickPay={handleQuickPay}
+                  onWhatsApp={handleWhatsApp}
                 />
-                )}
-
-                {currentTab === 'transactions' && (
-                    <TransactionsTab 
-                    payments={filteredPayments} 
-                    loading={loading}
-                    onView={(p) => console.log('View', p)} 
-                    onEdit={(p) => console.log('Edit', p)} 
-                    onDelete={handleDeletePayment}
-                    />
-                )}
-
-                {currentTab === 'overdue' && (
+              </div>
+            )
+          },
+          {
+            id: 'transactions',
+            title: 'Transacciones',
+            content: (
+              <div className="space-y-6">
+                 <div data-tour="payments.kpis">
+                    <PaymentsKpis {...kpis} loading={loading} />
+                </div>
+                <TransactionsTab 
+                  payments={filteredPayments} 
+                  loading={loading}
+                  onView={(p) => console.log('View', p)} 
+                  onEdit={(p) => console.log('Edit', p)} 
+                  onDelete={handleDeletePayment}
+                />
+              </div>
+            )
+          },
+          {
+            id: 'overdue',
+            title: 'Vencidas',
+            content: (
+              <div className="space-y-6">
+                 <div data-tour="payments.kpis">
+                    <PaymentsKpis {...kpis} loading={loading} />
+                </div>
                 <OverdueTab 
-                    data={clientReceivables} 
-                    loading={loading}
-                    onSendReminder={handleWhatsApp}
+                  data={clientReceivables} 
+                  loading={loading}
+                  onSendReminder={handleWhatsApp}
                 />
-                )}
-            </div>
-        </div>
-      </PageBody>
+              </div>
+            )
+          }
+        ]}
+      />
 
       {/* Modals & Drawers */}
       <RegisterPaymentModal 
@@ -293,6 +294,6 @@ export const Payments = () => {
         client={whatsAppClient}
         message={whatsAppMessage}
       />
-    </PageLayout>
+    </div>
   );
 };
