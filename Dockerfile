@@ -17,13 +17,14 @@ RUN npm run build
 # ==========================================
 # Stage 2: Setup Python Backend
 # ==========================================
-FROM python:3.9-slim
+FROM python:3.11-slim
 
 WORKDIR /app
 
 # Install system dependencies
 # xhtml2pdf requires pango, etc.
-RUN apt-get update && apt-get install -y \
+ENV DEBIAN_FRONTEND=noninteractive
+RUN apt-get update && apt-get install -y --no-install-recommends \
     build-essential \
     libpango-1.0-0 \
     libpangoft2-1.0-0 \
@@ -39,6 +40,8 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Copy Backend Code
 COPY backend/ ./backend/
 COPY assets/ ./assets/
+COPY scripts/ ./scripts/
+COPY wsgi.py .
 # Ensure instance folder exists for SQLite fallback or other needs
 RUN mkdir -p instance exports backups
 
@@ -57,4 +60,4 @@ ENV PORT=8000
 EXPOSE 8000
 
 # Run with Gunicorn
-CMD ["gunicorn", "-w", "4", "-b", "0.0.0.0:8000", "--access-logfile", "-", "--error-logfile", "-", "backend.main:app"]
+CMD ["gunicorn", "-w", "4", "-b", "0.0.0.0:8000", "--access-logfile", "-", "--error-logfile", "-", "wsgi:app"]
