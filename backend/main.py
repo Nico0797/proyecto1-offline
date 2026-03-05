@@ -145,32 +145,39 @@ def create_app(config_class=None):
     app.config["BACKUP_DIR"] = backup_dir
     
     # CORS: incluir orígenes para la app móvil (Capacitor) para evitar "Failed to fetch"
-    cors_origins = list(app.config.get("CORS_ORIGINS", []))
-    for origin in [
-        "capacitor://localhost",
-        "https://localhost",
-        "http://localhost",
-        "http://localhost:5000",
-        "http://localhost:8000",
-        "http://localhost:5500",
-        "http://localhost:5501",
-        "http://localhost:5502",
-        "http://localhost:5503",
-        "http://127.0.0.1:5000",
-        "http://127.0.0.1:8000",
-        "http://127.0.0.1:5500",
-        "http://127.0.0.1:5501",
-        "http://127.0.0.1:5502",
-        "http://127.0.0.1:5503",
-        "http://localhost:5173",
-        "http://localhost:5174",
-        "http://localhost:5175",
-        "http://localhost:5176",
-        "https://app.encaja.co",
-        "http://app.encaja.co",
-    ]:
-        if origin not in cors_origins:
-            cors_origins.append(origin)
+    cors_origins_env = app.config.get("CORS_ORIGINS", [])
+    
+    # If wildcard is present, just use that and don't append others
+    if "*" in cors_origins_env:
+        cors_origins = ["*"]
+    else:
+        cors_origins = list(cors_origins_env)
+        for origin in [
+            "capacitor://localhost",
+            "https://localhost",
+            "http://localhost",
+            "http://localhost:5000",
+            "http://localhost:8000",
+            "http://localhost:5500",
+            "http://localhost:5501",
+            "http://localhost:5502",
+            "http://localhost:5503",
+            "http://127.0.0.1:5000",
+            "http://127.0.0.1:8000",
+            "http://127.0.0.1:5500",
+            "http://127.0.0.1:5501",
+            "http://127.0.0.1:5502",
+            "http://127.0.0.1:5503",
+            "http://localhost:5173",
+            "http://localhost:5174",
+            "http://localhost:5175",
+            "http://localhost:5176",
+            "https://app.encaja.co",
+            "http://app.encaja.co",
+        ]:
+            if origin not in cors_origins:
+                cors_origins.append(origin)
+                
     CORS(app, resources={r"/api/*": {"origins": cors_origins}}, supports_credentials=True)
 
     # ========== STATIC FILES & SPA SERVING ==========
