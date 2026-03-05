@@ -1,8 +1,10 @@
 import axios from 'axios';
 import { useAuthStore } from '../store/authStore';
 
-// Always use relative path to leverage Vite proxy in dev and same-origin in prod
-const baseURL = '/api';
+// Use environment variable for API URL in production (Strategy A)
+// or fallback to relative path /api for proxy/same-origin (Strategy B)
+// NOTE: VITE_API_BASE_URL must include '/api' suffix if the backend expects it (e.g. https://backend.com/api)
+const baseURL = import.meta.env.VITE_API_BASE_URL || '/api';
 
 const api = axios.create({
   baseURL,
@@ -38,7 +40,13 @@ api.interceptors.response.use(
       
       if (refreshToken) {
         try {
-          const { data } = await axios.post('/api/auth/refresh', { refresh_token: refreshToken });
+          // Use baseURL to ensure we hit the correct backend (Cross-Domain or Same-Origin)
+          // We remove the trailing slash from baseURL if it exists to avoid double slashes, though axios usually handles it.
+          // However, simple string template is safer if we ensure baseURL convention.
+          // If baseURL='/api', result is '/api/auth/refresh'
+          // If baseURL='https://api.com/api', result is 'https://api.com/api/auth/refresh'
+          const url = `${baseURL}/auth/refresh`.replace('//auth', '/auth'); // Simple safety for double slash
+          const { data } = await axios.post(url, { refresh_token: refreshToken });
           
           if (data.access_token) {
             localStorage.setItem('token', data.access_token);

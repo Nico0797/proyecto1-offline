@@ -1,7 +1,5 @@
 import { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../store/authStore';
-import { Button } from '../components/ui/Button';
 import { ProGate } from '../components/ui/ProGate';
 import { FEATURES } from '../auth/plan';
 import { 
@@ -19,7 +17,6 @@ import { MembershipTab } from '../components/Settings/MembershipTab';
 
 export const Settings = () => {
   const { user } = useAuthStore();
-  const navigate = useNavigate();
   // const { activeBusiness } = useBusinessStore();
   const [activeTab, setActiveTab] = useState<'profile' | 'business' | 'notifications' | 'templates' | 'membership' | 'appearance'>('profile');
 

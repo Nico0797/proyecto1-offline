@@ -5034,7 +5034,7 @@ def create_app(config_class=None):
         db.create_all()
         try:
             try:
-                from scripts.seed import seed_rbac
+                from backend.seeds import seed_rbac
                 seed_rbac()
             except ImportError as e:
                 print(f"Warning: Could not run RBAC seed: {e}")
