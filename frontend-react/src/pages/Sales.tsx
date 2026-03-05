@@ -3,7 +3,7 @@ import { useBusinessStore } from '../store/businessStore';
 import { useSaleStore } from '../store/saleStore';
 import { useAuthStore } from '../store/authStore';
 import { Button } from '../components/ui/Button';
-import { Plus } from 'lucide-react';
+import { Plus, Download } from 'lucide-react';
 import { CreateSaleModal } from '../components/Sales/CreateSaleModal';
 import { SaleDetailsModal } from '../components/Sales/SaleDetailsModal';
 import { UpgradeModal } from '../components/ui/UpgradeModal';
@@ -13,8 +13,8 @@ import { SalesTable } from '../components/Sales/SalesTable';
 import { ReceivablesTab } from '../components/Sales/ReceivablesTab';
 import { Sale } from '../types';
 import { DateRange, getPeriodPreference } from '../utils/dateRange.utils';
-import { DataTableContainer } from '../components/ui/DataTableContainer';
 import { FEATURES, FREE_LIMITS } from '../auth/plan';
+import { PageLayout, PageHeader, PageFilters, PageBody } from '../components/Layout/PageLayout';
 
 export const Sales = () => {
   const { activeBusiness } = useBusinessStore();
@@ -24,7 +24,6 @@ export const Sales = () => {
   const [activeTab, setActiveTab] = useState<'list' | 'receivables'>('list');
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
-  // Initialize with persisted preference or default (7 days)
   const [dateRange, setDateRange] = useState<DateRange>(() => getPeriodPreference('sales'));
   
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
@@ -50,7 +49,6 @@ export const Sales = () => {
   };
 
   const handleExport = () => {
-    // Implement CSV export logic
     const headers = ['ID', 'Fecha', 'Cliente', 'Estado', 'Total', 'Saldo', 'Método', 'Nota'];
     const csvContent = [
       headers.join(','),
@@ -109,54 +107,51 @@ export const Sales = () => {
   };
 
   return (
-    <div className="space-y-6 flex flex-col h-[calc(100vh-6rem)]" data-tour="sales.root">
+    <PageLayout>
       <UpgradeModal
         isOpen={showUpgradeModal}
         onClose={() => setShowUpgradeModal(false)}
         feature={FEATURES.LIMIT_SALES}
       />
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 flex-shrink-0" data-tour="sales.panel">
-        <div>
-           <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Ventas</h1>
-           <p className="text-gray-500 dark:text-gray-400 text-sm">Gestiona tus transacciones y cuentas por cobrar.</p>
-        </div>
-        <div className="flex gap-2">
-            <Button variant="secondary" onClick={handleNewSale}>
-                Venta Rápida
-            </Button>
-            <Button onClick={handleNewSale} data-tour="sales.primaryAction">
-                <Plus className="w-4 h-4 mr-2" />
-                Nueva Venta
-            </Button>
-        </div>
-      </div>
+      
+      <PageHeader 
+        title="Ventas" 
+        description="Gestiona tus transacciones y cuentas por cobrar."
+        action={
+            <div className="flex gap-2">
+                <Button variant="secondary" onClick={handleNewSale} className="hidden sm:flex">
+                    Venta Rápida
+                </Button>
+                <Button onClick={handleNewSale} data-tour="sales.primaryAction">
+                    <Plus className="w-4 h-4 mr-2" />
+                    <span className="hidden sm:inline">Nueva Venta</span>
+                    <span className="sm:hidden">Nueva</span>
+                </Button>
+            </div>
+        }
+      />
 
-      <div data-tour="sales.kpis" className="flex-shrink-0">
-        <SalesKpis sales={sales} />
-      </div>
-
-      {/* Tabs */}
-      <div className="border-b border-gray-200 dark:border-gray-700 flex-shrink-0">
-        <div className="flex gap-6 overflow-x-auto">
+      {/* Tabs - Always visible */}
+      <div className="bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800 shrink-0 px-4">
+        <div className="flex gap-6 overflow-x-auto custom-scrollbar">
           <button
-            className={`pb-3 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${activeTab === 'list' ? 'border-blue-500 text-blue-600 dark:text-blue-400' : 'border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400'}`}
+            className={`py-3 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${activeTab === 'list' ? 'border-blue-500 text-blue-600 dark:text-blue-400' : 'border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400'}`}
             onClick={() => setActiveTab('list')}
           >
             Listado de Ventas
           </button>
           <button
-            className={`pb-3 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${activeTab === 'receivables' ? 'border-blue-500 text-blue-600 dark:text-blue-400' : 'border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400'}`}
+            className={`py-3 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${activeTab === 'receivables' ? 'border-blue-500 text-blue-600 dark:text-blue-400' : 'border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400'}`}
             onClick={() => setActiveTab('receivables')}
             data-tour="sales.hold"
           >
-            Cuentas por Cobrar (Fiados)
+            Cuentas por Cobrar
           </button>
         </div>
       </div>
 
       {activeTab === 'list' && (
-          <>
-            <div data-tour="sales.filters" className="flex-shrink-0">
+          <PageFilters>
             <SalesToolbar 
                 search={searchTerm}
                 onSearchChange={setSearchTerm}
@@ -166,29 +161,34 @@ export const Sales = () => {
                 onDateRangeChange={setDateRange}
                 onExport={handleExport}
             />
-            </div>
-            <div data-tour="sales.table" className="flex-grow min-h-0">
-            <DataTableContainer>
-              <SalesTable 
-                  sales={filteredSales}
-                  loading={loading}
-                  onView={setSelectedSale}
-                  onDelete={handleDelete}
-              />
-            </DataTableContainer>
-            </div>
-          </>
+          </PageFilters>
       )}
 
-      {activeTab === 'receivables' && (
-          <ReceivablesTab 
-             sales={sales}
-             onView={(sale) => {
-                 setSelectedSale(sale);
-                 // In future: Open modal in "Add Payment" mode directly
-             }}
-          />
-      )}
+      <PageBody>
+          <div className="space-y-6">
+            <div data-tour="sales.kpis">
+                <SalesKpis sales={sales} />
+            </div>
+
+            {activeTab === 'list' && (
+                <div data-tour="sales.table">
+                    <SalesTable 
+                        sales={filteredSales}
+                        loading={loading}
+                        onView={setSelectedSale}
+                        onDelete={handleDelete}
+                    />
+                </div>
+            )}
+
+            {activeTab === 'receivables' && (
+                <ReceivablesTab 
+                    sales={sales}
+                    onView={(sale) => setSelectedSale(sale)}
+                />
+            )}
+          </div>
+      </PageBody>
 
       <CreateSaleModal
         isOpen={isCreateModalOpen}
@@ -201,6 +201,6 @@ export const Sales = () => {
         onClose={() => setSelectedSale(null)}
         sale={selectedSale}
       />
-    </div>
+    </PageLayout>
   );
 };

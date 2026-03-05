@@ -17,7 +17,7 @@ import { computeClientReceivables, ClientReceivable } from '../utils/receivables
 import { CreditSettingsModal } from '../components/Customers/CreditSettingsModal';
 import { settingsService } from '../services/settingsService';
 import { DateRange, getPeriodPreference } from '../utils/dateRange.utils';
-import { DataTableContainer } from '../components/ui/DataTableContainer';
+import { PageLayout, PageHeader, PageFilters, PageBody } from '../components/Layout/PageLayout';
 
 export const Payments = () => {
   const { activeBusiness } = useBusinessStore();
@@ -169,75 +169,97 @@ export const Payments = () => {
   const loading = loadingPayments || loadingCustomers || loadingSales;
 
   return (
-    <div className="space-y-6 pb-20 flex flex-col h-[calc(100vh-6rem)]" data-tour="payments.panel">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 flex-shrink-0">
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Cartera y Pagos</h1>
-          <p className="text-gray-500 dark:text-gray-400 mt-1">Gestiona cobros, abonos y estado de cuenta</p>
-        </div>
-        <div className="flex gap-3">
-          <Button variant="outline" onClick={() => setIsSettingsModalOpen(true)}>
-            Config. Plazos
-          </Button>
-          <Button onClick={() => { setQuickPayClient(undefined); setIsRegisterModalOpen(true); }} data-tour="payments.primaryAction">
-            <Plus className="w-4 h-4 mr-2" />
-            Registrar Pago
-          </Button>
+    <PageLayout>
+      <PageHeader 
+        title="Cartera y Pagos" 
+        description="Gestiona cobros, abonos y estado de cuenta"
+        action={
+            <div className="flex gap-2">
+                <Button variant="secondary" onClick={() => setIsSettingsModalOpen(true)} className="hidden sm:flex">
+                    Config. Plazos
+                </Button>
+                <Button onClick={() => { setQuickPayClient(undefined); setIsRegisterModalOpen(true); }} data-tour="payments.primaryAction">
+                    <Plus className="w-4 h-4 mr-2" />
+                    <span className="hidden sm:inline">Registrar Pago</span>
+                    <span className="sm:hidden">Pago</span>
+                </Button>
+            </div>
+        }
+      />
+
+      {/* Tabs */}
+      <div className="bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800 shrink-0 px-4">
+        <div className="flex gap-6 overflow-x-auto custom-scrollbar">
+          <button
+            className={`py-3 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${currentTab === 'clients' ? 'border-blue-500 text-blue-600 dark:text-blue-400' : 'border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400'}`}
+            onClick={() => setCurrentTab('clients')}
+          >
+            Por Cliente
+          </button>
+          <button
+            className={`py-3 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${currentTab === 'transactions' ? 'border-blue-500 text-blue-600 dark:text-blue-400' : 'border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400'}`}
+            onClick={() => setCurrentTab('transactions')}
+          >
+            Transacciones
+          </button>
+          <button
+            className={`py-3 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${currentTab === 'overdue' ? 'border-red-500 text-red-600 dark:text-red-400' : 'border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400'}`}
+            onClick={() => setCurrentTab('overdue')}
+            data-tour="payments.tabs.overdue"
+          >
+            Vencidas
+          </button>
         </div>
       </div>
 
-      {/* KPIs */}
-      <div className="flex-shrink-0">
-        <PaymentsKpis {...kpis} loading={loading} />
-      </div>
-
-      {/* Toolbar */}
-      <div className="flex-shrink-0" data-tour="payments.filters">
+      <PageFilters>
         <PaymentsToolbar 
           searchTerm={searchTerm}
           onSearchChange={setSearchTerm}
           onRefresh={refreshData}
           onExport={handleExport}
-          currentTab={currentTab}
-          onTabChange={setCurrentTab}
           dateRange={dateRange}
           onDateRangeChange={setDateRange}
         />
-      </div>
+      </PageFilters>
 
-      {/* Content Tabs */}
-      <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 flex-grow min-h-0" data-tour="payments.list">
-        {currentTab === 'clients' && (
-          <ByClientTab 
-            data={filteredClients}  
-            loading={loading}
-            onSelectClient={handleSelectClient}
-            onQuickPay={handleQuickPay}
-            onWhatsApp={handleWhatsApp}
-          />
-        )}
+      <PageBody>
+        <div className="space-y-6">
+            <div data-tour="payments.kpis">
+                <PaymentsKpis {...kpis} loading={loading} />
+            </div>
 
-        {currentTab === 'transactions' && (
-          <DataTableContainer>
-            <TransactionsTab 
-              payments={filteredPayments} 
-              loading={loading}
-              onView={(p) => console.log('View', p)} 
-              onEdit={(p) => console.log('Edit', p)} 
-              onDelete={handleDeletePayment}
-            />
-          </DataTableContainer>
-        )}
+            <div className="animate-in fade-in slide-in-from-bottom-4 duration-500" data-tour="payments.list">
+                {currentTab === 'clients' && (
+                <ByClientTab 
+                    data={filteredClients}  
+                    loading={loading}
+                    onSelectClient={handleSelectClient}
+                    onQuickPay={handleQuickPay}
+                    onWhatsApp={handleWhatsApp}
+                />
+                )}
 
-        {currentTab === 'overdue' && (
-          <OverdueTab 
-            data={clientReceivables} 
-            loading={loading}
-            onSendReminder={handleWhatsApp}
-          />
-        )}
-      </div>
+                {currentTab === 'transactions' && (
+                    <TransactionsTab 
+                    payments={filteredPayments} 
+                    loading={loading}
+                    onView={(p) => console.log('View', p)} 
+                    onEdit={(p) => console.log('Edit', p)} 
+                    onDelete={handleDeletePayment}
+                    />
+                )}
+
+                {currentTab === 'overdue' && (
+                <OverdueTab 
+                    data={clientReceivables} 
+                    loading={loading}
+                    onSendReminder={handleWhatsApp}
+                />
+                )}
+            </div>
+        </div>
+      </PageBody>
 
       {/* Modals & Drawers */}
       <RegisterPaymentModal 
@@ -271,6 +293,6 @@ export const Payments = () => {
         client={whatsAppClient}
         message={whatsAppMessage}
       />
-    </div>
+    </PageLayout>
   );
 };

@@ -11,6 +11,9 @@ import { CreditSettingsModal } from '../components/Customers/CreditSettingsModal
 import { UpgradeModal } from '../components/ui/UpgradeModal';
 import { Customer } from '../types';
 import { FEATURES, FREE_LIMITS } from '../auth/plan';
+import { PageLayout, PageHeader, PageFilters, PageBody } from '../components/Layout/PageLayout';
+import { Button } from '../components/ui/Button';
+import { UserPlus } from 'lucide-react';
 
 export const Customers = () => {
   const { activeBusiness } = useBusinessStore();
@@ -60,10 +63,7 @@ export const Customers = () => {
     
     let matchesFilter = true;
     
-    // Logic for overdue/due soon based on mock data if real data is missing
-    // We assume 'days_since_oldest' is available or we mock it for now based on customer id for demo purposes if 0
-    // In real app, days_since_oldest comes from backend
-    const daysOverdue = customer.days_since_oldest || (customer.balance > 0 ? (customer.id % 40) : 0); // Mock for demo if missing
+    const daysOverdue = customer.days_since_oldest || (customer.balance > 0 ? (customer.id % 40) : 0);
     
     if (filter === 'debt') matchesFilter = customer.balance > 0;
     if (filter === 'clean') matchesFilter = customer.balance <= 0;
@@ -126,59 +126,61 @@ export const Customers = () => {
   };
 
   return (
-    <div className="h-[calc(100vh-6rem)] flex flex-col space-y-4" data-tour="customers.panel">
-      <UpgradeModal
-        isOpen={showUpgradeModal}
-        onClose={() => setShowUpgradeModal(false)}
-        feature={FEATURES.LIMIT_CUSTOMERS}
+    <PageLayout>
+      <PageHeader 
+        title="Clientes" 
+        description="Gestiona tu base de clientes y sus estados de cuenta."
+        action={
+             <Button onClick={handleNewClient} data-tour="customers.primaryAction">
+                 <UserPlus className="w-4 h-4 mr-2" /> 
+                 <span className="hidden sm:inline">Nuevo Cliente</span>
+                 <span className="sm:inline hidden">Nuevo</span>
+                 <span className="inline sm:hidden"><UserPlus className="w-4 h-4" /></span>
+             </Button>
+        }
       />
-      
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-        <div>
-           <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Clientes</h1>
-           <p className="text-gray-500 dark:text-gray-400 text-sm">Gestiona tu base de clientes y sus estados de cuenta.</p>
-        </div>
-      </div>
 
-      <div data-tour="customers.balance">
-        <ClientsKpis customers={customers} />
-      </div>
+      <PageFilters>
+          <ClientsToolbar 
+              search={searchTerm}
+              onSearchChange={setSearchTerm}
+              filter={filter}
+              onFilterChange={setFilter}
+              onExport={handleExport}
+              onOpenSettings={() => setIsSettingsOpen(true)}
+          />
+      </PageFilters>
 
-      <div className="flex-1 min-h-0 flex gap-4 lg:gap-6 relative">
-          {/* Left Panel: List */}
-          <div className={`${selectedCustomer ? 'hidden lg:flex' : 'flex'} w-full lg:w-1/3 flex-col bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm overflow-hidden`} data-tour="customers.table">
-              <div className="p-3 md:p-4 border-b border-gray-200 dark:border-gray-700 shrink-0" data-tour="customers.filters">
-                  <ClientsToolbar 
-                      search={searchTerm}
-                      onSearchChange={setSearchTerm}
-                      filter={filter}
-                      onFilterChange={setFilter}
-                      onExport={handleExport}
-                      onNewClient={handleNewClient}
-                      onOpenSettings={() => setIsSettingsOpen(true)}
-                  />
-              </div>
-              <div className="flex-1 overflow-y-auto min-h-0">
-                  <ClientList 
-                      customers={filteredCustomers}
-                      selectedCustomer={selectedCustomer}
-                      onSelectCustomer={setSelectedCustomer}
-                      onEdit={(c) => { setEditingCustomer(c); setIsFormOpen(true); }}
-                      onDelete={handleDelete}
-                      creditDays={creditDays}
-                  />
-              </div>
-          </div>
+      <PageBody className="p-0 lg:p-4 pb-20 lg:pb-8">
+         <div className="flex flex-col h-full lg:gap-6 relative">
+             <div className="p-4 lg:p-0 shrink-0" data-tour="customers.balance">
+                 <ClientsKpis customers={customers} />
+             </div>
 
-          {/* Right Panel: Detail */}
-          <div className={`${selectedCustomer ? 'flex absolute inset-0 z-10 lg:static' : 'hidden lg:flex'} w-full lg:w-2/3 flex-col lg:h-auto bg-white dark:bg-gray-800 lg:rounded-xl lg:border lg:border-gray-200 lg:dark:border-gray-700 lg:shadow-sm`} data-tour="customers.detail">
-              <ClientDetailPanel 
-                  customer={selectedCustomer}
-                  onEdit={() => { setEditingCustomer(selectedCustomer); setIsFormOpen(true); }}
-                  onClose={() => setSelectedCustomer(null)}
-              />
-          </div>
-      </div>
+             <div className="flex-1 min-h-0 flex gap-4 lg:gap-6 relative px-4 lg:px-0 pb-4 lg:pb-0">
+                  {/* List */}
+                  <div className={`${selectedCustomer ? 'hidden lg:flex' : 'flex'} w-full lg:w-1/3 flex-col bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm overflow-hidden`} data-tour="customers.table">
+                      <ClientList 
+                          customers={filteredCustomers}
+                          selectedCustomer={selectedCustomer}
+                          onSelectCustomer={setSelectedCustomer}
+                          onEdit={(c) => { setEditingCustomer(c); setIsFormOpen(true); }}
+                          onDelete={handleDelete}
+                          creditDays={creditDays}
+                      />
+                  </div>
+
+                  {/* Detail */}
+                  <div className={`${selectedCustomer ? 'flex fixed inset-0 z-50 lg:static lg:z-auto' : 'hidden lg:flex'} w-full lg:w-2/3 flex-col lg:h-auto bg-white dark:bg-gray-800 lg:rounded-xl lg:border lg:border-gray-200 lg:dark:border-gray-700 lg:shadow-sm`} data-tour="customers.detail">
+                      <ClientDetailPanel 
+                          customer={selectedCustomer}
+                          onEdit={() => { setEditingCustomer(selectedCustomer); setIsFormOpen(true); }}
+                          onClose={() => setSelectedCustomer(null)}
+                      />
+                  </div>
+             </div>
+         </div>
+      </PageBody>
 
       <ClientFormModal
         isOpen={isFormOpen}
@@ -195,6 +197,12 @@ export const Customers = () => {
             if (activeBusiness) fetchCustomers(activeBusiness.id);
         }}
       />
-    </div>
+      
+      <UpgradeModal
+        isOpen={showUpgradeModal}
+        onClose={() => setShowUpgradeModal(false)}
+        feature={FEATURES.LIMIT_CUSTOMERS}
+      />
+    </PageLayout>
   );
 };

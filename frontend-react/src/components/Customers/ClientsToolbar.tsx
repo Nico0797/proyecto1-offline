@@ -9,7 +9,6 @@ interface ClientsToolbarProps {
   filter: string;
   onFilterChange: (value: string) => void;
   onExport: () => void;
-  onNewClient: () => void;
   onOpenSettings: () => void;
 }
 
@@ -19,13 +18,12 @@ export const ClientsToolbar: React.FC<ClientsToolbarProps> = ({
   filter,
   onFilterChange,
   onExport,
-  onNewClient,
   onOpenSettings,
 }) => {
   return (
-    <div className="flex flex-col gap-3" data-tour="customers.search">
+    <div className="flex flex-col md:flex-row gap-3 w-full" data-tour="customers.search">
       {/* Search Bar */}
-      <div className="relative w-full">
+      <div className="relative w-full md:w-auto md:flex-1">
         <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
         <Input
           placeholder="Buscar cliente..."
@@ -36,8 +34,8 @@ export const ClientsToolbar: React.FC<ClientsToolbarProps> = ({
       </div>
 
       {/* Filters and Actions Row */}
-      <div className="flex flex-wrap gap-2 items-center justify-between">
-        <div className="flex gap-2 flex-grow">
+      <div className="flex flex-wrap gap-2 items-center justify-between md:justify-end">
+        <div className="flex gap-2 flex-grow md:flex-grow-0">
             <select
               className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg px-3 py-2 text-sm text-gray-700 dark:text-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 flex-grow min-w-[120px]"
               value={filter}
@@ -51,18 +49,14 @@ export const ClientsToolbar: React.FC<ClientsToolbarProps> = ({
               <option value="overdue">Vencidos</option>
               <option value="inactive">Inactivos</option>
             </select>
-            <Button variant="secondary" onClick={onOpenSettings} title="Configurar Fiados" className="shrink-0 px-3" data-tour="customers.creditLimit">
-                <Settings className="w-4 h-4" />
-            </Button>
         </div>
         
         <div className="flex gap-2">
+          <Button variant="secondary" onClick={onOpenSettings} title="Configurar Fiados" className="shrink-0 px-3" data-tour="customers.creditLimit">
+                <Settings className="w-4 h-4" />
+          </Button>
           <Button variant="secondary" onClick={onExport} title="Exportar CSV" className="shrink-0 px-3">
              <Download className="w-4 h-4" />
-          </Button>
-          
-          <Button onClick={onNewClient} className="whitespace-nowrap shrink-0" data-tour="customers.primaryAction">
-             <UserPlus className="w-4 h-4 mr-2" /> <span className="hidden sm:inline">Nuevo</span><span className="sm:hidden">+</span>
           </Button>
         </div>
       </div>

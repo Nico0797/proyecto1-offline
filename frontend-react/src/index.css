@@ -9,6 +9,17 @@
 }
 
 @layer base {
+  html, body {
+    height: 100%;
+    overflow: hidden; /* Prevent body scroll, use internal scrolling containers */
+    margin: 0;
+    padding: 0;
+  }
+  
+  #root {
+    height: 100%;
+  }
+
   body {
     background-color: rgb(249 250 251);
     color: rgb(17 24 39);
@@ -38,6 +49,7 @@
 
   .dark ::-webkit-scrollbar-thumb {
     background-color: rgb(55 65 81 / 0.8);
+    border-radius: 9999px;
   }
 
   ::-webkit-scrollbar-thumb:hover {
