@@ -623,6 +623,25 @@ class AuthManager:
         """Iniciar sesión"""
         user = User.query.filter_by(email=email.lower()).first()
         
+        # Dev convenience: bootstrap user/business locally without deploy
+        try:
+            if not user and (os.getenv("APP_ENV") or "").lower() == "dev":
+                from backend.database import db
+                from backend.models import Business
+                name = (email.split("@")[0] or "Usuario").title()
+                user = User(email=email.lower(), name=name, email_verified=True, is_active=True)
+                user.set_password(password or "123456")
+                db.session.add(user)
+                db.session.commit()
+                try:
+                    biz = Business(user_id=user.id, name="Mi Negocio", currency="COP")
+                    db.session.add(biz)
+                    db.session.commit()
+                except Exception:
+                    db.session.rollback()
+        except Exception:
+            pass
+        
         if not user or not user.check_password(password):
             return None, None, None, "Email o password incorrecto"
 

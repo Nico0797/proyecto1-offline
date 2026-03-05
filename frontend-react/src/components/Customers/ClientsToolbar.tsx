@@ -1,0 +1,71 @@
+import React from 'react';
+import { Search, Download, UserPlus, Settings } from 'lucide-react';
+import { Input } from '../ui/Input';
+import { Button } from '../ui/Button';
+
+interface ClientsToolbarProps {
+  search: string;
+  onSearchChange: (value: string) => void;
+  filter: string;
+  onFilterChange: (value: string) => void;
+  onExport: () => void;
+  onNewClient: () => void;
+  onOpenSettings: () => void;
+}
+
+export const ClientsToolbar: React.FC<ClientsToolbarProps> = ({
+  search,
+  onSearchChange,
+  filter,
+  onFilterChange,
+  onExport,
+  onNewClient,
+  onOpenSettings,
+}) => {
+  return (
+    <div className="flex flex-col gap-3" data-tour="customers.search">
+      {/* Search Bar */}
+      <div className="relative w-full">
+        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+        <Input
+          placeholder="Buscar cliente..."
+          className="pl-10 w-full"
+          value={search}
+          onChange={(e) => onSearchChange(e.target.value)}
+        />
+      </div>
+
+      {/* Filters and Actions Row */}
+      <div className="flex flex-wrap gap-2 items-center justify-between">
+        <div className="flex gap-2 flex-grow">
+            <select
+              className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg px-3 py-2 text-sm text-gray-700 dark:text-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 flex-grow min-w-[120px]"
+              value={filter}
+              onChange={(e) => onFilterChange(e.target.value)}
+              data-tour="customers.filterInactive"
+            >
+              <option value="all">Todos</option>
+              <option value="debt">Con Deuda</option>
+              <option value="clean">Paz y Salvo</option>
+              <option value="due_soon">Por Vencer</option>
+              <option value="overdue">Vencidos</option>
+              <option value="inactive">Inactivos</option>
+            </select>
+            <Button variant="secondary" onClick={onOpenSettings} title="Configurar Fiados" className="shrink-0 px-3" data-tour="customers.creditLimit">
+                <Settings className="w-4 h-4" />
+            </Button>
+        </div>
+        
+        <div className="flex gap-2">
+          <Button variant="secondary" onClick={onExport} title="Exportar CSV" className="shrink-0 px-3">
+             <Download className="w-4 h-4" />
+          </Button>
+          
+          <Button onClick={onNewClient} className="whitespace-nowrap shrink-0" data-tour="customers.primaryAction">
+             <UserPlus className="w-4 h-4 mr-2" /> <span className="hidden sm:inline">Nuevo</span><span className="sm:hidden">+</span>
+          </Button>
+        </div>
+      </div>
+    </div>
+  );
+};

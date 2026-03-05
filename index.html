@@ -2103,7 +2103,20 @@
         const isCapacitor = !!(window.Capacitor && typeof window.Capacitor.isNativePlatform === 'function' && window.Capacitor.isNativePlatform())
             || window.location.protocol === 'capacitor:'
             || (window.location.hostname === 'localhost' && window.location.port !== '5000' && window.location.port !== '8000');
-        const API_BASE_URL = isCapacitor ? 'https://app.encaja.co' : '';
+        const API_BASE_URL = (function(){
+            try {
+                const params = new URLSearchParams(window.location.search);
+                const devApi = params.get('devApi');
+                if (devApi) return devApi;
+            } catch(e){}
+            if (isCapacitor) return 'https://app.encaja.co';
+            const h = window.location.hostname;
+            const p = window.location.port;
+            if ((h === 'localhost' || h === '127.0.0.1') && (p === '5500' || p === '5501' || p === '5502' || p === '5503')) {
+                return 'http://localhost:5000';
+            }
+            return '';
+        })();
 
         // Cuaderno App
         const app = {
@@ -2173,8 +2186,6 @@
             
             // API helpers
             async api(endpoint, options = {}) {
-                // Si estamos en Capacitor, agregar la URL base
-                const url = endpoint.startsWith('http') ? endpoint : (API_BASE_URL + '/api' + endpoint);
                 const headers = {
                     'Content-Type': 'application/json',
                     ...options.headers
@@ -2185,39 +2196,55 @@
                 }
                 
                 try {
-                    console.log('API Request:', url, options);
-                    const response = await fetch(url, {
-                        ...options,
-                        headers
-                    });
-                    
-                    console.log('API Response:', response.status, response.statusText, response.headers.get('content-type'));
-                    
-                    // Guardar response para debugging
-                    const status = response.status;
-                    let responseText = '';
-                    let responseData = null;
-                    
-                    // Check content-type to handle HTML responses
-                    const contentType = response.headers.get('content-type');
-                    if (!contentType || !contentType.includes('application/json')) {
-                        responseText = await response.text();
-                        console.error('Non-JSON response:', responseText.substring(0, 200));
-                        throw new Error('El servidor devolvió HTML en lugar de JSON. Asegúrate de usar el puerto correcto del servidor');
-                    }
-                    
-                    responseData = await response.json();
-                    
-                    if (!response.ok) {
-                        if (status === 403 && responseData && responseData.upgrade_url) {
-                            const goPro = await showConfirm((responseData.error || 'Función disponible solo en Pro') + '\n\n¿Quieres actualizar tu plan ahora?');
-                            if (goPro) this.navigate('upgrade');
-                            throw new Error(responseData.error || 'Acceso restringido');
+                    const candidates = [];
+                    const h = window.location.hostname;
+                    const p = window.location.port;
+                    if (endpoint.startsWith('http')) {
+                        candidates.push('');
+                    } else {
+                        if (API_BASE_URL) candidates.push(API_BASE_URL);
+                        if ((h === 'localhost' || h === '127.0.0.1') && (p === '5500' || p === '5501' || p === '5502' || p === '5503')) {
+                            candidates.push(
+                                'http://localhost:5000',
+                                'http://127.0.0.1:5000',
+                                'http://localhost:8000',
+                                'http://127.0.0.1:8000',
+                                'http://localhost:3001',
+                                'http://127.0.0.1:3001'
+                            );
+                        } else {
+                            candidates.push('');
                         }
-                        throw new Error(responseData.error || `Error ${status}: ${responseData.message || 'Error en la solicitud'}`);
                     }
-                    
-                    return responseData;
+                    let lastError = null;
+                    for (let i = 0; i < candidates.length; i++) {
+                        const base = candidates[i];
+                        const url = endpoint.startsWith('http') ? endpoint : (base + '/api' + endpoint);
+                        try {
+                            const response = await fetch(url, { ...options, headers });
+                            const ct = response.headers.get('content-type');
+                            if (!ct || !ct.includes('application/json')) {
+                                lastError = new Error('El servidor devolvió HTML en lugar de JSON');
+                                continue;
+                            }
+                            const data = await response.json();
+                            if (!response.ok) {
+                                const status = response.status;
+                                if (status === 403 && data && data.upgrade_url) {
+                                    const goPro = await showConfirm((data.error || 'Función disponible solo en Pro') + '\n\n¿Quieres actualizar tu plan ahora?');
+                                    if (goPro) this.navigate('upgrade');
+                                    throw new Error(data.error || 'Acceso restringido');
+                                }
+                                const msg = data.error || `Error ${status}: ${data.message || 'Error en la solicitud'}`;
+                                throw new Error(msg);
+                            }
+                            return data;
+                        } catch (e) {
+                            lastError = e;
+                            continue;
+                        }
+                    }
+                    throw lastError || new Error('Failed to fetch');
                 } catch (error) {
                     console.error('API Error:', error);
                     

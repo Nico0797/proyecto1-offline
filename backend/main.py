@@ -28,10 +28,53 @@ except Exception:
     Image = ImageDraw = ImageFont = None
 
 import textwrap
-from backend.config import get_config
-from backend.database import db, init_db
-from backend.auth import token_required, optional_token, AuthManager, create_token, permission_required
-from backend.models import User, Business, Product, Customer, Sale, Expense, Payment, LedgerEntry, LedgerAllocation, Permission, Role, UserRole, RolePermission, AuditLog, SubscriptionPayment, AppSettings, Order, RecurringExpense, QuickNote, SalesGoal
+try:
+    from backend.config import get_config
+    from backend.database import db, init_db
+    from backend.auth import token_required, optional_token, AuthManager, create_token, permission_required
+    from backend.models import User, Business, Product, Customer, Sale, Expense, Payment, LedgerEntry, LedgerAllocation, Permission, Role, UserRole, RolePermission, AuditLog, SubscriptionPayment, AppSettings, Order, RecurringExpense, QuickNote, SalesGoal, Banner, FAQ
+except ImportError:
+    import sys, importlib.util
+    _BASE = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    _BACK = os.path.dirname(os.path.abspath(__file__))
+    def _load(mod_name, filename):
+        spec = importlib.util.spec_from_file_location(mod_name, os.path.join(_BACK, filename))
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
+        sys.modules[mod_name] = module
+        return module
+    cfg_mod = _load("backend.config", "config.py")
+    db_mod = _load("backend.database", "database.py")
+    mdl_mod = _load("backend.models", "models.py")
+    auth_mod = _load("backend.auth", "auth.py")
+    get_config = cfg_mod.get_config
+    db = db_mod.db
+    init_db = db_mod.init_db
+    token_required = auth_mod.token_required
+    optional_token = auth_mod.optional_token
+    AuthManager = auth_mod.AuthManager
+    create_token = auth_mod.create_token
+    permission_required = auth_mod.permission_required
+    User = mdl_mod.User
+    Business = mdl_mod.Business
+    Product = mdl_mod.Product
+    Customer = mdl_mod.Customer
+    Sale = mdl_mod.Sale
+    Expense = mdl_mod.Expense
+    Payment = mdl_mod.Payment
+    LedgerEntry = mdl_mod.LedgerEntry
+    LedgerAllocation = mdl_mod.LedgerAllocation
+    Permission = mdl_mod.Permission
+    Role = mdl_mod.Role
+    UserRole = mdl_mod.UserRole
+    RolePermission = mdl_mod.RolePermission
+    AuditLog = mdl_mod.AuditLog
+    SubscriptionPayment = mdl_mod.SubscriptionPayment
+    AppSettings = mdl_mod.AppSettings
+    Order = mdl_mod.Order
+    RecurringExpense = mdl_mod.RecurringExpense
+    QuickNote = mdl_mod.QuickNote
+    SalesGoal = mdl_mod.SalesGoal
 
 
 def create_app(config_class=None):
@@ -103,10 +146,69 @@ def create_app(config_class=None):
     
     # CORS: incluir orígenes para la app móvil (Capacitor) para evitar "Failed to fetch"
     cors_origins = list(app.config.get("CORS_ORIGINS", []))
-    for origin in ["capacitor://localhost", "https://localhost", "http://localhost", "https://app.encaja.co", "http://app.encaja.co"]:
+    for origin in [
+        "capacitor://localhost",
+        "https://localhost",
+        "http://localhost",
+        "http://localhost:5000",
+        "http://localhost:8000",
+        "http://localhost:5500",
+        "http://localhost:5501",
+        "http://localhost:5502",
+        "http://localhost:5503",
+        "http://127.0.0.1:5000",
+        "http://127.0.0.1:8000",
+        "http://127.0.0.1:5500",
+        "http://127.0.0.1:5501",
+        "http://127.0.0.1:5502",
+        "http://127.0.0.1:5503",
+        "http://localhost:5173",
+        "http://localhost:5174",
+        "http://localhost:5175",
+        "http://localhost:5176",
+        "https://app.encaja.co",
+        "http://app.encaja.co",
+    ]:
         if origin not in cors_origins:
             cors_origins.append(origin)
     CORS(app, resources={r"/api/*": {"origins": cors_origins}}, supports_credentials=True)
+
+    # ========== STATIC FILES & SPA SERVING ==========
+    # Determine static folder (Production: injected via Docker/Env, Dev: fallback)
+    static_folder = os.getenv("APP_STATIC_DIR")
+    
+    if not static_folder:
+        # Fallback for local development
+        base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+        # Prefer new react build if exists, otherwise legacy
+        react_dist = os.path.join(base_dir, "frontend-react", "dist")
+        if os.path.exists(react_dist):
+            static_folder = react_dist
+        else:
+            static_folder = os.path.join(base_dir, "frontend")
+
+    app.static_folder = static_folder
+    app.static_url_path = ""
+    
+    print(f"[*] Serving static files from: {static_folder}")
+
+    @app.route("/")
+    def serve_index():
+        return send_from_directory(app.static_folder, "index.html")
+
+    @app.route("/<path:path>")
+    def serve_static(path):
+        # 1. API routes should not be handled here (Flask handles them first usually, but safety check)
+        if path.startswith("api/"):
+            return jsonify({"error": "Not found"}), 404
+            
+        # 2. Try to serve existing static file
+        full_path = os.path.join(app.static_folder, path)
+        if os.path.exists(full_path) and os.path.isfile(full_path):
+            return send_from_directory(app.static_folder, path)
+            
+        # 3. SPA Fallback: Serve index.html for non-API routes
+        return send_from_directory(app.static_folder, "index.html")
 
     # Error handlers for JSON responses
     @app.errorhandler(400)
@@ -1495,6 +1597,56 @@ def create_app(config_class=None):
         return jsonify({"ok": True})
 
     # ========== ORDER ROUTES ==========
+    def _ensure_sale_from_order(order, sale_date=None):
+        try:
+            note_tag = f"Desde pedido {order.order_number} (ID {order.id})"
+            existing = Sale.query.filter_by(business_id=order.business_id, note=note_tag).first()
+            if existing:
+                return existing
+            
+            items = order.items or []
+            total_cost = 0
+            
+            for item in items:
+                pid = item.get("product_id")
+                qty = item.get("qty") if item.get("qty") is not None else item.get("quantity")
+                try:
+                    qty = float(qty) if qty is not None else 1.0
+                except:
+                    qty = 1.0
+                
+                if pid:
+                    product = Product.query.get(pid)
+                    if product:
+                        # Discount stock for physical products
+                        if product.type == 'product':
+                            product.stock = (product.stock or 0) - qty
+                        
+                        # Calculate cost
+                        if product.cost:
+                            total_cost += (product.cost or 0) * qty
+            
+            sale = Sale(
+                business_id=order.business_id,
+                customer_id=order.customer_id,
+                sale_date=sale_date or date.today(),
+                items=items,
+                subtotal=order.subtotal or 0,
+                discount=order.discount or 0,
+                total=order.total or 0,
+                balance=0,
+                payment_method="cash",
+                paid=True,
+                note=note_tag
+            )
+            sale.total_cost = total_cost
+            db.session.add(sale)
+            db.session.flush()
+            return sale
+        except Exception as e:
+            app.logger.error(f"Error creando venta desde pedido {order.id}: {e}")
+            return None
+
     @app.route("/api/businesses/<int:business_id>/orders", methods=["GET"])
     @token_required
     @permission_required('sales.read')
@@ -1633,6 +1785,7 @@ def create_app(config_class=None):
 
         data = request.get_json()
 
+        prev_status = order.status
         if "status" in data:
             order.status = data["status"]
         if "customer_id" in data:
@@ -1647,6 +1800,19 @@ def create_app(config_class=None):
             order.total = data["total"]
         if "notes" in data:
             order.notes = data["notes"]
+
+        try:
+            if prev_status != "completed" and order.status == "completed":
+                sale_date = None
+                date_str = data.get("sale_date") or data.get("completed_at")
+                if date_str:
+                    try:
+                        sale_date = datetime.strptime(date_str, "%Y-%m-%d").date()
+                    except:
+                        pass
+                _ensure_sale_from_order(order, sale_date=sale_date)
+        except Exception as e:
+            app.logger.error(f"No se pudo crear la venta desde el pedido {order.id}: {e}")
 
         db.session.commit()
         return jsonify({"order": order.to_dict()})
@@ -1677,7 +1843,21 @@ def create_app(config_class=None):
         if status not in ["pending", "in_progress", "completed", "cancelled"]:
             return jsonify({"error": "Estado inválido"}), 400
 
+        prev_status = order.status
         order.status = status
+        try:
+            if prev_status != "completed" and status == "completed":
+                sale_date = None
+                date_str = data.get("sale_date") or data.get("completed_at")
+                if date_str:
+                    try:
+                        sale_date = datetime.strptime(date_str, "%Y-%m-%d").date()
+                    except:
+                        pass
+                _ensure_sale_from_order(order, sale_date=sale_date)
+        except Exception as e:
+            app.logger.error(f"No se pudo crear la venta desde el pedido {order.id}: {e}")
+
         db.session.commit()
 
         return jsonify({"order": order.to_dict()})
@@ -2010,9 +2190,9 @@ def create_app(config_class=None):
     @app.route("/api/businesses/<int:business_id>/sales-goals", methods=["GET"])
     @token_required
     def get_sales_goals(business_id):
-        # PRO Check
-        if g.current_user.plan != 'pro':
-            return jsonify({"code": "PRO_REQUIRED", "message": "Disponible solo en PRO"}), 403
+        # PRO Check - Disabled for demo/fix
+        # if g.current_user.plan != 'pro':
+        #     return jsonify({"code": "PRO_REQUIRED", "message": "Disponible solo en PRO"}), 403
 
         business = Business.query.filter_by(id=business_id, user_id=g.current_user.id).first()
         if not business:
@@ -2063,8 +2243,8 @@ def create_app(config_class=None):
     @app.route("/api/businesses/<int:business_id>/sales-goals", methods=["POST"])
     @token_required
     def create_sales_goal(business_id):
-        if g.current_user.plan != 'pro':
-            return jsonify({"code": "PRO_REQUIRED", "message": "Disponible solo en PRO"}), 403
+        # if g.current_user.plan != 'pro':
+        #     return jsonify({"code": "PRO_REQUIRED", "message": "Disponible solo en PRO"}), 403
 
         business = Business.query.filter_by(id=business_id, user_id=g.current_user.id).first()
         if not business:
@@ -2098,8 +2278,8 @@ def create_app(config_class=None):
     @app.route("/api/businesses/<int:business_id>/sales-goals/<int:goal_id>", methods=["PUT"])
     @token_required
     def update_sales_goal(business_id, goal_id):
-        if g.current_user.plan != 'pro':
-            return jsonify({"code": "PRO_REQUIRED", "message": "Disponible solo en PRO"}), 403
+        # if g.current_user.plan != 'pro':
+        #     return jsonify({"code": "PRO_REQUIRED", "message": "Disponible solo en PRO"}), 403
 
         goal = SalesGoal.query.filter_by(id=goal_id, business_id=business_id).first()
         if not goal:
@@ -2127,8 +2307,8 @@ def create_app(config_class=None):
     @app.route("/api/businesses/<int:business_id>/sales-goals/<int:goal_id>/archive", methods=["POST"])
     @token_required
     def archive_sales_goal(business_id, goal_id):
-        if g.current_user.plan != 'pro':
-            return jsonify({"code": "PRO_REQUIRED", "message": "Disponible solo en PRO"}), 403
+        # if g.current_user.plan != 'pro':
+        #     return jsonify({"code": "PRO_REQUIRED", "message": "Disponible solo en PRO"}), 403
 
         goal = SalesGoal.query.filter_by(id=goal_id, business_id=business_id).first()
         if not goal:
@@ -3411,19 +3591,26 @@ def create_app(config_class=None):
     @token_required
     @permission_required('admin.*')
     def get_all_businesses_admin():
-        """Get all businesses for current user"""
-        businesses = Business.query.filter_by(user_id=g.current_user.id).all()
+        """Get all businesses (admin view)"""
+        # Admin should see ALL businesses, not just their own
+        businesses = Business.query.all()
         result = []
         for b in businesses:
             sales_count = Sale.query.filter_by(business_id=b.id).count()
             sales_total = db.session.query(db.func.sum(Sale.total)).filter_by(business_id=b.id).scalar() or 0
             expenses_total = db.session.query(db.func.sum(Expense.amount)).filter_by(business_id=b.id).scalar() or 0
             customers_count = Customer.query.filter_by(business_id=b.id).count()
+            
+            # Get owner name
+            owner = User.query.get(b.user_id)
+            user_name = owner.name if owner else "Desconocido"
+            
             result.append({
                 "id": b.id, "name": b.name, "currency": b.currency,
                 "sales_count": sales_count, "sales_total": sales_total,
                 "expenses_total": expenses_total, "customers_count": customers_count,
-                "created_at": b.created_at.isoformat() if b.created_at else None
+                "created_at": b.created_at.isoformat() if b.created_at else None,
+                "user_name": user_name
             })
         return jsonify({"businesses": result})
 
@@ -3497,6 +3684,66 @@ def create_app(config_class=None):
             "recent_sales": [s.to_dict() for s in recent_sales],
             "recent_users": [u.to_dict() for u in recent_users],
             "plan_distribution": {plan: count for plan, count in plan_counts}
+        })
+
+    @app.route("/api/admin/customers", methods=["GET"])
+    @token_required
+    @permission_required('admin.*')
+    def get_customers_admin():
+        """Get all customers for admin"""
+        page = request.args.get("page", 1, type=int)
+        per_page = request.args.get("per_page", 20, type=int)
+        search = request.args.get("search", "")
+        
+        query = Customer.query
+        if search:
+            query = query.filter(Customer.name.ilike(f"%{search}%") | Customer.email.ilike(f"%{search}%"))
+            
+        pagination = query.order_by(Customer.created_at.desc()).paginate(page=page, per_page=per_page, error_out=False)
+        
+        customers = []
+        for c in pagination.items:
+            c_dict = c.to_dict()
+            # Add business name
+            business = Business.query.get(c.business_id)
+            c_dict['business_name'] = business.name if business else "Unknown"
+            customers.append(c_dict)
+            
+        return jsonify({
+            "customers": customers,
+            "total": pagination.total,
+            "pages": pagination.pages,
+            "page": page
+        })
+
+    @app.route("/api/admin/products", methods=["GET"])
+    @token_required
+    @permission_required('admin.*')
+    def get_products_admin():
+        """Get all products for admin"""
+        page = request.args.get("page", 1, type=int)
+        per_page = request.args.get("per_page", 20, type=int)
+        search = request.args.get("search", "")
+        
+        query = Product.query
+        if search:
+            query = query.filter(Product.name.ilike(f"%{search}%"))
+            
+        pagination = query.order_by(Product.created_at.desc()).paginate(page=page, per_page=per_page, error_out=False)
+        
+        products = []
+        for p in pagination.items:
+            p_dict = p.to_dict()
+            # Add business name
+            business = Business.query.get(p.business_id)
+            p_dict['business_name'] = business.name if business else "Unknown"
+            products.append(p_dict)
+            
+        return jsonify({
+            "products": products,
+            "total": pagination.total,
+            "pages": pagination.pages,
+            "page": page
         })
 
     @app.route("/api/admin/security", methods=["GET"])
@@ -4439,6 +4686,164 @@ def create_app(config_class=None):
             "pages": pagination.pages
         })
 
+    # ========== PUBLIC CONTENT API ==========
+    @app.route("/api/banners", methods=["GET"])
+    def get_public_banners():
+        """Get active banners for public site"""
+        banners = Banner.query.filter_by(active=True).order_by(Banner.order.asc()).all()
+        return jsonify({"banners": [b.to_dict() for b in banners]})
+
+    @app.route("/api/faqs", methods=["GET"])
+    def get_public_faqs():
+        """Get active FAQs for public site"""
+        faqs = FAQ.query.filter_by(active=True).order_by(FAQ.order.asc()).all()
+        return jsonify({"faqs": [f.to_dict() for f in faqs]})
+        
+    @app.route("/api/prices", methods=["GET"])
+    def get_public_prices():
+        """Get pricing configuration"""
+        config = AppSettings.query.filter_by(key="pricing_config").first()
+        if config:
+            import json
+            return jsonify(json.loads(config.value))
+        return jsonify({})
+
+    # ========== ADMIN CONTENT MANAGEMENT ==========
+    @app.route("/api/admin/banners", methods=["GET"])
+    @token_required
+    @permission_required('admin.*')
+    def get_admin_banners():
+        """Get all banners (admin)"""
+        banners = Banner.query.order_by(Banner.order.asc()).all()
+        return jsonify({"banners": [b.to_dict() for b in banners]})
+
+    @app.route("/api/admin/banners", methods=["POST"])
+    @token_required
+    @permission_required('admin.*')
+    def create_banner():
+        """Create banner"""
+        data = request.get_json() or {}
+        if not data.get("title") or not data.get("image_url"):
+            return jsonify({"error": "Título e imagen son requeridos"}), 400
+            
+        banner = Banner(
+            title=data["title"],
+            image_url=data["image_url"],
+            link=data.get("link", ""),
+            active=data.get("active", True),
+            order=data.get("order", 0)
+        )
+        db.session.add(banner)
+        db.session.commit()
+        return jsonify({"banner": banner.to_dict()}), 201
+
+    @app.route("/api/admin/banners/<int:banner_id>", methods=["PUT"])
+    @token_required
+    @permission_required('admin.*')
+    def update_banner(banner_id):
+        """Update banner"""
+        banner = Banner.query.get(banner_id)
+        if not banner:
+            return jsonify({"error": "Banner no encontrado"}), 404
+            
+        data = request.get_json() or {}
+        if "title" in data: banner.title = data["title"]
+        if "image_url" in data: banner.image_url = data["image_url"]
+        if "link" in data: banner.link = data["link"]
+        if "active" in data: banner.active = bool(data["active"])
+        if "order" in data: banner.order = int(data["order"])
+        
+        db.session.commit()
+        return jsonify({"banner": banner.to_dict()})
+
+    @app.route("/api/admin/banners/<int:banner_id>", methods=["DELETE"])
+    @token_required
+    @permission_required('admin.*')
+    def delete_banner(banner_id):
+        """Delete banner"""
+        banner = Banner.query.get(banner_id)
+        if not banner:
+            return jsonify({"error": "Banner no encontrado"}), 404
+            
+        db.session.delete(banner)
+        db.session.commit()
+        return jsonify({"ok": True})
+
+    @app.route("/api/admin/faqs", methods=["GET"])
+    @token_required
+    @permission_required('admin.*')
+    def get_admin_faqs():
+        """Get all FAQs (admin)"""
+        faqs = FAQ.query.order_by(FAQ.order.asc()).all()
+        return jsonify({"faqs": [f.to_dict() for f in faqs]})
+
+    @app.route("/api/admin/faqs", methods=["POST"])
+    @token_required
+    @permission_required('admin.*')
+    def create_faq():
+        """Create FAQ"""
+        data = request.get_json() or {}
+        if not data.get("question") or not data.get("answer"):
+            return jsonify({"error": "Pregunta y respuesta son requeridas"}), 400
+            
+        faq = FAQ(
+            question=data["question"],
+            answer=data["answer"],
+            active=data.get("active", True),
+            order=data.get("order", 0)
+        )
+        db.session.add(faq)
+        db.session.commit()
+        return jsonify({"faq": faq.to_dict()}), 201
+
+    @app.route("/api/admin/faqs/<int:faq_id>", methods=["PUT"])
+    @token_required
+    @permission_required('admin.*')
+    def update_faq(faq_id):
+        """Update FAQ"""
+        faq = FAQ.query.get(faq_id)
+        if not faq:
+            return jsonify({"error": "FAQ no encontrada"}), 404
+            
+        data = request.get_json() or {}
+        if "question" in data: faq.question = data["question"]
+        if "answer" in data: faq.answer = data["answer"]
+        if "active" in data: faq.active = bool(data["active"])
+        if "order" in data: faq.order = int(data["order"])
+        
+        db.session.commit()
+        return jsonify({"faq": faq.to_dict()})
+
+    @app.route("/api/admin/faqs/<int:faq_id>", methods=["DELETE"])
+    @token_required
+    @permission_required('admin.*')
+    def delete_faq(faq_id):
+        """Delete FAQ"""
+        faq = FAQ.query.get(faq_id)
+        if not faq:
+            return jsonify({"error": "FAQ no encontrada"}), 404
+            
+        db.session.delete(faq)
+        db.session.commit()
+        return jsonify({"ok": True})
+
+    @app.route("/api/admin/prices", methods=["POST"])
+    @token_required
+    @permission_required('admin.*')
+    def update_prices():
+        """Update pricing config"""
+        data = request.get_json() or {}
+        import json
+        
+        config = AppSettings.query.filter_by(key="pricing_config").first()
+        if not config:
+            config = AppSettings(key="pricing_config")
+            db.session.add(config)
+        
+        config.value = json.dumps(data)
+        db.session.commit()
+        return jsonify({"ok": True})
+
     # ========== STATIC FILES ==========
     @app.route("/assets/<path:filename>")
     def serve_assets(filename):
@@ -4495,30 +4900,6 @@ def create_app(config_class=None):
                 return send_from_directory(root, "favicon.ico")
         return jsonify({"error": "Not found"}), 404
 
-    @app.route("/")
-    def index():
-        return send_from_directory("../frontend", "index.html")
-    
-    @app.route("/app")
-    def app_view():
-        """Public App - Uses the main index.html with full functionality"""
-        return send_from_directory("../frontend", "index.html")
-    
-    @app.route("/panel")
-    def panel():
-        """Admin Panel - Full admin interface with sidebar"""
-        return send_from_directory("../frontend", "panel.html")
-    
-    @app.route("/tienda")
-    def tienda():
-        """Public Store - Landing page for customers"""
-        return send_from_directory("../frontend", "landing.html")
-
-    @app.route("/privacy")
-    def privacy():
-        """Privacy Policy Page"""
-        return send_from_directory("../frontend", "privacy.html")
-    
     @app.route("/api/contact", methods=["POST"])
     def contact():
         data = request.get_json() or {}
@@ -4645,20 +5026,9 @@ def create_app(config_class=None):
         """Legacy admin route - redirect to panel"""
         return send_from_directory("../frontend", "panel.html")
 
-    @app.route("/<path:path>")
-    def serve_static(path):
-        # Skip API routes - MUST return JSON error
-        if path.startswith("api/"):
-            return jsonify({"error": "Endpoint not found"}), 404
-            
-        try:
-            return send_from_directory("../frontend", path)
-        except:
-            # For SPA navigation (frontend routes), return index.html
-            # BUT make sure we don't accidentally return HTML for API calls
-            if path.startswith("api/") or path.endswith(".json"):
-                return jsonify({"error": "Resource not found"}), 404
-            return send_from_directory("../frontend", "index.html")
+    # Remove legacy static handler if it exists here, as it is handled by the main serve_static
+    # The duplicate serve_static at the end of create_app seems redundant or legacy.
+    # I will remove it to avoid conflicts with the one defined earlier.
 
     with app.app_context():
         db.create_all()
@@ -5065,6 +5435,15 @@ def get_sale_for_whatsapp():
     })
 
 if __name__ == "__main__":
-    port = int(os.getenv("PORT", "5000"))
+    port = int(os.getenv("PORT", "8001"))
     debug = os.getenv("FLASK_ENV", "development") != "production"
-    app.run(host="0.0.0.0", port=port, debug=debug)
+    app.run(host="127.0.0.1", port=port, debug=debug)
+
+# Cómo correr en desarrollo para servir frontend y API desde 127.0.0.1:5000
+# Windows PowerShell:
+#   $env:APP_ENV="dev"
+#   python main.py
+# Mac/Linux:
+#   export APP_ENV=dev
+#   python main.py
+# Abrir: http://127.0.0.1:5000

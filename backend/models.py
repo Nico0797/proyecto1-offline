@@ -225,6 +225,7 @@ class Sale(db.Model):
             "payment_method": self.payment_method,
             "paid": self.paid,
             "note": self.note,
+            "customer_name": self.customer.name if self.customer else None,
             "created_at": self.created_at.isoformat() if self.created_at else None,
         }
 
@@ -376,6 +377,7 @@ class Payment(db.Model):
             "amount": self.amount,
             "method": self.method,
             "note": self.note,
+            "customer_name": self.customer.name if self.customer else None,
             "created_at": self.created_at.isoformat() if self.created_at else None,
         }
 
@@ -678,3 +680,58 @@ class AppSettings(db.Model):
 
     def __repr__(self):
         return f"<AppSettings key={self.key}>"
+
+
+class Banner(db.Model):
+    """Banners promocionales"""
+    __tablename__ = "banners"
+
+    id = db.Column(db.Integer, primary_key=True)
+    title = db.Column(db.String(255), nullable=False)
+    image_url = db.Column(db.Text, nullable=False)
+    link = db.Column(db.Text)
+    active = db.Column(db.Boolean, default=True)
+    order = db.Column(db.Integer, default=0)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    def to_dict(self):
+        return {
+            "id": self.id,
+            "title": self.title,
+            "image_url": self.image_url,
+            "link": self.link,
+            "active": self.active,
+            "order": self.order,
+            "created_at": self.created_at.isoformat() if self.created_at else None,
+        }
+
+    def __repr__(self):
+        return f"<Banner {self.title}>"
+
+
+class FAQ(db.Model):
+    """Preguntas frecuentes"""
+    __tablename__ = "faqs"
+
+    id = db.Column(db.Integer, primary_key=True)
+    question = db.Column(db.Text, nullable=False)
+    answer = db.Column(db.Text, nullable=False)
+    active = db.Column(db.Boolean, default=True)
+    order = db.Column(db.Integer, default=0)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    def to_dict(self):
+        return {
+            "id": self.id,
+            "question": self.question,
+            "answer": self.answer,
+            "active": self.active,
+            "order": self.order,
+            "created_at": self.created_at.isoformat() if self.created_at else None,
+        }
+
+    def __repr__(self):
+        return f"<FAQ {self.question}>"
+

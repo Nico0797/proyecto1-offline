@@ -7,7 +7,7 @@
     "test": "tests"
   },
   "scripts": {
-    "build": "echo \"Usando assets estáticos existentes en 'frontend', no se requiere build.\"",
+    "build": "cd frontend-react && npm install && npm run build",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "repository": {

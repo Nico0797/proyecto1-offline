@@ -116,6 +116,14 @@ def init_db_and_seed():
     )
     """)
 
+    # Settings table
+    cur.execute("""
+    CREATE TABLE IF NOT EXISTS settings (
+        key TEXT PRIMARY KEY,
+        value TEXT
+    )
+    """)
+
     # Migrations for transactions reference
     ensure_column(conn, "transactions", "ref_type", "ref_type TEXT")
     ensure_column(conn, "transactions", "ref_id", "ref_id INTEGER")
@@ -133,6 +141,11 @@ def init_db_and_seed():
                 "INSERT INTO products(name, sku, price, active, created_at) VALUES(?,?,?,?,?)",
                 (name, sku, price, 1, utc_now())
             )
+
+    # Seed default debt term if not exists
+    term = cur.execute("SELECT value FROM settings WHERE key='debt_term_days'").fetchone()
+    if not term:
+        cur.execute("INSERT INTO settings(key, value) VALUES('debt_term_days', '30')")
 
     conn.commit()
     conn.close()
@@ -248,12 +261,28 @@ def favicon():
 # ---------------- API: Transactions ----------------
 @app.get("/api/transactions")
 def get_transactions():
+    date_from = request.args.get("from")
+    date_to = request.args.get("to")
+    
     conn = db()
-    rows = conn.execute("""
+    where = ""
+    params = []
+    
+    if date_from and date_to:
+        try:
+            datetime.strptime(date_from, "%Y-%m-%d")
+            datetime.strptime(date_to, "%Y-%m-%d")
+            where = "WHERE tx_date BETWEEN ? AND ?"
+            params = [date_from, date_to]
+        except:
+            return jsonify({"error": "from/to inválidos (YYYY-MM-DD)"}), 400
+
+    rows = conn.execute(f"""
         SELECT id, kind, amount, tx_date AS date, category, note, created_at, ref_type, ref_id
         FROM transactions
+        {where}
         ORDER BY tx_date DESC, id DESC
-    """).fetchall()
+    """, params).fetchall()
     conn.close()
     return jsonify({"transactions": [dict(r) for r in rows]})
 
@@ -391,7 +420,7 @@ def post_customer():
     conn.commit()
     new_id = cur.lastrowid
     conn.close()
-    return jsonify({"ok": True, "id": new_id}), 201
+    return jsonify({"ok": True, "id": new_id, "customer": {"id": new_id, "name": name, "phone": phone, "address": address, "active": 1, "created_at": utc_now(), "balance": 0}}), 201
 
 
 @app.put("/api/customers")
@@ -446,9 +475,46 @@ def update_customer():
     return jsonify({"ok": True, "updated_id": customer_id})
 
 
+@app.delete("/api/customers")
+def delete_customer():
+    cid = request.args.get("id")
+    if not cid:
+        return jsonify({"error": "id requerido"}), 400
+    try:
+        customer_id = int(cid)
+    except:
+        return jsonify({"error": "id inválido"}), 400
+
+    conn = db()
+    cur = conn.cursor()
+
+    exists = cur.execute("SELECT id FROM customers WHERE id=?", (customer_id,)).fetchone()
+    if not exists:
+        conn.close()
+        return jsonify({"error": "Cliente no existe"}), 404
+
+    # Check dependencies (sales, ledger)
+    has_sales = cur.execute("SELECT id FROM sales WHERE customer_id=?", (customer_id,)).fetchone()
+    has_ledger = cur.execute("SELECT id FROM ledger WHERE customer_id=?", (customer_id,)).fetchone()
+
+    if has_sales or has_ledger:
+        # Soft delete
+        cur.execute("UPDATE customers SET active=0 WHERE id=?", (customer_id,))
+        conn.commit()
+        conn.close()
+        return jsonify({"ok": True, "deleted_id": customer_id, "message": "Cliente desactivado por tener registros asociados"})
+
+    cur.execute("DELETE FROM customers WHERE id=?", (customer_id,))
+    conn.commit()
+    conn.close()
+    return jsonify({"ok": True, "deleted_id": customer_id})
+
+
 @app.get("/api/customers_with_balance")
 def get_customers_with_balance():
     conn = db()
+    
+    # 1. Get basic balance info
     rows = conn.execute("""
         SELECT
           c.id, c.name, c.phone, c.address, c.active,
@@ -460,9 +526,51 @@ def get_customers_with_balance():
         ORDER BY c.active DESC, (charges - payments) DESC, c.name ASC
     """).fetchall()
 
+    # 2. Get unpaid charges info for calculating oldest_due_date
+    unpaid_charges = conn.execute("""
+        SELECT
+            l.customer_id,
+            l.entry_date
+        FROM ledger l
+        LEFT JOIN ledger_allocations a ON a.charge_id = l.id
+        WHERE l.entry_type = 'charge'
+        GROUP BY l.id
+        HAVING (l.amount - COALESCE(SUM(a.amount), 0)) > 0.00001
+        ORDER BY l.entry_date ASC
+    """).fetchall()
+
+    # Map customer_id -> oldest_due_date
+    oldest_dates = {}
+    for uc in unpaid_charges:
+        cid = uc["customer_id"]
+        if cid not in oldest_dates:
+            oldest_dates[cid] = uc["entry_date"]
+
+    # 3. Get debt term setting
+    term_row = conn.execute("SELECT value FROM settings WHERE key='debt_term_days'").fetchone()
+    term_days = int(term_row["value"]) if term_row else 30
+
     out = []
+    now = datetime.utcnow()
+    
     for r in rows:
         bal = float(r["charges"]) - float(r["payments"])
+        cid = r["id"]
+        oldest_date = oldest_dates.get(cid)
+        
+        days_since_oldest = 0
+        is_overdue = False
+        
+        if oldest_date and bal > 0.00001:
+            try:
+                d = datetime.strptime(oldest_date, "%Y-%m-%d")
+                delta = now - d
+                days_since_oldest = delta.days
+                if days_since_oldest > term_days:
+                    is_overdue = True
+            except:
+                pass
+
         out.append({
             "id": r["id"],
             "name": r["name"],
@@ -472,10 +580,13 @@ def get_customers_with_balance():
             "charges": float(r["charges"]),
             "payments": float(r["payments"]),
             "balance": round(bal, 2),
-            "status": "PAZ_Y_SALVO" if bal <= 0.00001 else "DEBE"
+            "status": "PAZ_Y_SALVO" if bal <= 0.00001 else "DEBE",
+            "oldest_due_date": oldest_date,
+            "days_since_oldest": days_since_oldest,
+            "is_overdue": is_overdue
         })
     conn.close()
-    return jsonify({"customers": out})
+    return jsonify({"customers": out, "term_days": term_days})
 
 
 # ---------------- API: Ledger ----------------
@@ -801,6 +912,47 @@ def get_summary():
     })
 
 
+# ---------------- API: Settings ----------------
+@app.get("/api/settings")
+def get_settings():
+    conn = db()
+    rows = conn.execute("SELECT key, value FROM settings").fetchall()
+    conn.close()
+    
+    settings = {row["key"]: row["value"] for row in rows}
+    return jsonify(settings)
+
+# ---------------- API: Businesses (Mock for Single Tenant) ----------------
+@app.get("/api/businesses")
+def get_businesses():
+    # Return a default single business to satisfy the frontend
+    return jsonify({
+        "businesses": [
+            {
+                "id": 1,
+                "user_id": 1,
+                "name": "Mi Negocio",
+                "currency": "COP",
+                "created_at": utc_now()
+            }
+        ]
+    })
+
+@app.put("/api/settings")
+def update_settings():
+    p = request.get_json(silent=True) or {}
+    conn = db()
+    cur = conn.cursor()
+    
+    for key, value in p.items():
+        # Insert or replace
+        cur.execute("INSERT OR REPLACE INTO settings(key, value) VALUES(?, ?)", (str(key), str(value)))
+        
+    conn.commit()
+    conn.close()
+    return jsonify({"ok": True})
+
+
 # ---------------- Export Excel ----------------
 @app.get("/export.xlsx")
 def export_xlsx():
@@ -917,4 +1069,3 @@ if __name__ == "__main__":
     print(f"✅ Export: http://{host}:{port}/export.xlsx?from=YYYY-MM-DD&to=YYYY-MM-DD")
     port = int(os.environ.get("PORT", 8001))
     app.run(host="0.0.0.0", port=port, debug=False)
-    

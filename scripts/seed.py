@@ -12,7 +12,11 @@ from datetime import date, timedelta
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from backend.database import db
-from backend.models import User, Business, Product, Customer, Sale, Expense, Permission, Role, UserRole, RolePermission
+from backend.main import create_app
+from backend.models import (
+    User, Business, Product, Customer, Sale, Expense, 
+    Permission, Role, UserRole, RolePermission
+)
 
 
 def seed_rbac():
