@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate, Link, useLocation } from 'react-router-dom';
 import { useAuthStore } from '../store/authStore';
 import api from '../services/api';
 import { Mail, Lock, Eye, EyeOff, ArrowRight, Loader2, Sparkles } from 'lucide-react';
@@ -7,6 +7,7 @@ import logo from '../assets/logo.png';
 
 export const Login = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const login = useAuthStore((state) => state.login);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -36,7 +37,10 @@ export const Login = () => {
       await new Promise(resolve => setTimeout(resolve, 800));
       
       login(user, useToken);
-      navigate('/dashboard');
+      const params = new URLSearchParams(location.search);
+      const redirect = params.get('redirect');
+      const safeRedirect = redirect && redirect.startsWith('/') ? redirect : '/dashboard';
+      navigate(safeRedirect);
     } catch (err: any) {
       const serverError = err.response?.data?.error || err.response?.data?.message;
       setError(serverError || 'Error al iniciar sesión');

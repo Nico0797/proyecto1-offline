@@ -1,9 +1,9 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { Check, X, MessageCircle } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 const PRICING = {
-  monthly: { price: 5.99, label: 'Mensual', period: '/mes' },
+  monthly: { price: 5.99, label: 'Mensual', period: '/mes', save: '' },
   quarterly: { price: 16.17, label: 'Trimestral', period: '/trimestre', save: '10%' },
   annual: { price: 61.10, label: 'Anual', period: '/año', save: '15%' }
 };
@@ -11,8 +11,7 @@ const PRICING = {
 type BillingCycle = 'monthly' | 'quarterly' | 'annual';
 
 export const Pricing = () => {
-  const [billing, setBilling] = useState<BillingCycle>('monthly');
-  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [billing, setBilling] = React.useState<BillingCycle>('monthly');
 
   const currentPlan = PRICING[billing];
 
@@ -142,50 +141,15 @@ export const Pricing = () => {
               </li>
             </ul>
 
-            <button 
-              className="w-full py-3 px-4 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white rounded-xl font-medium transition-all shadow-lg shadow-blue-500/25"
-              onClick={() => setIsModalOpen(true)}
+            <Link 
+              to="/login?redirect=/pro"
+              className="w-full py-3 px-4 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white rounded-xl font-medium transition-all shadow-lg shadow-blue-500/25 text-center"
             >
               Empezar con Pro
-            </button>
+            </Link>
           </div>
         </div>
 
-        {/* Modal */}
-        {isModalOpen && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-            <div className="fixed inset-0 bg-black/70 backdrop-blur-sm" onClick={() => setIsModalOpen(false)} />
-            <div className="relative bg-gray-900 border border-gray-800 rounded-2xl p-6 max-w-md w-full shadow-2xl animate-fade-in-up">
-              <button 
-                onClick={() => setIsModalOpen(false)}
-                className="absolute top-4 right-4 text-gray-400 hover:text-white"
-              >
-                <X className="w-5 h-5" />
-              </button>
-              
-              <div className="text-center">
-                <div className="w-16 h-16 bg-blue-500/10 rounded-full flex items-center justify-center mx-auto mb-4">
-                   <MessageCircle className="w-8 h-8 text-blue-500" />
-                </div>
-                <h3 className="text-xl font-bold text-white mb-2">¡Estamos listos para ayudarte!</h3>
-                <p className="text-gray-400 mb-6">
-                  El sistema de pagos automáticos estará disponible muy pronto. 
-                  Por ahora, contáctanos por WhatsApp para activar tu plan Pro manualmente.
-                </p>
-                
-                <a 
-                  href="https://wa.me/1234567890?text=Hola,%20quiero%20activar%20el%20plan%20Pro%20en%20EnCaja" 
-                  target="_blank" 
-                  rel="noopener noreferrer"
-                  className="inline-flex items-center justify-center gap-2 w-full py-3 px-4 bg-green-600 hover:bg-green-500 text-white rounded-xl font-medium transition-colors"
-                >
-                  <MessageCircle className="w-5 h-5" />
-                  Contactar por WhatsApp
-                </a>
-              </div>
-            </div>
-          </div>
-        )}
       </div>
     </section>
   );
