@@ -14,6 +14,10 @@ export const Login = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
+  const [showServerSettings, setShowServerSettings] = useState(false);
+  const [serverUrl, setServerUrl] = useState(
+    (typeof window !== 'undefined' && localStorage.getItem('API_BASE_URL')) || (import.meta.env.VITE_API_BASE_URL || '')
+  );
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -133,6 +137,57 @@ export const Login = () => {
                     <p className="text-sm text-red-400">{error}</p>
                   </div>
                 )}
+
+              <div className="text-right">
+                <button
+                  type="button"
+                  onClick={() => setShowServerSettings((s) => !s)}
+                  className="text-xs text-gray-400 hover:text-gray-200 underline"
+                >
+                  {showServerSettings ? 'Ocultar configuración de servidor' : 'Configurar servidor'}
+                </button>
+              </div>
+              {showServerSettings && (
+                <div className="p-3 rounded-lg bg-gray-800/50 border border-gray-700 space-y-2">
+                  <label className="text-xs font-medium text-gray-300">API Base URL</label>
+                  <input
+                    type="text"
+                    value={serverUrl}
+                    onChange={(e) => setServerUrl(e.target.value)}
+                    placeholder="https://tu-dominio/api"
+                    className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:border-blue-500 outline-none text-sm"
+                  />
+                  <div className="flex justify-end gap-2">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setServerUrl('');
+                        localStorage.removeItem('API_BASE_URL');
+                      }}
+                      className="px-3 py-1.5 text-xs bg-gray-700 hover:bg-gray-600 rounded-lg"
+                    >
+                      Restablecer
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (serverUrl.trim()) {
+                          localStorage.setItem('API_BASE_URL', serverUrl.trim());
+                        } else {
+                          localStorage.removeItem('API_BASE_URL');
+                        }
+                        alert('Configuración guardada. Reinicia la app para aplicar.');
+                      }}
+                      className="px-3 py-1.5 text-xs bg-blue-600 hover:bg-blue-500 rounded-lg"
+                    >
+                      Guardar
+                    </button>
+                  </div>
+                  <p className="text-[11px] text-gray-400">
+                    Emulador Android con backend local: http://10.0.2.2:8001/api
+                  </p>
+                </div>
+              )}
 
                 <button 
                   type="submit" 

@@ -1,17 +1,29 @@
 import axios from 'axios';
 import { useAuthStore } from '../store/authStore';
 
-// Use environment variable for API URL in production (Strategy A)
-// or fallback to relative path /api for proxy/same-origin (Strategy B)
-// NOTE: VITE_API_BASE_URL must include '/api' suffix if the backend expects it (e.g. https://backend.com/api)
-const baseURL = import.meta.env.VITE_API_BASE_URL || '/api';
+// Compute base URL with runtime override support for mobile/WebView environments.
+// Priority:
+// 1) localStorage.API_BASE_URL (editable desde UI)
+// 2) VITE_API_BASE_URL (inyectado en build)
+// 3) '/api' (mismo origen con proxy en dev)
+const runtimeBase = (typeof window !== 'undefined' && localStorage.getItem('API_BASE_URL')) || '';
+const envBase = import.meta.env.VITE_API_BASE_URL || '';
+const isFileProtocol = typeof window !== 'undefined' && window.location.protocol === 'file:';
+
+// Si se ejecuta desde archivo (APK/WebView sin servidor) y no hay configuración,
+// damos un valor por defecto útil para emulador Android (10.0.2.2 apunta a localhost).
+const fallbackForFile = isFileProtocol ? 'http://10.0.2.2:8001/api' : '/api';
+
+const baseURL = (runtimeBase.trim() || envBase.trim() || fallbackForFile).replace(/\/+$/, '');
+const isRelative = baseURL.startsWith('/');
 
 const api = axios.create({
   baseURL,
   headers: {
     'Content-Type': 'application/json',
   },
-  withCredentials: true,
+  // Solo enviamos credenciales en mismo-origen; en dominios cruzados suele causar problemas de CORS innecesarios
+  withCredentials: isRelative,
 });
 
 api.interceptors.request.use(
