@@ -25,7 +25,6 @@ export const ProductCatalog: React.FC = () => {
   const { getCategory } = useCategoryStore();
   
   const [activeTab, setActiveTab] = useState<'catalog' | 'inventory' | 'pricing'>('catalog');
-  const [viewMode] = useState<'list' | 'grid'>('list');
   const [search, setSearch] = useState('');
   const [typeFilter, setTypeFilter] = useState<'all' | 'product' | 'service'>('all');
   const [statusFilter, setStatusFilter] = useState<'active' | 'archived'>('active');
@@ -265,8 +264,8 @@ export const ProductCatalog: React.FC = () => {
               onSelectAll={handleSelectAll}
               onEdit={(p) => { setEditingProduct(p); setIsModalOpen(true); }}
               onDuplicate={(p) => {
-                  const duplicated = { ...p, name: `${p.name} (Copia)` } as any; 
-                  setEditingProduct(undefined); // Reset ID
+                  void p;
+                  setEditingProduct(undefined);
                   setIsModalOpen(true);
               }}
               onDelete={handleDelete}

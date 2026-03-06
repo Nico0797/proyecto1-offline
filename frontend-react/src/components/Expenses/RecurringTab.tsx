@@ -72,9 +72,6 @@ export const RecurringTab: React.FC<RecurringTabProps> = ({ recurringExpenses, o
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Agenda de Pagos Recurrentes</h3>
-        <Button onClick={() => { setEditingExpense(null); setIsModalOpen(true); }}>
-           + Nuevo Recurrente
-        </Button>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">

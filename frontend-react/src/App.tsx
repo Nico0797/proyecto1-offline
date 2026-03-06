@@ -7,7 +7,6 @@ import { Dashboard } from './pages/Dashboard';
 import { Sales } from './pages/Sales';
 import { Customers } from './pages/Customers';
 import { Expenses } from './pages/Expenses';
-import { RecurringExpenses } from './pages/RecurringExpenses';
 import { SalesGoals } from './pages/SalesGoals';
 import { Orders } from './pages/Orders';
 import { Payments } from './pages/Payments';

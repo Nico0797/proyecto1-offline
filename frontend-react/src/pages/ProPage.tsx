@@ -1,18 +1,19 @@
 import React from 'react';
-import { Check, Star, Shield, Zap, BarChart, Bell, Calendar, Smartphone, Globe, MessageCircle } from 'lucide-react';
+import { Check, Zap, BarChart, Bell, Calendar, Smartphone, Globe, MessageCircle } from 'lucide-react';
 import { Button } from '../components/ui/Button';
-import { Card } from '../components/ui/Card';
 import { useNavigate } from 'react-router-dom';
+import { membershipService } from '../services/membershipService';
 
 const ProPage: React.FC = () => {
   const navigate = useNavigate();
 
-  const handleSubscribe = () => {
-    // Implement subscription logic or modal
-    // For now, just a placeholder or contact
-    // In a real app, this would redirect to Stripe Checkout or open a payment modal
-    // Since payment integration is complex, we'll just show a simple alert or modal
-    alert("Próximamente: Integración con pasarela de pagos. Contáctanos para actualizar manualmente.");
+  const handleSubscribe = async (planCode: 'pro_monthly'|'pro_quarterly'|'pro_annual') => {
+    try {
+      const url = await membershipService.createCheckout(planCode, 'card');
+      window.open(url, '_blank');
+    } catch (e: any) {
+      alert(e?.message || 'No se pudo iniciar el pago');
+    }
   };
 
   const features = [
@@ -165,7 +166,14 @@ const ProPage: React.FC = () => {
               
               <div className="p-8 bg-gray-50 dark:bg-gray-700/50">
                 <Button 
-                  onClick={plan.price === 0 ? () => navigate('/dashboard') : handleSubscribe}
+                  onClick={
+                    plan.price === 0 
+                      ? () => navigate('/dashboard') 
+                      : () => {
+                          const code = plan.name === 'Mensual' ? 'pro_monthly' : plan.name === 'Trimestral' ? 'pro_quarterly' : 'pro_annual';
+                          handleSubscribe(code as any);
+                        }
+                  }
                   className={`w-full py-3 text-lg font-semibold rounded-xl shadow-md transition-transform hover:scale-105 ${plan.recommended ? 'bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white border-none' : 'bg-white dark:bg-gray-800 text-indigo-600 border border-indigo-200 hover:bg-indigo-50 dark:hover:bg-gray-700'}`}
                 >
                   {plan.price === 0 ? 'Plan Actual' : 'Actualizar ahora'}

@@ -1,7 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { NavLink, useLocation, useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../../store/authStore';
-import { useThemeStore } from '../../store/themeStore';
 import { useBusinessStore } from '../../store/businessStore';
 import { useAlertsPreferences } from '../../store/alertsPreferences.store';
 import { useAlertsSnoozeStore } from '../../store/alertsSnooze.store';
@@ -238,7 +237,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, setIsOpen }) => {
         )}
       >
         {/* App Logo */}
-        <div className="h-32 flex items-center justify-center bg-white dark:bg-gray-900 shrink-0 p-0 overflow-hidden">
+        <div className="h-32 flex items-center justify-center bg-white dark:bg-gray-900 shrink-0 p-0 overflow-hidden mt-5">
           <img src={logo} alt="App Logo" className="w-full h-full object-cover" />
         </div>
 

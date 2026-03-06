@@ -60,12 +60,7 @@ export const HelpTutorialsSection = () => {
     alert('Tutoriales del módulo reiniciados');
   };
 
-  const badge = (s?: string) => {
-    if (s === 'completed') return <span className="px-2 py-0.5 text-[10px] rounded bg-green-500/20 text-green-400 border border-green-500/30">Completado</span>;
-    if (s === 'skipped') return <span className="px-2 py-0.5 text-[10px] rounded bg-yellow-500/20 text-yellow-400 border border-yellow-500/30">Omitido</span>;
-    if (s === 'in_progress') return <span className="px-2 py-0.5 text-[10px] rounded bg-blue-500/20 text-blue-400 border border-blue-500/30">En curso</span>;
-    return <span className="px-2 py-0.5 text-[10px] rounded bg-gray-500/20 text-gray-400 border border-gray-500/30">Nuevo</span>;
-  };
+ 
 
   return (
     <div className="space-y-4" data-tour="help.section">

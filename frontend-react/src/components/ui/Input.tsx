@@ -15,6 +15,14 @@ export const Input: React.FC<InputProps> = ({
   icon: Icon,
   ...props
 }) => {
+  const isNumber = props.type === 'number';
+
+  // Show a faint "0" placeholder and empty value when the numeric value is 0 or empty
+  const computedValue =
+    isNumber && (props.value === 0 || props.value === '0' || props.value === undefined || props.value === null || props.value === '')
+      ? ''
+      : props.value;
+
   return (
     <div className="flex flex-col gap-1.5">
       {label && (
@@ -36,9 +44,12 @@ export const Input: React.FC<InputProps> = ({
             'disabled:opacity-50 disabled:cursor-not-allowed',
             error && 'border-red-500 focus:ring-red-500/50 focus:border-red-500',
             Icon && 'pl-10',
+            isNumber && 'appearance-none',
             className
           )}
           {...props}
+          value={computedValue as any}
+          placeholder={isNumber ? (props.placeholder ?? '0') : props.placeholder}
         />
       </div>
       {error && <span className="text-xs text-red-500 dark:text-red-400">{error}</span>}

@@ -70,6 +70,25 @@
   .dark * {
     scrollbar-color: #374151 transparent;
   }
+
+  /* Hide native number spinners across browsers */
+  input[type="number"]::-webkit-outer-spin-button,
+  input[type="number"]::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+  }
+  input[type="number"] {
+    -moz-appearance: textfield;
+    appearance: textfield;
+  }
+
+  /* Safe area handling for mobile notches (iOS/Android webviews) */
+  :root {
+    --safe-area-top: env(safe-area-inset-top, 0px);
+  }
+  .pt-safe {
+    padding-top: calc(var(--safe-area-top) + 16px);
+  }
 }
 
 /* Utility for hiding scrollbar but keeping functionality */

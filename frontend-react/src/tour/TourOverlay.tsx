@@ -116,13 +116,12 @@ export const TourOverlay = () => {
     if (!step || !isActive) return;
 
     let mutationObserver: MutationObserver | null = null;
-    let timeoutId: NodeJS.Timeout | null = null;
+    let timeoutId: any = null;
     let rafId: number | null = null;
     let clickHandler: (() => void) | null = null;
     
     // Resolve selector based on breakpoint
     const resolvedSelector = resolvedStep?.selector;
-    const resolvedPlacement = resolvedStep?.placement;
 
     // Cleanup function
     const cleanup = () => {
@@ -250,7 +249,7 @@ export const TourOverlay = () => {
       // We only observe if not found immediately
       const observerConfig = { childList: true, subtree: true, attributes: false }; // Reduced scope if possible, but usually need subtree
       
-      mutationObserver = new MutationObserver((mutations) => {
+      mutationObserver = new MutationObserver((_mutations) => {
         // Debounce or check efficiently? 
         // For now, just check again. Browser is fast enough for querySelector.
         let found = resolvedSelector ? document.querySelector(resolvedSelector) as HTMLElement : null;

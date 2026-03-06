@@ -1,5 +1,5 @@
 import React from 'react';
-import { Check, X, MessageCircle } from 'lucide-react';
+import { Check, X } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 const PRICING = {

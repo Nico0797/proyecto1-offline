@@ -10,6 +10,8 @@ import { ExpensesToolbar } from '../components/Expenses/ExpensesToolbar';
 import { ExpensesTable } from '../components/Expenses/ExpensesTable';
 import { CreateExpenseModal } from '../components/Expenses/CreateExpenseModal';
 import { RecurringTab } from '../components/Expenses/RecurringTab';
+import { RecurringFormModal } from '../components/Expenses/RecurringFormModal';
+import { RecurringExpense } from '../store/recurringExpenseStore';
 import { CategoriesTab } from '../components/Expenses/CategoriesTab';
 import { ExpensesAnalyticsTab } from '../components/Expenses/ExpensesAnalyticsTab';
 import { UpgradeModal } from '../components/ui/UpgradeModal';
@@ -36,6 +38,8 @@ export const Expenses = () => {
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [editingExpense, setEditingExpense] = useState<Expense | null>(null);
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
+  const [isRecurringModalOpen, setIsRecurringModalOpen] = useState(false);
+  const [editingRecurring, setEditingRecurring] = useState<RecurringExpense | null>(null);
 
   // Local Categories
   const [customCategories, setCustomCategories] = useState<string[]>(() => {
@@ -140,7 +144,7 @@ export const Expenses = () => {
         onClose={() => setShowUpgradeModal(false)}
         feature={FEATURES.LIMIT_EXPENSES}
       />
-      <div className="shrink-0 px-4 sm:px-6 lg:px-8 py-4 bg-white dark:bg-gray-900 z-10 border-b border-gray-200 dark:border-gray-800">
+      <div className="shrink-0 px-4 sm:px-6 lg:px-8 py-4 bg-white dark:bg-gray-900 z-10 border-b border-gray-200 dark:border-gray-800 pt-safe">
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
             <div>
             <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Gastos</h1>
@@ -150,9 +154,15 @@ export const Expenses = () => {
                 <Button variant="secondary" onClick={() => setActiveTab('recurring')} data-tour="expenses.recurring">
                     <RefreshCw className="w-4 h-4 mr-2" /> Recurrentes
                 </Button>
-                <Button onClick={handleNewExpense} data-tour="expenses.primaryAction">
+                {activeTab === 'recurring' ? (
+                  <Button onClick={() => { setEditingRecurring(null); setIsRecurringModalOpen(true); }}>
+                    <Plus className="w-4 h-4 mr-2" /> Nuevo Recurrente
+                  </Button>
+                ) : (
+                  <Button onClick={handleNewExpense} data-tour="expenses.primaryAction">
                     <Plus className="w-4 h-4 mr-2" /> Nuevo Gasto
-                </Button>
+                  </Button>
+                )}
             </div>
         </div>
       </div>
@@ -232,6 +242,12 @@ export const Expenses = () => {
         onClose={() => setIsCreateModalOpen(false)}
         onSuccess={() => activeBusiness && fetchExpenses(activeBusiness.id, { start_date: dateRange.start, end_date: dateRange.end })}
         editingExpense={editingExpense}
+      />
+      <RecurringFormModal
+        isOpen={isRecurringModalOpen}
+        onClose={() => setIsRecurringModalOpen(false)}
+        onSuccess={() => activeBusiness && fetchRecurringExpenses(activeBusiness.id)}
+        editingExpense={editingRecurring}
       />
     </div>
   );

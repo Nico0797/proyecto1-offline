@@ -36,6 +36,8 @@ export const CreateSaleModal = ({ isOpen, onClose, onSuccess }: { isOpen: boolea
   const [amountPaid, setAmountPaid] = useState<number>(0);
   const [note, setNote] = useState('');
   const [loading, setLoading] = useState(false);
+  const [discountType, setDiscountType] = useState<'amount' | 'percent'>('amount');
+  const [discountValue, setDiscountValue] = useState<number>(0);
 
   const { categories, getCategory } = useCategoryStore();
 
@@ -106,8 +108,13 @@ export const CreateSaleModal = ({ isOpen, onClose, onSuccess }: { isOpen: boolea
     setSaleItems(newItems);
   };
 
-  const calculateTotal = () => {
-    return saleItems.reduce((sum, item) => sum + item.total, 0);
+  const calculateSubtotal = () => saleItems.reduce((sum, item) => sum + item.total, 0);
+  const calculateDiscount = (subtotal: number) => {
+    if (discountType === 'percent') {
+      const pct = Math.min(Math.max(discountValue, 0), 100);
+      return Math.round((subtotal * pct) / 100);
+    }
+    return Math.min(Math.max(discountValue, 0), subtotal);
   };
 
   const handleSubmit = async () => {
@@ -122,7 +129,9 @@ export const CreateSaleModal = ({ isOpen, onClose, onSuccess }: { isOpen: boolea
 
     setLoading(true);
     try {
-      const total = calculateTotal();
+      const subtotal = calculateSubtotal();
+      const discount = calculateDiscount(subtotal);
+      const total = Math.max(subtotal - discount, 0);
       const finalPaid = paymentType === 'paid' ? total : (paymentType === 'credit' ? 0 : amountPaid);
       const isPaid = paymentType === 'paid';
       
@@ -138,6 +147,9 @@ export const CreateSaleModal = ({ isOpen, onClose, onSuccess }: { isOpen: boolea
         paid: isPaid,
         amount_paid: finalPaid, // Backend should handle balance calculation: total - amount_paid
         note: note,
+        subtotal,
+        discount,
+        total,
         sale_date: saleDate
       });
       
@@ -151,7 +163,9 @@ export const CreateSaleModal = ({ isOpen, onClose, onSuccess }: { isOpen: boolea
     }
   };
 
-  const total = calculateTotal();
+  const subtotal = calculateSubtotal();
+  const discount = calculateDiscount(subtotal);
+  const total = Math.max(subtotal - discount, 0);
 
   return (
     <Modal isOpen={isOpen} onClose={onClose} title="Nueva Venta" className="max-w-4xl h-[90vh] flex flex-col">
@@ -213,13 +227,13 @@ export const CreateSaleModal = ({ isOpen, onClose, onSuccess }: { isOpen: boolea
                         </button>
                       ))}
                     </div>
-                    <div className="max-h-80 overflow-y-auto pr-1 custom-scrollbar" data-tour="sales.modal.products">
-                      <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-4 gap-3">
+                    <div className="max-h-80 overflow-y-auto overflow-x-visible pr-1 custom-scrollbar" data-tour="sales.modal.products">
+                      <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-4 gap-3 overflow-visible">
                         {filteredProducts.slice(0, productLimit).map((product) => (
                           <button
                             key={product.id}
                             onClick={() => handleAddItem(product)}
-                            className="p-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 hover:shadow-md active:scale-[0.98] transition-all text-left flex flex-col gap-1"
+                            className="relative overflow-visible p-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 hover:shadow-md active:scale-[0.98] transition-all text-left flex flex-col gap-1"
                           >
                             <div className="font-medium text-gray-900 dark:text-white truncate">{product.name}</div>
                             <div className="text-xs text-gray-500 dark:text-gray-400">Stock: {product.stock}</div>
@@ -293,24 +307,40 @@ export const CreateSaleModal = ({ isOpen, onClose, onSuccess }: { isOpen: boolea
 
                 <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-6 h-fit">
                     <h3 className="font-bold text-lg mb-4 text-gray-900 dark:text-white">Resumen</h3>
-                    <div className="space-y-2 text-sm mb-6">
-                        <div className="flex justify-between text-gray-500 dark:text-gray-400">
-                            <span>Subtotal</span>
-                            <span>{formatCOP(total)}</span>
+                    <div className="space-y-3 text-sm mb-6">
+                      <div className="flex justify-between text-gray-500 dark:text-gray-400">
+                          <span>Subtotal</span>
+                          <span>{formatCOP(subtotal)}</span>
+                      </div>
+                      <div className="flex items-center justify-between gap-2" data-tour="sales.modal.discount">
+                        <span className="text-gray-500 dark:text-gray-400">Descuento</span>
+                        <div className="flex items-center gap-2">
+                          <select
+                            className="px-2 py-1 text-xs rounded-lg bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700"
+                            value={discountType}
+                            onChange={(e) => setDiscountType(e.target.value as 'amount' | 'percent')}
+                          >
+                            <option value="amount">$</option>
+                            <option value="percent">%</option>
+                          </select>
+                          <input
+                            type="number"
+                            className="w-24 px-2 py-1 text-right rounded-lg bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700"
+                            value={discountValue}
+                            min={0}
+                            max={discountType === 'percent' ? 100 : subtotal}
+                            onChange={(e) => setDiscountValue(parseFloat(e.target.value) || 0)}
+                          />
                         </div>
-                        <div className="flex justify-between text-gray-500 dark:text-gray-400">
-                            <span>Impuestos</span>
-                            <span>$0</span>
-                        </div>
-
-                        <div className="flex justify-between items-center text-gray-500 dark:text-gray-400 pt-1" data-tour="sales.modal.discount">
-                            <span>Descuento Global</span>
-                            <span className="text-xs bg-gray-100 dark:bg-gray-700 px-2 py-0.5 rounded text-gray-500">No disponible</span>
-                        </div>
-                        <div className="border-t border-gray-100 dark:border-gray-700 my-2 pt-2 flex justify-between font-bold text-xl text-gray-900 dark:text-white">
-                            <span>Total</span>
-                            <span>{formatCOP(total)}</span>
-                        </div>
+                      </div>
+                      <div className="flex justify-between text-gray-500 dark:text-gray-400">
+                          <span>Impuestos</span>
+                          <span>$0</span>
+                      </div>
+                      <div className="border-t border-gray-100 dark:border-gray-700 my-2 pt-2 flex justify-between font-bold text-xl text-gray-900 dark:text-white">
+                          <span>Total</span>
+                          <span>{formatCOP(total)}</span>
+                      </div>
                     </div>
                     <Button 
                         className="w-full py-3 text-lg" 

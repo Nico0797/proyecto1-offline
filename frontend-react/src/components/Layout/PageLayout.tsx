@@ -17,7 +17,7 @@ export const PageLayout: React.FC<{ children: React.ReactNode; className?: strin
 // Fixed header at the top of the page.
 export const PageHeader: React.FC<{ title: string; description?: string; action?: React.ReactNode; className?: string }> = ({ title, description, action, className }) => {
   return (
-    <div className={cn("flex items-center justify-between px-4 py-3 bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800 shrink-0 z-20", className)}>
+    <div className={cn("flex items-center justify-between px-4 py-3 bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800 shrink-0 z-20 pt-safe", className)}>
       <div className="min-w-0">
         <h1 className="text-lg font-bold text-gray-900 dark:text-white truncate">{title}</h1>
         {description && <p className="text-xs text-gray-500 dark:text-gray-400 hidden sm:block truncate">{description}</p>}

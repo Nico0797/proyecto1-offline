@@ -22,7 +22,7 @@ import { PageLayout, PageHeader, PageFilters, PageBody } from '../components/Lay
 export const Customers = () => {
   const { activeBusiness } = useBusinessStore();
   const { customers, fetchCustomers, deleteCustomer } = useCustomerStore();
-  const { sales, fetchSales } = useSaleStore();
+  const { sales } = useSaleStore();
   const { user } = useAuthStore();
   
   const [activeTab, setActiveTab] = useState<string>('list');
@@ -231,7 +231,7 @@ export const Customers = () => {
   // Mobile Layout with SwipePager
   return (
     <div className="h-full flex flex-col overflow-hidden" data-tour="customers.panel">
-      <div className="shrink-0 px-4 sm:px-6 lg:px-8 py-4 bg-white dark:bg-gray-900 z-10 border-b border-gray-200 dark:border-gray-800">
+      <div className="shrink-0 px-4 sm:px-6 lg:px-8 py-4 bg-white dark:bg-gray-900 z-10 border-b border-gray-200 dark:border-gray-800 pt-safe">
         <div className="flex justify-between items-center">
              <div>
                 <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Clientes</h1>

@@ -1,32 +1,47 @@
 import { useState, useEffect } from 'react';
 import { useAuthStore } from '../../store/authStore';
 import { Button } from '../ui/Button';
-import { Star, ShieldCheck, CreditCard, Calendar, Download, AlertTriangle, Loader2, ExternalLink } from 'lucide-react';
+import { Star, ShieldCheck, CreditCard, Calendar, Download, AlertTriangle, Loader2, TrendingUp } from 'lucide-react';
 import { membershipService, MembershipInfo, Pricing } from '../../services/membershipService';
 import { Modal } from '../ui/Modal';
-
-const ALLOWED_HOSTS = ['checkout.wompi.co', 'billing.wompi.co', 'production.wompi.co', 'sandbox.wompi.co', window.location.hostname];
+import { useBusinessStore } from '../../store/businessStore';
+import { useSaleStore } from '../../store/saleStore';
+import { useCustomerStore } from '../../store/customerStore';
+import { TokenizeCardModal } from './TokenizeCardModal';
+import LinkNequiModal from './LinkNequiModal.tsx';
+import { wompiService } from '../../services/wompiService';
+import api from '../../services/api';
 
 const isValidUrl = (url: string) => {
-    if (url.startsWith('/')) return true; // Relative URLs are safe
-    try {
-        const parsed = new URL(url);
-        return parsed.protocol === 'https:' && ALLOWED_HOSTS.some(h => parsed.hostname.endsWith(h) || parsed.hostname === h);
-    } catch {
-        return false;
-    }
+  if (!url) return false;
+  // Relative path
+  if (url.startsWith('/')) return true;
+  try {
+    const parsed = new URL(url);
+    // Permit any http(s); optionally restrict by ALLOWED_HOSTS for extra safety in the future
+    return parsed.protocol === 'https:' || parsed.protocol === 'http:';
+  } catch {
+    return false;
+  }
 };
 
 export const MembershipTab = () => {
   const { user } = useAuthStore();
+  const { activeBusiness } = useBusinessStore();
+  const { sales, fetchSales } = useSaleStore();
+  const { customers, fetchCustomers } = useCustomerStore();
   const [loading, setLoading] = useState(true);
   const [membership, setMembership] = useState<MembershipInfo | null>(null);
   const [pricing, setPricing] = useState<Pricing | null>(null);
   const [processing, setProcessing] = useState(false);
+  const [showCardModal, setShowCardModal] = useState(false);
+  const [showMethodMenu, setShowMethodMenu] = useState(false);
+  const [showNequiModal, setShowNequiModal] = useState(false);
   
   // Modals
   const [showCancelModal, setShowCancelModal] = useState(false);
   const [showCycleModal, setShowCycleModal] = useState(false);
+  const [showImpactModal, setShowImpactModal] = useState(false);
 
   useEffect(() => {
     if (user?.plan === 'pro') {
@@ -52,41 +67,69 @@ export const MembershipTab = () => {
   };
 
   const handleRedirect = (url: string) => {
-      if (isValidUrl(url)) {
-          if (url.startsWith('/')) {
-              window.location.href = url;
-          } else {
-              window.location.href = url; // Redirect in same tab usually better for payment flows, or use _blank if portal
-          }
-      } else {
-          console.error('Blocked invalid redirect:', url);
-          alert('Error de seguridad: URL de redirección no permitida.');
-      }
-  };
-
-  const handleManageSubscription = async () => {
-      setProcessing(true);
+    if (!url) {
+      alert('Enlace no disponible. Intenta más tarde.');
+      return;
+    }
+    if (isValidUrl(url)) {
+      // En app móvil (file://) y algunos webviews, abrir en la misma pestaña es más confiable
       try {
-          const url = await membershipService.getPortalUrl();
-          handleRedirect(url);
-      } catch (error) {
-          alert('No se pudo acceder al portal de suscripción.');
-      } finally {
-          setProcessing(false);
+        window.location.href = url;
+      } catch {
+        window.open(url, '_blank');
       }
+    } else {
+      // Como fallback, intenta abrir en nueva pestaña
+      try {
+        window.open(url, '_blank');
+      } catch {
+        alert('No se pudo abrir el enlace de facturación.');
+      }
+    }
   };
 
   const handleUpdatePaymentMethod = async () => {
-    setProcessing(true);
+      setShowCardModal(true);
+  };
+  const handleGooglePayQuick = async () => {
+      setProcessing(true);
+      try {
+          const gpayToken = await wompiService.requestGooglePayToken();
+          const res = await api.post('/billing/save-googlepay-source', { token: gpayToken });
+          if (!res.data?.success) throw new Error('No se pudo guardar Google Pay');
+          await loadData();
+      } catch (e: any) {
+          alert(e?.message || 'Google Pay no disponible');
+      } finally {
+          setProcessing(false);
+          setShowMethodMenu(false);
+      }
+  };
+
+  // (calendario eliminado por solicitud del usuario)
+
+  const openImpact = async () => {
     try {
-        const url = await membershipService.getUpdatePaymentUrl();
-        handleRedirect(url);
-    } catch (error) {
-        alert('Error al generar enlace de actualización.');
+      // Cargar datos si hace falta
+      if (activeBusiness) {
+        if (!customers || customers.length === 0) {
+          await fetchCustomers(activeBusiness.id);
+        }
+        if (!sales || sales.length === 0) {
+          await fetchSales(activeBusiness.id);
+        }
+      }
     } finally {
-        setProcessing(false);
+      setShowImpactModal(true);
     }
   };
+
+  const formatCOP = (n: number) =>
+    new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }).format(n || 0);
+
+  const totalVentas = Array.isArray(sales) ? sales.reduce((s: number, v: any) => s + (v.total || 0), 0) : 0;
+  const totalClientes = Array.isArray(customers) ? customers.length : 0;
+  const totalCobros = Array.isArray(customers) ? customers.filter((c: any) => (c.balance || 0) > 0).length : 0;
 
   const handleDownloadInvoice = async (invoiceId: string) => {
       try {
@@ -178,12 +221,10 @@ export const MembershipTab = () => {
                     Cambiar Ciclo
                 </Button>
                 <Button 
-                    onClick={handleManageSubscription}
-                    disabled={processing}
-                    className="bg-yellow-500 hover:bg-yellow-600 text-black font-bold border-none flex items-center gap-2"
+                  onClick={openImpact}
+                  className="bg-yellow-500 hover:bg-yellow-600 text-black font-bold border-none flex items-center gap-2"
                 >
-                    {processing ? <Loader2 className="w-4 h-4 animate-spin" /> : <ExternalLink className="w-4 h-4" />}
-                    Gestionar Suscripción
+                  <TrendingUp className="w-4 h-4" /> Impacto
                 </Button>
             </div>
         </div>
@@ -196,24 +237,40 @@ export const MembershipTab = () => {
                 <CreditCard className="w-5 h-5 text-blue-400" />
                 Método de Pago
             </h4>
-            <div className="flex items-center justify-between p-4 bg-gray-900/50 rounded-lg border border-gray-700 mb-4">
-                <div className="flex items-center gap-3">
-                    <div className="w-10 h-6 bg-white rounded flex items-center justify-center">
-                        <span className="text-blue-600 font-bold text-xs">{membership?.paymentMethod?.brand || 'CARD'}</span>
-                    </div>
-                    <div>
-                        <p className="text-white font-medium">•••• {membership?.paymentMethod?.last4 || '****'}</p>
-                        {/* Wompi doesn't always return exp date on tokenization without full query, so conditional render */}
-                        {membership?.paymentMethod?.expYear ? (
-                             <p className="text-xs text-gray-500">Expira {membership.paymentMethod.expMonth}/{membership.paymentMethod.expYear}</p>
-                        ) : (
-                             <p className="text-xs text-gray-500">Tarjeta vinculada</p>
-                        )}
-                    </div>
+            <div className="p-4 bg-gray-900/50 rounded-lg border border-gray-700 mb-4">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                      <div className="w-10 h-6 bg-white rounded flex items-center justify-center">
+                          <span className="text-blue-600 font-bold text-xs">{membership?.paymentMethod?.brand || 'CARD'}</span>
+                      </div>
+                      <div>
+                          <p className="text-white font-medium">•••• {membership?.paymentMethod?.last4 || '****'}</p>
+                          {membership?.paymentMethod?.expYear ? (
+                               <p className="text-xs text-gray-500">Expira {membership.paymentMethod.expMonth}/{membership.paymentMethod.expYear}</p>
+                          ) : (
+                               <p className="text-xs text-gray-500">Método vinculado</p>
+                          )}
+                      </div>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="px-2 py-0.5 rounded text-xs bg-gray-700 text-gray-200">
+                      {(() => {
+                        const b = (membership?.paymentMethod?.brand || '').toUpperCase();
+                        if (b.includes('NEQUI')) return 'Nequi';
+                        if (b.includes('GOOGLE')) return 'Google Pay';
+                        return 'Tarjeta';
+                      })()}
+                    </span>
+                    <button onClick={() => setShowMethodMenu((v)=>!v)} disabled={processing} className="text-sm text-blue-400 hover:text-blue-300 disabled:opacity-50">Cambiar método</button>
+                  </div>
                 </div>
-                <button onClick={handleUpdatePaymentMethod} disabled={processing} className="text-sm text-blue-400 hover:text-blue-300 disabled:opacity-50">
-                    {processing ? '...' : 'Actualizar'}
-                </button>
+                {showMethodMenu && (
+                  <div className="mt-3 flex flex-wrap items-center gap-3">
+                    <button onClick={handleUpdatePaymentMethod} disabled={processing} className="text-sm px-3 py-1 rounded bg-gray-800 text-blue-300 hover:text-white">Tarjeta</button>
+                    <button onClick={() => setShowNequiModal(true)} disabled={processing} className="text-sm px-3 py-1 rounded bg-gray-800 text-green-300 hover:text-white">Nequi</button>
+                    <button onClick={handleGooglePayQuick} disabled={processing} className="text-sm px-3 py-1 rounded bg-gray-800 text-yellow-300 hover:text-white">Google Pay</button>
+                  </div>
+                )}
             </div>
             
             <h4 className="text-lg font-semibold text-white mb-4 flex items-center gap-2 mt-8">
@@ -345,6 +402,40 @@ export const MembershipTab = () => {
               </div>
           </div>
       </Modal>
+
+      <Modal isOpen={showImpactModal} onClose={() => setShowImpactModal(false)} title="Plan PRO Activo">
+        <div className="space-y-6">
+          <p className="text-sm text-gray-400">Mira lo que has logrado con PRO</p>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="rounded-xl border border-gray-700 bg-gray-800/50 backdrop-blur shadow-sm p-4">
+              <div className="text-3xl font-bold text-white">{formatCOP(totalVentas)}</div>
+              <div className="text-sm text-gray-400 mt-1">Ventas</div>
+            </div>
+            <div className="rounded-xl border border-gray-700 bg-gray-800/50 backdrop-blur shadow-sm p-4">
+              <div className="text-3xl font-bold text-white">{totalClientes}</div>
+              <div className="text-sm text-gray-400 mt-1">Clientes</div>
+            </div>
+            <div className="rounded-xl border border-gray-700 bg-gray-800/50 backdrop-blur shadow-sm p-4">
+              <div className="text-3xl font-bold text-white">{totalCobros}</div>
+              <div className="text-sm text-gray-400 mt-1">Cobros sugeridos</div>
+            </div>
+          </div>
+          <div className="text-sm text-gray-300">
+            Has generado:
+            <div className="mt-1">
+              <span className="font-semibold">{formatCOP(totalVentas)}</span> en ventas •{' '}
+              <span className="font-semibold">{totalClientes}</span> clientes registrados •{' '}
+              <span className="font-semibold">{totalCobros}</span> cobros sugeridos
+            </div>
+          </div>
+          <div className="flex justify-end">
+            <Button variant="secondary" onClick={() => setShowImpactModal(false)}>Cerrar</Button>
+          </div>
+        </div>
+      </Modal>
+
+      {showCardModal && <TokenizeCardModal onClose={() => setShowCardModal(false)} onSuccess={async () => { await loadData(); setShowCardModal(false); }} />}
+      {showNequiModal && <LinkNequiModal onClose={() => setShowNequiModal(false)} onSuccess={async () => { await loadData(); setShowNequiModal(false); }} />}
     </div>
   );
 };

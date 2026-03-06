@@ -28,7 +28,6 @@ export const SwipePager: React.FC<SwipePagerProps> = ({
 }) => {
   const [isMobile, setIsMobile] = useState(() => typeof window !== 'undefined' ? window.innerWidth < mobileBreakpoint : false);
 
-  const shouldCompact = isMobile && pages.length > 3;
 
   // Initialize Embla
   // We only enable drag on mobile.
@@ -86,8 +85,8 @@ export const SwipePager: React.FC<SwipePagerProps> = ({
   return (
     <div className={cn("flex flex-col h-full w-full overflow-hidden", className)}>
       {/* Tabs Header */}
-      <div className="shrink-0 z-10 bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800 transition-all">
-         <div className="flex overflow-x-auto no-scrollbar px-2 md:px-4 py-2 gap-2 md:gap-6 touch-pan-x">
+      <div className="shrink-0 z-20 bg-white/90 dark:bg-gray-900/90 backdrop-blur border-b border-gray-200 dark:border-gray-800 transition-all">
+         <div className="flex overflow-x-auto no-scrollbar px-3 md:px-4 py-2.5 gap-2 md:gap-4 touch-pan-x">
             {pages.map((page) => {
               const isActive = page.id === activePageId;
               const Icon = page.icon;
@@ -101,9 +100,9 @@ export const SwipePager: React.FC<SwipePagerProps> = ({
                     "flex items-center gap-1.5 px-2 py-1.5 rounded-lg text-xs font-medium transition-all whitespace-nowrap select-none relative",
                     // Mobile: Segmented/Pill style
                     isMobile && isActive 
-                      ? "bg-blue-50 text-blue-600 dark:bg-blue-500/10 dark:text-blue-400" 
+                      ? "bg-blue-50 text-blue-700 dark:bg-blue-500/15 dark:text-blue-400 border border-blue-200/70 dark:border-blue-500/20 shadow-sm" 
                       : isMobile 
-                        ? "text-gray-500 hover:bg-gray-50 dark:hover:bg-gray-800 dark:text-gray-400"
+                        ? "text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800 border border-gray-200 dark:border-gray-700/70"
                         : "",
                     // Desktop: Tab style
                     !isMobile && isActive 
@@ -114,7 +113,7 @@ export const SwipePager: React.FC<SwipePagerProps> = ({
                   )}
                 >
                   {Icon && <Icon className="w-4 h-4" />}
-                  {(!isMobile || !shouldCompact || isActive) && <span>{page.title}</span>}
+                  <span className="truncate max-w-[10rem] md:max-w-none">{page.title}</span>
                   {page.badge && (
                      <span className="ml-1 px-1.5 py-0.5 text-[10px] bg-red-500 text-white rounded-full">
                        {page.badge}

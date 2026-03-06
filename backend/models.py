@@ -33,6 +33,10 @@ class User(db.Model):
     membership_end = db.Column(db.DateTime)
     membership_auto_renew = db.Column(db.Boolean, default=True)
 
+    wompi_payment_source_id = db.Column(db.String(100))
+    wompi_payment_brand = db.Column(db.String(50))
+    wompi_payment_last4 = db.Column(db.String(10))
+
     # Relationships
     businesses = db.relationship("Business", backref="user", lazy="dynamic", cascade="all, delete-orphan")
     roles = db.relationship(

@@ -607,14 +607,11 @@ def create_app(config_class=None):
         last_payment = SubscriptionPayment.query.filter_by(user_id=user.id).order_by(SubscriptionPayment.created_at.desc()).first()
         
         method_info = {
-            "brand": "Card", # Placeholder
-            "last4": "****",
+            "brand": user.wompi_payment_brand or (last_payment.payment_method if last_payment and last_payment.payment_method else "Card"),
+            "last4": user.wompi_payment_last4 or "****",
             "expMonth": 0,
             "expYear": 0
         }
-        
-        if last_payment:
-            method_info["brand"] = last_payment.payment_method or "Card"
         
         # Get invoices
         payments = SubscriptionPayment.query.filter_by(user_id=user.id).order_by(SubscriptionPayment.created_at.desc()).limit(10).all()
@@ -656,14 +653,204 @@ def create_app(config_class=None):
         base_url = os.getenv("APP_URL") or "http://localhost:5173"
         return jsonify({ "url": f"{base_url}/settings/membership" })
 
+    @app.route("/api/billing/wompi-acceptance", methods=["GET"]) 
+    @token_required
+    def wompi_acceptance():
+        pk = (os.getenv("WOMPI_PUBLIC_KEY") or app.config.get("WOMPI_PUBLIC_KEY") or "").strip()
+        if not pk:
+            return jsonify({"error": "Wompi no configurado"}), 500
+        try:
+            import requests
+            base = "https://production.wompi.co" if (os.getenv("WOMPI_ENV") or app.config.get("WOMPI_ENV") or "prod").lower() == "prod" else "https://sandbox.wompi.co"
+            r = requests.get(f"{base}/v1/merchants/{pk}", timeout=20)
+            r.raise_for_status()
+            data = r.json().get("data", {})
+            token = data.get("presigned_acceptance", {}).get("acceptance_token")
+            if not token:
+                return jsonify({"error": "No acceptance token"}), 502
+            return jsonify({"acceptance_token": token})
+        except Exception as e:
+            return jsonify({"error": str(e)}), 500
+
+    @app.route("/api/billing/save-payment-source", methods=["POST"]) 
+    @token_required
+    def save_payment_source():
+        user = g.current_user
+        payload = request.get_json() or {}
+        token = payload.get("token")
+        if not token:
+            return jsonify({"error": "Token requerido"}), 400
+        try:
+            import requests
+            # Acceptance token
+            pk = (os.getenv("WOMPI_PUBLIC_KEY") or app.config.get("WOMPI_PUBLIC_KEY") or "").strip()
+            sk = (os.getenv("WOMPI_PRIVATE_KEY") or app.config.get("WOMPI_PRIVATE_KEY") or "").strip()
+            envv = (os.getenv("WOMPI_ENV") or app.config.get("WOMPI_ENV") or "prod").lower()
+            base = "https://production.wompi.co" if envv == "prod" else "https://sandbox.wompi.co"
+            # Fetch acceptance token
+            mresp = requests.get(f"{base}/v1/merchants/{pk}", timeout=20)
+            mresp.raise_for_status()
+            acceptance_token = (mresp.json().get("data") or {}).get("presigned_acceptance", {}).get("acceptance_token")
+            headers = {"Authorization": f"Bearer {sk}", "Content-Type": "application/json"}
+            body = {"type": "CARD", "token": token, "customer_email": user.email, "acceptance_token": acceptance_token}
+            resp = requests.post(f"{base}/v1/payment_sources", json=body, headers=headers, timeout=30, verify=False)
+            if resp.status_code not in [200,201]:
+                try:
+                    j = resp.json()
+                except:
+                    j = resp.text
+                return jsonify({"error": "Error creando payment source", "details": j}), resp.status_code
+            data = resp.json().get("data", {})
+            user.wompi_payment_source_id = data.get("id")
+            pm = data.get("payment_method", {})
+            user.wompi_payment_brand = pm.get("type") or pm.get("extra", {}).get("brand")
+            user.wompi_payment_last4 = pm.get("extra", {}).get("last_four") or pm.get("last_four")
+            db.session.commit()
+            return jsonify({"success": True})
+        except Exception as e:
+            db.session.rollback()
+            return jsonify({"error": str(e)}), 500
+
+    @app.route("/api/billing/save-nequi-source", methods=["POST"]) 
+    @token_required
+    def save_nequi_source():
+        user = g.current_user
+        payload = request.get_json() or {}
+        phone = payload.get("phone")
+        prefix = payload.get("prefix") or "+57"
+        if not phone:
+            return jsonify({"error": "Teléfono requerido"}), 400
+        try:
+            import requests
+            pk = (os.getenv("WOMPI_PUBLIC_KEY") or app.config.get("WOMPI_PUBLIC_KEY") or "").strip()
+            sk = (os.getenv("WOMPI_PRIVATE_KEY") or app.config.get("WOMPI_PRIVATE_KEY") or "").strip()
+            envv = (os.getenv("WOMPI_ENV") or app.config.get("WOMPI_ENV") or "prod").lower()
+            base = "https://production.wompi.co" if envv == "prod" else "https://sandbox.wompi.co"
+            # Step 1: tokenize NEQUI with public key
+            t_headers = {"Authorization": f"Bearer {pk}", "Content-Type": "application/json"}
+            t_body = {"phone_number": str(phone)}
+            tok_resp = requests.post(f"{base}/v1/tokens/nequi", json=t_body, headers=t_headers, timeout=30)
+            if tok_resp.status_code not in [200,201]:
+                try:
+                    j = tok_resp.json()
+                except:
+                    j = tok_resp.text
+                return jsonify({"error": "Error tokenizando Nequi", "details": j}), tok_resp.status_code
+            nequi_token = (tok_resp.json().get("data") or {}).get("id")
+            status = (tok_resp.json().get("data") or {}).get("status")
+            # If not approved yet, ask client to approve on phone and poll
+            if status != "APPROVED":
+                return jsonify({"pending": True, "token": nequi_token, "message": "Aprueba la suscripción en tu app Nequi"}), 202
+            # Step 2: create payment source with acceptance token + nequi token
+            mresp = requests.get(f"{base}/v1/merchants/{pk}", timeout=20)
+            mresp.raise_for_status()
+            acceptance_token = (mresp.json().get("data") or {}).get("presigned_acceptance", {}).get("acceptance_token")
+            headers = {"Authorization": f"Bearer {sk}", "Content-Type": "application/json"}
+            body = {"type": "NEQUI", "token": nequi_token, "customer_email": user.email, "acceptance_token": acceptance_token}
+            resp = requests.post(f"{base}/v1/payment_sources", json=body, headers=headers, timeout=30, verify=False)
+            if resp.status_code not in [200,201]:
+                try:
+                    j = resp.json()
+                except:
+                    j = resp.text
+                return jsonify({"error": "Error creando payment source NEQUI", "details": j}), resp.status_code
+            data = resp.json().get("data", {})
+            user.wompi_payment_source_id = data.get("id")
+            user.wompi_payment_brand = "NEQUI"
+            user.wompi_payment_last4 = str(phone)[-4:]
+            db.session.commit()
+            return jsonify({"success": True})
+        except Exception as e:
+            db.session.rollback()
+            return jsonify({"error": str(e)}), 500
+
+    @app.route("/api/billing/save-googlepay-source", methods=["POST"]) 
+    @token_required
+    def save_googlepay_source():
+        user = g.current_user
+        payload = request.get_json() or {}
+        token = payload.get("token")
+        if not token:
+            return jsonify({"error": "Token requerido"}), 400
+        try:
+            import requests
+            pk = (os.getenv("WOMPI_PUBLIC_KEY") or app.config.get("WOMPI_PUBLIC_KEY") or "").strip()
+            sk = (os.getenv("WOMPI_PRIVATE_KEY") or app.config.get("WOMPI_PRIVATE_KEY") or "").strip()
+            envv = (os.getenv("WOMPI_ENV") or app.config.get("WOMPI_ENV") or "prod").lower()
+            base = "https://production.wompi.co" if envv == "prod" else "https://sandbox.wompi.co"
+            mresp = requests.get(f"{base}/v1/merchants/{pk}", timeout=20)
+            mresp.raise_for_status()
+            acceptance_token = (mresp.json().get("data") or {}).get("presigned_acceptance", {}).get("acceptance_token")
+            headers = {"Authorization": f"Bearer {sk}", "Content-Type": "application/json"}
+            body = {"type": "GOOGLE_PAY", "token": token, "customer_email": user.email, "acceptance_token": acceptance_token}
+            resp = requests.post(f"{base}/v1/payment_sources", json=body, headers=headers, timeout=30, verify=False)
+            if resp.status_code not in [200,201]:
+                try:
+                    j = resp.json()
+                except:
+                    j = resp.text
+                return jsonify({"error": "Error creando payment source GOOGLE_PAY", "details": j}), resp.status_code
+            data = resp.json().get("data", {})
+            user.wompi_payment_source_id = data.get("id")
+            user.wompi_payment_brand = "GOOGLE_PAY"
+            user.wompi_payment_last4 = "****"
+            db.session.commit()
+            return jsonify({"success": True})
+        except Exception as e:
+            db.session.rollback()
+            return jsonify({"error": str(e)}), 500
+
+    @app.route("/api/billing/check-nequi-token", methods=["POST"]) 
+    @token_required
+    def check_nequi_token():
+        user = g.current_user
+        payload = request.get_json() or {}
+        nequi_token = payload.get("token")
+        phone = payload.get("phone")
+        if not nequi_token:
+            return jsonify({"error": "Token requerido"}), 400
+        try:
+            import requests
+            pk = (os.getenv("WOMPI_PUBLIC_KEY") or app.config.get("WOMPI_PUBLIC_KEY") or "").strip()
+            sk = (os.getenv("WOMPI_PRIVATE_KEY") or app.config.get("WOMPI_PRIVATE_KEY") or "").strip()
+            envv = (os.getenv("WOMPI_ENV") or app.config.get("WOMPI_ENV") or "prod").lower()
+            base = "https://production.wompi.co" if envv == "prod" else "https://sandbox.wompi.co"
+            # Query token status
+            t_headers = {"Authorization": f"Bearer {pk}"}
+            q = requests.get(f"{base}/v1/tokens/nequi/{nequi_token}", headers=t_headers, timeout=20)
+            q.raise_for_status()
+            status = (q.json().get("data") or {}).get("status")
+            if status != "APPROVED":
+                return jsonify({"pending": True, "status": status}), 202
+            # Create payment source now
+            mresp = requests.get(f"{base}/v1/merchants/{pk}", timeout=20)
+            mresp.raise_for_status()
+            acceptance_token = (mresp.json().get("data") or {}).get("presigned_acceptance", {}).get("acceptance_token")
+            headers = {"Authorization": f"Bearer {sk}", "Content-Type": "application/json"}
+            body = {"type": "NEQUI", "token": nequi_token, "customer_email": user.email, "acceptance_token": acceptance_token}
+            resp = requests.post(f"{base}/v1/payment_sources", json=body, headers=headers, timeout=30, verify=False)
+            if resp.status_code not in [200,201]:
+                try:
+                    j = resp.json()
+                except:
+                    j = resp.text
+                return jsonify({"error": "Error creando payment source NEQUI", "details": j}), resp.status_code
+            data = resp.json().get("data", {})
+            user.wompi_payment_source_id = data.get("id")
+            user.wompi_payment_brand = "NEQUI"
+            user.wompi_payment_last4 = (str(phone)[-4:] if phone else "****")
+            db.session.commit()
+            return jsonify({"success": True})
+        except Exception as e:
+            db.session.rollback()
+            return jsonify({"error": str(e)}), 500
     @app.route("/api/billing/update-payment-method", methods=["POST"])
     @token_required
     def update_payment_method():
         """Genera link para actualizar método de pago (Cobro de validación)"""
         user = g.current_user
         try:
-            import requests, uuid
-            
+            import requests, uuid, traceback
             # Config Wompi
             wompi_pk = (os.getenv("WOMPI_PUBLIC_KEY") or app.config.get("WOMPI_PUBLIC_KEY") or "").strip()
             wompi_sk = (os.getenv("WOMPI_PRIVATE_KEY") or app.config.get("WOMPI_PRIVATE_KEY") or "").strip()
@@ -675,30 +862,63 @@ def create_app(config_class=None):
 
             reference = f"update-card-{user.id}-{uuid.uuid4().hex[:10]}"
             redirect_url = (os.getenv("MP_SUCCESS_URL") or app.config.get("MP_SUCCESS_URL") or "http://localhost:5000")
+            if not redirect_url or "localhost" in redirect_url:
+                redirect_url = "https://app.encaja.co"
             
-            # Payload para validación ($1000 COP)
+            # Payload para validación (monto pequeño). Algunos comercios requieren mínimo >= $2.000 COP.
             payload = {
                 "name": "Validación Tarjeta",
                 "description": "Actualización de método de pago",
                 "single_use": False,
                 "collect_shipping": False,
                 "currency": "COP",
-                "amount_in_cents": 100000, # $1000.00
-                "redirect_url": redirect_url
+                "amount_in_cents": 200000, # $2.000,00 COP
+                "redirect_url": redirect_url,
+                "reference": reference
             }
             
             h = {"Authorization": f"Bearer {wompi_sk}", "Content-Type": "application/json"}
-            resp = requests.post(f"{wompi_base}/v1/payment_links", json=payload, headers=h, timeout=30)
-            resp.raise_for_status()
-            
-            data = resp.json().get("data", {})
-            url = data.get("url") or f"https://checkout.wompi.co/l/{data.get('id')}"
+            try:
+                resp = requests.post(
+                    f"{wompi_base}/v1/payment_links",
+                    json=payload,
+                    headers=h,
+                    timeout=30,
+                    verify=False  # Alinear con create_checkout para evitar fallas de SSL en contenedores
+                )
+                if resp.status_code not in [200, 201]:
+                    try:
+                        j = resp.json()
+                    except Exception:
+                        j = None
+                    app.logger.error(f"Wompi Update Error Status: {resp.status_code}. Body: {resp.text}")
+                    return jsonify({
+                        "error": f"Error Wompi ({resp.status_code})",
+                        "details": j or resp.text
+                    }), resp.status_code
+                data = resp.json().get("data")
+                if data and "url" in data:
+                    url = data["url"]
+                elif data and "id" in data:
+                    url = f"https://checkout.wompi.co/l/{data['id']}"
+                else:
+                    app.logger.error(f"Invalid Wompi response format (update): {resp.text}")
+                    return jsonify({
+                        "error": "Respuesta inesperada de Wompi",
+                        "details": resp.text
+                    }), 502
+            except Exception as e:
+                app.logger.error(f"CRITICAL WOMPI UPDATE ERROR: {str(e)}")
+                app.logger.error(traceback.format_exc())
+                return jsonify({
+                    "error": "Error de conexión con pasarela de pago",
+                    "details": str(e)
+                }), 502
             
             return jsonify({ "url": url })
-            
         except Exception as e:
             app.logger.error(f"Error creating update payment link: {e}")
-            return jsonify({"error": "No se pudo generar el link de actualización"}), 500
+            return jsonify({"error": "No se pudo generar el link de actualización", "details": str(e)}), 500
 
     @app.route("/api/billing/change-cycle", methods=["POST"])
     @token_required

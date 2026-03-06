@@ -17,7 +17,7 @@ import { computeClientReceivables, ClientReceivable } from '../utils/receivables
 import { CreditSettingsModal } from '../components/Customers/CreditSettingsModal';
 import { settingsService } from '../services/settingsService';
 import { DateRange, getPeriodPreference } from '../utils/dateRange.utils';
-import { PageLayout, PageHeader, PageFilters } from '../components/Layout/PageLayout';
+import { PageHeader, PageFilters } from '../components/Layout/PageLayout';
 import { SwipePager } from '../components/ui/SwipePager';
 
 export const Payments = () => {

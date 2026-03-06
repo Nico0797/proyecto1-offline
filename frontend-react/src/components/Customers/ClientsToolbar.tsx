@@ -1,5 +1,5 @@
 import React from 'react';
-import { Search, Download, UserPlus, Settings } from 'lucide-react';
+import { Search, Download, Settings } from 'lucide-react';
 import { Input } from '../ui/Input';
 import { Button } from '../ui/Button';
 

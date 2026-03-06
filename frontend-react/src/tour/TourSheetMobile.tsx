@@ -29,7 +29,7 @@ export const TourSheetMobile = ({
   const lastInteractionRef = useRef(0);
 
   // Guard for double execution (touch + click)
-  const handleNext = (e: React.MouseEvent | React.PointerEvent) => {
+  const handleNext = (_e: React.MouseEvent | React.PointerEvent) => {
     // Prevent double firing if both events happen quickly
     const now = Date.now();
     if (now - lastInteractionRef.current < 300) {

@@ -3,7 +3,7 @@ import { useBusinessStore } from '../store/businessStore';
 import { useSaleStore } from '../store/saleStore';
 import { useAuthStore } from '../store/authStore';
 import { Button } from '../components/ui/Button';
-import { Plus, Download } from 'lucide-react';
+import { Plus } from 'lucide-react';
 import { CreateSaleModal } from '../components/Sales/CreateSaleModal';
 import { SaleDetailsModal } from '../components/Sales/SaleDetailsModal';
 import { UpgradeModal } from '../components/ui/UpgradeModal';
@@ -115,7 +115,7 @@ export const Sales = () => {
         feature={FEATURES.LIMIT_SALES}
       />
       
-      <div className="shrink-0 px-4 sm:px-6 lg:px-8 py-4 bg-white dark:bg-gray-900 z-10 border-b border-gray-200 dark:border-gray-800">
+      <div className="shrink-0 px-4 sm:px-6 lg:px-8 py-4 bg-white dark:bg-gray-900 z-10 border-b border-gray-200 dark:border-gray-800 pt-safe">
           <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
             <div>
               <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Ventas</h1>

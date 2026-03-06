@@ -3,7 +3,6 @@ import { Outlet, Navigate } from 'react-router-dom';
 import { useAuthStore } from '../../store/authStore';
 import { Sidebar } from './Sidebar';
 import { MobileBottomNav } from './MobileBottomNav';
-import { Menu } from 'lucide-react';
 
 export const MainLayout = () => {
   const { isAuthenticated } = useAuthStore();
@@ -20,7 +19,7 @@ export const MainLayout = () => {
       {/* Main Content Wrapper */}
       <div className="flex-1 flex flex-col h-full lg:pl-64 transition-all duration-300 w-full">
         {/* Mobile Header */}
-        <header className="h-14 lg:hidden flex items-center justify-between px-4 border-b border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 shrink-0 z-30">
+        <header className="lg:hidden flex items-center justify-between px-4 border-b border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 shrink-0 z-30 pt-safe min-h-14">
           <span className="text-lg font-semibold text-gray-900 dark:text-white">EnCaja</span>
           {/* Optional: Add profile or notification icon here */}
         </header>

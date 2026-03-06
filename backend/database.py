@@ -71,6 +71,13 @@ def init_db(app):
                     pending.append(f"ALTER TABLE users ADD COLUMN membership_end {type_datetime}")
                 if "membership_auto_renew" not in existing_columns:
                     pending.append(f"ALTER TABLE users ADD COLUMN membership_auto_renew {type_bool} DEFAULT {default_true}")
+                # Tokenización Wompi
+                if "wompi_payment_source_id" not in existing_columns:
+                    pending.append("ALTER TABLE users ADD COLUMN wompi_payment_source_id VARCHAR(100)")
+                if "wompi_payment_brand" not in existing_columns:
+                    pending.append("ALTER TABLE users ADD COLUMN wompi_payment_brand VARCHAR(50)")
+                if "wompi_payment_last4" not in existing_columns:
+                    pending.append("ALTER TABLE users ADD COLUMN wompi_payment_last4 VARCHAR(10)")
 
                 # Execute users updates
                 # Use individual try/except blocks to avoid failing if one column exists but not others
