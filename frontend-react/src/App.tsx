@@ -1,19 +1,19 @@
-import { useEffect } from 'react';
+import { Suspense, lazy, useEffect } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
-import { Login } from './pages/Login';
-import { Register } from './pages/Register';
 import { MainLayout } from './components/Layout/MainLayout';
-import { Dashboard } from './pages/Dashboard';
-import { Sales } from './pages/Sales';
-import { Customers } from './pages/Customers';
-import { Expenses } from './pages/Expenses';
-import { SalesGoals } from './pages/SalesGoals';
-import { Orders } from './pages/Orders';
-import { Payments } from './pages/Payments';
-import { Products } from './pages/Products';
-import { Alerts } from './pages/Alerts';
-import { Settings } from './pages/Settings';
-import { Reports } from './pages/Reports';
+const Login = lazy(() => import('./pages/Login').then(m => ({ default: m.Login })));
+const Register = lazy(() => import('./pages/Register').then(m => ({ default: m.Register })));
+const Dashboard = lazy(() => import('./pages/Dashboard').then(m => ({ default: m.Dashboard })));
+const Sales = lazy(() => import('./pages/Sales').then(m => ({ default: m.Sales })));
+const Customers = lazy(() => import('./pages/Customers').then(m => ({ default: m.Customers })));
+const Expenses = lazy(() => import('./pages/Expenses').then(m => ({ default: m.Expenses })));
+const SalesGoals = lazy(() => import('./pages/SalesGoals').then(m => ({ default: m.SalesGoals })));
+const Orders = lazy(() => import('./pages/Orders').then(m => ({ default: m.Orders })));
+const Payments = lazy(() => import('./pages/Payments').then(m => ({ default: m.Payments })));
+const Products = lazy(() => import('./pages/Products').then(m => ({ default: m.Products })));
+const Alerts = lazy(() => import('./pages/Alerts').then(m => ({ default: m.Alerts })));
+const Settings = lazy(() => import('./pages/Settings').then(m => ({ default: m.Settings })));
+const Reports = lazy(() => import('./pages/Reports').then(m => ({ default: m.Reports })));
 import { useThemeStore } from './store/themeStore';
 
 import { RequireAdmin } from './components/RequireAdmin';
@@ -30,11 +30,11 @@ import { AdminProducts } from './pages/Admin/Products';
 import { AdminAudit } from './pages/Admin/Audit';
 import { AdminData } from './pages/Admin/Data';
 import { AdminLogin } from './pages/Admin/Login';
-import { Help } from './pages/Help';
-import { LandingPage } from './pages/LandingPage';
-import { PrivacyPolicy } from './pages/PrivacyPolicy';
-import { TermsAndConditions } from './pages/TermsAndConditions';
-import ProPage from './pages/ProPage';
+const Help = lazy(() => import('./pages/Help').then(m => ({ default: m.Help })));
+const LandingPage = lazy(() => import('./pages/LandingPage').then(m => ({ default: m.LandingPage })));
+const PrivacyPolicy = lazy(() => import('./pages/PrivacyPolicy').then(m => ({ default: m.PrivacyPolicy })));
+const TermsAndConditions = lazy(() => import('./pages/TermsAndConditions').then(m => ({ default: m.TermsAndConditions })));
+const ProPage = lazy(() => import('./pages/ProPage').then(m => ({ default: m.default })));
 import { ProGate } from './components/ui/ProGate';
 import { FEATURES } from './auth/plan';
 import { TourProvider } from './tour/TourProvider';
@@ -43,16 +43,54 @@ function App() {
   const { theme, setTheme } = useThemeStore();
 
   useEffect(() => {
-    // Force dark mode always
     document.documentElement.classList.add('dark');
     if (theme !== 'dark') {
         setTheme('dark');
     }
   }, [theme, setTheme]);
+  
+  useEffect(() => {
+    const c: any = (navigator as any).connection;
+    if (c?.saveData) return;
+    if (c?.effectiveType && String(c.effectiveType).includes('2g')) return;
+    const run = () => {
+      const fns = [
+        () => import('./pages/Dashboard'),
+        () => import('./pages/Sales'),
+        () => import('./pages/Products'),
+        () => import('./pages/Customers')
+      ];
+      fns.forEach(fn => { try { fn(); } catch (_) {} });
+    };
+    const rid = (window as any).requestIdleCallback;
+    let started = false;
+    const start = () => {
+      if (started) return;
+      started = true;
+      if (typeof rid === 'function') {
+        rid(run, { timeout: 3000 });
+      } else {
+        setTimeout(run, 2000);
+      }
+    };
+    const to = setTimeout(start, 2500);
+    const once = () => { start(); cleanup(); };
+    const cleanup = () => {
+      window.removeEventListener('click', once);
+      window.removeEventListener('keydown', once);
+      window.removeEventListener('touchstart', once);
+      clearTimeout(to);
+    };
+    window.addEventListener('click', once, { once: true } as any);
+    window.addEventListener('keydown', once, { once: true } as any);
+    window.addEventListener('touchstart', once, { once: true } as any);
+    return cleanup;
+  }, []);
 
   return (
     <BrowserRouter>
       <TourProvider>
+      <Suspense fallback={<div style={{display:'grid',placeItems:'center',height:'100dvh'}}>Cargando…</div>}>
       <Routes>
         <Route path="/landing" element={<LandingPage />} />
         <Route path="/privacy" element={<PrivacyPolicy />} />
@@ -116,6 +154,7 @@ function App() {
 
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
+      </Suspense>
       </TourProvider>
     </BrowserRouter>
   );
