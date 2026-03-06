@@ -215,11 +215,12 @@ export const Reports = () => {
           {/* Filters Panel */}
           <div className="mt-4" data-tour="reports.filters">
               <div className="flex flex-col sm:flex-row gap-4 items-center bg-gray-50 dark:bg-gray-800/50 p-3 rounded-lg border border-gray-100 dark:border-gray-700">
-                <div className="w-full sm:w-auto flex-1">
+                <div className="w-full sm:w-auto flex-1 flex justify-start">
                   <PeriodFilter 
                     moduleId="reports"
                     value={dateRange}
                     onChange={setDateRange}
+                    iconOnly
                   />
                 </div>
 

@@ -49,11 +49,11 @@ export const Expenses = () => {
 
   useEffect(() => {
     if (activeBusiness) {
+      // Ensure inclusive end-of-day in server params if backend expects dates (keep original strings)
       fetchExpenses(activeBusiness.id, {
         start_date: dateRange.start,
         end_date: dateRange.end
       });
-      fetchRecurringExpenses(activeBusiness.id);
     }
   }, [activeBusiness, dateRange.start, dateRange.end]);
 
@@ -119,10 +119,13 @@ export const Expenses = () => {
 
     let matchesDate = true;
     if (dateRange.start) {
-        matchesDate = matchesDate && new Date(expense.expense_date) >= new Date(dateRange.start);
+      const start = new Date(dateRange.start);
+      matchesDate = matchesDate && new Date(expense.expense_date) >= start;
     }
     if (dateRange.end) {
-        matchesDate = matchesDate && new Date(expense.expense_date) <= new Date(dateRange.end);
+      const end = new Date(dateRange.end);
+      end.setHours(23,59,59,999);
+      matchesDate = matchesDate && new Date(expense.expense_date) <= end;
     }
 
     return matchesSearch && matchesCategory && matchesDate;
@@ -193,7 +196,7 @@ export const Expenses = () => {
                             />
                         </div>
                         <div data-tour="expenses.table" className="overflow-hidden">
-                            <DataTableContainer>
+                            <DataTableContainer className="max-h-[65vh]">
                                 <ExpensesTable 
                                     expenses={filteredExpenses}
                                     loading={expensesLoading}

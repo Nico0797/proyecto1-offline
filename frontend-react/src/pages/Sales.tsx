@@ -90,10 +90,13 @@ export const Sales = () => {
 
     let matchesDate = true;
     if (dateRange.start) {
-        matchesDate = matchesDate && new Date(sale.sale_date) >= new Date(dateRange.start);
+      const start = new Date(dateRange.start);
+      matchesDate = matchesDate && new Date(sale.sale_date) >= start;
     }
     if (dateRange.end) {
-        matchesDate = matchesDate && new Date(sale.sale_date) <= new Date(dateRange.end);
+      const end = new Date(dateRange.end);
+      end.setHours(23,59,59,999);
+      matchesDate = matchesDate && new Date(sale.sale_date) <= end;
     }
 
     return matchesSearch && matchesStatus && matchesDate;

@@ -14,7 +14,6 @@ import { Plus, Download, Archive } from 'lucide-react';
 import { Product } from '../../types';
 import { getStockStatus } from './helpers';
 import { useCategoryStore } from './categoryStore';
-import { DateRange, getPeriodPreference } from '../../utils/dateRange.utils';
 import { DataTableContainer } from '../ui/DataTableContainer';
 import { FEATURES, FREE_LIMITS } from '../../auth/plan';
 
@@ -30,7 +29,7 @@ export const ProductCatalog: React.FC = () => {
   const [statusFilter, setStatusFilter] = useState<'active' | 'archived'>('active');
   const [stockFilter, setStockFilter] = useState<'all' | 'low' | 'out' | 'ok'>('all');
   const [categoryFilter, setCategoryFilter] = useState('');
-  const [dateRange, setDateRange] = useState<DateRange>(() => getPeriodPreference('products'));
+  // El filtro de periodos no es necesario en productos según solicitud
   
   const [selectedIds, setSelectedIds] = useState<number[]>([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -68,22 +67,7 @@ export const ProductCatalog: React.FC = () => {
         matchesCategory = cat?.id === categoryFilter;
     }
 
-    // Date Filter (Created At)
-    let matchesDate = true;
-    // Only filter if product has created_at (it should)
-    if (product.created_at) {
-        if (dateRange.start) {
-            matchesDate = matchesDate && new Date(product.created_at) >= new Date(dateRange.start);
-        }
-        if (dateRange.end) {
-            // End of day
-            const endDate = new Date(dateRange.end);
-            endDate.setHours(23, 59, 59, 999);
-            matchesDate = matchesDate && new Date(product.created_at) <= endDate;
-        }
-    }
-    
-    return matchesSearch && matchesType && matchesStatus && matchesStock && matchesCategory && matchesDate;
+    return matchesSearch && matchesType && matchesStatus && matchesStock && matchesCategory;
   });
 
   const handleExport = () => {
@@ -236,8 +220,6 @@ export const ProductCatalog: React.FC = () => {
                 onStockFilterChange={setStockFilter}
                 categoryFilter={categoryFilter}
                 onCategoryFilterChange={setCategoryFilter}
-                dateRange={dateRange}
-                onDateRangeChange={setDateRange}
               />
             </div>
             

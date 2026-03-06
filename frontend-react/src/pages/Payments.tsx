@@ -76,10 +76,13 @@ export const Payments = () => {
       
       let matchesDate = true;
       if (dateRange.start) {
-        matchesDate = matchesDate && new Date(p.payment_date) >= new Date(dateRange.start);
+        const start = new Date(dateRange.start);
+        matchesDate = matchesDate && new Date(p.payment_date) >= start;
       }
       if (dateRange.end) {
-        matchesDate = matchesDate && new Date(p.payment_date) <= new Date(dateRange.end);
+        const end = new Date(dateRange.end);
+        end.setHours(23,59,59,999);
+        matchesDate = matchesDate && new Date(p.payment_date) <= end;
       }
       
       return matchesSearch && matchesDate;
@@ -91,11 +94,17 @@ export const Payments = () => {
     const totalReceivable = clientReceivables.reduce((sum, c) => sum + c.totalDebt, 0);
     const overdueDebt = clientReceivables.reduce((sum, c) => sum + c.overdueDebt, 0);
     
-    // Payments this month
-    const now = new Date();
-    const firstDay = new Date(now.getFullYear(), now.getMonth(), 1);
+    // Payments in current selected period
+    const start = dateRange.start ? new Date(dateRange.start) : null;
+    const end = dateRange.end ? new Date(dateRange.end) : null;
+    if (end) end.setHours(23,59,59,999);
     const paymentsThisPeriod = payments
-      .filter(p => new Date(p.payment_date) >= firstDay)
+      .filter(p => {
+        const d = new Date(p.payment_date);
+        if (start && d < start) return false;
+        if (end && d > end) return false;
+        return true;
+      })
       .reduce((sum, p) => sum + p.amount, 0);
       
     const averagePayment = payments.length > 0 
@@ -103,7 +112,7 @@ export const Payments = () => {
       : 0;
 
     return { totalReceivable, overdueDebt, paymentsThisPeriod, averagePayment };
-  }, [clientReceivables, payments]);
+  }, [clientReceivables, payments, dateRange]);
 
   // Handlers
   const handleSelectClient = (client: ClientReceivable) => {

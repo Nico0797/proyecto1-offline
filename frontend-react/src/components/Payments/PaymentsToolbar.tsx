@@ -40,6 +40,7 @@ export const PaymentsToolbar: React.FC<ToolbarProps> = ({
           moduleId="payments"
           value={dateRange}
           onChange={onDateRangeChange}
+          iconOnly
         />
       </div>
 

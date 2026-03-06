@@ -34,7 +34,7 @@ export const PageFilters: React.FC<{ children: React.ReactNode; className?: stri
   const [isExpanded, setIsExpanded] = useState(false);
 
   return (
-    <div className={cn("bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800 shrink-0 z-10 transition-all duration-300", className)}>
+    <div className={cn("bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800 shrink-0 z-20 transition-all duration-300", className)}>
       {/* Mobile Toggle Header - visible only on mobile */}
       <div 
         className="lg:hidden px-4 py-2 flex items-center justify-between cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800"
@@ -49,7 +49,9 @@ export const PageFilters: React.FC<{ children: React.ReactNode; className?: stri
 
       {/* Content Container */}
       <div className={cn(
-        "px-4 gap-3 flex flex-col lg:flex-row lg:items-center lg:flex-wrap transition-all duration-300 ease-in-out overflow-hidden",
+        "px-4 gap-3 flex flex-col lg:flex-row lg:items-center lg:flex-wrap transition-all duration-300 ease-in-out",
+        isExpanded ? "overflow-visible" : "overflow-hidden",
+        "lg:overflow-visible",
         "lg:h-auto lg:py-3 lg:opacity-100 lg:visible", // Desktop: always visible
         isExpanded ? "py-3 max-h-96 opacity-100 visible" : "max-h-0 opacity-0 invisible lg:max-h-none lg:visible" // Mobile: toggle
       )}>
@@ -76,7 +78,7 @@ export const PageBody: React.FC<{ children: React.ReactNode; className?: string 
 export const DataTableContainer: React.FC<{ children: React.ReactNode; className?: string }> = ({ children, className }) => {
   return (
     <div className={cn("w-full overflow-hidden rounded-lg border border-gray-200 dark:border-gray-800 shadow-sm bg-white dark:bg-gray-900 flex flex-col", className)}>
-      <div className="overflow-x-auto custom-scrollbar flex-1">
+      <div className="overflow-auto custom-scrollbar flex-1">
           {children}
       </div>
     </div>

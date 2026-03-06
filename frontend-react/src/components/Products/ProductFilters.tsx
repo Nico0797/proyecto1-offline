@@ -17,8 +17,8 @@ interface ProductFiltersProps {
   onStockFilterChange: (value: 'all' | 'low' | 'out' | 'ok') => void;
   categoryFilter: string;
   onCategoryFilterChange: (value: string) => void;
-  dateRange: DateRange;
-  onDateRangeChange: (range: DateRange) => void;
+  dateRange?: DateRange;
+  onDateRangeChange?: (range: DateRange) => void;
 }
 
 export const ProductFilters: React.FC<ProductFiltersProps> = ({
@@ -52,11 +52,13 @@ export const ProductFilters: React.FC<ProductFiltersProps> = ({
         </div>
 
         <div className="flex gap-2 w-full md:w-auto overflow-x-auto pb-2 md:pb-0 items-center">
-          <PeriodFilter 
-            moduleId="products"
-            value={dateRange}
-            onChange={onDateRangeChange}
-          />
+          {dateRange && onDateRangeChange && (
+            <PeriodFilter 
+              moduleId="products"
+              value={dateRange}
+              onChange={onDateRangeChange}
+            />
+          )}
 
           <select
             className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg px-3 py-2 text-sm text-gray-700 dark:text-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
