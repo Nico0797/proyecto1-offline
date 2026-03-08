@@ -17,7 +17,6 @@ export const ProGate: React.FC<ProGateProps> = ({
   children,
   feature,
   mode = 'block',
-  fallback
 }) => {
   const { user } = useAuthStore();
   const navigate = useNavigate();

@@ -1,4 +1,3 @@
-import React from 'react';
 import { 
   ShoppingCart, Users, Package, Wallet, Receipt, 
   BarChart2, FileText, Bell, Clock, MessageSquare, Briefcase 

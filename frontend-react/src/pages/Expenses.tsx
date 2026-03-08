@@ -17,7 +17,6 @@ import { ExpensesAnalyticsTab } from '../components/Expenses/ExpensesAnalyticsTa
 import { UpgradeModal } from '../components/ui/UpgradeModal';
 import { Expense } from '../types';
 import { DateRange, getPeriodPreference } from '../utils/dateRange.utils';
-import { DataTableContainer } from '../components/ui/DataTableContainer';
 import { ProGate } from '../components/ui/ProGate';
 import { FEATURES, FREE_LIMITS } from '../auth/plan';
 import { SwipePager } from '../components/ui/SwipePager';
@@ -54,6 +53,7 @@ export const Expenses = () => {
         start_date: dateRange.start,
         end_date: dateRange.end
       });
+      fetchRecurringExpenses(activeBusiness.id);
     }
   }, [activeBusiness, dateRange.start, dateRange.end]);
 
@@ -82,31 +82,7 @@ export const Expenses = () => {
     }
   };
 
-  const handleExport = () => {
-    const headers = ['ID', 'Fecha', 'Descripción', 'Categoría', 'Monto'];
-    const csvContent = [
-      headers.join(','),
-      ...filteredExpenses.map(e => [
-        e.id,
-        new Date(e.expense_date).toISOString().split('T')[0],
-        `"${e.description}"`,
-        e.category,
-        e.amount
-      ].join(','))
-    ].join('\n');
-
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-    const link = document.createElement('a');
-    if (link.download !== undefined) {
-        const url = URL.createObjectURL(blob);
-        link.setAttribute('href', url);
-        link.setAttribute('download', `gastos_export_${new Date().toISOString().split('T')[0]}.csv`);
-        link.style.visibility = 'hidden';
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-    }
-  };
+  // export removido en esta vista a solicitud del usuario
 
   const filteredExpenses = expenses.filter((expense) => {
     const description = expense.description || '';
@@ -174,6 +150,7 @@ export const Expenses = () => {
         activePageId={activeTab}
         onPageChange={setActiveTab}
         className="flex-1"
+        contentScroll="visible"
         pages={[
             {
                 id: 'movements',
@@ -191,19 +168,16 @@ export const Expenses = () => {
                                 onCategoryFilterChange={setCategoryFilter}
                                 dateRange={dateRange}
                                 onDateRangeChange={setDateRange}
-                                onExport={handleExport}
                                 categories={customCategories}
                             />
                         </div>
-                        <div data-tour="expenses.table" className="overflow-hidden">
-                            <DataTableContainer className="max-h-[65vh]">
-                                <ExpensesTable 
-                                    expenses={filteredExpenses}
-                                    loading={expensesLoading}
-                                    onEdit={(exp) => { setEditingExpense(exp); setIsCreateModalOpen(true); }}
-                                    onDelete={handleDeleteExpense}
-                                />
-                            </DataTableContainer>
+                        <div data-tour="expenses.table">
+                          <ExpensesTable 
+                              expenses={filteredExpenses}
+                              loading={expensesLoading}
+                              onEdit={(exp) => { setEditingExpense(exp); setIsCreateModalOpen(true); }}
+                              onDelete={handleDeleteExpense}
+                          />
                         </div>
                     </div>
                 )

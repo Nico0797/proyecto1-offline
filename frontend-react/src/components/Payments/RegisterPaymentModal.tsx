@@ -42,7 +42,7 @@ export const RegisterPaymentModal: React.FC<RegisterPaymentModalProps> = ({
   // Form Data
   const [selectedCustomerId, setSelectedCustomerId] = useState<number | null>(null);
   const [amount, setAmount] = useState('');
-  const [method, setMethod] = useState<'cash' | 'transfer'>('cash');
+  const [method, setMethod] = useState<string>('cash');
   const [date, setDate] = useState(() => {
     const d = new Date();
     const year = d.getFullYear();
@@ -253,32 +253,19 @@ export const RegisterPaymentModal: React.FC<RegisterPaymentModalProps> = ({
 
       <div>
         <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Método de Pago</label>
-        <div className="flex gap-2">
-          <button
-            type="button"
-            onClick={() => setMethod('cash')}
-            className={cn(
-              "flex-1 py-2 px-4 rounded-lg border text-sm font-medium transition-all",
-              method === 'cash' 
-                ? "bg-green-50 border-green-200 text-green-700 dark:bg-green-900/20 dark:border-green-800 dark:text-green-400"
-                : "border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800"
-            )}
-          >
-            Efectivo
-          </button>
-          <button
-            type="button"
-            onClick={() => setMethod('transfer')}
-            className={cn(
-              "flex-1 py-2 px-4 rounded-lg border text-sm font-medium transition-all",
-              method === 'transfer'
-                ? "bg-purple-50 border-purple-200 text-purple-700 dark:bg-purple-900/20 dark:border-purple-800 dark:text-purple-400"
-                : "border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800"
-            )}
-          >
-            Transferencia
-          </button>
-        </div>
+        <select
+          className="w-full bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 outline-none"
+          value={method}
+          onChange={(e) => setMethod(e.target.value)}
+        >
+          <option value="cash">Efectivo</option>
+          <option value="nequi">Nequi</option>
+          <option value="daviplata">Daviplata</option>
+          <option value="bancolombia">Bancolombia</option>
+          <option value="card">Tarjeta</option>
+          <option value="transfer">Transferencia</option>
+          <option value="other">Otro</option>
+        </select>
       </div>
 
       <div>

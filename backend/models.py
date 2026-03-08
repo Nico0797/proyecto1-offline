@@ -739,3 +739,81 @@ class FAQ(db.Model):
     def __repr__(self):
         return f"<FAQ {self.question}>"
 
+
+class Debt(db.Model):
+    """Deuda del usuario (Cuentas por pagar)"""
+    __tablename__ = "debts"
+
+    id = db.Column(db.Integer, primary_key=True)
+    business_id = db.Column(db.Integer, db.ForeignKey("businesses.id"), nullable=False, index=True)
+    name = db.Column(db.String(255), nullable=False)
+    creditor_name = db.Column(db.String(255)) # Nombre del proveedor/banco
+    category = db.Column(db.String(100)) # Proveedores, Tarjetas, Préstamos, etc.
+    total_amount = db.Column(db.Float, nullable=False)
+    balance_due = db.Column(db.Float, nullable=False)
+    start_date = db.Column(db.Date)
+    due_date = db.Column(db.Date)
+    frequency = db.Column(db.String(20)) # unique, weekly, biweekly, monthly, quarterly, annual
+    interest_rate = db.Column(db.Float)
+    installments = db.Column(db.Integer) # Número de cuotas
+    estimated_installment = db.Column(db.Float) # Valor cuota estimada
+    status = db.Column(db.String(20), default="pending") # pending, partial, paid, overdue
+    notes = db.Column(db.Text)
+    reminder_enabled = db.Column(db.Boolean, default=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    # Relationships
+    payments = db.relationship("DebtPayment", backref="debt", lazy="dynamic", cascade="all, delete-orphan")
+
+    def to_dict(self):
+        return {
+            "id": self.id,
+            "business_id": self.business_id,
+            "name": self.name,
+            "creditor_name": self.creditor_name,
+            "category": self.category,
+            "total_amount": self.total_amount,
+            "balance_due": self.balance_due,
+            "start_date": self.start_date.isoformat() if self.start_date else None,
+            "due_date": self.due_date.isoformat() if self.due_date else None,
+            "frequency": self.frequency,
+            "interest_rate": self.interest_rate,
+            "installments": self.installments,
+            "estimated_installment": self.estimated_installment,
+            "status": self.status,
+            "notes": self.notes,
+            "reminder_enabled": self.reminder_enabled,
+            "created_at": self.created_at.isoformat() if self.created_at else None,
+            "updated_at": self.updated_at.isoformat() if self.updated_at else None,
+        }
+
+    def __repr__(self):
+        return f"<Debt {self.name} - {self.balance_due}>"
+
+
+class DebtPayment(db.Model):
+    """Abono a deuda"""
+    __tablename__ = "debt_payments"
+
+    id = db.Column(db.Integer, primary_key=True)
+    debt_id = db.Column(db.Integer, db.ForeignKey("debts.id"), nullable=False, index=True)
+    amount = db.Column(db.Float, nullable=False)
+    payment_date = db.Column(db.Date, nullable=False)
+    payment_method = db.Column(db.String(50)) # cash, transfer, etc.
+    note = db.Column(db.Text)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    def to_dict(self):
+        return {
+            "id": self.id,
+            "debt_id": self.debt_id,
+            "amount": self.amount,
+            "payment_date": self.payment_date.isoformat() if self.payment_date else None,
+            "payment_method": self.payment_method,
+            "note": self.note,
+            "created_at": self.created_at.isoformat() if self.created_at else None,
+        }
+
+    def __repr__(self):
+        return f"<DebtPayment {self.amount}>"

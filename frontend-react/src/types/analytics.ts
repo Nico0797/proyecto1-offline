@@ -9,14 +9,19 @@ export interface KPI {
   trend: Trend;
   format?: 'currency' | 'number' | 'percent';
   inverse?: boolean;
+  prefix?: string;
+  suffix?: string;
+  color?: string;
 }
 
 export interface Insight {
   id: string;
-  type: 'positive' | 'negative' | 'warning' | 'neutral';
+  type: 'positive' | 'negative' | 'warning' | 'neutral' | 'alert' | 'risk' | 'opportunity';
   title: string;
   description: string;
   metric: 'sales' | 'expenses' | 'profit' | 'products' | 'clients' | string;
+  severity?: 'critical' | 'warning' | 'info';
+  actionLabel?: string;
 }
 
 export interface Forecast {

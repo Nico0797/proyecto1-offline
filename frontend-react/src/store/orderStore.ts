@@ -10,7 +10,7 @@ interface OrderState {
   error: string | null;
   fetchOrders: (businessId: number, opts?: { start_date?: string; end_date?: string }) => Promise<void>;
   createOrder: (businessId: number, orderData: any) => Promise<void>;
-  updateOrderStatus: (businessId: number, id: number, status: string, saleDate?: string) => Promise<void>;
+  updateOrderStatus: (businessId: number, id: number, status: string, saleDate?: string, extraData?: any) => Promise<void>;
   deleteOrder: (businessId: number, id: number) => Promise<void>;
 }
 
@@ -109,10 +109,10 @@ export const useOrderStore = create<OrderState>((set) => ({
       set({ loading: false });
     }
   },
-  updateOrderStatus: async (businessId, id, status, saleDate) => {
+  updateOrderStatus: async (businessId, id, status, saleDate, extraData) => {
     try {
       set({ loading: true, error: null });
-      const payload: any = { status };
+      const payload: any = { status, ...extraData };
       if (saleDate) {
         payload.sale_date = saleDate;
       }

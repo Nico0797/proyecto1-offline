@@ -124,9 +124,15 @@ export const ClientDetailPanel: React.FC<ClientDetailPanelProps> = ({ customer, 
                       
                       <div className="space-y-4">
                           <h3 className="font-bold text-gray-900 dark:text-white border-b border-gray-100 dark:border-gray-700 pb-2">Notas Internas</h3>
-                          <div className="bg-yellow-50 dark:bg-yellow-900/10 p-4 rounded-xl border border-yellow-100 dark:border-yellow-800/30 text-sm text-yellow-800 dark:text-yellow-200" data-tour="customers.tags">
+                          {customer.notes && customer.notes.trim() ? (
+                            <div className="p-4 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 text-sm text-gray-800 dark:text-gray-200 whitespace-pre-wrap break-words">
+                              {customer.notes}
+                            </div>
+                          ) : (
+                            <div className="bg-yellow-50 dark:bg-yellow-900/10 p-4 rounded-xl border border-yellow-100 dark:border-yellow-800/30 text-sm text-yellow-800 dark:text-yellow-200" data-tour="customers.tags">
                               <p>No hay notas registradas para este cliente.</p>
-                          </div>
+                            </div>
+                          )}
                       </div>
                   </div>
               </div>

@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { Button } from '../ui/Button';
-import { Calendar, ChevronLeft, ChevronRight, SlidersHorizontal } from 'lucide-react';
-import { format, startOfDay, endOfDay, startOfMonth, endOfMonth, startOfYear, endOfYear, addDays, addMonths, addYears, subDays, subMonths, subYears, isSameMonth, isSameYear, isSameDay } from 'date-fns';
+import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { format, startOfMonth, endOfMonth, startOfYear, endOfYear, addDays, addMonths, addYears, subDays, subMonths, subYears } from 'date-fns';
 import { es } from 'date-fns/locale';
 
 export type PeriodType = 'daily' | 'biweekly' | 'monthly' | 'yearly' | 'custom';

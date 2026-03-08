@@ -27,7 +27,7 @@ export const CreatePaymentModal: React.FC<CreatePaymentModalProps> = ({
   const [loading, setLoading] = useState(false);
   const [selectedCustomerId, setSelectedCustomerId] = useState<number | ''>('');
   const [amount, setAmount] = useState('');
-  const [method, setMethod] = useState<'cash' | 'transfer'>('cash');
+  const [method, setMethod] = useState<string>('cash');
   const [note, setNote] = useState('');
   const [customerDebt, setCustomerDebt] = useState<number | null>(null);
 
@@ -142,30 +142,19 @@ export const CreatePaymentModal: React.FC<CreatePaymentModalProps> = ({
           <label className="block text-sm font-medium text-gray-400 mb-1">
             Método de Pago
           </label>
-          <div className="grid grid-cols-2 gap-2">
-            <button
-              type="button"
-              onClick={() => setMethod('cash')}
-              className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
-                method === 'cash'
-                  ? 'bg-blue-600 text-white'
-                  : 'bg-gray-800 text-gray-400 hover:bg-gray-700'
-              }`}
-            >
-              Efectivo
-            </button>
-            <button
-              type="button"
-              onClick={() => setMethod('transfer')}
-              className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
-                method === 'transfer'
-                  ? 'bg-blue-600 text-white'
-                  : 'bg-gray-800 text-gray-400 hover:bg-gray-700'
-              }`}
-            >
-              Transferencia
-            </button>
-          </div>
+          <select
+            className="w-full bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-white focus:outline-none focus:border-blue-500"
+            value={method}
+            onChange={(e) => setMethod(e.target.value)}
+          >
+            <option value="cash">Efectivo</option>
+            <option value="nequi">Nequi</option>
+            <option value="daviplata">Daviplata</option>
+            <option value="bancolombia">Bancolombia</option>
+            <option value="card">Tarjeta</option>
+            <option value="transfer">Transferencia</option>
+            <option value="other">Otro</option>
+          </select>
         </div>
 
         <div>

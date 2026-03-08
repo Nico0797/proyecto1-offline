@@ -17,7 +17,7 @@ import { UserPlus } from 'lucide-react';
 import { SwipePager } from '../components/ui/SwipePager';
 import { TopCustomersCard } from '../components/Customers/TopCustomersCard';
 import { OverdueDebtsCard } from '../components/Customers/OverdueDebtsCard';
-import { PageLayout, PageHeader, PageFilters, PageBody } from '../components/Layout/PageLayout';
+import { PageLayout, PageHeader, PageBody } from '../components/Layout/PageLayout';
 
 export const Customers = () => {
   const { activeBusiness } = useBusinessStore();
@@ -105,33 +105,6 @@ export const Customers = () => {
     }
   };
 
-  const handleExport = () => {
-    const headers = ['ID', 'Nombre', 'Teléfono', 'Email', 'Dirección', 'Deuda Actual'];
-    const csvContent = [
-      headers.join(','),
-      ...filteredCustomers.map(c => [
-        c.id,
-        `"${c.name}"`,
-        c.phone || '',
-        c.email || '',
-        `"${c.address || ''}"`,
-        c.balance
-      ].join(','))
-    ].join('\n');
-
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-    const link = document.createElement('a');
-    if (link.download !== undefined) {
-        const url = URL.createObjectURL(blob);
-        link.setAttribute('href', url);
-        link.setAttribute('download', `clientes_export_${new Date().toISOString().split('T')[0]}.csv`);
-        link.style.visibility = 'hidden';
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-    }
-  };
-
   const handleNewClient = () => {
     if (user?.plan === 'free' && customers.length >= FREE_LIMITS.CUSTOMERS) {
       setShowUpgradeModal(true);
@@ -182,35 +155,36 @@ export const Customers = () => {
             }
           />
     
-          <PageFilters>
-              <ClientsToolbar 
-                  search={searchTerm}
-                  onSearchChange={setSearchTerm}
-                  filter={filter}
-                  onFilterChange={setFilter}
-                  onExport={handleExport}
-                  onOpenSettings={() => setIsSettingsOpen(true)}
-              />
-          </PageFilters>
-    
           <PageBody className="p-0 lg:p-4 pb-20 lg:pb-8">
              <div className="flex flex-col h-full lg:gap-6 relative">
                  <div className="p-4 lg:p-0 shrink-0" data-tour="customers.balance">
                      <ClientsKpis customers={customers} />
                  </div>
+                 
+                 <div className="px-4 lg:px-0">
+                    <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4 shadow-sm">
+                      <ClientsToolbar 
+                          search={searchTerm}
+                          onSearchChange={setSearchTerm}
+                          filter={filter}
+                          onFilterChange={setFilter}
+                          onOpenSettings={() => setIsSettingsOpen(true)}
+                      />
+                    </div>
+                 </div>
     
                  <div className="flex-1 min-h-0 flex gap-4 lg:gap-6 relative px-4 lg:px-0 pb-4 lg:pb-0">
                       {/* List */}
-                      <div className="flex w-full lg:w-1/3 flex-col bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm overflow-hidden" data-tour="customers.table">
-                          <ClientList 
-                              customers={filteredCustomers}
-                              selectedCustomer={selectedCustomer}
-                              onSelectCustomer={setSelectedCustomer}
-                              onEdit={(c) => { setEditingCustomer(c); setIsFormOpen(true); }}
-                              onDelete={handleDelete}
-                              creditDays={creditDays}
-                          />
-                      </div>
+                     <div className="flex w-full lg:w-1/3 flex-col overflow-hidden" data-tour="customers.table">
+                         <ClientList 
+                             customers={filteredCustomers}
+                             selectedCustomer={selectedCustomer}
+                             onSelectCustomer={setSelectedCustomer}
+                             onEdit={(c) => { setEditingCustomer(c); setIsFormOpen(true); }}
+                             onDelete={handleDelete}
+                             creditDays={creditDays}
+                         />
+                     </div>
     
                       {/* Detail */}
                       <div className="hidden lg:flex w-full lg:w-2/3 flex-col lg:h-auto bg-white dark:bg-gray-800 lg:rounded-xl lg:border lg:border-gray-200 lg:dark:border-gray-700 lg:shadow-sm" data-tour="customers.detail">
@@ -257,18 +231,17 @@ export const Customers = () => {
                              <ClientsKpis customers={customers} />
                          </div>
                          <div data-tour="customers.table">
-                             <PageFilters>
+                             <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4 mb-4">
                                 <ClientsToolbar 
                                     search={searchTerm}
                                     onSearchChange={setSearchTerm}
                                     filter={filter}
                                     onFilterChange={setFilter}
-                                    onExport={handleExport}
                                     onOpenSettings={() => setIsSettingsOpen(true)}
                                 />
-                             </PageFilters>
+                             </div>
                              
-                              <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm overflow-hidden">
+                              <div className="flex-1 min-h-0">
                                   <ClientList 
                                       customers={filteredCustomers}
                                       selectedCustomer={selectedCustomer}

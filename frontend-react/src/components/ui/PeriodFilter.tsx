@@ -115,6 +115,7 @@ export const PeriodFilter: React.FC<PeriodFilterProps> = ({
 
   const getLabel = () => {
     switch (internalRange.preset) {
+      case 'today': return 'Hoy';
       case '7d': return 'Últimos 7 días';
       case '15d': return 'Últimos 15 días';
       case '30d': return 'Últimos 30 días';
@@ -164,6 +165,7 @@ export const PeriodFilter: React.FC<PeriodFilterProps> = ({
           {mode === 'full' && (
             <div className="p-2 flex flex-col gap-1">
               {[
+                { id: 'today', label: 'Diario (Hoy)' },
                 { id: '7d', label: 'Últimos 7 días' },
                 { id: '15d', label: 'Últimos 15 días' },
                 { id: '30d', label: 'Últimos 30 días' },

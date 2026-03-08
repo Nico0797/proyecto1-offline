@@ -6,7 +6,6 @@ import { Button } from '../components/ui/Button';
 import { Plus, Settings } from 'lucide-react';
 import { CreateOrderModal } from '../components/Orders/CreateOrderModal';
 import { OrderSettingsModal } from '../components/Orders/OrderSettingsModal';
-import { OrdersKpis } from '../components/Orders/OrdersKpis';
 import { OrdersToolbar } from '../components/Orders/OrdersToolbar';
 import { OrdersTable } from '../components/Orders/OrdersTable';
 import { OrdersKanban } from '../components/Orders/OrdersKanban';
@@ -37,6 +36,13 @@ export const Orders = () => {
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const [completingOrder, setCompletingOrder] = useState<Order | null>(null);
   const { isAuthenticated } = useAuthStore();
+
+  const counts = {
+    all: orders.length,
+    pending: orders.filter(o => o.status === 'pending').length,
+    completed: orders.filter(o => o.status === 'completed').length,
+    cancelled: orders.filter(o => o.status === 'cancelled').length,
+  };
 
   useEffect(() => {
     if (isAuthenticated && activeBusiness) {
@@ -70,41 +76,17 @@ export const Orders = () => {
     }
   };
 
-  const handleCompleteOrder = async (date: string) => {
+  const handleCompleteOrder = async (data: { date: string, paymentType: string, paidAmount: number, paymentMethod: string }) => {
     if (!activeBusiness || !completingOrder) return;
     try {
-      await updateOrderStatus(activeBusiness.id, completingOrder.id, 'completed', date);
+      const payment_details = {
+          method: data.paymentMethod,
+          paid_amount: data.paidAmount
+      };
+      await updateOrderStatus(activeBusiness.id, completingOrder.id, 'completed', data.date, { payment_details });
       setCompletingOrder(null);
     } catch (error) {
       console.error('Error completing order:', error);
-    }
-  };
-
-  const handleExport = () => {
-    const headers = ['ID', 'Fecha', 'Cliente', 'Estado', 'Total', 'Items', 'Nota'];
-    const csvContent = [
-      headers.join(','),
-      ...filteredOrders.map(o => [
-        o.id,
-        new Date(o.order_date).toISOString().split('T')[0],
-        `"${o.customer_name || 'Cliente Casual'}"`,
-        o.status,
-        o.total,
-        o.items.length,
-        `"${o.note || ''}"`
-      ].join(','))
-    ].join('\n');
-
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-    const link = document.createElement('a');
-    if (link.download !== undefined) {
-        const url = URL.createObjectURL(blob);
-        link.setAttribute('href', url);
-        link.setAttribute('download', `pedidos_export_${new Date().toISOString().split('T')[0]}.csv`);
-        link.style.visibility = 'hidden';
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
     }
   };
 
@@ -146,6 +128,16 @@ export const Orders = () => {
     }
   };
 
+  const getVariant = (id: string) => {
+    switch (id) {
+      case 'pending': return 'warning';
+      case 'completed': return 'success';
+      case 'cancelled': return 'danger';
+      case 'in_progress': return 'info';
+      default: return 'default';
+    }
+  };
+
   return (
     <div className="flex flex-col h-auto md:h-[calc(100vh-6rem)] min-h-[calc(100vh-6rem)] space-y-6 px-4 sm:px-6 lg:px-8 py-4" data-tour="orders.panel">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 flex-shrink-0">
@@ -163,10 +155,6 @@ export const Orders = () => {
                 Nuevo Pedido
             </Button>
         </div>
-      </div>
-
-      <div data-tour="orders.kpis" className="flex-shrink-0">
-        <OrdersKpis orders={orders} onFilterStatus={setStatusFilter} />
       </div>
 
       {/* Tabs */}
@@ -196,7 +184,7 @@ export const Orders = () => {
              onStatusFilterChange={setStatusFilter}
              dateRange={dateRange}
              onDateRangeChange={setDateRange}
-             onExport={handleExport}
+             statusCounts={counts}
           />
           </div>
 
@@ -210,6 +198,7 @@ export const Orders = () => {
                        id: col.id,
                        title: col.label,
                        icon: getIcon(col.id),
+                       variant: getVariant(col.id) as any,
                        content: (
                          <div className="h-full">
                            <OrdersKanban 
@@ -276,4 +265,3 @@ export const Orders = () => {
     </div>
   );
 };
-

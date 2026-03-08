@@ -73,7 +73,7 @@ export const RecurringExpenses = () => {
       await api.post(`/businesses/${activeBusiness.id}/expenses`, {
         description: expense.name,
         amount: expense.amount,
-        category: expense.category || 'Recurrente',
+        category: expense.category || 'otros',
         expense_date: new Date().toISOString().split('T')[0],
         recurring_expense_id: id
       });

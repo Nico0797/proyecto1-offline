@@ -8,8 +8,11 @@ interface ExpensesAnalyticsTabProps {
 }
 
 export const ExpensesAnalyticsTab: React.FC<ExpensesAnalyticsTabProps> = ({ expenses }) => {
+  // Filter out 'Recurrente' category completely from analytics
+  const validExpenses = expenses.filter(e => e.category !== 'Recurrente');
+
   // 1. Category Breakdown
-  const categoryTotals = expenses.reduce((acc, expense) => {
+  const categoryTotals = validExpenses.reduce((acc, expense) => {
     acc[expense.category] = (acc[expense.category] || 0) + expense.amount;
     return acc;
   }, {} as Record<string, number>);
@@ -18,7 +21,7 @@ export const ExpensesAnalyticsTab: React.FC<ExpensesAnalyticsTabProps> = ({ expe
     .sort(([, a], [, b]) => b - a)
     .map(([name, total]) => ({ name, total }));
 
-  const totalExpenses = expenses.reduce((sum, e) => sum + e.amount, 0);
+  const totalExpenses = validExpenses.reduce((sum, e) => sum + e.amount, 0);
 
   // 2. Trend (Last 7 days vs Previous 7 days) - Simplified
   // Just showing daily totals for now

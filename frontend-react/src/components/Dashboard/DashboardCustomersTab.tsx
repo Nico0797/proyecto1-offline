@@ -12,7 +12,7 @@ import { Users, AlertTriangle, Wallet } from 'lucide-react';
 
 export const DashboardCustomersTab = () => {
   const { activeBusiness } = useBusinessStore();
-  const { customers } = useCustomerStore();
+  const { customers, fetchCustomers } = useCustomerStore();
   const { sales, fetchSales } = useSaleStore();
   
   const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);

@@ -1,9 +1,11 @@
 import React from 'react';
 import { Payment } from '../../store/paymentStore';
 import { Button } from '../ui/Button';
-import { Eye, Edit2, Trash2 } from 'lucide-react';
+import { Eye, Edit2, Trash2, MessageCircle } from 'lucide-react';
 import { cn } from '../../utils/cn';
 import { DataTableContainer } from '../Layout/PageLayout';
+import { settingsService } from '../../services/settingsService';
+import { useBusinessStore } from '../../store/businessStore';
 
 interface TransactionsTabProps {
   payments: Payment[];
@@ -20,6 +22,29 @@ export const TransactionsTab: React.FC<TransactionsTabProps> = ({
   onEdit,
   onDelete
 }) => {
+  const { activeBusiness } = useBusinessStore();
+
+  const handleWhatsApp = (payment: Payment, e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (!activeBusiness) return;
+
+    const templates = settingsService.getTemplates(activeBusiness.id);
+    let message = templates.payment || 'Hola {cliente}, hemos recibido tu abono de ${monto} en {negocio}. Tu nuevo saldo es ${saldo}. ¡Gracias!';
+
+    // Replace placeholders
+    message = message.replace('{cliente}', payment.customer_name || 'Cliente');
+    message = message.replace('{negocio}', activeBusiness.name);
+    message = message.replace('{monto}', `$${payment.amount.toLocaleString()}`);
+    // Note: We don't have the current balance here directly in the payment object, 
+    // so we might need to omit it or fetch it. For now, let's assume we don't show balance if not available
+    // or we could show "Consultar"
+    message = message.replace('{saldo}', 'Consultar'); 
+    message = message.replace('{fecha}', new Date(payment.payment_date).toLocaleDateString());
+
+    const url = `https://wa.me/?text=${encodeURIComponent(message)}`;
+    window.open(url, '_blank');
+  };
+
   if (loading && payments.length === 0) {
     return <div className="p-8 text-center text-gray-500">Cargando transacciones...</div>;
   }
@@ -27,9 +52,9 @@ export const TransactionsTab: React.FC<TransactionsTabProps> = ({
   if (payments.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center p-12 bg-white dark:bg-gray-800 rounded-xl border border-dashed border-gray-300 dark:border-gray-700">
-        <h3 className="text-lg font-medium text-gray-900 dark:text-white">Sin transacciones</h3>
+        <h3 className="text-lg font-medium text-gray-900 dark:text-white">Sin transacciones en este período</h3>
         <p className="text-gray-500 text-center max-w-sm mt-2">
-          No hay registros de pagos recientes.
+          Ajusta el filtro de fechas con el ícono de calendario para ver más resultados.
         </p>
       </div>
     );
@@ -57,8 +82,14 @@ export const TransactionsTab: React.FC<TransactionsTabProps> = ({
                </div>
                
                <div className="flex justify-between items-end border-t border-gray-50 dark:border-gray-700/50 pt-3">
-                   <div className="max-w-[60%]">
+                   <div className="max-w-[50%]">
                        <p className="text-xs text-gray-500 dark:text-gray-400 truncate">{payment.note || '-'}</p>
+                       <button 
+                        className="mt-2 text-xs flex items-center text-green-600 dark:text-green-400 font-medium"
+                        onClick={(e) => handleWhatsApp(payment, e)}
+                       >
+                         <MessageCircle className="w-3 h-3 mr-1" /> Enviar constancia
+                       </button>
                    </div>
                    <div className="text-right">
                        <span className="text-xs text-gray-500 dark:text-gray-400">Monto</span>
@@ -110,6 +141,9 @@ export const TransactionsTab: React.FC<TransactionsTabProps> = ({
                         </td>
                         <td className="px-6 py-4 text-right">
                         <div className="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                            <Button variant="ghost" size="icon" className="h-8 w-8 text-green-600 hover:text-green-700 hover:bg-green-50" onClick={(e) => handleWhatsApp(payment, e)} title="Enviar constancia">
+                                <MessageCircle className="w-4 h-4" />
+                            </Button>
                             <Button variant="ghost" size="icon" className="h-8 w-8" onClick={(e) => { e.stopPropagation(); onView(payment); }}>
                             <Eye className="w-4 h-4 text-blue-500" />
                             </Button>

@@ -133,7 +133,7 @@ export const ProductModal: React.FC<ProductModalProps> = ({ isOpen, onClose, pro
   const margin = formData.price > 0 ? ((formData.price - formData.cost) / formData.price) * 100 : 0;
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} title={product ? 'Editar Producto' : 'Nuevo Producto'} className="max-w-2xl">
+    <Modal isOpen={isOpen} onClose={onClose} title={product ? 'Editar Producto' : 'Nuevo Producto'} className="max-w-md md:max-w-2xl">
       <div className="flex flex-col h-full">
         {/* Tabs */}
         <div className="flex border-b border-gray-200 dark:border-gray-700 mb-6">

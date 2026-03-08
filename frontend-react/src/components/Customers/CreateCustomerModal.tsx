@@ -28,6 +28,7 @@ export const CreateCustomerModal: React.FC<CreateCustomerModalProps> = ({
     phone: '',
     address: '',
     email: '',
+    notes: '',
   });
 
   useEffect(() => {
@@ -37,6 +38,7 @@ export const CreateCustomerModal: React.FC<CreateCustomerModalProps> = ({
         phone: customerToEdit.phone || '',
         address: customerToEdit.address || '',
         email: customerToEdit.email || '',
+        notes: customerToEdit.notes || '',
       });
     } else {
       setFormData({
@@ -44,6 +46,7 @@ export const CreateCustomerModal: React.FC<CreateCustomerModalProps> = ({
         phone: '',
         address: '',
         email: '',
+        notes: '',
       });
     }
   }, [customerToEdit, isOpen]);
@@ -124,6 +127,18 @@ export const CreateCustomerModal: React.FC<CreateCustomerModalProps> = ({
             value={formData.address}
             onChange={(e) => setFormData({ ...formData, address: e.target.value })}
             placeholder="Dirección física"
+          />
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium text-gray-400 mb-1">
+            Notas internas
+          </label>
+          <textarea
+            value={formData.notes}
+            onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
+            placeholder="Observaciones internas, preferencias, recordatorios"
+            className="w-full bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-sm text-gray-100 placeholder-gray-500 resize-y min-h-[80px]"
           />
         </div>
 

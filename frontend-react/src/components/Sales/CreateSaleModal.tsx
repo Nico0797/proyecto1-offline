@@ -32,7 +32,7 @@ export const CreateSaleModal = ({ isOpen, onClose, onSuccess }: { isOpen: boolea
   
   const [saleItems, setSaleItems] = useState<SaleItem[]>([]);
   const [paymentType, setPaymentType] = useState<'paid' | 'credit' | 'partial'>('paid');
-  const [paymentMethod, setPaymentMethod] = useState<'cash' | 'transfer' | 'card'>('cash');
+  const [paymentMethod, setPaymentMethod] = useState<string>('cash');
   const [amountPaid, setAmountPaid] = useState<number>(0);
   const [note, setNote] = useState('');
   const [loading, setLoading] = useState(false);
@@ -268,36 +268,45 @@ export const CreateSaleModal = ({ isOpen, onClose, onSuccess }: { isOpen: boolea
                         ) : (
                             <div className="space-y-3">
                                 {saleItems.map((item, index) => (
-                                    <div key={index} className="bg-white dark:bg-gray-800 p-3 rounded-lg shadow-sm border border-gray-100 dark:border-gray-700 flex items-center gap-4">
-                                        <div className="flex-1">
-                                            <p className="font-medium text-gray-900 dark:text-white">{item.name}</p>
-                                            <input 
-                                                type="number"
-                                                className="text-sm text-blue-600 bg-transparent border-none p-0 w-24 focus:ring-0 font-medium"
-                                                value={item.unit_price}
-                                                onChange={(e) => handleUpdatePrice(index, parseFloat(e.target.value) || 0)}
-                                            />
+                                    <div key={index} className="bg-white dark:bg-gray-800 p-3 rounded-lg shadow-sm border border-gray-100 dark:border-gray-700 flex flex-col sm:flex-row gap-3 sm:items-center">
+                                        <div className="flex-1 min-w-0">
+                                            <p className="font-medium text-gray-900 dark:text-white truncate">{item.name}</p>
+                                            <div className="flex items-center gap-1 mt-1">
+                                                <span className="text-xs text-gray-400">$</span>
+                                                <input 
+                                                    type="number"
+                                                    className="text-sm text-blue-600 bg-transparent border-none p-0 w-24 focus:ring-0 font-medium"
+                                                    value={item.unit_price}
+                                                    onChange={(e) => handleUpdatePrice(index, parseFloat(e.target.value) || 0)}
+                                                />
+                                            </div>
                                         </div>
-                                        <div className="flex items-center bg-gray-100 dark:bg-gray-700 rounded-lg">
-                                            <button 
-                                                className="w-8 h-8 flex items-center justify-center hover:bg-gray-200 dark:hover:bg-gray-600 rounded-l-lg"
-                                                onClick={() => handleUpdateQuantity(index, item.qty - 1)}
-                                            >-</button>
-                                            <span className="w-8 text-center font-medium text-sm">{item.qty}</span>
-                                            <button 
-                                                className="w-8 h-8 flex items-center justify-center hover:bg-gray-200 dark:hover:bg-gray-600 rounded-r-lg"
-                                                onClick={() => handleUpdateQuantity(index, item.qty + 1)}
-                                            >+</button>
+                                        
+                                        <div className="flex items-center justify-between gap-4">
+                                            <div className="flex items-center bg-gray-100 dark:bg-gray-700 rounded-lg shrink-0">
+                                                <button 
+                                                    className="w-8 h-8 flex items-center justify-center hover:bg-gray-200 dark:hover:bg-gray-600 rounded-l-lg touch-manipulation"
+                                                    onClick={() => handleUpdateQuantity(index, item.qty - 1)}
+                                                >-</button>
+                                                <span className="w-8 text-center font-medium text-sm">{item.qty}</span>
+                                                <button 
+                                                    className="w-8 h-8 flex items-center justify-center hover:bg-gray-200 dark:hover:bg-gray-600 rounded-r-lg touch-manipulation"
+                                                    onClick={() => handleUpdateQuantity(index, item.qty + 1)}
+                                                >+</button>
+                                            </div>
+                                            
+                                            <div className="flex items-center gap-3">
+                                                <div className="w-20 sm:w-24 text-right font-bold text-gray-900 dark:text-white truncate">
+                                                    {formatCOP(item.total)}
+                                                </div>
+                                                <button 
+                                                    onClick={() => handleRemoveItem(index)}
+                                                    className="text-gray-400 hover:text-red-500 transition-colors p-1"
+                                                >
+                                                    <X className="w-4 h-4" />
+                                                </button>
+                                            </div>
                                         </div>
-                                        <div className="w-24 text-right font-bold text-gray-900 dark:text-white">
-                                            {formatCOP(item.total)}
-                                        </div>
-                                        <button 
-                                            onClick={() => handleRemoveItem(index)}
-                                            className="text-gray-400 hover:text-red-500 transition-colors"
-                                        >
-                                            <X className="w-4 h-4" />
-                                        </button>
                                     </div>
                                 ))}
                             </div>
@@ -312,11 +321,11 @@ export const CreateSaleModal = ({ isOpen, onClose, onSuccess }: { isOpen: boolea
                           <span>Subtotal</span>
                           <span>{formatCOP(subtotal)}</span>
                       </div>
-                      <div className="flex items-center justify-between gap-2" data-tour="sales.modal.discount">
+                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2" data-tour="sales.modal.discount">
                         <span className="text-gray-500 dark:text-gray-400">Descuento</span>
-                        <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-2 self-end sm:self-auto">
                           <select
-                            className="px-2 py-1 text-xs rounded-lg bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700"
+                            className="h-9 px-2 text-xs rounded-lg bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
                             value={discountType}
                             onChange={(e) => setDiscountType(e.target.value as 'amount' | 'percent')}
                           >
@@ -325,7 +334,7 @@ export const CreateSaleModal = ({ isOpen, onClose, onSuccess }: { isOpen: boolea
                           </select>
                           <input
                             type="number"
-                            className="w-24 px-2 py-1 text-right rounded-lg bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700"
+                            className="w-28 h-9 px-3 text-right rounded-lg bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
                             value={discountValue}
                             min={0}
                             max={discountType === 'percent' ? 100 : subtotal}
@@ -456,27 +465,20 @@ export const CreateSaleModal = ({ isOpen, onClose, onSuccess }: { isOpen: boolea
                     </div>
 
                     <div className="space-y-4">
-                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Método</label>
-                        <div className="grid grid-cols-2 gap-2">
-                             <button
-                                className={`p-3 rounded-lg border text-center text-sm font-medium ${paymentMethod === 'cash' ? 'bg-blue-600 text-white border-blue-600' : 'bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700'}`}
-                                onClick={() => setPaymentMethod('cash')}
-                             >
-                                 Efectivo
-                             </button>
-                             <button
-                                className={`p-3 rounded-lg border text-center text-sm font-medium ${paymentMethod === 'transfer' ? 'bg-blue-600 text-white border-blue-600' : 'bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700'}`}
-                                onClick={() => setPaymentMethod('transfer')}
-                             >
-                                 Transferencia
-                             </button>
-                             <button
-                                className={`p-3 rounded-lg border text-center text-sm font-medium ${paymentMethod === 'card' ? 'bg-blue-600 text-white border-blue-600' : 'bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700'}`}
-                                onClick={() => setPaymentMethod('card')}
-                             >
-                                 Tarjeta
-                             </button>
-                        </div>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Método de Pago</label>
+                        <select
+                            className="w-full bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg px-3 py-3 text-sm focus:ring-2 focus:ring-blue-500 outline-none"
+                            value={paymentMethod}
+                            onChange={(e) => setPaymentMethod(e.target.value)}
+                        >
+                            <option value="cash">Efectivo</option>
+                            <option value="nequi">Nequi</option>
+                            <option value="daviplata">Daviplata</option>
+                            <option value="bancolombia">Bancolombia</option>
+                            <option value="card">Tarjeta</option>
+                            <option value="transfer">Transferencia</option>
+                            <option value="other">Otro</option>
+                        </select>
 
                         {paymentType === 'partial' && (
                              <div>

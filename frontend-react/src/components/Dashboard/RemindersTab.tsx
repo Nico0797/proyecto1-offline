@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useBusinessStore } from '../../store/businessStore';
 import { reminderService, Reminder, CreateReminderDTO, ReminderStatus, Priority } from '../../services/reminderService';
 import { ReminderCard } from '../Reminders/ReminderCard';

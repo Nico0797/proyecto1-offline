@@ -30,21 +30,59 @@ export const InventoryTab: React.FC<InventoryTabProps> = ({ products }) => {
   const productList = products.filter(p => p.type === 'product');
 
   return (
-    <table className="w-full text-left text-sm" data-tour="products.inventory.table">
-      <thead className="bg-gray-50 dark:bg-gray-900 text-gray-500 dark:text-gray-400 font-medium border-b border-gray-200 dark:border-gray-700 sticky top-0 z-10 shadow-sm">
-        <tr>
-          <th className="px-6 py-4">Producto</th>
-          <th className="px-6 py-4 text-center">Stock Actual</th>
-          <th className="px-6 py-4 text-center">Estado</th>
-          <th className="px-6 py-4 text-right">Valor Total</th>
-          <th className="px-6 py-4 text-center" data-tour="products.inventory.quickAdjust">Ajuste Rápido</th>
-        </tr>
-      </thead>
-      <tbody className="divide-y divide-gray-100 dark:divide-gray-700 bg-white dark:bg-gray-800">
+    <>
+      {/* Mobile list */}
+      <div className="md:hidden space-y-2" data-tour="products.inventory.list">
         {productList.map((product) => {
+          const stockStatus = getStockStatus(product);
+          const totalValue = (product.cost || 0) * product.stock;
+          return (
+            <div key={product.id} className="flex items-center justify-between p-3 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
+              <div className="min-w-0">
+                <div className="font-medium text-gray-900 dark:text-white truncate">{product.name}</div>
+                <div className="text-xs text-gray-500 dark:text-gray-400">SKU: {product.sku || 'N/A'}</div>
+                <div className="text-xs text-gray-500 dark:text-gray-400">Valor: {moneyCOP(totalValue)}</div>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className={`hidden xs:inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium ${getStockStatusColor(stockStatus)}`}>
+                  {stockStatus === 'out_of_stock' ? 'Sin' : stockStatus === 'low_stock' ? 'Bajo' : 'OK'}
+                </span>
+                <div className="text-sm font-semibold text-gray-900 dark:text-white">{product.stock} <span className="text-xs text-gray-500">{product.unit}</span></div>
+                <button
+                  onClick={() => handleAdjustStock(product, -1)}
+                  disabled={loadingId === product.id || product.stock <= 0}
+                  className="p-1.5 rounded-md bg-red-100 text-red-600 hover:bg-red-200 dark:bg-red-900/30 dark:text-red-400 disabled:opacity-50"
+                >
+                  <Minus className="w-4 h-4" />
+                </button>
+                <button
+                  onClick={() => handleAdjustStock(product, 1)}
+                  disabled={loadingId === product.id}
+                  className="p-1.5 rounded-md bg-green-100 text-green-600 hover:bg-green-200 dark:bg-green-900/30 dark:text-green-400 disabled:opacity-50"
+                >
+                  <Plus className="w-4 h-4" />
+                </button>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+
+      {/* Desktop table */}
+      <table className="hidden md:table w-full text-left text-sm" data-tour="products.inventory.table">
+        <thead className="bg-gray-50 dark:bg-gray-900 text-gray-500 dark:text-gray-400 font-medium border-b border-gray-200 dark:border-gray-700 sticky top-0 z-10 shadow-sm">
+          <tr>
+            <th className="px-6 py-4">Producto</th>
+            <th className="px-6 py-4 text-center">Stock Actual</th>
+            <th className="px-6 py-4 text-center">Estado</th>
+            <th className="px-6 py-4 text-right">Valor Total</th>
+            <th className="px-6 py-4 text-center" data-tour="products.inventory.quickAdjust">Ajuste Rápido</th>
+          </tr>
+        </thead>
+        <tbody className="divide-y divide-gray-100 dark:divide-gray-700 bg-white dark:bg-gray-800">
+          {productList.map((product) => {
             const stockStatus = getStockStatus(product);
             const totalValue = (product.cost || 0) * product.stock;
-
             return (
               <tr key={product.id} className="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
                 <td className="px-6 py-4">
@@ -86,5 +124,6 @@ export const InventoryTab: React.FC<InventoryTabProps> = ({ products }) => {
           })}
         </tbody>
       </table>
+    </>
   );
 };

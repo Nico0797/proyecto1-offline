@@ -1,5 +1,5 @@
 import React from 'react';
-import { Search, Download, Settings } from 'lucide-react';
+import { Search, Settings } from 'lucide-react';
 import { Input } from '../ui/Input';
 import { Button } from '../ui/Button';
 
@@ -8,7 +8,6 @@ interface ClientsToolbarProps {
   onSearchChange: (value: string) => void;
   filter: string;
   onFilterChange: (value: string) => void;
-  onExport: () => void;
   onOpenSettings: () => void;
 }
 
@@ -17,7 +16,6 @@ export const ClientsToolbar: React.FC<ClientsToolbarProps> = ({
   onSearchChange,
   filter,
   onFilterChange,
-  onExport,
   onOpenSettings,
 }) => {
   return (
@@ -54,9 +52,6 @@ export const ClientsToolbar: React.FC<ClientsToolbarProps> = ({
         <div className="flex gap-2">
           <Button variant="secondary" onClick={onOpenSettings} title="Configurar Fiados" className="shrink-0 px-3" data-tour="customers.creditLimit">
                 <Settings className="w-4 h-4" />
-          </Button>
-          <Button variant="secondary" onClick={onExport} title="Exportar CSV" className="shrink-0 px-3">
-             <Download className="w-4 h-4" />
           </Button>
         </div>
       </div>

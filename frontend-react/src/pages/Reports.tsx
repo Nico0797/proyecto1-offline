@@ -12,13 +12,16 @@ import {
   Users,
   Store,
   Wallet,
-  FileText
+  FileText,
+  Layers
 } from 'lucide-react';
 import { Button } from '../components/ui/Button';
 import { cn } from '../utils/cn';
 import { format, subDays } from 'date-fns';
 import { PeriodFilter } from '../components/ui/PeriodFilter';
 import { DateRange, getPeriodPreference } from '../utils/dateRange.utils';
+import { toast } from 'react-hot-toast';
+import { downloadFile, generateFilename } from '../utils/downloadHelper';
 
 import {
   ExecutiveSummaryTab,
@@ -26,7 +29,8 @@ import {
   ClientsReportTab,
   ProductsReportTab,
   ExpensesReportTab,
-  ReceivablesReportTab
+  ReceivablesReportTab,
+  CombinedReportsTab
 } from '../components/Reports';
 import { SwipePager } from '../components/ui/SwipePager';
 
@@ -37,6 +41,8 @@ export const Reports = () => {
   // --- State ---
   const [activeTab, setActiveTab] = useState<string>('executive');
   const [loading, setLoading] = useState(false);
+  const [exporting, setExporting] = useState(false);
+
   // Filters
   const [dateRange, setDateRange] = useState<DateRange>(() => getPeriodPreference('reports'));
   const [comparePeriod, setComparePeriod] = useState(false);
@@ -47,6 +53,11 @@ export const Reports = () => {
   // --- Data Fetching ---
   const fetchData = useCallback(async () => {
     if (!activeBusiness || !dateRange.start || !dateRange.end) return;
+    
+    // Skip fetching if combined tab (it handles its own data on demand or doesn't need summary data)
+    // Actually combined tab uses separate downloads, but maybe we want to keep fetching summary data 
+    // to prevent errors if switching tabs.
+    
     setLoading(true);
     try {
       const startDate = dateRange.start;
@@ -93,6 +104,7 @@ export const Reports = () => {
       });
     } catch (error) {
       console.error('Error fetching report data:', error);
+      toast.error('Error al cargar datos');
     } finally {
       setLoading(false);
     }
@@ -104,70 +116,77 @@ export const Reports = () => {
 
   // --- Handlers ---
 
-  const handleExport = () => {
-    if (!reportData) return;
-    
-    // CSV Export logic
-    const headers: string[] = [];
-    let rows: any[] = [];
-    
-    if (activeTab === 'executive') {
-        headers.push('KPI', 'Valor Actual', 'Valor Anterior', 'Cambio (%)');
-        rows = reportData.kpis.map((k: any) => [
-            k.label, 
-            k.value, 
-            k.previousValue, 
-            k.change.toFixed(2) + '%'
-        ]);
-    } else if (activeTab === 'sales') {
-        headers.push('Fecha', 'Ventas ($)', '# Transacciones');
-        rows = reportData.trend.map((t: any) => [
-            t.date,
-            t.amount,
-            t.count
-        ]);
-    } else if (activeTab === 'clients') {
-        headers.push('Cliente', 'Última Compra', 'Total Gastado', 'Compras', 'Saldo');
-        rows = reportData.clients.map((c: any) => [
-            c.name,
-            c.last_purchase || 'N/A',
-            c.total_spent,
-            c.purchase_count,
-            c.balance
-        ]);
-    } else if (activeTab === 'products') {
-        headers.push('Producto', 'Unidades Vendidas', 'Total Ingresos');
-        rows = reportData.products.map((p: any) => [
-            p.name,
-            p.qty,
-            p.total
-        ]);
-    } else if (activeTab === 'expenses') {
-        headers.push('Categoría', 'Monto Total');
-        rows = reportData.expenses.map((e: any) => [
-            e.category,
-            e.total
-        ]);
-    } else if (activeTab === 'receivables') {
-        headers.push('Cliente', 'Saldo Pendiente', 'Vencido');
-        rows = reportData.clients
-            .filter((c: any) => c.balance > 0)
-            .map((c: any) => [
-                c.name,
-                c.balance,
-                c.is_overdue ? 'SI' : 'NO'
-            ]);
+  const handleExport = async () => {
+    if (!activeBusiness || !dateRange.start || !dateRange.end) return;
+
+    if (activeTab === 'combined') {
+        toast('Selecciona un reporte específico de la lista abajo 👇', { icon: '💡' });
+        return;
     }
 
-    const csvContent = "data:text/csv;charset=utf-8," 
-      + [headers.join(','), ...rows.map(r => r.join(','))].join('\n');
-      
-    const link = document.createElement("a");
-    link.setAttribute("href", encodeURI(csvContent));
-    link.setAttribute("download", `reporte_${activeTab}_${format(new Date(), 'yyyyMMdd')}.csv`);
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+    setExporting(true);
+    // Use loading toast but manage ID to update it
+    const toastId = toast.loading('Generando archivo...');
+    
+    try {
+        let reportType: 'sales' | 'expenses' | 'combined' = 'combined';
+        let specificType = '';
+
+        // Map tab to backend report type
+        switch (activeTab) {
+            case 'sales': 
+                // Using general business as it includes sales detail
+                reportType = 'combined'; 
+                specificType = 'general_business';
+                break;
+            case 'expenses': 
+                reportType = 'combined';
+                specificType = 'finance_full'; 
+                break;
+            case 'executive': 
+                reportType = 'combined';
+                specificType = 'general_business'; 
+                break;
+            case 'clients': 
+                reportType = 'combined';
+                specificType = 'customers_full'; 
+                break;
+            case 'products': 
+                reportType = 'combined';
+                specificType = 'products_full'; 
+                break;
+            case 'receivables': 
+                reportType = 'combined';
+                specificType = 'customers_full'; 
+                break;
+            default: 
+                reportType = 'combined';
+                specificType = 'general_business';
+        }
+
+        const url = await analyticsService.getExportUrl(activeBusiness.id, reportType, {
+            startDate: dateRange.start,
+            endDate: dateRange.end,
+            type: specificType
+        });
+        
+        const filename = generateFilename(`reporte_${activeTab}`, dateRange.start, dateRange.end);
+        const token = localStorage.getItem('token') || undefined;
+        
+        const success = await downloadFile(url, { filename }, token);
+        
+        if (success) {
+            toast.success('Descarga completada', { id: toastId });
+        } else {
+            toast.error('Error en la descarga', { id: toastId });
+        }
+
+    } catch (error) {
+        console.error(error);
+        toast.error('Error al generar el reporte', { id: toastId });
+    } finally {
+        setExporting(false);
+    }
   };
 
   const handleSavePreset = () => {
@@ -201,9 +220,20 @@ export const Reports = () => {
                 <Save className="w-4 h-4 mr-2" />
                 Guardar
               </Button>
-              <Button variant="outline" size="sm" onClick={handleExport} className="flex-1 lg:flex-none" data-tour="reports.export">
-                <Download className="w-4 h-4 mr-2" />
-                Exportar
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={handleExport} 
+                className="flex-1 lg:flex-none" 
+                data-tour="reports.export"
+                disabled={exporting}
+              >
+                {exporting ? (
+                    <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
+                ) : (
+                    <Download className="w-4 h-4 mr-2" />
+                )}
+                {exporting ? 'Exportando...' : 'Exportar Actual'}
               </Button>
               <Button size="sm" onClick={fetchData} disabled={loading} className="flex-1 lg:flex-none">
                 <RefreshCw className={cn("w-4 h-4 mr-2", loading && "animate-spin")} />
@@ -265,6 +295,18 @@ export const Reports = () => {
                 )
             },
             {
+                id: 'combined',
+                title: 'Avanzados',
+                icon: Layers,
+                content: (
+                    <div className="p-4 md:p-6 overflow-y-auto h-full">
+                        <div className="max-w-7xl mx-auto">
+                            <CombinedReportsTab dateRange={dateRange} loading={loading} />
+                        </div>
+                    </div>
+                )
+            },
+            {
                 id: 'sales',
                 title: 'Ventas',
                 icon: ShoppingCart,
@@ -284,7 +326,7 @@ export const Reports = () => {
             },
             {
                 id: 'expenses',
-                title: 'Gastos', // Shortened from ExpensesReportTab default
+                title: 'Gastos',
                 icon: Wallet,
                 content: <ExpensesReportTab data={reportData} loading={loading} />
             },

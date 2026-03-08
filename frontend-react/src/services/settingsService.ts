@@ -117,7 +117,8 @@ export const settingsService = {
     return {
       sale: local.sale || 'Hola {cliente}, tu compra en {negocio} por ${total} fue exitosa.',
       debt: local.debt || 'Hola {cliente}, te recordamos tu saldo pendiente de ${saldo} en {negocio}.',
-      welcome: local.welcome || '¡Bienvenido a {negocio}, {cliente}!'
+      welcome: local.welcome || '¡Bienvenido a {negocio}, {cliente}!',
+      payment: local.payment || 'Hola {cliente}, hemos recibido tu abono de ${monto} en {negocio}. Tu nuevo saldo es ${saldo}. ¡Gracias!'
     };
   },
 

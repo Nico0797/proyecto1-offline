@@ -9,6 +9,7 @@ interface Page {
   content: ReactNode;
   badge?: number | string; // For notifications/counts
   'data-tour'?: string;
+  variant?: 'default' | 'success' | 'warning' | 'danger' | 'info';
 }
 
 interface SwipePagerProps {
@@ -17,6 +18,7 @@ interface SwipePagerProps {
   onPageChange: (id: string) => void;
   className?: string;
   mobileBreakpoint?: number; // px, default 768
+  contentScroll?: 'auto' | 'visible';
 }
 
 export const SwipePager: React.FC<SwipePagerProps> = ({
@@ -25,11 +27,10 @@ export const SwipePager: React.FC<SwipePagerProps> = ({
   onPageChange,
   className,
   mobileBreakpoint = 1024, // Increased to cover tablets/small laptops for better touch experience
+  contentScroll = 'auto',
 }) => {
   const [isMobile, setIsMobile] = useState(() => typeof window !== 'undefined' ? window.innerWidth < mobileBreakpoint : false);
 
-
-  // Initialize Embla
   // We only enable drag on mobile.
   const [emblaRef, emblaApi] = useEmblaCarousel({ 
     loop: false, 
@@ -86,23 +87,32 @@ export const SwipePager: React.FC<SwipePagerProps> = ({
     <div className={cn("flex flex-col h-full w-full overflow-hidden", className)}>
       {/* Tabs Header */}
       <div className="shrink-0 z-20 bg-white/90 dark:bg-gray-900/90 backdrop-blur border-b border-gray-200 dark:border-gray-800 transition-all">
-         <div className="flex overflow-x-auto no-scrollbar px-3 md:px-4 py-2.5 gap-2 md:gap-4 touch-pan-x">
+         <div className="flex overflow-x-auto no-scrollbar px-3 md:px-4 py-2.5 gap-2 md:gap-4 touch-pan-x after:content-[''] after:block after:w-12 after:shrink-0">
             {pages.map((page) => {
               const isActive = page.id === activePageId;
               const Icon = page.icon;
+              const variant = page.variant || 'default';
               
+              const activeStyles = {
+                default: "bg-blue-50 text-blue-700 dark:bg-blue-500/15 dark:text-blue-400 border border-blue-200/70 dark:border-blue-500/20",
+                success: "bg-green-50 text-green-700 dark:bg-green-500/15 dark:text-green-400 border border-green-200/70 dark:border-green-500/20",
+                warning: "bg-yellow-50 text-yellow-700 dark:bg-yellow-500/15 dark:text-yellow-400 border border-yellow-200/70 dark:border-yellow-500/20",
+                danger: "bg-red-50 text-red-700 dark:bg-red-500/15 dark:text-red-400 border border-red-200/70 dark:border-red-500/20",
+                info: "bg-cyan-50 text-cyan-700 dark:bg-cyan-500/15 dark:text-cyan-400 border border-cyan-200/70 dark:border-cyan-500/20",
+              };
+
               return (
                 <button
                   key={page.id}
                   onClick={() => onPageChange(page.id)}
                   data-tour={page['data-tour']}
                   className={cn(
-                    "flex items-center gap-1.5 px-2 py-1.5 rounded-lg text-xs font-medium transition-all whitespace-nowrap select-none relative",
+                    "flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium transition-all whitespace-nowrap select-none relative shrink-0",
                     // Mobile: Segmented/Pill style
                     isMobile && isActive 
-                      ? "bg-blue-50 text-blue-700 dark:bg-blue-500/15 dark:text-blue-400 border border-blue-200/70 dark:border-blue-500/20 shadow-sm" 
+                      ? `${activeStyles[variant]} shadow-sm` 
                       : isMobile 
-                        ? "text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800 border border-gray-200 dark:border-gray-700/70"
+                        ? "text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800 border border-gray-200 dark:border-gray-700/70 bg-white dark:bg-gray-800"
                         : "",
                     // Desktop: Tab style
                     !isMobile && isActive 
@@ -137,7 +147,7 @@ export const SwipePager: React.FC<SwipePagerProps> = ({
                   className="flex-[0_0_100%] min-w-0 h-full relative"
                 >
                   {/* Internal Scroll Container */}
-                  <div className="h-full w-full overflow-y-auto overflow-x-hidden p-4 pb-24">
+                  <div className={`h-full w-full ${contentScroll === 'visible' ? 'overflow-y-visible' : 'overflow-y-auto'} overflow-x-hidden p-4 pb-24`}>
                       {page.content}
                   </div>
                 </div>
@@ -146,7 +156,7 @@ export const SwipePager: React.FC<SwipePagerProps> = ({
           </div>
         ) : (
           /* Desktop: Standard Render (only active page) */
-          <div className="h-full w-full overflow-y-auto overflow-x-hidden p-6">
+          <div className={`h-full w-full ${contentScroll === 'visible' ? 'overflow-y-visible' : 'overflow-y-auto'} overflow-x-hidden p-6`}>
              {pages.find(p => p.id === activePageId)?.content}
           </div>
         )}

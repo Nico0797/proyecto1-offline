@@ -1,5 +1,4 @@
-import React from 'react';
-import { Check, X, Minus } from 'lucide-react';
+import { Check, X } from 'lucide-react';
 
 const FEATURES = [
   { name: 'Negocios', free: '1', pro: 'Ilimitados' },

@@ -6,8 +6,8 @@ import { LayoutTemplate, Play, RefreshCcw } from 'lucide-react';
 
 export const TemplatesSettingsTab = () => {
   const { activeBusiness } = useBusinessStore();
-  const [activeType, setActiveType] = useState<'sale' | 'debt' | 'welcome'>('sale');
-  const [templates, setTemplates] = useState({ sale: '', debt: '', welcome: '' });
+  const [activeType, setActiveType] = useState<'sale' | 'debt' | 'welcome' | 'payment'>('sale');
+  const [templates, setTemplates] = useState({ sale: '', debt: '', welcome: '', payment: '' });
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
@@ -40,7 +40,8 @@ export const TemplatesSettingsTab = () => {
     const defaults = {
         sale: 'Hola {cliente}, tu compra en {negocio} por ${total} fue exitosa.',
         debt: 'Hola {cliente}, te recordamos tu saldo pendiente de ${saldo} en {negocio}.',
-        welcome: '¡Bienvenido a {negocio}, {cliente}!'
+        welcome: '¡Bienvenido a {negocio}, {cliente}!',
+        payment: 'Hola {cliente}, hemos recibido tu abono de ${monto} en {negocio}. Tu nuevo saldo es ${saldo}. ¡Gracias!'
     };
     setTemplates({ ...templates, [activeType]: defaults[activeType] });
   };
@@ -52,6 +53,8 @@ export const TemplatesSettingsTab = () => {
     text = text.replace('{total}', '$150.000');
     text = text.replace('{saldo}', '$50.000');
     text = text.replace('{items}', '1x Producto A, 2x Producto B');
+    text = text.replace('{monto}', '$100.000');
+    text = text.replace('{fecha}', new Date().toLocaleDateString());
     return text;
   };
 
@@ -82,6 +85,12 @@ export const TemplatesSettingsTab = () => {
             >
                 Bienvenida Cliente
             </button>
+            <button 
+                onClick={() => setActiveType('payment')}
+                className={`w-full text-left p-3 rounded-lg transition-colors ${activeType === 'payment' ? 'bg-green-600 text-white' : 'bg-gray-700 text-gray-300 hover:bg-gray-600'}`}
+            >
+                Confirmación de Abono
+            </button>
         </div>
 
         <div className="lg:col-span-2 space-y-4">
@@ -98,6 +107,8 @@ export const TemplatesSettingsTab = () => {
                         <span className="bg-gray-700 px-1.5 py-0.5 rounded cursor-pointer hover:text-white" onClick={() => setTemplates({...templates, [activeType]: templates[activeType] + '{cliente}'})}>{`{cliente}`}</span>
                         <span className="bg-gray-700 px-1.5 py-0.5 rounded cursor-pointer hover:text-white" onClick={() => setTemplates({...templates, [activeType]: templates[activeType] + '{negocio}'})}>{`{negocio}`}</span>
                         <span className="bg-gray-700 px-1.5 py-0.5 rounded cursor-pointer hover:text-white" onClick={() => setTemplates({...templates, [activeType]: templates[activeType] + '{total}'})}>{`{total}`}</span>
+                        <span className="bg-gray-700 px-1.5 py-0.5 rounded cursor-pointer hover:text-white" onClick={() => setTemplates({...templates, [activeType]: templates[activeType] + '{monto}'})}>{`{monto}`}</span>
+                        <span className="bg-gray-700 px-1.5 py-0.5 rounded cursor-pointer hover:text-white" onClick={() => setTemplates({...templates, [activeType]: templates[activeType] + '{saldo}'})}>{`{saldo}`}</span>
                     </div>
                     <button onClick={handleReset} className="flex items-center gap-1 hover:text-red-400 transition-colors">
                         <RefreshCcw className="w-3 h-3" /> Restaurar

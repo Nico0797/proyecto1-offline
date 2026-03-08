@@ -25,7 +25,8 @@ import {
   Bell,
   HelpCircle,
   Lock,
-  Sparkles
+  Sparkles,
+  CreditCard
 } from 'lucide-react';
 import logo from '../../assets/logo.png';
 
@@ -142,6 +143,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, setIsOpen }) => {
       title: 'Finanzas',
       items: [
         { path: '/expenses', icon: Wallet, label: 'Gastos' },
+        { path: '/debts', icon: CreditCard, label: 'Deudas' },
         { path: '/reports', icon: FileBarChart, label: 'Reportes', feature: FEATURES.REPORTS, badge: 'PRO' },
         { path: '/alerts', icon: Bell, label: 'Alertas', feature: FEATURES.ALERTS, badge: alertsCount > 0 ? String(alertsCount) : 'PRO', badgeColor: alertsCount > 0 ? 'red' : 'default' },
       ],

@@ -158,7 +158,7 @@ export const PricingToolsTab: React.FC<PricingToolsTabProps> = ({ products, sele
       </div>
 
       <div className="lg:col-span-2">
-        <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm overflow-hidden flex flex-col h-full max-h-[600px]">
+        <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm overflow-hidden flex flex-col">
            <div className="p-4 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center bg-gray-50 dark:bg-gray-900/50">
              <h3 className="font-semibold text-gray-900 dark:text-white">Vista Previa de Cambios</h3>
              {!previewMode && (
@@ -169,15 +169,49 @@ export const PricingToolsTab: React.FC<PricingToolsTabProps> = ({ products, sele
              )}
            </div>
            
-           <div className="overflow-y-auto flex-1 p-0">
-             <table className="w-full text-left text-sm">
+           <div className="overflow-hidden">
+             {/* Mobile View (Cards) */}
+             <div className="md:hidden space-y-3 p-4 bg-gray-50 dark:bg-gray-900/30 max-h-[500px] overflow-y-auto">
+                {targetProducts.map(product => {
+                   const newPrice = calculateNewPrice(product.price);
+                   const diff = newPrice - product.price;
+                   return (
+                     <div key={product.id} className="bg-white dark:bg-gray-800 p-4 rounded-xl border border-gray-100 dark:border-gray-700 shadow-sm flex flex-col gap-3">
+                        <div className="flex justify-between items-start gap-3">
+                          <span className="font-semibold text-gray-900 dark:text-white line-clamp-2 text-sm">{product.name}</span>
+                          {diff !== 0 && (
+                            <span className={`shrink-0 text-[10px] font-bold px-2 py-0.5 rounded-full ${diff > 0 ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' : 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'}`}>
+                               {diff > 0 ? '+' : ''}{moneyCOP(diff)}
+                            </span>
+                          )}
+                        </div>
+                        
+                        <div className="flex items-center justify-between bg-gray-50 dark:bg-gray-700/30 p-3 rounded-lg">
+                           <div className="flex flex-col">
+                              <span className="text-[10px] uppercase text-gray-400 font-medium">Actual</span>
+                              <span className="text-sm text-gray-500 dark:text-gray-400 line-through decoration-gray-400">{moneyCOP(product.price)}</span>
+                           </div>
+                           <ArrowRight className="w-4 h-4 text-gray-300 dark:text-gray-600" />
+                           <div className="flex flex-col items-end">
+                              <span className="text-[10px] uppercase text-blue-500 dark:text-blue-400 font-medium">Nuevo</span>
+                              <span className="text-lg font-bold text-blue-600 dark:text-blue-400">{moneyCOP(newPrice)}</span>
+                           </div>
+                        </div>
+                     </div>
+                   );
+                })}
+             </div>
+
+             {/* Desktop View (Table) */}
+             <div className="hidden md:block overflow-x-auto">
+             <table className="w-full text-left text-sm min-w-[600px]">
                <thead className="bg-gray-50 dark:bg-gray-900/50 text-gray-500 dark:text-gray-400 font-medium sticky top-0">
                  <tr>
-                   <th className="px-6 py-3">Producto</th>
-                   <th className="px-6 py-3 text-right">Precio Actual</th>
-                   <th className="px-6 py-3 text-center"><ArrowRight className="w-4 h-4 mx-auto" /></th>
-                   <th className="px-6 py-3 text-right">Nuevo Precio</th>
-                   <th className="px-6 py-3 text-right">Diferencia</th>
+                   <th className="px-6 py-3 whitespace-nowrap">Producto</th>
+                   <th className="px-6 py-3 text-right whitespace-nowrap">Precio Actual</th>
+                   <th className="px-6 py-3 text-center whitespace-nowrap"><ArrowRight className="w-4 h-4 mx-auto" /></th>
+                   <th className="px-6 py-3 text-right whitespace-nowrap">Nuevo Precio</th>
+                   <th className="px-6 py-3 text-right whitespace-nowrap">Diferencia</th>
                  </tr>
                </thead>
                <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
@@ -187,11 +221,11 @@ export const PricingToolsTab: React.FC<PricingToolsTabProps> = ({ products, sele
                    
                    return (
                      <tr key={product.id} className="hover:bg-gray-50 dark:hover:bg-gray-700/50">
-                       <td className="px-6 py-3 font-medium text-gray-900 dark:text-white">{product.name}</td>
-                       <td className="px-6 py-3 text-right text-gray-500">{moneyCOP(product.price)}</td>
+                       <td className="px-6 py-3 font-medium text-gray-900 dark:text-white truncate max-w-[150px] sm:max-w-none">{product.name}</td>
+                       <td className="px-6 py-3 text-right text-gray-500 whitespace-nowrap">{moneyCOP(product.price)}</td>
                        <td className="px-6 py-3 text-center"></td>
-                       <td className="px-6 py-3 text-right font-bold text-blue-600 dark:text-blue-400">{moneyCOP(newPrice)}</td>
-                       <td className={`px-6 py-3 text-right text-xs font-medium ${diff > 0 ? 'text-green-600' : diff < 0 ? 'text-red-600' : 'text-gray-400'}`}>
+                       <td className="px-6 py-3 text-right font-bold text-blue-600 dark:text-blue-400 whitespace-nowrap">{moneyCOP(newPrice)}</td>
+                       <td className={`px-6 py-3 text-right text-xs font-medium whitespace-nowrap ${diff > 0 ? 'text-green-600' : diff < 0 ? 'text-red-600' : 'text-gray-400'}`}>
                          {diff > 0 ? '+' : ''}{moneyCOP(diff)}
                        </td>
                      </tr>
@@ -204,6 +238,7 @@ export const PricingToolsTab: React.FC<PricingToolsTabProps> = ({ products, sele
                   Selecciona productos en la pestaña Catálogo para aplicar ajustes masivos.
                 </div>
              )}
+           </div>
            </div>
         </div>
       </div>

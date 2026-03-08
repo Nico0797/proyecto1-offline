@@ -1,4 +1,3 @@
-import React from 'react';
 import { Settings, PlusCircle, TrendingUp } from 'lucide-react';
 
 const STEPS = [

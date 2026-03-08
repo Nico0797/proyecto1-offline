@@ -21,15 +21,25 @@ export const InsightsPanel: React.FC<InsightsPanelProps> = ({ insights }) => {
 
   const getIcon = (type: string) => {
     switch (type) {
+      case 'warning':
       case 'alert': return <AlertTriangle className="w-5 h-5 text-white" />;
+      case 'negative':
       case 'risk': return <TrendingDown className="w-5 h-5 text-white" />;
+      case 'positive':
       case 'opportunity': return <Zap className="w-5 h-5 text-white" />;
       default: return <Info className="w-5 h-5 text-white" />;
     }
   };
 
-  const getStyles = (severity: string) => {
-    switch (severity) {
+  const getStyles = (severity: string | undefined, type: string) => {
+    // If severity is provided, use it. Otherwise derive from type.
+    const effectiveSeverity = severity || (
+        type === 'negative' || type === 'risk' ? 'critical' :
+        type === 'warning' || type === 'alert' ? 'warning' :
+        'info'
+    );
+
+    switch (effectiveSeverity) {
       case 'critical': return {
         bg: 'bg-red-50 dark:bg-red-900/10',
         border: 'border-red-100 dark:border-red-900/30',
@@ -74,7 +84,7 @@ export const InsightsPanel: React.FC<InsightsPanelProps> = ({ insights }) => {
       
       <div className="space-y-3">
         {insights.map((insight) => {
-            const styles = getStyles(insight.severity);
+            const styles = getStyles(insight.severity, insight.type);
             return (
                 <div 
                     key={insight.id} 

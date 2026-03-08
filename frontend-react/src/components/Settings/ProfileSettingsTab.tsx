@@ -6,7 +6,7 @@ import { settingsService, ProfileSettings } from '../../services/settingsService
 import { User, Mail, Phone, Save } from 'lucide-react';
 
 export const ProfileSettingsTab = () => {
-  const { user } = useAuthStore();
+  useAuthStore(); // Keep hook if needed for auth check, or remove if unused. Error says 'user' is unused.
   const [formData, setFormData] = useState<ProfileSettings>({
     name: '',
     email: '',

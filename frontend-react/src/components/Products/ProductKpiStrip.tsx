@@ -1,5 +1,5 @@
-import React from 'react';
-import { Package, ShoppingBag, AlertTriangle, TrendingUp, Archive } from 'lucide-react';
+import React, { useState } from 'react';
+import { Package, ShoppingBag, AlertTriangle, TrendingUp, Archive, ChevronDown } from 'lucide-react';
 import { Product } from '../../types';
 
 interface ProductKpiStripProps {
@@ -13,59 +13,128 @@ export const ProductKpiStrip: React.FC<ProductKpiStripProps> = ({ products }) =>
   const inventoryValue = products.reduce((acc, p) => acc + (p.active && p.type === 'product' ? (p.cost || 0) * p.stock : 0), 0);
   const totalStock = products.reduce((acc, p) => acc + (p.active && p.type === 'product' ? p.stock : 0), 0);
 
+  const [open, setOpen] = useState(false);
+
   return (
-    <div className="grid grid-cols-2 md:grid-cols-5 gap-3 mb-6">
-      <div className="bg-white dark:bg-gray-800 p-3 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 flex flex-col justify-between">
-        <div className="flex items-center gap-2 mb-1">
-          <div className="p-1.5 bg-blue-100 dark:bg-blue-900/30 rounded-lg text-blue-600 dark:text-blue-400">
-            <Package className="w-4 h-4" />
+    <>
+      {/* Mobile View - Chip Button */}
+      <div className="md:hidden mb-2">
+        <button
+          onClick={() => setOpen(o => !o)}
+          className="w-full flex items-center justify-between px-3 py-2 rounded-xl bg-white/70 dark:bg-gray-800/70 backdrop-blur border border-gray-200 dark:border-gray-700 text-left shadow-sm"
+        >
+          <div className="flex items-center gap-2">
+            <div className="p-1 bg-blue-100 dark:bg-blue-900/30 rounded-lg text-blue-600 dark:text-blue-400">
+              <Package className="w-4 h-4" />
+            </div>
+            <div>
+              <div className="text-[11px] text-gray-500 dark:text-gray-400">Resumen de Inventario</div>
+              <div className="text-sm font-semibold text-gray-900 dark:text-white">{activeProducts.length} Productos</div>
+            </div>
           </div>
-          <span className="text-xs font-medium text-gray-500 dark:text-gray-400">Productos</span>
-        </div>
-        <div className="text-lg font-bold text-gray-900 dark:text-white">{activeProducts.length}</div>
+          <ChevronDown className={`w-4 h-4 text-gray-500 transition-transform ${open ? 'rotate-180' : ''}`} />
+        </button>
       </div>
 
-      <div className="bg-white dark:bg-gray-800 p-3 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 flex flex-col justify-between">
-        <div className="flex items-center gap-2 mb-1">
-          <div className="p-1.5 bg-purple-100 dark:bg-purple-900/30 rounded-lg text-purple-600 dark:text-purple-400">
-            <ShoppingBag className="w-4 h-4" />
+      {/* Mobile: revealed KPIs */}
+      {open && (
+        <div className="grid grid-cols-2 gap-2 mb-2 md:hidden">
+           <div className="bg-white/70 dark:bg-gray-800/70 backdrop-blur p-2 rounded-lg border border-gray-200 dark:border-gray-700 flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <div className="p-1 bg-purple-100 dark:bg-purple-900/30 rounded-lg text-purple-600 dark:text-purple-400">
+                <ShoppingBag className="w-3 h-3" />
+              </div>
+              <span className="text-[10px] text-gray-500 dark:text-gray-400">Servicios</span>
+            </div>
+            <div className="text-xs font-bold text-gray-900 dark:text-white">{activeServices.length}</div>
           </div>
-          <span className="text-xs font-medium text-gray-500 dark:text-gray-400">Servicios</span>
-        </div>
-        <div className="text-lg font-bold text-gray-900 dark:text-white">{activeServices.length}</div>
-      </div>
 
-      <div className="bg-white dark:bg-gray-800 p-3 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 flex flex-col justify-between">
-        <div className="flex items-center gap-2 mb-1">
-          <div className="p-1.5 bg-green-100 dark:bg-green-900/30 rounded-lg text-green-600 dark:text-green-400">
-            <TrendingUp className="w-4 h-4" />
+          <div className="bg-white/70 dark:bg-gray-800/70 backdrop-blur p-2 rounded-lg border border-gray-200 dark:border-gray-700 flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <div className="p-1 bg-green-100 dark:bg-green-900/30 rounded-lg text-green-600 dark:text-green-400">
+                <TrendingUp className="w-3 h-3" />
+              </div>
+              <span className="text-[10px] text-gray-500 dark:text-gray-400">Valor Inv.</span>
+            </div>
+            <div className="text-xs font-bold text-gray-900 dark:text-white truncate" title={`$${inventoryValue.toLocaleString()}`}>${inventoryValue.toLocaleString()}</div>
           </div>
-          <span className="text-xs font-medium text-gray-500 dark:text-gray-400">Valor Inv.</span>
-        </div>
-        <div className="text-lg font-bold text-gray-900 dark:text-white truncate" title={`$${inventoryValue.toLocaleString()}`}>
-            ${inventoryValue.toLocaleString()}
-        </div>
-      </div>
 
-      <div className="bg-white dark:bg-gray-800 p-3 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 flex flex-col justify-between">
-        <div className="flex items-center gap-2 mb-1">
-          <div className="p-1.5 bg-yellow-100 dark:bg-yellow-900/30 rounded-lg text-yellow-600 dark:text-yellow-400">
-            <Archive className="w-4 h-4" />
+          <div className="bg-white/70 dark:bg-gray-800/70 backdrop-blur p-2 rounded-lg border border-gray-200 dark:border-gray-700 flex items-center justify-between">
+             <div className="flex items-center gap-2">
+              <div className="p-1 bg-yellow-100 dark:bg-yellow-900/30 rounded-lg text-yellow-600 dark:text-yellow-400">
+                <Archive className="w-3 h-3" />
+              </div>
+              <span className="text-[10px] text-gray-500 dark:text-gray-400">Stock Total</span>
+            </div>
+            <div className="text-xs font-bold text-gray-900 dark:text-white">{totalStock}</div>
           </div>
-          <span className="text-xs font-medium text-gray-500 dark:text-gray-400">Stock Total</span>
-        </div>
-        <div className="text-lg font-bold text-gray-900 dark:text-white">{totalStock}</div>
-      </div>
 
-      <div className="bg-white dark:bg-gray-800 p-3 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 col-span-2 md:col-span-1 flex flex-col justify-between">
-        <div className="flex items-center gap-2 mb-1">
-          <div className="p-1.5 bg-red-100 dark:bg-red-900/30 rounded-lg text-red-600 dark:text-red-400">
-            <AlertTriangle className="w-4 h-4" />
+           <div className="bg-white/70 dark:bg-gray-800/70 backdrop-blur p-2 rounded-lg border border-gray-200 dark:border-gray-700 flex items-center justify-between">
+             <div className="flex items-center gap-2">
+              <div className="p-1 bg-red-100 dark:bg-red-900/30 rounded-lg text-red-600 dark:text-red-400">
+                <AlertTriangle className="w-3 h-3" />
+              </div>
+              <span className="text-[10px] text-gray-500 dark:text-gray-400">Stock Bajo</span>
+            </div>
+            <div className="text-xs font-bold text-red-600 dark:text-red-400">{lowStock.length}</div>
           </div>
-          <span className="text-xs font-medium text-gray-500 dark:text-gray-400">Stock Bajo</span>
         </div>
-        <div className="text-lg font-bold text-red-600 dark:text-red-400">{lowStock.length}</div>
+      )}
+
+      {/* Desktop View - Cards */}
+      <div className="hidden md:grid grid-cols-3 md:grid-cols-5 gap-2 md:gap-3 mb-2 md:mb-6">
+        <div className="bg-white dark:bg-gray-800 p-3 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700">
+          <div className="flex items-center gap-2 mb-1">
+            <div className="p-1.5 bg-blue-100 dark:bg-blue-900/30 rounded-lg text-blue-600 dark:text-blue-400">
+              <Package className="w-4 h-4" />
+            </div>
+            <span className="text-xs font-medium text-gray-500 dark:text-gray-400">Productos</span>
+          </div>
+          <div className="text-lg font-bold text-gray-900 dark:text-white">{activeProducts.length}</div>
+        </div>
+
+        <div className="bg-white dark:bg-gray-800 p-3 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700">
+          <div className="flex items-center gap-2 mb-1">
+            <div className="p-1.5 bg-purple-100 dark:bg-purple-900/30 rounded-lg text-purple-600 dark:text-purple-400">
+              <ShoppingBag className="w-4 h-4" />
+            </div>
+            <span className="text-xs font-medium text-gray-500 dark:text-gray-400">Servicios</span>
+          </div>
+          <div className="text-lg font-bold text-gray-900 dark:text-white">{activeServices.length}</div>
+        </div>
+
+        <div className="bg-white dark:bg-gray-800 p-3 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700">
+          <div className="flex items-center gap-2 mb-1">
+            <div className="p-1.5 bg-green-100 dark:bg-green-900/30 rounded-lg text-green-600 dark:text-green-400">
+              <TrendingUp className="w-4 h-4" />
+            </div>
+            <span className="text-xs font-medium text-gray-500 dark:text-gray-400">Valor Inv.</span>
+          </div>
+          <div className="text-lg font-bold text-gray-900 dark:text-white truncate" title={`$${inventoryValue.toLocaleString()}`}>
+              ${inventoryValue.toLocaleString()}
+          </div>
+        </div>
+
+        <div className="bg-white dark:bg-gray-800 p-3 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700">
+          <div className="flex items-center gap-2 mb-1">
+            <div className="p-1.5 bg-yellow-100 dark:bg-yellow-900/30 rounded-lg text-yellow-600 dark:text-yellow-400">
+              <Archive className="w-4 h-4" />
+            </div>
+            <span className="text-xs font-medium text-gray-500 dark:text-gray-400">Stock Total</span>
+          </div>
+          <div className="text-lg font-bold text-gray-900 dark:text-white">{totalStock}</div>
+        </div>
+
+        <div className="bg-white dark:bg-gray-800 p-3 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700">
+          <div className="flex items-center gap-2 mb-1">
+            <div className="p-1.5 bg-red-100 dark:bg-red-900/30 rounded-lg text-red-600 dark:text-red-400">
+              <AlertTriangle className="w-4 h-4" />
+            </div>
+            <span className="text-xs font-medium text-gray-500 dark:text-gray-400">Stock Bajo</span>
+          </div>
+          <div className="text-lg font-bold text-red-600 dark:text-red-400">{lowStock.length}</div>
+        </div>
       </div>
-    </div>
+    </>
   );
 };

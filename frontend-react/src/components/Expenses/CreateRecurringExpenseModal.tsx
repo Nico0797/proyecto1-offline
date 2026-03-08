@@ -62,6 +62,7 @@ export const CreateRecurringExpenseModal: React.FC<CreateRecurringExpenseModalPr
       const data = {
         ...formData,
         amount: parseFloat(formData.amount),
+        frequency: formData.frequency,
         due_day: formData.next_due_date ? parseInt(formData.next_due_date.split('-')[2], 10) : 1,
         category: formData.category || 'otros',
       };
@@ -126,7 +127,7 @@ export const CreateRecurringExpenseModal: React.FC<CreateRecurringExpenseModalPr
             >
               <option value="monthly">Mensual</option>
               <option value="weekly">Semanal</option>
-              <option value="yearly">Anual</option>
+              <option value="annual">Anual</option>
             </select>
           </div>
           <div>

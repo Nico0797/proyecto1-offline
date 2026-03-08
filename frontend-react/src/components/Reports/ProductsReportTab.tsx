@@ -57,9 +57,9 @@ export const ProductsReportTab: React.FC<ProductsReportTabProps> = ({ data, load
                 <tr key={idx} className="hover:bg-gray-50 dark:hover:bg-gray-800/50">
                   <td className="px-6 py-4 font-medium text-gray-500">{idx + 1}</td>
                   <td className="px-6 py-4 font-medium text-gray-900 dark:text-white">{p.name}</td>
-                  <td className="px-6 py-4 text-center text-gray-600 dark:text-gray-300">{p.qty}</td>
+                  <td className="px-6 py-4 text-center text-gray-600 dark:text-gray-300">{p.qty || 0}</td>
                   <td className="px-6 py-4 text-right font-bold text-green-600 dark:text-green-400">
-                    ${p.total.toLocaleString()}
+                    ${(p.total || 0).toLocaleString()}
                   </td>
                 </tr>
               ))}

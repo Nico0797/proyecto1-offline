@@ -26,11 +26,11 @@ export const ExecutiveSummaryTab: React.FC<ExecutiveSummaryTabProps> = ({ data, 
   };
 
   const getColor = (kpi: KPI) => {
-    if (kpi.trend === 'neutral') return 'text-gray-500';
+    if (kpi.trend === 'neutral') return 'bg-gray-100 text-gray-600';
     if (kpi.inverse) {
-      return kpi.trend === 'up' ? 'text-red-500' : 'text-green-500';
+      return kpi.trend === 'up' ? 'bg-red-100 text-red-600' : 'bg-green-100 text-green-600';
     }
-    return kpi.trend === 'up' ? 'text-green-500' : 'text-red-500';
+    return kpi.trend === 'up' ? 'bg-green-100 text-green-600' : 'bg-red-100 text-red-600';
   };
 
   return (
@@ -47,7 +47,7 @@ export const ExecutiveSummaryTab: React.FC<ExecutiveSummaryTabProps> = ({ data, 
                   <div className="p-3 bg-gray-100 dark:bg-gray-700/50 rounded-lg">
                     <Icon className="w-6 h-6 text-gray-700 dark:text-gray-300" />
                   </div>
-                  {kpi.change !== 0 && (
+                  {kpi.change !== 0 && !isNaN(kpi.change) && (
                     <div className={cn("flex items-center text-xs font-bold px-2 py-1 rounded-full bg-opacity-10", 
                       getColor(kpi)
                     )}>
@@ -59,11 +59,13 @@ export const ExecutiveSummaryTab: React.FC<ExecutiveSummaryTabProps> = ({ data, 
                 <div>
                   <p className="text-sm font-medium text-gray-500 dark:text-gray-400">{kpi.label}</p>
                   <h3 className="text-2xl font-bold text-gray-900 dark:text-white mt-1">
-                    {kpi.format === 'currency' ? `$${kpi.value.toLocaleString()}` : kpi.value}
+                    {kpi.format === 'currency' 
+                      ? `$${(kpi.value || 0).toLocaleString()}` 
+                      : (kpi.value || 0)}
                   </h3>
                   {kpi.previousValue !== undefined && (
                     <p className="text-xs text-gray-400 mt-2">
-                      vs ${kpi.previousValue.toLocaleString()} anterior
+                      vs ${(kpi.previousValue || 0).toLocaleString()} anterior
                     </p>
                   )}
                 </div>

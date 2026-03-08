@@ -26,6 +26,7 @@ export interface Customer {
   email?: string;
   phone?: string;
   address?: string;
+  notes?: string;
   balance: number;
   created_at: string;
   oldest_due_date?: string;

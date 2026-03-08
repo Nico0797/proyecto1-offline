@@ -4,7 +4,7 @@ import { usePaymentStore } from '../store/paymentStore';
 import { useCustomerStore } from '../store/customerStore';
 import { useSaleStore } from '../store/saleStore';
 import { Button } from '../components/ui/Button';
-import { Plus } from 'lucide-react';
+import { Plus, Settings } from 'lucide-react';
 import { PaymentsKpis } from '../components/Payments/PaymentsKpis';
 import { PaymentsToolbar } from '../components/Payments/PaymentsToolbar';
 import { ByClientTab } from '../components/Payments/ByClientTab';
@@ -17,8 +17,10 @@ import { computeClientReceivables, ClientReceivable } from '../utils/receivables
 import { CreditSettingsModal } from '../components/Customers/CreditSettingsModal';
 import { settingsService } from '../services/settingsService';
 import { DateRange, getPeriodPreference } from '../utils/dateRange.utils';
-import { PageHeader, PageFilters } from '../components/Layout/PageLayout';
+import { PageHeader } from '../components/Layout/PageLayout';
 import { SwipePager } from '../components/ui/SwipePager';
+import { Payment } from '../store/paymentStore';
+import { PaymentFormModal } from '../components/Payments/PaymentFormModal';
 
 export const Payments = () => {
   const { activeBusiness } = useBusinessStore();
@@ -42,6 +44,9 @@ export const Payments = () => {
   const [whatsAppMessage, setWhatsAppMessage] = useState('');
 
   const [quickPayClient, setQuickPayClient] = useState<number | undefined>(undefined);
+  const [selectedPayment, setSelectedPayment] = useState<Payment | null>(null);
+  const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
+  const [paymentModalMode, setPaymentModalMode] = useState<'view' | 'edit'>('view');
 
   // Load Data
   const refreshData = async () => {
@@ -155,27 +160,6 @@ export const Payments = () => {
     }
   };
 
-  const handleExport = () => {
-    const headers = ['Fecha', 'Cliente', 'Método', 'Nota', 'Monto'];
-    const rows = filteredPayments.map(p => [
-      new Date(p.payment_date).toLocaleDateString(),
-      p.customer_name || 'Unknown',
-      p.method,
-      p.note || '',
-      p.amount.toString()
-    ]);
-    
-    const csvContent = "data:text/csv;charset=utf-8," 
-      + [headers.join(','), ...rows.map(e => e.join(','))].join('\n');
-      
-    const encodedUri = encodeURI(csvContent);
-    const link = document.createElement("a");
-    link.setAttribute("href", encodedUri);
-    link.setAttribute("download", `pagos_export_${new Date().toISOString().split('T')[0]}.csv`);
-    document.body.appendChild(link);
-    link.click();
-  };
-
   const loading = loadingPayments || loadingCustomers || loadingSales;
 
   return (
@@ -192,24 +176,19 @@ export const Payments = () => {
                     <Plus className="w-4 h-4 mr-2" />
                     <span>Registrar Pago</span>
                 </Button>
-                <Button onClick={() => { setQuickPayClient(undefined); setIsRegisterModalOpen(true); }} className="sm:hidden" data-tour="payments.primaryAction.mobile">
-                    <Plus className="w-4 h-4" />
-                    <span>Pago</span>
-                </Button>
+                {/* Mobile Actions */}
+                <div className="flex gap-2 sm:hidden">
+                    <Button variant="secondary" size="icon" onClick={() => setIsSettingsModalOpen(true)} title="Configurar Plazos">
+                        <Settings className="w-4 h-4" />
+                    </Button>
+                    <Button onClick={() => { setQuickPayClient(undefined); setIsRegisterModalOpen(true); }} data-tour="payments.primaryAction.mobile">
+                        <Plus className="w-4 h-4 mr-2" />
+                        <span>Pago</span>
+                    </Button>
+                </div>
             </div>
         }
       />
-
-      <PageFilters>
-        <PaymentsToolbar 
-          searchTerm={searchTerm}
-          onSearchChange={setSearchTerm}
-          onRefresh={refreshData}
-          onExport={handleExport}
-          dateRange={dateRange}
-          onDateRangeChange={setDateRange}
-        />
-      </PageFilters>
 
       <SwipePager
         activePageId={currentTab}
@@ -224,6 +203,16 @@ export const Payments = () => {
                 <div data-tour="payments.kpis">
                     <PaymentsKpis {...kpis} loading={loading} />
                 </div>
+                
+                <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4 mb-4">
+                  <PaymentsToolbar 
+                    searchTerm={searchTerm}
+                    onSearchChange={setSearchTerm}
+                    dateRange={dateRange}
+                    onDateRangeChange={setDateRange}
+                  />
+                </div>
+
                 <ByClientTab 
                   data={filteredClients}  
                   loading={loading}
@@ -242,11 +231,21 @@ export const Payments = () => {
                  <div data-tour="payments.kpis">
                     <PaymentsKpis {...kpis} loading={loading} />
                 </div>
+                
+                <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4 mb-4">
+                  <PaymentsToolbar 
+                    searchTerm={searchTerm}
+                    onSearchChange={setSearchTerm}
+                    dateRange={dateRange}
+                    onDateRangeChange={setDateRange}
+                  />
+                </div>
+
                 <TransactionsTab 
                   payments={filteredPayments} 
                   loading={loading}
-                  onView={(p) => console.log('View', p)} 
-                  onEdit={(p) => console.log('Edit', p)} 
+                  onView={(p) => { setSelectedPayment(p); setPaymentModalMode('view'); setIsPaymentModalOpen(true); }} 
+                  onEdit={(p) => { setSelectedPayment(p); setPaymentModalMode('edit'); setIsPaymentModalOpen(true); }} 
                   onDelete={handleDeletePayment}
                 />
               </div>
@@ -260,6 +259,16 @@ export const Payments = () => {
                  <div data-tour="payments.kpis">
                     <PaymentsKpis {...kpis} loading={loading} />
                 </div>
+                
+                <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4 mb-4">
+                  <PaymentsToolbar 
+                    searchTerm={searchTerm}
+                    onSearchChange={setSearchTerm}
+                    dateRange={dateRange}
+                    onDateRangeChange={setDateRange}
+                  />
+                </div>
+
                 <OverdueTab 
                   data={clientReceivables} 
                   loading={loading}
@@ -302,6 +311,14 @@ export const Payments = () => {
         onClose={() => setIsWhatsAppModalOpen(false)}
         client={whatsAppClient}
         message={whatsAppMessage}
+      />
+
+      <PaymentFormModal
+        isOpen={isPaymentModalOpen}
+        onClose={() => setIsPaymentModalOpen(false)}
+        payment={selectedPayment}
+        mode={paymentModalMode}
+        onSuccess={refreshData}
       />
     </div>
   );

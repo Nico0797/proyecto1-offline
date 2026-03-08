@@ -26,6 +26,7 @@ export default defineConfig(() => {
   return {
     plugins: [react(), tailwindcss()],
     server: {
+      host: true, // Listen on all addresses
       https,
       proxy: {
         '/api': {

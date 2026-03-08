@@ -275,36 +275,45 @@ export const CreateOrderModal: React.FC<CreateOrderModalProps> = ({
                         ) : (
                             <div className="space-y-3">
                                 {orderItems.map((item, index) => (
-                                    <div key={index} className="bg-white dark:bg-gray-800 p-3 rounded-lg shadow-sm border border-gray-100 dark:border-gray-700 flex items-center gap-4">
-                                        <div className="flex-1">
-                                            <p className="font-medium text-gray-900 dark:text-white">{item.name}</p>
-                                            <input 
-                                                type="number"
-                                                className="text-sm text-blue-600 bg-transparent border-none p-0 w-24 focus:ring-0 font-medium"
-                                                value={item.unit_price}
-                                                onChange={(e) => handleUpdateItem(index, 'unit_price', parseFloat(e.target.value) || 0)}
-                                            />
+                                    <div key={index} className="bg-white dark:bg-gray-800 p-3 rounded-lg shadow-sm border border-gray-100 dark:border-gray-700 flex flex-col sm:flex-row gap-3 sm:items-center">
+                                        <div className="flex-1 min-w-0">
+                                            <p className="font-medium text-gray-900 dark:text-white truncate">{item.name}</p>
+                                            <div className="flex items-center gap-1 mt-1">
+                                                <span className="text-xs text-gray-400">$</span>
+                                                <input 
+                                                    type="number"
+                                                    className="text-sm text-blue-600 bg-transparent border-none p-0 w-24 focus:ring-0 font-medium"
+                                                    value={item.unit_price}
+                                                    onChange={(e) => handleUpdateItem(index, 'unit_price', parseFloat(e.target.value) || 0)}
+                                                />
+                                            </div>
                                         </div>
-                                        <div className="flex items-center bg-gray-100 dark:bg-gray-700 rounded-lg">
-                                            <button 
-                                                className="w-8 h-8 flex items-center justify-center hover:bg-gray-200 dark:hover:bg-gray-600 rounded-l-lg"
-                                                onClick={() => handleUpdateItem(index, 'quantity', item.quantity - 1)}
-                                            >-</button>
-                                            <span className="w-8 text-center font-medium text-sm">{item.quantity}</span>
-                                            <button 
-                                                className="w-8 h-8 flex items-center justify-center hover:bg-gray-200 dark:hover:bg-gray-600 rounded-r-lg"
-                                                onClick={() => handleUpdateItem(index, 'quantity', item.quantity + 1)}
-                                            >+</button>
+                                        
+                                        <div className="flex items-center justify-between gap-4">
+                                            <div className="flex items-center bg-gray-100 dark:bg-gray-700 rounded-lg shrink-0">
+                                                <button 
+                                                    className="w-8 h-8 flex items-center justify-center hover:bg-gray-200 dark:hover:bg-gray-600 rounded-l-lg touch-manipulation"
+                                                    onClick={() => handleUpdateItem(index, 'quantity', item.quantity - 1)}
+                                                >-</button>
+                                                <span className="w-8 text-center font-medium text-sm">{item.quantity}</span>
+                                                <button 
+                                                    className="w-8 h-8 flex items-center justify-center hover:bg-gray-200 dark:hover:bg-gray-600 rounded-r-lg touch-manipulation"
+                                                    onClick={() => handleUpdateItem(index, 'quantity', item.quantity + 1)}
+                                                >+</button>
+                                            </div>
+                                            
+                                            <div className="flex items-center gap-3">
+                                                <div className="w-20 sm:w-24 text-right font-bold text-gray-900 dark:text-white truncate">
+                                                    {formatCOP(item.total)}
+                                                </div>
+                                                <button 
+                                                    onClick={() => handleRemoveItem(index)}
+                                                    className="text-gray-400 hover:text-red-500 transition-colors p-1"
+                                                >
+                                                    <X className="w-4 h-4" />
+                                                </button>
+                                            </div>
                                         </div>
-                                        <div className="w-24 text-right font-bold text-gray-900 dark:text-white">
-                                            {formatCOP(item.total)}
-                                        </div>
-                                        <button 
-                                            onClick={() => handleRemoveItem(index)}
-                                            className="text-gray-400 hover:text-red-500 transition-colors"
-                                        >
-                                            <X className="w-4 h-4" />
-                                        </button>
                                     </div>
                                 ))}
                             </div>
@@ -323,7 +332,7 @@ export const CreateOrderModal: React.FC<CreateOrderModalProps> = ({
                         <span className="text-gray-500 dark:text-gray-400">Descuento</span>
                         <div className="flex items-center gap-2">
                           <select
-                            className="px-2 py-1 text-xs rounded-lg bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700"
+                            className="h-9 px-2 text-xs rounded-lg bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
                             value={discountType}
                             onChange={(e) => setDiscountType(e.target.value as 'amount' | 'percent')}
                           >
@@ -332,7 +341,7 @@ export const CreateOrderModal: React.FC<CreateOrderModalProps> = ({
                           </select>
                           <input
                             type="number"
-                            className="w-24 px-2 py-1 text-right rounded-lg bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700"
+                            className="w-20 sm:w-28 h-9 px-2 sm:px-3 text-right rounded-lg bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500 min-w-0"
                             value={discountValue}
                             min={0}
                             max={discountType === 'percent' ? 100 : calculateSubtotal()}

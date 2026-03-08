@@ -29,7 +29,7 @@ export const ClientList: React.FC<ClientListProps> = ({
   }
 
   return (
-    <div className="flex-1 overflow-y-auto px-4 pb-4 space-y-2">
+    <div className="flex-1 overflow-y-auto px-1 pb-4 space-y-3 custom-scrollbar">
       {customers.map((customer) => {
         const daysOverdue = customer.days_since_oldest || (customer.balance > 0 ? (customer.id % 40) : 0);
         const isOverdue = customer.balance > 0 && daysOverdue > creditDays;

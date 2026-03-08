@@ -1,6 +1,6 @@
-import { startOfDay, endOfDay, subDays, startOfMonth, endOfMonth, startOfYear, endOfYear, format } from 'date-fns';
+import { subDays, startOfMonth, endOfMonth, startOfYear, endOfYear, format } from 'date-fns';
 
-export type PeriodPreset = '7d' | '15d' | '30d' | 'month' | 'year' | 'custom';
+export type PeriodPreset = 'today' | '7d' | '15d' | '30d' | 'month' | 'year' | 'custom';
 
 export interface DateRange {
   start: string;
@@ -18,6 +18,10 @@ export const getPeriodRange = (preset: PeriodPreset): { start: string; end: stri
   let end = now;
 
   switch (preset) {
+    case 'today':
+      start = now;
+      end = now;
+      break;
     case '7d':
       start = subDays(now, 6); // Includes today
       end = now;
@@ -77,7 +81,16 @@ export const getPeriodPreference = (moduleId: string): DateRange => {
     }
   }
 
-  // Default: Last 7 days
-  const defaultRange = getPeriodRange('7d');
-  return { preset: '7d', ...defaultRange };
+  // Default: Last 30 days
+  const defaultRange = getPeriodRange('30d');
+  return { preset: '30d', ...defaultRange };
+};
+
+export const formatCurrency = (amount: number) => {
+  return new Intl.NumberFormat('es-CO', {
+    style: 'currency',
+    currency: 'COP',
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 0,
+  }).format(amount);
 };

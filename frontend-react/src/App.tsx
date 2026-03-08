@@ -11,6 +11,7 @@ const SalesGoals = lazy(() => import('./pages/SalesGoals').then(m => ({ default:
 const Orders = lazy(() => import('./pages/Orders').then(m => ({ default: m.Orders })));
 const Payments = lazy(() => import('./pages/Payments').then(m => ({ default: m.Payments })));
 const Products = lazy(() => import('./pages/Products').then(m => ({ default: m.Products })));
+const Debts = lazy(() => import('./pages/Debts').then(m => ({ default: m.Debts })));
 const Alerts = lazy(() => import('./pages/Alerts').then(m => ({ default: m.Alerts })));
 const Settings = lazy(() => import('./pages/Settings').then(m => ({ default: m.Settings })));
 const Reports = lazy(() => import('./pages/Reports').then(m => ({ default: m.Reports })));
@@ -38,6 +39,7 @@ const ProPage = lazy(() => import('./pages/ProPage').then(m => ({ default: m.def
 import { ProGate } from './components/ui/ProGate';
 import { FEATURES } from './auth/plan';
 import { TourProvider } from './tour/TourProvider';
+import { Toaster } from 'react-hot-toast';
 
 function App() {
   const { theme, setTheme } = useThemeStore();
@@ -90,6 +92,7 @@ function App() {
   return (
     <BrowserRouter>
       <TourProvider>
+      <Toaster position="top-right" />
       <Suspense fallback={<div style={{display:'grid',placeItems:'center',height:'100dvh'}}>Cargando…</div>}>
       <Routes>
         <Route path="/landing" element={<LandingPage />} />
@@ -136,6 +139,7 @@ function App() {
           <Route path="/payments" element={<Payments />} />
           <Route path="/customers" element={<Customers />} />
           <Route path="/products" element={<Products />} />
+          <Route path="/debts" element={<Debts />} />
           <Route path="/expenses" element={<Expenses />} />
           <Route path="/sales-goals" element={<SalesGoals />} />
           <Route path="/reports" element={

@@ -13,67 +13,45 @@ class AnalyticsService {
 
   private async fetchRawData(businessId: number, startDate: string, endDate: string) {
     try {
-      const [salesRes, expensesRes, customersRes] = await Promise.all([
-        api.get(`/businesses/${businessId}/sales`),
+      const [salesRes, expensesRes, customersRes, debtorsRes] = await Promise.all([
+        api.get(`/businesses/${businessId}/sales`, { params: { start_date: startDate, end_date: endDate } }),
         api.get(`/businesses/${businessId}/expenses`, { params: { start_date: startDate, end_date: endDate } }),
-        api.get(`/businesses/${businessId}/customers`)
+        api.get(`/businesses/${businessId}/customers`),
+        api.get(`/businesses/${businessId}/customers/debtors`)
       ]);
 
-      const allSales: Sale[] = salesRes.data.sales || [];
+      const sales: Sale[] = salesRes.data.sales || [];
       const expenses: Expense[] = expensesRes.data.expenses || [];
       const customersRaw: Customer[] = customersRes.data.customers || [];
+      const debtors: any[] = debtorsRes.data.debtors || [];
 
-      // Filter sales by date client-side to be safe
-      const start = new Date(startDate);
-      const end = new Date(endDate);
-      // Adjust end date to include the full day
-      end.setHours(23, 59, 59, 999);
-
-      const sales = allSales.filter(s => {
-        const d = new Date(s.sale_date);
-        return d >= start && d <= end;
-      });
-
-      // Filter expenses just in case backend didn't
-      const filteredExpenses = expenses.filter(e => {
-        const d = new Date(e.expense_date);
-        return d >= start && d <= end;
-      });
-
-      // Enrich customers with receivable balances computed from allSales (lifetime outstanding)
-      const balanceByCustomer = new Map<number, { balance: number; oldest?: string; is_overdue?: boolean }>();
+      // Create map of debtors for O(1) access
+      const debtorMap = new Map(debtors.map((d: any) => [d.id, d]));
       const today = new Date();
-      allSales.forEach(s => {
-        const cid = s.customer_id || 0;
-        if (cid && s.balance > 0) {
-          const entry = balanceByCustomer.get(cid) || { balance: 0 };
-          const saleDate = new Date(s.sale_date);
-          const oldest = entry.oldest && new Date(entry.oldest) < saleDate ? entry.oldest : s.sale_date;
-          // Consider overdue if older than 30 days
-          const days = Math.floor((today.getTime() - saleDate.getTime()) / (1000 * 60 * 60 * 24));
-          const isOverdue = days > 30;
-          balanceByCustomer.set(cid, { 
-            balance: entry.balance + s.balance, 
-            oldest, 
-            is_overdue: (entry.is_overdue || false) || isOverdue 
-          });
-        }
-      });
 
+      // Merge balance info into customers
       const customers: Customer[] = customersRaw.map(c => {
-        const b = balanceByCustomer.get(c.id);
+        const debtor = debtorMap.get(c.id);
+        let isOverdue = false;
+        
+        if (debtor && debtor.since) {
+             const sinceDate = new Date(debtor.since);
+             const days = Math.floor((today.getTime() - sinceDate.getTime()) / (1000 * 60 * 60 * 24));
+             isOverdue = days > 30;
+        }
+
         return {
           ...c,
-          balance: b?.balance || c.balance || 0,
-          oldest_due_date: b?.oldest || c.oldest_due_date,
-          is_overdue: typeof c.is_overdue === 'boolean' ? c.is_overdue : (b?.is_overdue || false),
+          balance: debtor ? debtor.balance : 0,
+          oldest_due_date: debtor ? debtor.since : undefined,
+          is_overdue: isOverdue 
         } as Customer;
       });
 
-      return { sales, expenses: filteredExpenses, customers, allSales }; // Return allSales for lifetime stats if needed
+      return { sales, expenses, customers };
     } catch (error) {
       console.error('Error fetching raw data:', error);
-      return { sales: [], expenses: [], customers: [], allSales: [] };
+      return { sales: [], expenses: [], customers: [] };
     }
   }
 
@@ -182,23 +160,17 @@ class AnalyticsService {
   }
   
   async getClientStats(businessId: number, startDate: string, endDate: string) {
-     const { customers, allSales } = await this.fetchRawData(businessId, startDate, endDate);
+     const { customers, sales } = await this.fetchRawData(businessId, startDate, endDate);
      
      // Map customers to stats
      const customerStats = customers.map(c => {
-         // Find all sales for this customer (ever, or in range? Usually LTV is better for "Client Stats")
-         // But for "Active Clients (30d)" we need range check.
-         // Let's attach metadata based on *all* sales for robust "Last Purchase" info.
-         
-         const customerSales = allSales.filter(s => s.customer_id === c.id);
+         const customerSales = sales.filter(s => s.customer_id === c.id);
          
          // Sort by date desc
          customerSales.sort((a, b) => new Date(b.sale_date).getTime() - new Date(a.sale_date).getTime());
          
          const lastPurchase = customerSales.length > 0 ? customerSales[0].sale_date : null;
-         const totalSpent = customerSales.reduce((sum, s) => sum + s.total, 0); // Lifetime value
-         
-         // Check if active in current range (optional, handled by UI filters if needed)
+         const totalSpent = customerSales.reduce((sum, s) => sum + s.total, 0);
          
          return {
              ...c,
@@ -227,8 +199,12 @@ class AnalyticsService {
     ]);
 
     const calculateChange = (curr: number, prev: number) => {
-      if (prev === 0) return curr > 0 ? 100 : 0;
-      return ((curr - prev) / prev) * 100;
+      // Safety check for inputs
+      const safeCurr = isNaN(curr) ? 0 : curr;
+      const safePrev = isNaN(prev) ? 0 : prev;
+      
+      if (safePrev === 0) return safeCurr > 0 ? 100 : 0;
+      return ((safeCurr - safePrev) / safePrev) * 100;
     };
 
     return [
@@ -354,6 +330,62 @@ class AnalyticsService {
       trend: projectedRevenue >= currentTotal ? 'up' : 'down',
       suggestions
     };
+  }
+
+  // --- Export Methods ---
+
+  /**
+   * Generates a report and returns the download URL.
+   * @param businessId 
+   * @param reportType 'sales' | 'expenses' | 'combined'
+   * @param params Query parameters (startDate, endDate, type for combined)
+   */
+  async getExportUrl(businessId: number, reportType: 'sales' | 'expenses' | 'combined', params: any = {}): Promise<string> {
+    let endpoint = '';
+    
+    if (reportType === 'sales') {
+        endpoint = `/businesses/${businessId}/export/sales`;
+    } else if (reportType === 'expenses') {
+        endpoint = `/businesses/${businessId}/export/expenses`;
+    } else {
+        endpoint = `/businesses/${businessId}/export/combined`;
+    }
+
+    try {
+        const response = await api.get(endpoint, { params });
+        // The backend returns { download_url: "/api/download/filename.xlsx" }
+        const downloadPath = response.data.download_url;
+        
+        // If the path is already absolute, return it
+        if (downloadPath.startsWith('http')) return downloadPath;
+        
+        // If it's a relative path, we need to construct the full URL carefully.
+        // If VITE_API_URL is defined, use it. Otherwise, assume we are in a context where relative paths work
+        // (e.g. proxying via Vite or served from same origin).
+        // Avoid defaulting to localhost:5000 blindly as it breaks mobile access.
+        
+        const envApiUrl = import.meta.env.VITE_API_URL;
+        
+        if (envApiUrl) {
+            const cleanApiUrl = envApiUrl.replace(/\/$/, '');
+            return `${cleanApiUrl}${downloadPath}`;
+        }
+        
+        // If no env var, check if api.defaults.baseURL is absolute
+        if (api.defaults.baseURL && api.defaults.baseURL.startsWith('http')) {
+             const cleanBase = api.defaults.baseURL.replace(/\/api\/?$/, '').replace(/\/$/, '');
+             return `${cleanBase}${downloadPath}`;
+        }
+
+        // Fallback: Return relative path. 
+        // fetch() in the browser will resolve this against the current window.location.origin
+        // This is the safest bet for mobile/dev environments using proxy.
+        return downloadPath;
+
+    } catch (error) {
+        console.error('Error getting export URL:', error);
+        throw error;
+    }
   }
 }
 

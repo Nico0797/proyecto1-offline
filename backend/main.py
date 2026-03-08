@@ -4,6 +4,12 @@
 Punto de entrada de la aplicación Flask
 """
 import os
+import sys
+
+# Add parent directory to path to ensure 'backend' package is importable
+# This fixes the "ModuleNotFoundError" when running python main.py from backend/ dir
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
 from datetime import datetime, date, timedelta
 from flask import Flask, request, jsonify, send_from_directory, g, send_file, render_template, url_for
 from flask_cors import CORS
@@ -32,7 +38,7 @@ try:
     from backend.config import get_config
     from backend.database import db, init_db
     from backend.auth import token_required, optional_token, AuthManager, create_token, permission_required
-    from backend.models import User, Business, Product, Customer, Sale, Expense, Payment, LedgerEntry, LedgerAllocation, Permission, Role, UserRole, RolePermission, AuditLog, SubscriptionPayment, AppSettings, Order, RecurringExpense, QuickNote, SalesGoal, Banner, FAQ
+    from backend.models import User, Business, Product, Customer, Sale, Expense, Payment, LedgerEntry, LedgerAllocation, Permission, Role, UserRole, RolePermission, AuditLog, SubscriptionPayment, AppSettings, Order, RecurringExpense, QuickNote, SalesGoal, Banner, FAQ, Debt, DebtPayment
 except ImportError:
     import sys, importlib.util
     _BASE = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -75,6 +81,10 @@ except ImportError:
     RecurringExpense = mdl_mod.RecurringExpense
     QuickNote = mdl_mod.QuickNote
     SalesGoal = mdl_mod.SalesGoal
+    Debt = mdl_mod.Debt
+    DebtPayment = mdl_mod.DebtPayment
+    Banner = mdl_mod.Banner
+    FAQ = mdl_mod.FAQ
 
 
 def create_app(config_class=None):
@@ -203,19 +213,19 @@ def create_app(config_class=None):
     def serve_index():
         return send_from_directory(app.static_folder, "index.html")
 
-    @app.route("/<path:path>")
-    def serve_static(path):
-        # 1. API routes should not be handled here (Flask handles them first usually, but safety check)
-        if path.startswith("api/"):
-            return jsonify({"error": "Not found"}), 404
-            
-        # 2. Try to serve existing static file
-        full_path = os.path.join(app.static_folder, path)
-        if os.path.exists(full_path) and os.path.isfile(full_path):
-            return send_from_directory(app.static_folder, path)
-            
-        # 3. SPA Fallback: Serve index.html for non-API routes
-        return send_from_directory(app.static_folder, "index.html")
+    # @app.route("/<path:path>")
+    # def serve_static(path):
+    #     # 1. API routes should not be handled here (Flask handles them first usually, but safety check)
+    #     if path.startswith("api/"):
+    #         return jsonify({"error": "Not found"}), 404
+    #         
+    #     # 2. Try to serve existing static file
+    #     full_path = os.path.join(app.static_folder, path)
+    #     if os.path.exists(full_path) and os.path.isfile(full_path):
+    #         return send_from_directory(app.static_folder, path)
+    #         
+    #     # 3. SPA Fallback: Serve index.html for non-API routes
+    #     return send_from_directory(app.static_folder, "index.html")
 
     # Error handlers for JSON responses
     @app.errorhandler(400)
@@ -1936,7 +1946,30 @@ def create_app(config_class=None):
             return jsonify({"error": "Total debe ser mayor a 0"}), 400
 
         payment_method = data.get("payment_method", "cash")
-        paid = payment_method != "credit"  # Si es crédito, no está pagado
+        
+        # Handle payment status logic correctly respecting frontend input
+        frontend_paid = data.get("paid")
+        amount_paid = float(data.get("amount_paid", 0))
+        
+        if frontend_paid is not None:
+            # New logic supporting partial/credit
+            if frontend_paid: # Fully paid
+                amount_paid = total
+                balance = 0
+                is_paid = True
+            else: # Credit or Partial
+                balance = max(0, total - amount_paid)
+                is_paid = balance <= 0.01 # Float tolerance
+        else:
+            # Fallback for old clients/calls
+            if payment_method == "credit":
+                amount_paid = 0
+                balance = total
+                is_paid = False
+            else:
+                amount_paid = total
+                balance = 0
+                is_paid = True
 
         # Parse sale date
         sale_date = date.today()
@@ -1954,9 +1987,9 @@ def create_app(config_class=None):
             subtotal=subtotal,
             discount=discount,
             total=total,
-            balance=total if payment_method == "credit" else 0,
+            balance=balance,
             payment_method=payment_method,
-            paid=paid,
+            paid=is_paid,
             note=data.get("note", "").strip() or None
         )
 
@@ -1979,8 +2012,9 @@ def create_app(config_class=None):
         db.session.add(sale)
         db.session.flush()  # Get sale.id
 
-        # If credit sale, create ledger charge
-        if not paid and data.get("customer_id"):
+        # If not fully paid and customer exists, update Ledger (Accounts Receivable)
+        if not is_paid and data.get("customer_id"):
+            # 1. Create Charge for the FULL amount
             charge = LedgerEntry(
                 business_id=business_id,
                 customer_id=data["customer_id"],
@@ -1992,6 +2026,20 @@ def create_app(config_class=None):
                 ref_id=sale.id
             )
             db.session.add(charge)
+            
+            # 2. If there was a partial payment, create a Payment entry
+            if amount_paid > 0:
+                payment = LedgerEntry(
+                    business_id=business_id,
+                    customer_id=data["customer_id"],
+                    entry_type="payment",
+                    amount=amount_paid,
+                    entry_date=sale_date,
+                    note=f"Abono inicial Venta #{sale.id}",
+                    ref_type="sale",
+                    ref_id=sale.id
+                )
+                db.session.add(payment)
 
         db.session.commit()
 
@@ -2067,16 +2115,18 @@ def create_app(config_class=None):
         return jsonify({"ok": True})
 
     # ========== ORDER ROUTES ==========
-    def _ensure_sale_from_order(order, sale_date=None):
+    def _ensure_sale_from_order(order, sale_date=None, payment_details=None):
         try:
             note_tag = f"Desde pedido {order.order_number} (ID {order.id})"
-            existing = Sale.query.filter_by(business_id=order.business_id, note=note_tag).first()
+            # Check if sale already exists to avoid duplicates
+            existing = Sale.query.filter_by(business_id=order.business_id).filter(Sale.note.like(f"%{note_tag}%")).first()
             if existing:
                 return existing
             
             items = order.items or []
             total_cost = 0
             
+            # Calculate cost and update stock
             for item in items:
                 pid = item.get("product_id")
                 qty = item.get("qty") if item.get("qty") is not None else item.get("quantity")
@@ -2095,7 +2145,24 @@ def create_app(config_class=None):
                         # Calculate cost
                         if product.cost:
                             total_cost += (product.cost or 0) * qty
+
+            # Payment logic
+            payment_details = payment_details or {}
+            method = payment_details.get('method', 'cash')
             
+            total = float(order.total or 0)
+            
+            # If explicit paid_amount is provided, use it. Otherwise default to total (full payment)
+            if 'paid_amount' in payment_details:
+                paid_amount = float(payment_details['paid_amount'])
+            else:
+                paid_amount = total
+
+            balance = total - paid_amount
+            if balance < 0: balance = 0 # Avoid negative balance
+            
+            is_paid = balance <= 0.01 # Float tolerance
+
             sale = Sale(
                 business_id=order.business_id,
                 customer_id=order.customer_id,
@@ -2103,14 +2170,58 @@ def create_app(config_class=None):
                 items=items,
                 subtotal=order.subtotal or 0,
                 discount=order.discount or 0,
-                total=order.total or 0,
-                balance=0,
-                payment_method="cash",
-                paid=True,
+                total=total,
+                balance=balance,
+                payment_method=method,
+                paid=is_paid,
                 note=note_tag
             )
             sale.total_cost = total_cost
             db.session.add(sale)
+            db.session.flush()
+            
+            # Ledger Entries (Accounts Receivable) - Only for credit/partial sales
+            if not is_paid and order.customer_id:
+                # 1. Charge (Total Sale Amount)
+                charge = LedgerEntry(
+                    business_id=order.business_id,
+                    customer_id=order.customer_id,
+                    entry_type="charge",
+                    amount=total,
+                    entry_date=sale_date or date.today(),
+                    note=f"Venta #{sale.id} (Desde Pedido #{order.order_number})",
+                    ref_type="sale",
+                    ref_id=sale.id
+                )
+                db.session.add(charge)
+                
+                # 2. Initial Payment (if any)
+                if paid_amount > 0:
+                    ledger_payment = LedgerEntry(
+                        business_id=order.business_id,
+                        customer_id=order.customer_id,
+                        entry_type="payment",
+                        amount=paid_amount,
+                        entry_date=sale_date or date.today(),
+                        note=f"Abono inicial Venta #{sale.id}",
+                        ref_type="sale",
+                        ref_id=sale.id
+                    )
+                    db.session.add(ledger_payment)
+            
+            # Payment Record (Transactions Report)
+            if paid_amount > 0 and order.customer_id:
+                payment = Payment(
+                    business_id=order.business_id,
+                    customer_id=order.customer_id,
+                    sale=sale,
+                    amount=paid_amount,
+                    payment_date=sale_date or date.today(),
+                    method=method,
+                    note="Pago inicial desde pedido"
+                )
+                db.session.add(payment)
+
             db.session.flush()
             return sale
         except Exception as e:
@@ -2280,9 +2391,17 @@ def create_app(config_class=None):
                         sale_date = datetime.strptime(date_str, "%Y-%m-%d").date()
                     except:
                         pass
-                _ensure_sale_from_order(order, sale_date=sale_date)
+                
+                # Extract payment details
+                payment_details = data.get("payment_details", {})
+                sale = _ensure_sale_from_order(order, sale_date=sale_date, payment_details=payment_details)
+                if not sale:
+                    db.session.rollback()
+                    return jsonify({"error": "No se pudo crear la venta asociada. Revise los logs del servidor."}), 500
         except Exception as e:
             app.logger.error(f"No se pudo crear la venta desde el pedido {order.id}: {e}")
+            db.session.rollback()
+            return jsonify({"error": str(e)}), 500
 
         db.session.commit()
         return jsonify({"order": order.to_dict()})
@@ -2324,9 +2443,16 @@ def create_app(config_class=None):
                         sale_date = datetime.strptime(date_str, "%Y-%m-%d").date()
                     except:
                         pass
-                _ensure_sale_from_order(order, sale_date=sale_date)
+                
+                payment_details = data.get("payment_details", {})
+                sale = _ensure_sale_from_order(order, sale_date=sale_date, payment_details=payment_details)
+                if not sale:
+                    db.session.rollback()
+                    return jsonify({"error": "No se pudo crear la venta asociada"}), 500
         except Exception as e:
             app.logger.error(f"No se pudo crear la venta desde el pedido {order.id}: {e}")
+            db.session.rollback()
+            return jsonify({"error": str(e)}), 500
 
         db.session.commit()
 
@@ -2537,9 +2663,12 @@ def create_app(config_class=None):
     @token_required
     @permission_required('expenses.read')
     def get_recurring_expenses(business_id):
-        business = Business.query.filter_by(id=business_id, user_id=g.current_user.id).first()
+        business = Business.query.get(business_id)
         if not business:
             return jsonify({"error": "Negocio no encontrado"}), 404
+            
+        if not g.current_user.is_admin and business.user_id != g.current_user.id:
+            return jsonify({"error": "No autorizado"}), 403
 
         expenses = RecurringExpense.query.filter_by(business_id=business_id).order_by(RecurringExpense.due_day).all()
         return jsonify({"recurring_expenses": [e.to_dict() for e in expenses]})
@@ -2548,9 +2677,12 @@ def create_app(config_class=None):
     @token_required
     @permission_required('expenses.create')
     def create_recurring_expense(business_id):
-        business = Business.query.filter_by(id=business_id, user_id=g.current_user.id).first()
+        business = Business.query.get(business_id)
         if not business:
             return jsonify({"error": "Negocio no encontrado"}), 404
+            
+        if not g.current_user.is_admin and business.user_id != g.current_user.id:
+            return jsonify({"error": "No autorizado"}), 403
 
         data = request.get_json()
         if not data or not data.get("name") or not data.get("amount") or not data.get("due_day"):
@@ -2950,6 +3082,113 @@ def create_app(config_class=None):
         db.session.commit()
 
         return jsonify({"payment": payment.to_dict()}), 201
+
+    @app.route("/api/businesses/<int:business_id>/payments/<int:payment_id>", methods=["PUT"])
+    @token_required
+    @permission_required('payments.update')
+    def update_payment(business_id, payment_id):
+        payment = Payment.query.filter_by(id=payment_id, business_id=business_id).first()
+        if not payment:
+            return jsonify({"error": "Pago no encontrado"}), 404
+
+        data = request.get_json() or {}
+        
+        # 1. Handle Amount Change (Complex)
+        if "amount" in data and float(data["amount"]) != payment.amount:
+            new_amount = float(data["amount"])
+            if new_amount <= 0:
+                return jsonify({"error": "Monto debe ser positivo"}), 400
+
+            # A. Reverse old allocations
+            ledger_entry = LedgerEntry.query.filter_by(ref_type="payment", ref_id=payment.id).first()
+            if ledger_entry:
+                allocations = LedgerAllocation.query.filter_by(payment_id=ledger_entry.id).all()
+                for alloc in allocations:
+                    charge = LedgerEntry.query.get(alloc.charge_id)
+                    if charge and charge.ref_type == "sale":
+                        sale = Sale.query.get(charge.ref_id)
+                        if sale:
+                            sale.balance += alloc.amount
+                            if sale.balance > 0.01:
+                                sale.paid = False
+                
+                # Delete old allocations
+                LedgerAllocation.query.filter_by(payment_id=ledger_entry.id).delete()
+                
+                # Update Ledger Entry
+                ledger_entry.amount = new_amount
+            
+            # Update Payment
+            payment.amount = new_amount
+            
+            # B. Re-allocate new amount (Copy of create_payment logic)
+            # Find pending sales for this customer, ordered by date
+            # Note: We include sales that might have just been reopened by the reversal above
+            remaining_payment = new_amount
+            customer_id = payment.customer_id
+            
+            if ledger_entry:
+                pending_sales = Sale.query.filter(
+                    Sale.business_id == business_id,
+                    Sale.customer_id == customer_id,
+                    Sale.paid == False
+                ).order_by(Sale.sale_date.asc()).all()
+                
+                for sale in pending_sales:
+                    if remaining_payment <= 0.01:
+                        break
+                        
+                    sale_balance = sale.balance
+                    amount_to_pay = min(sale_balance, remaining_payment)
+                    
+                    if amount_to_pay > 0:
+                        sale.balance -= amount_to_pay
+                        remaining_payment -= amount_to_pay
+                        
+                        if sale.balance <= 0.01:
+                            sale.balance = 0
+                            sale.paid = True
+                        
+                        charge_entry = LedgerEntry.query.filter_by(
+                            business_id=business_id,
+                            customer_id=customer_id,
+                            ref_type='sale',
+                            ref_id=sale.id,
+                            entry_type='charge'
+                        ).first()
+                        
+                        if charge_entry:
+                            allocation = LedgerAllocation(
+                                payment_id=ledger_entry.id,
+                                charge_id=charge_entry.id,
+                                amount=amount_to_pay
+                            )
+                            db.session.add(allocation)
+
+        # 2. Handle Simple Fields
+        if "payment_date" in data:
+            try:
+                new_date = datetime.strptime(data["payment_date"], "%Y-%m-%d").date()
+                payment.payment_date = new_date
+                # Update ledger entry date too
+                ledger_entry = LedgerEntry.query.filter_by(ref_type="payment", ref_id=payment.id).first()
+                if ledger_entry:
+                    ledger_entry.entry_date = new_date
+            except:
+                pass
+
+        if "method" in data:
+            payment.method = data["method"]
+            
+        if "note" in data:
+            payment.note = data["note"]
+            # Update ledger entry note too
+            ledger_entry = LedgerEntry.query.filter_by(ref_type="payment", ref_id=payment.id).first()
+            if ledger_entry:
+                ledger_entry.note = data["note"]
+
+        db.session.commit()
+        return jsonify({"payment": payment.to_dict()})
 
     @app.route("/api/businesses/<int:business_id>/payments/<int:payment_id>", methods=["GET"])
     @token_required
@@ -3869,12 +4108,13 @@ def create_app(config_class=None):
 
         from backend.services.export import export_sales_excel
 
-        start_date = request.args.get("start_date")
-        end_date = request.args.get("end_date")
+        start_date = request.args.get("start_date") or request.args.get("startDate")
+        end_date = request.args.get("end_date") or request.args.get("endDate")
 
         try:
             filepath = export_sales_excel(business_id, start_date, end_date)
-            return jsonify({"download_url": f"/api/download/{filepath}"})
+            filename = os.path.basename(filepath)
+            return jsonify({"download_url": f"/api/download/{filename}"})
         except Exception as e:
             return jsonify({"error": str(e)}), 500
 
@@ -3893,23 +4133,64 @@ def create_app(config_class=None):
 
         from backend.services.export import export_expenses_excel
 
-        start_date = request.args.get("start_date")
-        end_date = request.args.get("end_date")
+        start_date = request.args.get("start_date") or request.args.get("startDate")
+        end_date = request.args.get("end_date") or request.args.get("endDate")
 
         try:
             filepath = export_expenses_excel(business_id, start_date, end_date)
-            return jsonify({"download_url": f"/api/download/{filepath}"})
+            filename = os.path.basename(filepath)
+            return jsonify({"download_url": f"/api/download/{filename}"})
         except Exception as e:
+            return jsonify({"error": str(e)}), 500
+
+    @app.route("/api/businesses/<int:business_id>/export/combined", methods=["GET"])
+    @token_required
+    def export_combined(business_id):
+        business = Business.query.filter_by(id=business_id, user_id=g.current_user.id).first()
+        if not business:
+            return jsonify({"error": "Negocio no encontrado"}), 404
+            
+        if g.current_user.plan == "free":
+            return jsonify({
+                "error": "La exportación avanzada está disponible solo en Pro.",
+                "upgrade_url": "/upgrade"
+            }), 403
+
+        from backend.services.export import export_combined_report
+        import traceback
+
+        report_type = request.args.get("type", "business_summary")
+        start_date = request.args.get("start_date") or request.args.get("startDate")
+        end_date = request.args.get("end_date") or request.args.get("endDate")
+
+        try:
+            filepath = export_combined_report(business_id, report_type, start_date, end_date)
+            # Ensure we only return the filename, not the full path
+            filename = os.path.basename(filepath)
+            return jsonify({"download_url": f"/api/download/{filename}"})
+        except Exception as e:
+            print(f"ERROR GENERATING REPORT: {str(e)}")
+            traceback.print_exc()
             return jsonify({"error": str(e)}), 500
 
     @app.route("/api/download/<filename>", methods=["GET"])
     @token_required
     def download_file(filename):
-        return send_from_directory(
-            app.config.get("EXPORT_DIR", "exports"),
-            filename,
-            as_attachment=True
-        )
+        export_dir = app.config.get("EXPORT_DIR", "exports")
+        
+        # Ensure export_dir is absolute
+        if not os.path.isabs(export_dir):
+            export_dir = os.path.join(app.root_path, export_dir)
+            
+        try:
+            return send_from_directory(
+                export_dir,
+                filename,
+                as_attachment=True
+            )
+        except Exception as e:
+            print(f"ERROR DOWNLOADING FILE: {str(e)}")
+            return jsonify({"error": "Archivo no encontrado"}), 404
 
     # ========== BACKUP ROUTES ==========
     @app.route("/api/businesses/<int:business_id>/backup", methods=["GET"])
@@ -5903,6 +6184,236 @@ def get_sale_for_whatsapp():
             "sale_date": sale.sale_date.isoformat() if sale.sale_date else None
         }]
     })
+
+# ========== DEBTS ROUTES ==========
+@app.route("/api/businesses/<int:business_id>/debts", methods=["GET", "POST"])
+@token_required
+def handle_debts(business_id):
+    business = Business.query.filter_by(id=business_id, user_id=g.current_user.id).first()
+    if not business:
+        return jsonify({"error": "Negocio no encontrado"}), 404
+
+    if request.method == "POST":
+        data = request.get_json()
+        
+        # Parse dates
+        try:
+            start_date = datetime.strptime(data.get("start_date"), "%Y-%m-%d").date() if data.get("start_date") else date.today()
+            due_date = datetime.strptime(data.get("due_date"), "%Y-%m-%d").date() if data.get("due_date") else None
+        except:
+            return jsonify({"error": "Fechas inválidas"}), 400
+
+        debt = Debt(
+            business_id=business_id,
+            name=data.get("name"),
+            creditor_name=data.get("creditor_name"),
+            category=data.get("category"),
+            total_amount=data.get("total_amount", 0),
+            balance_due=data.get("balance_due", data.get("total_amount", 0)),
+            start_date=start_date,
+            due_date=due_date,
+            frequency=data.get("frequency"),
+            interest_rate=data.get("interest_rate"),
+            installments=data.get("installments"),
+            estimated_installment=data.get("estimated_installment"),
+            status=data.get("status", "pending"),
+            notes=data.get("notes"),
+            reminder_enabled=data.get("reminder_enabled", False)
+        )
+
+        db.session.add(debt)
+        db.session.commit()
+        return jsonify({"debt": debt.to_dict()}), 201
+
+    # GET
+    status = request.args.get("status")
+    category = request.args.get("category")
+    search = request.args.get("search")
+
+    query = Debt.query.filter_by(business_id=business_id)
+
+    if status:
+        if status == "active":
+            query = query.filter(Debt.status.in_(["pending", "partial", "overdue"]))
+        elif status == "overdue":
+            query = query.filter(Debt.status == "overdue")
+        else:
+            query = query.filter(Debt.status == status)
+    
+    if category:
+        query = query.filter(Debt.category == category)
+    
+    if search:
+        query = query.filter(
+            (Debt.name.ilike(f"%{search}%")) | 
+            (Debt.creditor_name.ilike(f"%{search}%")) |
+            (Debt.notes.ilike(f"%{search}%"))
+        )
+
+    debts = query.order_by(Debt.due_date.asc()).all()
+    return jsonify({"debts": [d.to_dict() for d in debts]})
+
+@app.route("/api/businesses/<int:business_id>/debts/<int:debt_id>", methods=["PUT"])
+@token_required
+def update_debt(business_id, debt_id):
+    debt = Debt.query.filter_by(id=debt_id, business_id=business_id).first()
+    if not debt:
+        return jsonify({"error": "Deuda no encontrada"}), 404
+
+    data = request.get_json()
+    
+    if "name" in data: debt.name = data["name"]
+    if "creditor_name" in data: debt.creditor_name = data["creditor_name"]
+    if "category" in data: debt.category = data["category"]
+    if "total_amount" in data: debt.total_amount = data["total_amount"]
+    if "balance_due" in data: debt.balance_due = data["balance_due"]
+    if "frequency" in data: debt.frequency = data["frequency"]
+    if "interest_rate" in data: debt.interest_rate = data["interest_rate"]
+    if "installments" in data: debt.installments = data["installments"]
+    if "estimated_installment" in data: debt.estimated_installment = data["estimated_installment"]
+    if "status" in data: debt.status = data["status"]
+    if "notes" in data: debt.notes = data["notes"]
+    if "reminder_enabled" in data: debt.reminder_enabled = data["reminder_enabled"]
+    
+    if "start_date" in data:
+        try:
+            debt.start_date = datetime.strptime(data["start_date"], "%Y-%m-%d").date()
+        except: pass
+        
+    if "due_date" in data:
+        try:
+            debt.due_date = datetime.strptime(data["due_date"], "%Y-%m-%d").date()
+        except: pass
+
+    db.session.commit()
+    return jsonify({"debt": debt.to_dict()})
+
+@app.route("/api/businesses/<int:business_id>/debts/<int:debt_id>", methods=["DELETE"])
+@token_required
+def delete_debt(business_id, debt_id):
+    debt = Debt.query.filter_by(id=debt_id, business_id=business_id).first()
+    if not debt:
+        return jsonify({"error": "Deuda no encontrada"}), 404
+
+    db.session.delete(debt)
+    db.session.commit()
+    return jsonify({"ok": True})
+
+@app.route("/api/businesses/<int:business_id>/debts/<int:debt_id>/payments", methods=["GET", "POST"])
+@token_required
+def handle_debt_payments(business_id, debt_id):
+    debt = Debt.query.filter_by(id=debt_id, business_id=business_id).first()
+    if not debt:
+        return jsonify({"error": "Deuda no encontrada"}), 404
+
+    if request.method == "POST":
+        data = request.get_json()
+        amount = float(data.get("amount", 0))
+        
+        if amount <= 0:
+            return jsonify({"error": "El monto debe ser mayor a 0"}), 400
+
+        try:
+            payment_date = datetime.strptime(data.get("payment_date"), "%Y-%m-%d").date() if data.get("payment_date") else date.today()
+        except:
+            return jsonify({"error": "Fecha inválida"}), 400
+
+        payment = DebtPayment(
+            debt_id=debt_id,
+            amount=amount,
+            payment_date=payment_date,
+            payment_method=data.get("payment_method", "cash"),
+            note=data.get("note")
+        )
+
+        # Update debt balance
+        debt.balance_due = max(0, debt.balance_due - amount)
+        if debt.balance_due == 0:
+            debt.status = "paid"
+        elif debt.status == "pending" or debt.status == "overdue":
+            debt.status = "partial"
+
+        db.session.add(payment)
+        db.session.commit()
+        
+        return jsonify({
+            "payment": payment.to_dict(),
+            "debt": debt.to_dict()
+        }), 201
+
+    # GET
+    payments = DebtPayment.query.filter_by(debt_id=debt_id).order_by(DebtPayment.payment_date.desc()).all()
+    return jsonify({"payments": [p.to_dict() for p in payments]})
+
+@app.route("/api/businesses/<int:business_id>/debts/<int:debt_id>/payments/<int:payment_id>", methods=["DELETE"])
+@token_required
+def delete_debt_payment(business_id, debt_id, payment_id):
+    debt = Debt.query.filter_by(id=debt_id, business_id=business_id).first()
+    if not debt:
+        return jsonify({"error": "Deuda no encontrada"}), 404
+
+    payment = DebtPayment.query.filter_by(id=payment_id, debt_id=debt_id).first()
+    if not payment:
+        return jsonify({"error": "Pago no encontrado"}), 404
+
+    # Revert balance
+    debt.balance_due += payment.amount
+    if debt.balance_due > 0 and debt.status == "paid":
+        debt.status = "partial" # Or calculate properly if overdue
+
+    db.session.delete(payment)
+    db.session.commit()
+    return jsonify({"ok": True, "debt": debt.to_dict()})
+
+@app.route("/api/businesses/<int:business_id>/debts/summary", methods=["GET"])
+@token_required
+def get_debts_summary(business_id):
+    business = Business.query.filter_by(id=business_id, user_id=g.current_user.id).first()
+    if not business:
+        return jsonify({"error": "Negocio no encontrado"}), 404
+
+    debts = Debt.query.filter_by(business_id=business_id).all()
+    
+    total_debt = sum(d.balance_due for d in debts if d.status not in ["paid"])
+    active_count = len([d for d in debts if d.status not in ["paid"]])
+    
+    today = date.today()
+    overdue_debts = [d for d in debts if d.due_date and d.due_date < today and d.status not in ["paid"]]
+    overdue_total = sum(d.balance_due for d in overdue_debts)
+    
+    # Next due
+    upcoming = sorted([d for d in debts if d.due_date and d.due_date >= today and d.status not in ["paid"]], key=lambda x: x.due_date)
+    next_due = upcoming[0].to_dict() if upcoming else None
+    
+    # Paid this month
+    start_of_month = today.replace(day=1)
+    payments_this_month = db.session.query(func.sum(DebtPayment.amount)).join(Debt).filter(
+        Debt.business_id == business_id,
+        DebtPayment.payment_date >= start_of_month
+    ).scalar() or 0
+
+    return jsonify({
+        "total_debt": total_debt,
+        "active_count": active_count,
+        "overdue_total": overdue_total,
+        "overdue_count": len(overdue_debts),
+        "next_due": next_due,
+        "paid_this_month": payments_this_month
+    })
+
+@app.route("/<path:path>")
+def serve_static(path):
+    # 1. API routes should not be handled here (Flask handles them first usually, but safety check)
+    if path.startswith("api/"):
+        return jsonify({"error": "Not found"}), 404
+        
+    # 2. Try to serve existing static file
+    full_path = os.path.join(app.static_folder, path)
+    if os.path.exists(full_path) and os.path.isfile(full_path):
+        return send_from_directory(app.static_folder, path)
+        
+    # 3. SPA Fallback: Serve index.html for non-API routes
+    return send_from_directory(app.static_folder, "index.html")
 
 if __name__ == "__main__":
     port = int(os.getenv("PORT", "8001"))

@@ -18,7 +18,6 @@ import {
   Search,
   X
 } from 'lucide-react';
-import { useAuthStore } from '../../../store/authStore';
 import logo from '../../../assets/logo.png';
 import { cn } from '../../../utils/cn';
 

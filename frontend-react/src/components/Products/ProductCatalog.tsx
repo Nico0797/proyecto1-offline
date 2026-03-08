@@ -10,12 +10,12 @@ import { PricingToolsTab } from './PricingToolsTab';
 import { ProductModal } from './ProductModal';
 import { UpgradeModal } from '../ui/UpgradeModal';
 import { Button } from '../ui/Button';
-import { Plus, Download, Archive } from 'lucide-react';
+import { Plus, Archive } from 'lucide-react';
 import { Product } from '../../types';
 import { getStockStatus } from './helpers';
 import { useCategoryStore } from './categoryStore';
-import { DataTableContainer } from '../ui/DataTableContainer';
 import { FEATURES, FREE_LIMITS } from '../../auth/plan';
+import { SwipePager } from '../ui/SwipePager';
 
 export const ProductCatalog: React.FC = () => {
   const { activeBusiness } = useBusinessStore();
@@ -70,34 +70,6 @@ export const ProductCatalog: React.FC = () => {
     return matchesSearch && matchesType && matchesStatus && matchesStock && matchesCategory;
   });
 
-  const handleExport = () => {
-    const headers = ['ID', 'Nombre', 'Tipo', 'SKU', 'Precio', 'Costo', 'Stock', 'Estado'];
-    const csvContent = [
-      headers.join(','),
-      ...filteredProducts.map(p => [
-        p.id,
-        `"${p.name}"`,
-        p.type,
-        p.sku || '',
-        p.price,
-        p.cost || 0,
-        p.stock,
-        p.active ? 'Activo' : 'Archivado'
-      ].join(','))
-    ].join('\n');
-
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-    const link = document.createElement('a');
-    if (link.download !== undefined) {
-      const url = URL.createObjectURL(blob);
-      link.setAttribute('href', url);
-      link.setAttribute('download', `productos_export_${new Date().toISOString().split('T')[0]}.csv`);
-      link.style.visibility = 'hidden';
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-    }
-  };
 
   const handleSelect = (id: number) => {
     if (selectedIds.includes(id)) {
@@ -157,120 +129,103 @@ export const ProductCatalog: React.FC = () => {
         feature={FEATURES.LIMIT_PRODUCTS}
       />
       {/* Header & KPIs */}
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 flex-shrink-0">
+      <div className="flex flex-row justify-between items-center gap-4 flex-shrink-0">
         <div>
           <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Productos y Servicios</h1>
           <p className="text-gray-500 dark:text-gray-400 text-sm">Gestiona tu catálogo, inventario y precios.</p>
         </div>
         <div className="flex gap-2">
            {/* Actions Dropdown could go here */}
-           <Button variant="secondary" onClick={handleExport} data-tour="products.export">
-             <Download className="w-4 h-4 mr-2" /> Exportar
-           </Button>
            <Button onClick={handleNewProduct} data-tour="products.primaryAction">
-             <Plus className="w-4 h-4 mr-2" /> Nuevo
+             <Plus className="w-4 h-4 mr-2" />
+             <span className="hidden sm:inline">Nuevo</span>
+             <span className="sm:hidden">Crear</span>
            </Button>
         </div>
       </div>
 
-      <div data-tour="products.kpis" className="flex-shrink-0">
-        <ProductKpiStrip products={products} />
-      </div>
-
-      {/* Tabs */}
-      <div className="border-b border-gray-200 dark:border-gray-700 flex-shrink-0" data-tour="products.tabs">
-        <div className="flex gap-6 overflow-x-auto">
-          <button
-            data-tour="products.tabs.catalog"
-            className={`pb-3 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${activeTab === 'catalog' ? 'border-blue-500 text-blue-600 dark:text-blue-400' : 'border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400'}`}
-            onClick={() => setActiveTab('catalog')}
-          >
-            Catálogo
-          </button>
-          <button
-            data-tour="products.tabs.inventory"
-            className={`pb-3 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${activeTab === 'inventory' ? 'border-blue-500 text-blue-600 dark:text-blue-400' : 'border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400'}`}
-            onClick={() => setActiveTab('inventory')}
-          >
-            Inventario
-          </button>
-          <button
-            data-tour="products.tabs.pricing"
-            className={`pb-3 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${activeTab === 'pricing' ? 'border-blue-500 text-blue-600 dark:text-blue-400' : 'border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400'}`}
-            onClick={() => setActiveTab('pricing')}
-          >
-            Herramientas de Precios
-          </button>
-        </div>
-      </div>
-
-      {/* Tab Content */}
-      <div className="flex-1 min-h-0 flex flex-col">
-        {activeTab === 'catalog' && (
-          <>
-            <div className="flex-shrink-0" data-tour="products.filters">
-              <ProductFilters
-                search={search}
-                onSearchChange={setSearch}
-                typeFilter={typeFilter}
-                onTypeFilterChange={setTypeFilter}
-                statusFilter={statusFilter}
-                onStatusFilterChange={setStatusFilter}
-                stockFilter={stockFilter}
-                onStockFilterChange={setStockFilter}
-                categoryFilter={categoryFilter}
-                onCategoryFilterChange={setCategoryFilter}
-              />
-            </div>
-            
-            {/* Bulk Actions Bar */}
-            {selectedIds.length > 0 && (
-                <div className="bg-blue-50 dark:bg-blue-900/20 p-3 rounded-lg flex items-center justify-between mb-4 border border-blue-100 dark:border-blue-800 animate-in fade-in slide-in-from-top-2 flex-shrink-0">
+      <SwipePager
+        activePageId={activeTab}
+        onPageChange={(id) => setActiveTab(id as 'catalog'|'inventory'|'pricing')}
+        className="flex-1"
+        contentScroll="visible"
+        pages={[
+          {
+            id: 'catalog',
+            title: 'Catálogo',
+            content: (
+              <div className="flex flex-col gap-4">
+                <div data-tour="products.kpis" className="flex-shrink-0">
+                  <ProductKpiStrip products={products} />
+                </div>
+                <div className="flex-shrink-0" data-tour="products.filters">
+                  <ProductFilters
+                    search={search}
+                    onSearchChange={setSearch}
+                    typeFilter={typeFilter}
+                    onTypeFilterChange={setTypeFilter}
+                    statusFilter={statusFilter}
+                    onStatusFilterChange={setStatusFilter}
+                    stockFilter={stockFilter}
+                    onStockFilterChange={setStockFilter}
+                    categoryFilter={categoryFilter}
+                    onCategoryFilterChange={setCategoryFilter}
+                  />
+                </div>
+                {selectedIds.length > 0 && (
+                  <div className="bg-blue-50 dark:bg-blue-900/20 p-3 rounded-lg flex items-center justify-between border border-blue-100 dark:border-blue-800 flex-shrink-0">
                     <span className="text-sm font-medium text-blue-900 dark:text-blue-100 ml-2">
-                        {selectedIds.length} seleccionados
+                      {selectedIds.length} seleccionados
                     </span>
                     <div className="flex gap-2">
-                        <Button size="sm" variant="secondary" onClick={handleBulkArchive} className="text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-900/20 border-red-200 dark:border-red-900/30">
-                            <Archive className="w-4 h-4 mr-2" /> Archivar
-                        </Button>
+                      <Button size="sm" variant="secondary" onClick={handleBulkArchive} className="text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-900/20 border-red-200 dark:border-red-900/30">
+                        <Archive className="w-4 h-4 mr-2" /> Archivar
+                      </Button>
                     </div>
+                  </div>
+                )}
+                <div className="min-h-0">
+                  <ProductList
+                    products={filteredProducts}
+                    selectedIds={selectedIds}
+                    onSelect={handleSelect}
+                    onSelectAll={handleSelectAll}
+                    onEdit={(p) => { setEditingProduct(p); setIsModalOpen(true); }}
+                    onDuplicate={(p) => {
+                      void p;
+                      setEditingProduct(undefined);
+                      setIsModalOpen(true);
+                    }}
+                    onDelete={handleDelete}
+                  />
                 </div>
-            )}
-
-            <div className="flex-1 min-h-0" data-tour="products.table">
-            <DataTableContainer>
-            <ProductList
-              products={filteredProducts}
-              selectedIds={selectedIds}
-              onSelect={handleSelect}
-              onSelectAll={handleSelectAll}
-              onEdit={(p) => { setEditingProduct(p); setIsModalOpen(true); }}
-              onDuplicate={(p) => {
-                  void p;
-                  setEditingProduct(undefined);
-                  setIsModalOpen(true);
-              }}
-              onDelete={handleDelete}
-            />
-            </DataTableContainer>
-            </div>
-          </>
-        )}
-
-        {activeTab === 'inventory' && (
-          <DataTableContainer>
-          <InventoryTab products={filteredProducts} />
-          </DataTableContainer>
-        )}
-
-        {activeTab === 'pricing' && (
-          <PricingToolsTab 
-            products={products} // Pass all products, let tab handle filtering/selection logic if needed or pass filtered
-            selectedIds={selectedIds} // Pass selection from catalog if user wants to operate on selection
-            onRefresh={() => activeBusiness && fetchProducts(activeBusiness.id)}
-          />
-        )}
-      </div>
+              </div>
+            )
+          },
+          {
+            id: 'inventory',
+            title: 'Inventario',
+            content: (
+              <div className="min-h-0">
+                <InventoryTab products={filteredProducts} />
+              </div>
+            )
+          },
+          {
+            id: 'pricing',
+            title: 'Herramientas de Precios',
+            content: (
+              <div className="min-h-0">
+                <PricingToolsTab 
+                  products={products}
+                  selectedIds={selectedIds}
+                  onRefresh={() => activeBusiness && fetchProducts(activeBusiness.id)}
+                />
+              </div>
+            )
+          }
+        ]}
+      />
 
       <ProductModal
         isOpen={isModalOpen}

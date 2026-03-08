@@ -10,6 +10,9 @@ android {
         versionCode 1
         versionName "1.0"
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
+        // Optimización: Solo incluir recursos para Inglés y Español
+        // Esto elimina strings de librerías en otros idiomas (fr, de, ru, etc.)
+        resConfigs "en", "es"
         androidResources {
             ignoreAssetsPattern '!.svn:!.git:!.ds_store:!*.scc:.*:!CVS:!thumbs.db:!picasa.ini:!*~'
         }

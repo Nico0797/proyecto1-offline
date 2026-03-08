@@ -20,6 +20,7 @@ interface PaymentState {
   error: string | null;
   fetchPayments: (businessId: number, filters?: any) => Promise<void>;
   createPayment: (businessId: number, paymentData: any) => Promise<void>;
+  updatePayment: (businessId: number, id: number, paymentData: Partial<Payment>) => Promise<void>;
   deletePayment: (businessId: number, id: number) => Promise<void>;
 }
 
@@ -49,6 +50,21 @@ export const usePaymentStore = create<PaymentState>((set) => ({
     try {
       const response = await api.post(`/businesses/${businessId}/payments`, paymentData);
       set((state) => ({ payments: [response.data.payment, ...state.payments] }));
+    } catch (error: any) {
+      set({ error: error.message });
+      throw error;
+    } finally {
+      set({ loading: false });
+    }
+  },
+  updatePayment: async (businessId, id, paymentData) => {
+    set({ loading: true, error: null });
+    try {
+      const response = await api.put(`/businesses/${businessId}/payments/${id}`, paymentData);
+      const updated: Payment = response.data.payment || { ...paymentData, id } as Payment;
+      set((state) => ({
+        payments: state.payments.map((p) => (p.id === id ? { ...p, ...updated } : p)),
+      }));
     } catch (error: any) {
       set({ error: error.message });
       throw error;

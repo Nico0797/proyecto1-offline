@@ -141,6 +141,22 @@ def init_db(app):
                 except Exception as e:
                     app.logger.error(f"Error creating tables: {e}")
 
+            # Create debts if not exists
+            if not inspector.has_table("debts"):
+                try:
+                    db.create_all()
+                    app.logger.info("Created missing tables including debts")
+                except Exception as e:
+                    app.logger.error(f"Error creating debts table: {e}")
+
+            # Create debt_payments if not exists
+            if not inspector.has_table("debt_payments"):
+                try:
+                    db.create_all()
+                    app.logger.info("Created missing tables including debt_payments")
+                except Exception as e:
+                    app.logger.error(f"Error creating debt_payments table: {e}")
+
             # Verify recurring_expenses columns just in case it was created with old schema
             if inspector.has_table("recurring_expenses"):
                 re_columns = [col['name'] for col in inspector.get_columns("recurring_expenses")]

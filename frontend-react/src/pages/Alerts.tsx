@@ -112,13 +112,38 @@ export const Alerts = () => {
 
   const criticalCount = items.filter(i => i.severity==='critical').length;
 
+  const kpiItems = [
+    {
+      label: 'Cobros vencidos',
+      value: `$${kpi.overdue.toLocaleString()}`,
+      subtext: `${kpi.overdueCount} clientes`,
+      icon: ShieldAlert,
+      color: 'text-red-400',
+      bg: 'bg-red-500/10'
+    },
+    {
+      label: 'Recurrentes 7d',
+      value: kpi.recurring,
+      icon: Calendar,
+      color: 'text-blue-400',
+      bg: 'bg-blue-500/10'
+    },
+    {
+      label: 'Stock bajo',
+      value: kpi.stock,
+      icon: Package,
+      color: 'text-yellow-400',
+      bg: 'bg-yellow-500/10'
+    }
+  ];
+
   return (
     <div className="space-y-6 px-4 sm:px-6 lg:px-8 py-4" data-tour="alerts.panel">
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         <div className="flex items-center gap-3">
-          <h1 className="text-3xl font-bold text-white">Alertas</h1>
-          <span className="px-2 py-0.5 text-xs font-bold rounded-full bg-red-500/20 text-red-400">Críticas {criticalCount}</span>
-          <span className="px-2 py-0.5 text-xs font-bold rounded-full bg-blue-500/20 text-blue-400">Activas {items.length}</span>
+          <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Alertas</h1>
+          <span className="px-2 py-0.5 text-xs font-bold rounded-full bg-red-100 dark:bg-red-500/20 text-red-600 dark:text-red-400">Críticas {criticalCount}</span>
+          <span className="px-2 py-0.5 text-xs font-bold rounded-full bg-blue-100 dark:bg-blue-500/20 text-blue-600 dark:text-blue-400">Activas {items.length}</span>
         </div>
         <div className="flex gap-2 items-center flex-wrap" data-tour="alerts.filters">
           <PeriodFilter 
@@ -128,53 +153,55 @@ export const Alerts = () => {
              iconOnly
           />
           <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4" />
             <Input className="pl-9 w-40 md:w-64" placeholder="Buscar..." value={query} onChange={e=>setQuery(e.target.value)} />
           </div>
-          <label className="flex items-center gap-2 text-sm text-gray-400">
-            <input type="checkbox" checked={onlyCritical} onChange={e=>setOnlyCritical(e.target.checked)} /> Solo críticas
+          <label className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
+            <input type="checkbox" checked={onlyCritical} onChange={e=>setOnlyCritical(e.target.checked)} className="rounded border-gray-300 dark:border-gray-600" /> Solo críticas
           </label>
           <Button variant="secondary" onClick={refresh}>Refrescar</Button>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <Card className="bg-white/5 border-white/10">
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-sm text-gray-400">Cobros vencidos</span>
-              <ShieldAlert className="w-4 h-4 text-red-400" />
-            </div>
-            <div className="text-2xl font-bold text-white">${kpi.overdue.toLocaleString()}</div>
-            <div className="text-xs text-gray-400">{kpi.overdueCount} clientes</div>
-          </CardContent>
-        </Card>
-        <Card className="bg-white/5 border-white/10">
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-sm text-gray-400">Recurrentes 7d</span>
-              <Calendar className="w-4 h-4 text-blue-400" />
-            </div>
-            <div className="text-2xl font-bold text-white">{kpi.recurring}</div>
-          </CardContent>
-        </Card>
-        <Card className="bg-white/5 border-white/10">
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-sm text-gray-400">Stock bajo</span>
-              <Package className="w-4 h-4 text-yellow-400" />
-            </div>
-            <div className="text-2xl font-bold text-white">{kpi.stock}</div>
-          </CardContent>
-        </Card>
+      {/* Mobile KPIs (Chips) */}
+      <div className="flex overflow-x-auto pb-2 gap-2 md:hidden no-scrollbar -mx-4 px-4 snap-x">
+        {kpiItems.map((item, i) => (
+          <div key={i} className="flex items-center gap-3 px-4 py-2 bg-white dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-full shadow-sm shrink-0 whitespace-nowrap snap-start">
+             <div className={`p-1.5 rounded-full ${item.bg} ${item.color}`}>
+               <item.icon className="w-4 h-4" />
+             </div>
+             <div className="flex flex-col leading-none gap-0.5">
+                <span className="text-[10px] text-gray-500 dark:text-gray-400 uppercase tracking-wide font-medium">{item.label}</span>
+                <div className="flex items-baseline gap-1.5">
+                    <span className="text-base font-bold text-gray-900 dark:text-white">{item.value}</span>
+                    {item.subtext && <span className="text-[10px] text-gray-400">{item.subtext}</span>}
+                </div>
+             </div>
+          </div>
+        ))}
       </div>
 
-      <div className="flex gap-4 border-b border-white/10">
-        <button onClick={()=>setTab('all')} className={cn('pb-2 px-3 text-sm border-b-2', tab==='all'?'border-blue-500 text-blue-400':'border-transparent text-gray-400')}>Todas</button>
-        <button onClick={()=>setTab('receivables')} className={cn('pb-2 px-3 text-sm border-b-2', tab==='receivables'?'border-red-500 text-red-400':'border-transparent text-gray-400')}>Cobros</button>
-        <button onClick={()=>setTab('recurring')} className={cn('pb-2 px-3 text-sm border-b-2', tab==='recurring'?'border-green-500 text-green-400':'border-transparent text-gray-400')}>Recurrentes</button>
-        <button onClick={()=>setTab('inventory')} className={cn('pb-2 px-3 text-sm border-b-2', tab==='inventory'?'border-yellow-500 text-yellow-400':'border-transparent text-gray-400')}>Inventario</button>
-        <button onClick={()=>setTab('config')} className={cn('pb-2 px-3 text-sm border-b-2', tab==='config'?'border-gray-500 text-gray-300':'border-transparent text-gray-400')}>Configuración</button>
+      {/* Desktop KPIs (Cards) */}
+      <div className="hidden md:grid md:grid-cols-4 gap-4">
+        {kpiItems.map((item, i) => (
+          <Card key={i} className="bg-white dark:bg-white/5 border-gray-200 dark:border-white/10">
+            <CardContent className="p-4">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-sm text-gray-500 dark:text-gray-400">{item.label}</span>
+                <item.icon className={`w-4 h-4 ${item.color}`} />
+              </div>
+              <div className="text-2xl font-bold text-gray-900 dark:text-white">{item.value}</div>
+              {item.subtext && <div className="text-xs text-gray-400">{item.subtext}</div>}
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+
+      <div className="flex gap-4 border-b border-gray-200 dark:border-white/10 overflow-x-auto">
+        <button onClick={()=>setTab('all')} className={cn('pb-2 px-3 text-sm border-b-2 font-medium whitespace-nowrap transition-colors', tab==='all'?'border-blue-500 text-blue-600 dark:text-blue-400':'border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400')}>Todas</button>
+        <button onClick={()=>setTab('receivables')} className={cn('pb-2 px-3 text-sm border-b-2 font-medium whitespace-nowrap transition-colors', tab==='receivables'?'border-red-500 text-red-600 dark:text-red-400':'border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400')}>Cobros</button>
+        <button onClick={()=>setTab('recurring')} className={cn('pb-2 px-3 text-sm border-b-2 font-medium whitespace-nowrap transition-colors', tab==='recurring'?'border-green-500 text-green-600 dark:text-green-400':'border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400')}>Recurrentes</button>
+        <button onClick={()=>setTab('inventory')} className={cn('pb-2 px-3 text-sm border-b-2 font-medium whitespace-nowrap transition-colors', tab==='inventory'?'border-yellow-500 text-yellow-600 dark:text-yellow-400':'border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400')}>Inventario</button>
       </div>
 
       {tab !== 'config' && (
