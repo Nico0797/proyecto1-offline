@@ -6,10 +6,12 @@ import { useOrderStore, OrderItem } from '../../store/orderStore';
 import { Modal } from '../ui/Modal';
 import { Button } from '../ui/Button';
 import { Input } from '../ui/Input';
-import { Search, ShoppingCart, ArrowRight, X } from 'lucide-react';
+import { Search, ShoppingCart, ArrowRight, X, ScanLine } from 'lucide-react';
 import { Product } from '../../types';
 import { formatCOP } from './helpers';
 import { useCategoryStore } from '../Products/categoryStore';
+import { BarcodeScanner } from '../ui/BarcodeScanner';
+import { toast } from 'react-hot-toast';
 
 interface CreateOrderModalProps {
   isOpen: boolean;
@@ -28,6 +30,7 @@ export const CreateOrderModal: React.FC<CreateOrderModalProps> = ({
   const { createOrder } = useOrderStore();
 
   const [step, setStep] = useState<1 | 2>(1); // 1: Items, 2: Details
+  const [showScanner, setShowScanner] = useState(false);
   const [selectedCustomerId, setSelectedCustomerId] = useState<number | ''>('');
   const [orderItems, setOrderItems] = useState<OrderItem[]>([]);
   const [status, setStatus] = useState<'pending' | 'completed' | 'cancelled'>('pending');
@@ -174,6 +177,17 @@ export const CreateOrderModal: React.FC<CreateOrderModalProps> = ({
     }
   };
 
+  const handleScan = (code: string) => {
+    setShowScanner(false);
+    const found = products.find(p => p.sku === code);
+    if (found) {
+        handleAddItem(found);
+        toast.success(`Añadido: ${found.name}`);
+    } else {
+        toast.error('Producto no encontrado en inventario');
+    }
+  };
+
   return (
     <Modal
       isOpen={isOpen}
@@ -198,16 +212,25 @@ export const CreateOrderModal: React.FC<CreateOrderModalProps> = ({
         {step === 1 && (
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 h-full">
                 <div className="lg:col-span-2 flex flex-col gap-4">
-                    <div className="relative">
-                        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
-                        <Input
-                            placeholder="Buscar productos o servicios..."
-                            className="pl-10"
-                            value={productSearch}
-                            onChange={(e) => setProductSearch(e.target.value)}
-                            autoFocus
-                            data-tour="orders.modal.search"
-                        />
+                    <div className="relative flex gap-2">
+                        <div className="relative flex-1">
+                            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+                            <Input
+                                placeholder="Buscar productos o servicios..."
+                                className="pl-10"
+                                value={productSearch}
+                                onChange={(e) => setProductSearch(e.target.value)}
+                                autoFocus
+                                data-tour="orders.modal.search"
+                            />
+                        </div>
+                        <Button 
+                            onClick={() => setShowScanner(true)}
+                            className="px-3"
+                            title="Escanear producto"
+                        >
+                            <ScanLine className="w-5 h-5" />
+                        </Button>
                     </div>
                     <div className="flex gap-2 overflow-x-auto no-scrollbar -mt-1 pb-1">
                       <button
@@ -440,6 +463,12 @@ export const CreateOrderModal: React.FC<CreateOrderModalProps> = ({
              </div>
         )}
       </div>
+      {showScanner && (
+        <BarcodeScanner
+            onScan={handleScan}
+            onClose={() => setShowScanner(false)}
+        />
+      )}
     </Modal>
   );
 };

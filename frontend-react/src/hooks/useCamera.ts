@@ -6,7 +6,8 @@ import { toast } from 'react-hot-toast';
 export interface UseCameraReturn {
   photo: string | undefined;
   takePhoto: () => Promise<void>;
-  clearPhoto: () => void;
+  deletePhoto: () => void;
+  setPhoto: (photo: string | undefined) => void;
   isAvailable: boolean;
 }
 
@@ -21,45 +22,52 @@ export const useCamera = (): UseCameraReturn => {
         return;
       }
 
-      // Solicitar permisos explícitamente si es necesario (aunque getPhoto lo hace)
+      // Solicitar permisos explícitamente
       const permissions = await Camera.checkPermissions();
+      console.log('Permisos de cámara:', permissions);
+
       if (permissions.camera === 'denied' || permissions.photos === 'denied') {
         const permissionRequest = await Camera.requestPermissions();
         if (permissionRequest.camera === 'denied' || permissionRequest.photos === 'denied') {
-          toast.error('Se requieren permisos de cámara para continuar');
+          toast.error('Se requieren permisos de cámara y galería');
           return;
         }
       }
 
+      console.log('Intentando abrir cámara...');
       const capturedPhoto = await Camera.getPhoto({
-        quality: 90,
+        quality: 70,
         allowEditing: false,
-        resultType: CameraResultType.Uri,
-        source: CameraSource.Camera, // O Prompt para dejar elegir al usuario
-        saveToGallery: false // Evitar llenar la galería del usuario con fotos temporales
+        resultType: CameraResultType.DataUrl,
+        source: CameraSource.Prompt,
+        saveToGallery: false,
+        width: 800,
+        // Añadido para evitar problemas en algunos dispositivos
+        presentationStyle: 'popover' 
       });
 
-      // En web, webPath es un blob url. En nativo, es un path file://
-      if (capturedPhoto.webPath) {
-        setPhoto(capturedPhoto.webPath);
+      console.log('Foto capturada con éxito');
+      if (capturedPhoto.dataUrl) {
+        setPhoto(capturedPhoto.dataUrl);
       }
     } catch (error: any) {
-      // Ignorar error si el usuario canceló
-      if (error.message !== 'User cancelled photos app') {
-        console.error('Error al tomar foto:', error);
-        toast.error('No se pudo tomar la foto');
+      console.error('Error detallado al tomar foto:', error);
+      // Solo mostrar toast si NO es cancelación voluntaria
+      if (error.message !== 'User cancelled photos app' && !error.message.includes('cancelled')) {
+         toast.error(`Error: ${error.message || 'No se pudo abrir la cámara'}`);
       }
     }
   };
 
-  const clearPhoto = () => {
+  const deletePhoto = () => {
     setPhoto(undefined);
   };
 
   return {
     photo,
     takePhoto,
-    clearPhoto,
+    deletePhoto,
+    setPhoto,
     isAvailable
   };
 };

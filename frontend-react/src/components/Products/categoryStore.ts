@@ -5,6 +5,8 @@ interface CategoryState {
   categories: { id: string; name: string; color: string }[];
   productCategories: Record<number, string>; // productId -> categoryId
   addCategory: (name: string, color: string) => void;
+  updateCategory: (id: string, name: string, color: string) => void;
+  deleteCategory: (id: string) => void;
   assignCategory: (productId: number, categoryId: string) => void;
   getCategory: (productId: number) => { id: string; name: string; color: string } | undefined;
 }
@@ -21,6 +23,16 @@ export const useCategoryStore = create<CategoryState>()(
             ...state.categories,
             { id: Math.random().toString(36).substr(2, 9), name, color },
           ],
+        })),
+      updateCategory: (id, name, color) =>
+        set((state) => ({
+          categories: state.categories.map((c) => 
+            c.id === id ? { ...c, name, color } : c
+          ),
+        })),
+      deleteCategory: (id) =>
+        set((state) => ({
+          categories: state.categories.filter((c) => c.id !== id),
         })),
       assignCategory: (productId, categoryId) =>
         set((state) => ({

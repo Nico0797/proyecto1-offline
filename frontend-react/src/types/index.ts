@@ -47,6 +47,7 @@ export interface Product {
   stock: number;
   low_stock_threshold: number;
   active: boolean;
+  image?: string;
   created_at: string;
 }
 

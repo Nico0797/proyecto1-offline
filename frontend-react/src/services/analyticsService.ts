@@ -359,28 +359,30 @@ class AnalyticsService {
         // If the path is already absolute, return it
         if (downloadPath.startsWith('http')) return downloadPath;
         
-        // If it's a relative path, we need to construct the full URL carefully.
-        // If VITE_API_URL is defined, use it. Otherwise, assume we are in a context where relative paths work
-        // (e.g. proxying via Vite or served from same origin).
-        // Avoid defaulting to localhost:5000 blindly as it breaks mobile access.
+        // FIX: Ensure absolute URL for mobile downloads
+        // Get baseURL from the current axios instance
+        let baseURL = api.defaults.baseURL || '';
         
-        const envApiUrl = import.meta.env.VITE_API_URL;
-        
-        if (envApiUrl) {
-            const cleanApiUrl = envApiUrl.replace(/\/$/, '');
-            return `${cleanApiUrl}${downloadPath}`;
+        // If baseURL is relative (e.g. '/api'), try to make it absolute using current window location
+        // or stored configuration
+        if (!baseURL.startsWith('http')) {
+            // Check if we have a stored base URL (from login screen configuration)
+            const storedBase = localStorage.getItem('API_BASE_URL');
+            if (storedBase) {
+                baseURL = storedBase;
+            } else if (typeof window !== 'undefined') {
+                 // Fallback to window origin if no config
+                 baseURL = window.location.origin + (baseURL.startsWith('/') ? baseURL : `/${baseURL}`);
+            }
         }
         
-        // If no env var, check if api.defaults.baseURL is absolute
-        if (api.defaults.baseURL && api.defaults.baseURL.startsWith('http')) {
-             const cleanBase = api.defaults.baseURL.replace(/\/api\/?$/, '').replace(/\/$/, '');
-             return `${cleanBase}${downloadPath}`;
-        }
-
-        // Fallback: Return relative path. 
-        // fetch() in the browser will resolve this against the current window.location.origin
-        // This is the safest bet for mobile/dev environments using proxy.
-        return downloadPath;
+        // Clean trailing slash from base and leading slash from path to avoid double slashes
+        const cleanBase = baseURL.replace(/\/$/, '');
+        const cleanPath = downloadPath.startsWith('/') ? downloadPath : `/${downloadPath}`;
+        
+        console.log('🔗 Generated Export URL:', `${cleanBase}${cleanPath}`);
+        
+        return `${cleanBase}${cleanPath}`;
 
     } catch (error) {
         console.error('Error getting export URL:', error);

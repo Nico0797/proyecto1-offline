@@ -1,6 +1,5 @@
 import { PushNotifications, PushNotificationSchema, ActionPerformed, Token } from '@capacitor/push-notifications';
 import { Capacitor } from '@capacitor/core';
-import { toast } from 'react-hot-toast';
 
 export const pushNotificationService = {
   // Inicialización y configuración de canales

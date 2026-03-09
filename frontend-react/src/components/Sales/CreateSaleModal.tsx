@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { Input } from '../ui/Input';
 import { CurrencyInput } from '../ui/CurrencyInput';
 import { Button } from '../ui/Button';
-import { Search, X, ShoppingCart, DollarSign, ArrowRight, Check, Clock } from 'lucide-react';
+import { Search, X, ShoppingCart, DollarSign, ArrowRight, Check, Clock, ScanLine } from 'lucide-react';
 import { Modal } from '../ui/Modal';
 import { useCustomerStore } from '../../store/customerStore';
 import { useProductStore } from '../../store/productStore';
@@ -11,6 +11,8 @@ import { SaleItem, Product } from '../../types';
 import { useBusinessStore } from '../../store/businessStore';
 import { formatCOP } from './helpers';
 import { useCategoryStore } from '../Products/categoryStore';
+import { BarcodeScanner } from '../ui/BarcodeScanner';
+import { toast } from 'react-hot-toast';
 
 export const CreateSaleModal = ({ isOpen, onClose, onSuccess }: { isOpen: boolean; onClose: () => void; onSuccess?: () => void }) => {
   const { activeBusiness } = useBusinessStore();
@@ -19,6 +21,7 @@ export const CreateSaleModal = ({ isOpen, onClose, onSuccess }: { isOpen: boolea
   const { createSale } = useSaleStore();
 
   const [step, setStep] = useState<1 | 2 | 3>(1); // 1: Items, 2: Customer, 3: Payment
+  const [showScanner, setShowScanner] = useState(false);
   const [productSearch, setProductSearch] = useState('');
   const [productLimit, setProductLimit] = useState(24);
   const [categoryFilter, setCategoryFilter] = useState<string>('');
@@ -168,6 +171,17 @@ export const CreateSaleModal = ({ isOpen, onClose, onSuccess }: { isOpen: boolea
   const discount = calculateDiscount(subtotal);
   const total = Math.max(subtotal - discount, 0);
 
+  const handleScan = (code: string) => {
+    setShowScanner(false);
+    const found = products.find(p => p.sku === code);
+    if (found) {
+        handleAddItem(found);
+        toast.success(`Añadido: ${found.name}`);
+    } else {
+        toast.error('Producto no encontrado en inventario');
+    }
+  };
+
   return (
     <Modal isOpen={isOpen} onClose={onClose} title="Nueva Venta" className="max-w-4xl h-[90vh] flex flex-col">
       {/* Stepper Header */}
@@ -192,16 +206,25 @@ export const CreateSaleModal = ({ isOpen, onClose, onSuccess }: { isOpen: boolea
         {step === 1 && (
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 h-full">
                 <div className="lg:col-span-2 flex flex-col gap-4">
-                    <div className="relative">
-                        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
-                        <Input
-                            placeholder="Buscar productos o servicios..."
-                            className="pl-10"
-                            value={productSearch}
-                            onChange={(e) => setProductSearch(e.target.value)}
-                            autoFocus
-                            data-tour="sales.modal.search"
-                        />
+                    <div className="relative flex gap-2">
+                        <div className="relative flex-1">
+                            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+                            <Input
+                                placeholder="Buscar productos o servicios..."
+                                className="pl-10"
+                                value={productSearch}
+                                onChange={(e) => setProductSearch(e.target.value)}
+                                autoFocus
+                                data-tour="sales.modal.search"
+                            />
+                        </div>
+                        <Button 
+                            onClick={() => setShowScanner(true)}
+                            className="px-3"
+                            title="Escanear producto"
+                        >
+                            <ScanLine className="w-5 h-5" />
+                        </Button>
                     </div>
                     <div className="flex gap-2 overflow-x-auto no-scrollbar -mt-1 pb-1">
                       <button
@@ -528,6 +551,12 @@ export const CreateSaleModal = ({ isOpen, onClose, onSuccess }: { isOpen: boolea
             </div>
         )}
       </div>
+      {showScanner && (
+        <BarcodeScanner
+            onScan={handleScan}
+            onClose={() => setShowScanner(false)}
+        />
+      )}
     </Modal>
   );
 };

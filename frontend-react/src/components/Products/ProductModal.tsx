@@ -7,7 +7,11 @@ import { Product } from '../../types';
 import { useCategoryStore } from './categoryStore';
 import { useProductStore } from '../../store/productStore';
 import { useBusinessStore } from '../../store/businessStore';
-import { Layers, DollarSign, Info, AlertTriangle } from 'lucide-react';
+import { Layers, DollarSign, Info, AlertTriangle, ScanLine, Camera, Image as ImageIcon, Trash2 } from 'lucide-react';
+import { BarcodeScanner } from '../ui/BarcodeScanner';
+import { productLookupService } from '../../services/productLookupService';
+import { toast } from 'react-hot-toast';
+import { useCamera } from '../../hooks/useCamera';
 
 interface ProductModalProps {
   isOpen: boolean;
@@ -19,8 +23,11 @@ interface ProductModalProps {
 export const ProductModal: React.FC<ProductModalProps> = ({ isOpen, onClose, product, onSuccess }) => {
   const { activeBusiness } = useBusinessStore();
   const { products, addProduct, updateProduct } = useProductStore();
-  const { categories, getCategory, assignCategory, addCategory } = useCategoryStore();
+  const { categories, getCategory, assignCategory } = useCategoryStore();
+  const { photo, takePhoto, deletePhoto, setPhoto } = useCamera();
 
+  const [showScanner, setShowScanner] = useState(false);
+  const [isLookingUp, setIsLookingUp] = useState(false);
   const [formData, setFormData] = useState({
     name: '',
     description: '',
@@ -33,12 +40,11 @@ export const ProductModal: React.FC<ProductModalProps> = ({ isOpen, onClose, pro
     low_stock_threshold: 5,
     active: true,
     categoryId: '',
+    image: '',
   });
 
   const [loading, setLoading] = useState(false);
   const [activeTab, setActiveTab] = useState<'basic' | 'price' | 'inventory'>('basic');
-  const [newCatName, setNewCatName] = useState('');
-  const [addingCat, setAddingCat] = useState(false);
 
   useEffect(() => {
     if (product) {
@@ -55,7 +61,11 @@ export const ProductModal: React.FC<ProductModalProps> = ({ isOpen, onClose, pro
         low_stock_threshold: product.low_stock_threshold || 5,
         active: product.active,
         categoryId: category?.id || '',
+        image: product.image || '',
       });
+      if (product.image) {
+        setPhoto(product.image);
+      }
     } else {
       setFormData({
         name: '',
@@ -69,9 +79,19 @@ export const ProductModal: React.FC<ProductModalProps> = ({ isOpen, onClose, pro
         low_stock_threshold: 5,
         active: true,
         categoryId: '',
+        image: '',
       });
+      deletePhoto();
     }
   }, [product, isOpen]);
+
+  useEffect(() => {
+    if (photo) {
+      setFormData(prev => ({ ...prev, image: photo }));
+    } else {
+      setFormData(prev => ({ ...prev, image: '' }));
+    }
+  }, [photo]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -90,12 +110,14 @@ export const ProductModal: React.FC<ProductModalProps> = ({ isOpen, onClose, pro
         stock: Number(formData.stock),
         low_stock_threshold: Number(formData.low_stock_threshold),
         active: formData.active,
+        image: formData.image,
       };
 
       let productId = product?.id;
 
       if (product) {
         await updateProduct(activeBusiness.id, product.id, productData);
+        toast.success('Producto actualizado');
       } else {
         // Since addProduct returns void in the store but updates the state, we can't get the ID easily unless the store returns it.
         // For now, let's assume we can't assign category immediately for new products if store doesn't return ID.
@@ -112,6 +134,7 @@ export const ProductModal: React.FC<ProductModalProps> = ({ isOpen, onClose, pro
             assignCategory(created.id, formData.categoryId);
           }
         }
+        toast.success('Producto creado');
       }
 
       // If we have an ID (edit mode), we can assign category.
@@ -126,12 +149,46 @@ export const ProductModal: React.FC<ProductModalProps> = ({ isOpen, onClose, pro
       onClose();
     } catch (error) {
       console.error(error);
+      toast.error('Error al guardar el producto');
     } finally {
       setLoading(false);
     }
   };
 
   const margin = formData.price > 0 ? ((formData.price - formData.cost) / formData.price) * 100 : 0;
+
+  const handleScan = async (code: string) => {
+    setShowScanner(false);
+    
+    // Si estamos creando un producto nuevo y no tiene nombre, intentar buscarlo
+    if (!product && !formData.name) {
+      setIsLookingUp(true);
+      const toastId = toast.loading('Buscando información del producto...');
+      try {
+        const info = await productLookupService.lookupByBarcode(code);
+        if (info) {
+          setFormData(prev => ({ 
+            ...prev, 
+            sku: code,
+            name: info.name, 
+            description: info.description || prev.description 
+          }));
+          toast.success('Producto encontrado', { id: toastId });
+        } else {
+            setFormData(prev => ({ ...prev, sku: code }));
+            toast.error('Producto no encontrado en la base de datos global. Ingresa los datos manualmente.', { id: toastId });
+        }
+      } catch (e) {
+        setFormData(prev => ({ ...prev, sku: code }));
+        toast.dismiss(toastId);
+      } finally {
+        setIsLookingUp(false);
+      }
+    } else {
+        // Solo actualizar SKU si ya estamos editando o ya hay nombre
+        setFormData(prev => ({ ...prev, sku: code }));
+    }
+  };
 
   return (
     <Modal isOpen={isOpen} onClose={onClose} title={product ? 'Editar Producto' : 'Nuevo Producto'} className="max-w-md md:max-w-2xl">
@@ -163,6 +220,39 @@ export const ProductModal: React.FC<ProductModalProps> = ({ isOpen, onClose, pro
         <form onSubmit={handleSubmit} className="space-y-6 overflow-y-auto max-h-[60vh] px-1">
           {activeTab === 'basic' && (
             <div className="space-y-4">
+              {/* Sección de Imagen */}
+              <div className="flex flex-col items-center justify-center space-y-3 p-4 bg-gray-50 dark:bg-gray-800 rounded-lg border-2 border-dashed border-gray-300 dark:border-gray-600">
+                {photo ? (
+                  <div className="relative w-32 h-32">
+                    <img src={photo} alt="Producto" className="w-full h-full object-cover rounded-lg shadow-sm" />
+                    <button 
+                      type="button" 
+                      onClick={deletePhoto}
+                      className="absolute -top-2 -right-2 p-1 bg-red-500 text-white rounded-full hover:bg-red-600 shadow-md"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  </div>
+                ) : (
+                  <div className="w-32 h-32 bg-gray-200 dark:bg-gray-700 rounded-lg flex items-center justify-center">
+                    <ImageIcon className="w-12 h-12 text-gray-400" />
+                  </div>
+                )}
+                
+                <div className="flex gap-2">
+                  <button
+                    type="button"
+                    onClick={() => takePhoto()}
+                    className="flex items-center gap-2 px-3 py-2 bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-100 transition-colors text-sm font-medium"
+                  >
+                    <Camera className="w-4 h-4" />
+                    {photo ? 'Cambiar Foto' : 'Añadir Foto'}
+                  </button>
+                </div>
+                <p className="text-xs text-gray-500 text-center">
+                  Toma una foto o elige de la galería.
+                </p>
+              </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Tipo</label>
@@ -187,41 +277,6 @@ export const ProductModal: React.FC<ProductModalProps> = ({ isOpen, onClose, pro
                       <option key={cat.id} value={cat.id}>{cat.name}</option>
                     ))}
                   </select>
-                  <div className="mt-2 flex gap-2">
-                    {addingCat ? (
-                      <>
-                        <input
-                          className="flex-1 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-3 py-2 text-sm text-gray-900 dark:text-white"
-                          placeholder="Nueva categoría"
-                          value={newCatName}
-                          onChange={(e) => setNewCatName(e.target.value)}
-                        />
-                        <Button
-                          type="button"
-                          size="sm"
-                          onClick={() => {
-                            if (!newCatName.trim()) return;
-                            addCategory(newCatName.trim(), 'bg-gray-500');
-                            setAddingCat(false);
-                            setNewCatName('');
-                            const last = [...categories].reverse().find(c => c.name === newCatName.trim());
-                            if (last) {
-                              setFormData({ ...formData, categoryId: last.id });
-                            }
-                          }}
-                        >
-                          Añadir
-                        </Button>
-                        <Button type="button" size="sm" variant="ghost" onClick={() => { setAddingCat(false); setNewCatName(''); }}>
-                          Cancelar
-                        </Button>
-                      </>
-                    ) : (
-                      <Button type="button" variant="secondary" size="sm" onClick={() => setAddingCat(true)}>
-                        + Nueva categoría
-                      </Button>
-                    )}
-                  </div>
                 </div>
               </div>
 
@@ -234,12 +289,22 @@ export const ProductModal: React.FC<ProductModalProps> = ({ isOpen, onClose, pro
               />
 
               <div className="grid grid-cols-2 gap-4">
-                <Input
-                  label="SKU (Código)"
-                  value={formData.sku}
-                  onChange={(e) => setFormData({ ...formData, sku: e.target.value })}
-                  placeholder="Ej. POL-001"
-                />
+                <div className="relative">
+                  <Input
+                    label="SKU (Código)"
+                    value={formData.sku}
+                    onChange={(e) => setFormData({ ...formData, sku: e.target.value })}
+                    placeholder="Ej. POL-001"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowScanner(true)}
+                    className="absolute right-2 top-8 p-1.5 text-gray-500 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                    title="Escanear código de barras"
+                  >
+                    <ScanLine className="w-5 h-5" />
+                  </button>
+                </div>
                 <Input
                   label="Unidad"
                   value={formData.unit}
@@ -341,6 +406,12 @@ export const ProductModal: React.FC<ProductModalProps> = ({ isOpen, onClose, pro
           </div>
         </form>
       </div>
+      {showScanner && (
+        <BarcodeScanner
+          onScan={handleScan}
+          onClose={() => setShowScanner(false)}
+        />
+      )}
     </Modal>
   );
 };

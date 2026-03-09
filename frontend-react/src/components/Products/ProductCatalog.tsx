@@ -7,6 +7,7 @@ import { ProductFilters } from './ProductFilters';
 import { ProductList } from './ProductList';
 import { InventoryTab } from './InventoryTab';
 import { PricingToolsTab } from './PricingToolsTab';
+import { CategoriesTab } from './CategoriesTab';
 import { ProductModal } from './ProductModal';
 import { UpgradeModal } from '../ui/UpgradeModal';
 import { Button } from '../ui/Button';
@@ -23,7 +24,7 @@ export const ProductCatalog: React.FC = () => {
   const { user } = useAuthStore();
   const { getCategory } = useCategoryStore();
   
-  const [activeTab, setActiveTab] = useState<'catalog' | 'inventory' | 'pricing'>('catalog');
+  const [activeTab, setActiveTab] = useState<'catalog' | 'inventory' | 'pricing' | 'categories'>('catalog');
   const [search, setSearch] = useState('');
   const [typeFilter, setTypeFilter] = useState<'all' | 'product' | 'service'>('all');
   const [statusFilter, setStatusFilter] = useState<'active' | 'archived'>('active');
@@ -146,7 +147,7 @@ export const ProductCatalog: React.FC = () => {
 
       <SwipePager
         activePageId={activeTab}
-        onPageChange={(id) => setActiveTab(id as 'catalog'|'inventory'|'pricing')}
+        onPageChange={(id) => setActiveTab(id as 'catalog'|'inventory'|'pricing'|'categories')}
         className="flex-1"
         contentScroll="visible"
         pages={[
@@ -221,6 +222,15 @@ export const ProductCatalog: React.FC = () => {
                   selectedIds={selectedIds}
                   onRefresh={() => activeBusiness && fetchProducts(activeBusiness.id)}
                 />
+              </div>
+            )
+          },
+          {
+            id: 'categories',
+            title: 'Categorías',
+            content: (
+              <div className="min-h-0">
+                <CategoriesTab />
               </div>
             )
           }
