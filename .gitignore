@@ -28,3 +28,8 @@ backend/venv/
 android/.gradle/
 android/app/build/
 android/captures/
+
+# Ignore local JDK binaries and temp folders
+*.exe
+*.zip
+android/temp_jdk/

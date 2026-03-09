@@ -205,77 +205,81 @@ export const Reports = () => {
   return (
     <div className="h-full flex flex-col overflow-hidden" data-tour="reports.panel">
       {/* Header */}
-      <div className="shrink-0 px-4 sm:px-6 lg:px-8 py-4 bg-white dark:bg-gray-900 z-10 border-b border-gray-200 dark:border-gray-800">
-          <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
-            <div>
-              <h1 className="text-2xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
-                <BarChart2 className="w-6 h-6 text-blue-500" />
-                Report Studio
-              </h1>
-              <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Análisis profundo y métricas de tu negocio</p>
-            </div>
-            
-            <div className="flex flex-wrap gap-2 w-full lg:w-auto">
-              <Button variant="outline" size="sm" onClick={handleSavePreset} className="flex-1 lg:flex-none">
-                <Save className="w-4 h-4 mr-2" />
+      <div className="shrink-0 px-4 py-4 bg-white dark:bg-gray-900 z-10 border-b border-gray-200 dark:border-gray-800">
+          <div>
+            <h1 className="text-2xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
+              <BarChart2 className="w-6 h-6 text-blue-500" />
+              Report Studio
+            </h1>
+            <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Análisis profundo y métricas de tu negocio</p>
+          </div>
+          
+          {/* Chip Toolbar */}
+          <div className="mt-4 flex items-center gap-2 overflow-x-auto pb-2 -mx-4 px-4 scrollbar-hide">
+              {/* Date Filter */}
+              <PeriodFilter 
+                moduleId="reports"
+                value={dateRange}
+                onChange={setDateRange}
+                iconOnly={false}
+                buttonClassName="rounded-full h-9 px-3 text-sm min-w-0 bg-gray-100 hover:bg-gray-200 dark:bg-gray-800 dark:hover:bg-gray-700 border-none shadow-sm"
+                className="shrink-0"
+              />
+
+              {/* Compare Toggle */}
+              <button
+                onClick={() => setComparePeriod(!comparePeriod)}
+                className={cn(
+                  "shrink-0 h-9 px-3 rounded-full text-sm font-medium transition-colors flex items-center gap-2 border shadow-sm",
+                  comparePeriod 
+                    ? "bg-blue-50 border-blue-200 text-blue-700 dark:bg-blue-900/20 dark:border-blue-800 dark:text-blue-300"
+                    : "bg-white border-gray-200 text-gray-700 hover:bg-gray-50 dark:bg-gray-900 dark:border-gray-700 dark:text-gray-300"
+                )}
+              >
+                <div className={cn("w-3 h-3 rounded-full border flex items-center justify-center transition-colors", comparePeriod ? "bg-blue-500 border-blue-500" : "border-gray-400")}>
+                  {comparePeriod && <div className="w-1 h-1 bg-white rounded-full" />}
+                </div>
+                Comparar
+              </button>
+
+              <div className="w-px h-6 bg-gray-200 dark:bg-gray-700 mx-1 shrink-0" />
+
+              {/* Actions */}
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={handleSavePreset} 
+                className="rounded-full h-9 shrink-0 shadow-sm"
+              >
+                <Save className="w-3.5 h-3.5 mr-2" />
                 Guardar
               </Button>
+              
               <Button 
                 variant="outline" 
                 size="sm" 
                 onClick={handleExport} 
-                className="flex-1 lg:flex-none" 
+                className="rounded-full h-9 shrink-0 shadow-sm" 
                 data-tour="reports.export"
                 disabled={exporting}
               >
                 {exporting ? (
-                    <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
+                    <RefreshCw className="w-3.5 h-3.5 mr-2 animate-spin" />
                 ) : (
-                    <Download className="w-4 h-4 mr-2" />
+                    <Download className="w-3.5 h-3.5 mr-2" />
                 )}
-                {exporting ? 'Exportando...' : 'Exportar Actual'}
+                {exporting ? 'Exportando...' : 'Exportar'}
               </Button>
-              <Button size="sm" onClick={fetchData} disabled={loading} className="flex-1 lg:flex-none">
-                <RefreshCw className={cn("w-4 h-4 mr-2", loading && "animate-spin")} />
+              
+              <Button 
+                size="sm" 
+                onClick={fetchData} 
+                disabled={loading} 
+                className="rounded-full h-9 shrink-0 bg-blue-600 hover:bg-blue-700 text-white shadow-sm"
+              >
+                <RefreshCw className={cn("w-3.5 h-3.5 mr-2", loading && "animate-spin")} />
                 Generar
               </Button>
-            </div>
-          </div>
-
-          {/* Filters Panel */}
-          <div className="mt-4" data-tour="reports.filters">
-              <div className="flex flex-col sm:flex-row gap-4 items-center bg-gray-50 dark:bg-gray-800/50 p-3 rounded-lg border border-gray-100 dark:border-gray-700">
-                <div className="w-full sm:w-auto flex-1 flex justify-start">
-                  <PeriodFilter 
-                    moduleId="reports"
-                    value={dateRange}
-                    onChange={setDateRange}
-                    iconOnly
-                  />
-                </div>
-
-                <div className="flex items-center gap-2">
-                   <label className="flex items-center cursor-pointer gap-2 select-none">
-                      <div className="relative">
-                        <input 
-                          type="checkbox" 
-                          className="sr-only" 
-                          checked={comparePeriod}
-                          onChange={(e) => setComparePeriod(e.target.checked)}
-                        />
-                        <div className={cn(
-                          "block w-8 h-5 rounded-full transition-colors",
-                          comparePeriod ? "bg-blue-600" : "bg-gray-300 dark:bg-gray-700"
-                        )}></div>
-                        <div className={cn(
-                          "absolute left-1 top-1 bg-white w-3 h-3 rounded-full transition-transform",
-                          comparePeriod && "translate-x-3"
-                        )}></div>
-                      </div>
-                      <span className="text-xs font-medium text-gray-600 dark:text-gray-400">Comparar</span>
-                   </label>
-                </div>
-              </div>
           </div>
       </div>
 
@@ -299,7 +303,7 @@ export const Reports = () => {
                 title: 'Avanzados',
                 icon: Layers,
                 content: (
-                    <div className="p-4 md:p-6 overflow-y-auto h-full">
+                    <div className="px-4 pt-4 md:px-6 md:pt-6 overflow-y-auto h-full">
                         <div className="max-w-7xl mx-auto">
                             <CombinedReportsTab dateRange={dateRange} loading={loading} />
                         </div>

@@ -1,12 +1,22 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Outlet, Navigate } from 'react-router-dom';
 import { useAuthStore } from '../../store/authStore';
+import { useBusinessStore } from '../../store/businessStore';
 import { Sidebar } from './Sidebar';
 import { MobileBottomNav } from './MobileBottomNav';
+import { alertsService } from '../../services/alerts.service';
 
 export const MainLayout = () => {
   const { isAuthenticated } = useAuthStore();
+  const { activeBusiness } = useBusinessStore();
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+
+  useEffect(() => {
+    if (isAuthenticated && activeBusiness?.id) {
+        // Programar chequeo de notificaciones al entrar
+        alertsService.checkAndScheduleNotifications(activeBusiness.id);
+    }
+  }, [isAuthenticated, activeBusiness?.id]);
 
   if (!isAuthenticated) {
     return <Navigate to="/" replace />;

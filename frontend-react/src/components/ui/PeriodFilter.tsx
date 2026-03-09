@@ -4,12 +4,14 @@ import { Calendar, ChevronDown } from 'lucide-react';
 import { DateRange, PeriodPreset, getPeriodRange, savePeriodPreference, getPeriodPreference } from '../../utils/dateRange.utils';
 import { Button } from './Button';
 import { Input } from './Input';
+import { cn } from '../../utils/cn';
 
 interface PeriodFilterProps {
   moduleId: string; // Key for localStorage persistence
   value?: DateRange; // Controlled component if needed, otherwise uses internal state + persistence
   onChange: (range: DateRange) => void;
   className?: string;
+  buttonClassName?: string;
   iconOnly?: boolean;
   mode?: 'full' | 'customOnly';
 }
@@ -19,6 +21,7 @@ export const PeriodFilter: React.FC<PeriodFilterProps> = ({
   value, 
   onChange,
   className = '',
+  buttonClassName = '',
   iconOnly = false,
   mode = 'full'
 }) => {
@@ -136,11 +139,12 @@ export const PeriodFilter: React.FC<PeriodFilterProps> = ({
           }
           setIsOpen(!isOpen); 
         }}
-        className={
+        className={cn(
           iconOnly 
-            ? "flex items-center justify-center h-10 w-10 p-0" 
-            : "flex items-center gap-2 min-w-[180px] justify-between"
-        }
+            ? "flex items-center justify-center h-10 w-10 p-0 rounded-full" 
+            : "flex items-center gap-2 min-w-[180px] justify-between",
+          buttonClassName
+        )}
         aria-label="Filtrar por período"
       >
         {iconOnly ? (

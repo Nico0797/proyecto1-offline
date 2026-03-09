@@ -87,46 +87,59 @@ export const CombinedReportsTab: React.FC<CombinedReportsTabProps> = ({ dateRang
   };
 
   return (
-    <div className="space-y-6">
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+    <div className="space-y-4 md:space-y-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-6">
         {REPORT_TYPES.map((report) => {
           const Icon = report.icon;
           const isDownloading = downloading === report.id;
 
           return (
-            <Card key={report.id} className="p-6 flex flex-col justify-between h-full hover:shadow-lg transition-shadow border-l-4 border-l-transparent hover:border-l-blue-500">
-              <div>
-                <div className="flex items-start justify-between mb-4">
-                  <div className={`p-3 rounded-xl ${report.color}`}>
-                    <Icon className="w-8 h-8" />
+            <Card 
+              key={report.id} 
+              className="group relative overflow-hidden transition-all duration-300 hover:shadow-xl border border-gray-100 dark:border-gray-800 bg-white dark:bg-gray-800"
+            >
+              {/* Decorative gradient background opacity */}
+              <div className={`absolute top-0 right-0 w-32 h-32 bg-gradient-to-br ${report.color.split(' ')[1]} opacity-10 rounded-bl-full -mr-10 -mt-10 transition-transform group-hover:scale-110`} />
+
+              <div className="p-5 md:p-6 flex flex-col h-full relative z-10">
+                <div className="flex items-start gap-4 mb-4">
+                  <div className={`p-3 rounded-xl shrink-0 ${report.color} shadow-sm`}>
+                    <Icon className="w-6 h-6 md:w-8 md:h-8" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <h3 className="text-lg md:text-xl font-bold text-gray-900 dark:text-white truncate">
+                      {report.title}
+                    </h3>
+                    <p className="text-sm text-gray-500 dark:text-gray-400 mt-1 leading-relaxed line-clamp-2 md:line-clamp-none">
+                      {report.description}
+                    </p>
                   </div>
                 </div>
-                <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-2">
-                  {report.title}
-                </h3>
-                <p className="text-base text-gray-500 dark:text-gray-400 mb-6 leading-relaxed">
-                  {report.description}
-                </p>
+
+                <div className="mt-auto pt-4">
+                  <Button 
+                    variant="outline"
+                    size="lg"
+                    className={`w-full justify-between group/btn text-sm md:text-base h-12 md:h-14 border-2 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-all ${
+                      isDownloading ? 'cursor-wait opacity-80' : ''
+                    }`}
+                    onClick={() => handleDownload(report.id, report.title)}
+                    disabled={globalLoading || isDownloading}
+                  >
+                    <span className="font-medium text-gray-700 dark:text-gray-200">
+                      {isDownloading ? 'Generando...' : 'Descargar Excel'}
+                    </span>
+                    
+                    {isDownloading ? (
+                       <div className="w-5 h-5 border-2 border-blue-600 border-t-transparent rounded-full animate-spin" />
+                    ) : (
+                       <div className={`p-1.5 rounded-lg ${report.color} bg-opacity-20`}>
+                         <Download className="w-4 h-4 md:w-5 md:h-5" />
+                       </div>
+                    )}
+                  </Button>
+                </div>
               </div>
-              
-              <Button 
-                size="lg"
-                className="w-full justify-center group text-base py-6"
-                onClick={() => handleDownload(report.id, report.title)}
-                disabled={globalLoading || isDownloading}
-              >
-                {isDownloading ? (
-                   <span className="flex items-center gap-3">
-                     <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                     Generando Reporte...
-                   </span>
-                ) : (
-                   <span className="flex items-center gap-3">
-                     <Download className="w-5 h-5 group-hover:-translate-y-1 transition-transform" />
-                     Descargar Excel Completo
-                   </span>
-                )}
-              </Button>
             </Card>
           );
         })}

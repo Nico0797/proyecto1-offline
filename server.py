@@ -260,6 +260,49 @@ def favicon():
     return send_from_directory("public", "favicon.ico")
 
 
+# ---------------- API: Auth (Mock) ----------------
+@app.post("/api/auth/login")
+def login():
+    data = request.get_json(silent=True) or {}
+    email = data.get("email", "admin@example.com")
+    # Aceptamos cualquier login para desarrollo
+    return jsonify({
+        "token": "mock-jwt-token-123",
+        "user": {
+            "id": 1,
+            "email": email,
+            "name": "Admin Usuario",
+            "plan": "pro",
+            "is_admin": True
+        }
+    })
+
+@app.post("/api/auth/register")
+def register():
+    data = request.get_json(silent=True) or {}
+    email = data.get("email", "admin@example.com")
+    return jsonify({
+        "token": "mock-jwt-token-123",
+        "user": {
+            "id": 1,
+            "email": email,
+            "name": "Admin Usuario",
+            "plan": "pro",
+            "is_admin": True
+        }
+    }), 201
+
+@app.get("/api/auth/me")
+def me():
+    # Simula validación de token
+    return jsonify({
+        "id": 1,
+        "email": "admin@example.com",
+        "name": "Admin Usuario",
+        "plan": "pro",
+        "is_admin": True
+    })
+
 # ---------------- API: Transactions ----------------
 @app.get("/api/transactions")
 def get_transactions():

@@ -3,6 +3,7 @@ import { Save, X } from 'lucide-react';
 import api from '../../services/api';
 import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
+import { CurrencyInput } from '../../components/ui/CurrencyInput';
 
 interface PlanFeature {
   id: number;
@@ -111,10 +112,9 @@ export const AdminPrices = () => {
                 <label className="block text-sm font-medium text-gray-400 mb-1">Precio Mensual</label>
                 <div className="relative">
                   <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500">$</span>
-                  <Input
-                    type="number"
+                  <CurrencyInput
                     value={config.monthly_price}
-                    onChange={(e) => setConfig({...config, monthly_price: parseInt(e.target.value)})}
+                    onChange={(val) => setConfig({...config, monthly_price: val})}
                     className="pl-8"
                   />
                 </div>
@@ -123,10 +123,9 @@ export const AdminPrices = () => {
                 <label className="block text-sm font-medium text-gray-400 mb-1">Precio Anual</label>
                 <div className="relative">
                   <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500">$</span>
-                  <Input
-                    type="number"
+                  <CurrencyInput
                     value={config.annual_price}
-                    onChange={(e) => setConfig({...config, annual_price: parseInt(e.target.value)})}
+                    onChange={(val) => setConfig({...config, annual_price: val})}
                     className="pl-8"
                   />
                 </div>

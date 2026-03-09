@@ -40,6 +40,7 @@ import { ProGate } from './components/ui/ProGate';
 import { FEATURES } from './auth/plan';
 import { TourProvider } from './tour/TourProvider';
 import { Toaster } from 'react-hot-toast';
+import { NotificationController } from './components/NotificationController';
 
 function App() {
   const { theme, setTheme } = useThemeStore();
@@ -91,6 +92,7 @@ function App() {
 
   return (
     <BrowserRouter>
+      <NotificationController />
       <TourProvider>
       <Toaster position="top-right" />
       <Suspense fallback={<div style={{display:'grid',placeItems:'center',height:'100dvh'}}>Cargando…</div>}>

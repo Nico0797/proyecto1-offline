@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Modal } from '../ui/Modal';
 import { Button } from '../ui/Button';
 import { Input } from '../ui/Input';
+import { CurrencyInput } from '../ui/CurrencyInput';
 import { Product } from '../../types';
 import { useCategoryStore } from './categoryStore';
 import { useProductStore } from '../../store/productStore';
@@ -262,21 +263,19 @@ export const ProductModal: React.FC<ProductModalProps> = ({ isOpen, onClose, pro
           {activeTab === 'price' && (
             <div className="space-y-6">
               <div className="grid grid-cols-2 gap-6">
-                <Input
+                <CurrencyInput
                   label="Precio de Venta"
-                  type="number"
                   value={formData.price}
-                  onChange={(e) => setFormData({ ...formData, price: parseFloat(e.target.value) || 0 })}
+                  onChange={(val) => setFormData({ ...formData, price: val })}
                   required
-                  min="0"
+                  min={0}
                   icon={DollarSign}
                 />
-                <Input
+                <CurrencyInput
                   label="Costo (Opcional)"
-                  type="number"
                   value={formData.cost}
-                  onChange={(e) => setFormData({ ...formData, cost: parseFloat(e.target.value) || 0 })}
-                  min="0"
+                  onChange={(val) => setFormData({ ...formData, cost: val })}
+                  min={0}
                   icon={DollarSign}
                 />
               </div>

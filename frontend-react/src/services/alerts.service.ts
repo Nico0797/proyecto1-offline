@@ -1,6 +1,7 @@
 import api from './api';
 import { Customer, Sale, Product } from '../types';
 import { RecurringExpense } from '../store/recurringExpenseStore';
+import { localNotificationService } from './localNotificationService';
 
 export type AlertType = 'receivable' | 'recurring' | 'inventory' | 'goal' | 'system';
 export type AlertSeverity = 'info' | 'warning' | 'critical';
@@ -172,5 +173,34 @@ export const alertsService = {
       return da - db || new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
     });
     return all;
+  },
+
+  async checkAndScheduleNotifications(businessId: number) {
+    try {
+      const alerts = await this.buildAlerts(businessId, { lookaheadDays: 3, dueSoonDays: 1 });
+      
+      const criticalAlerts = alerts.filter(a => 
+        (a.severity === 'critical' || a.type === 'recurring') && a.status === 'active'
+      );
+
+      // Limitar a 5 notificaciones para no saturar
+      const alertsToNotify = criticalAlerts.slice(0, 5);
+
+      for (const alert of alertsToNotify) {
+        let channel: 'alerts_critical' | 'alerts_info' = 'alerts_info';
+        if (alert.severity === 'critical') channel = 'alerts_critical';
+
+        // Solo notificar si es realmente urgente
+        await localNotificationService.schedule(
+            alert.title,
+            alert.description,
+            { type: alert.type, entityId: alert.entityId },
+            undefined, 
+            channel
+        );
+      }
+    } catch (error) {
+      console.error('Error scheduling alert notifications:', error);
+    }
   }
 };

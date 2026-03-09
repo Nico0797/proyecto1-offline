@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Input } from '../ui/Input';
+import { CurrencyInput } from '../ui/CurrencyInput';
 import { Button } from '../ui/Button';
 import { Search, X, ShoppingCart, DollarSign, ArrowRight, Check, Clock } from 'lucide-react';
 import { Modal } from '../ui/Modal';
@@ -483,10 +484,9 @@ export const CreateSaleModal = ({ isOpen, onClose, onSuccess }: { isOpen: boolea
                         {paymentType === 'partial' && (
                              <div>
                                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Monto a abonar hoy</label>
-                                 <Input 
-                                    type="number"
+                                 <CurrencyInput 
                                     value={amountPaid}
-                                    onChange={(e) => setAmountPaid(parseFloat(e.target.value) || 0)}
+                                    onChange={(val) => setAmountPaid(val)}
                                     max={total}
                                  />
                                  <p className="text-xs text-red-500 mt-1 font-medium">Quedan debiendo: {formatCOP(total - amountPaid)}</p>
