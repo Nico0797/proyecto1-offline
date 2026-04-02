@@ -1,7 +1,7 @@
 import { TOUR_TARGETS, tourSel } from './tourTargets';
 
-export type StepTarget = { 
-  selector: string; 
+export type StepTarget = {
+  selector: string;
   placement?: 'top' | 'right' | 'bottom' | 'left' | 'auto';
   title?: string;
   body?: string[];
@@ -11,23 +11,23 @@ export type TourStep = {
   id: string;
   title: string;
   body: string[];
-  selector?: string; // Deprecated, use targets instead
+  selector?: string;
   route?: string;
-  placement?: 'top' | 'right' | 'bottom' | 'left' | 'auto'; // Default placement
+  placement?: 'top' | 'right' | 'bottom' | 'left' | 'auto';
   targets?: {
     desktop?: StepTarget;
     mobile?: StepTarget;
   };
   allowInteraction?: boolean;
   optional?: boolean;
-  waitFor?: string; // Selector to wait for before showing the step
+  waitFor?: string;
 };
 
 export type Tour = {
   id: string;
   title: string;
   steps: TourStep[];
-  duration?: string; // e.g. "3 min"
+  duration?: string;
 };
 
 export type TourModule = {
@@ -36,497 +36,1051 @@ export type TourModule = {
   description?: string;
   route?: string;
   tour: Tour;
-  plan?: 'free' | 'pro';
+};
+
+const onboardingBasic: TourModule = {
+  id: 'onboarding.basic',
+  title: 'Recorrido inicial',
+  description: 'Empieza por lo esencial: inicio, ventas, productos, gastos y configuracion.',
+  route: '/dashboard',
+  tour: {
+    id: 'onboarding.basic',
+    title: 'Primer recorrido',
+    duration: '3 min',
+    steps: [
+      {
+        id: 'ob0',
+        route: '/dashboard',
+        title: 'Bienvenido a tu espacio de trabajo',
+        body: [
+          'Este recorrido te muestra solo lo indispensable para empezar sin ruido.',
+          'Podras repetirlo luego desde Ayuda cuando quieras.',
+        ],
+      },
+      {
+        id: 'ob1',
+        title: 'Empieza por el inicio',
+        body: [
+          'Aqui ves lo mas importante del negocio activo.',
+          'Usalo para decidir si te conviene vender, cobrar o revisar pendientes.',
+        ],
+        selector: tourSel(TOUR_TARGETS.dashboard.panel),
+        route: '/dashboard',
+        placement: 'bottom',
+      },
+      {
+        id: 'ob2',
+        title: 'Lee primero estos indicadores',
+        body: [
+          'Ventas, gastos y saldos te dan el pulso del dia.',
+          'No necesitas abrir varios modulos para entender si algo se movio.',
+        ],
+        selector: tourSel(TOUR_TARGETS.dashboard.kpis),
+        placement: 'bottom',
+      },
+      {
+        id: 'ob3',
+        title: 'Registrar una venta',
+        body: [
+          'Este es el acceso mas importante para la operacion diaria.',
+          'Abre el modulo cuando quieras registrar una venta real.',
+        ],
+        selector: tourSel(TOUR_TARGETS.sales.panel),
+        route: '/sales',
+        placement: 'bottom',
+      },
+      {
+        id: 'ob4',
+        title: 'Organiza lo que vendes',
+        body: [
+          'En Productos mantienes catalogo, stock y precios.',
+          'Es el lugar correcto para preparar tu operacion antes de vender.',
+        ],
+        selector: tourSel(TOUR_TARGETS.products.panel),
+        route: '/products',
+        placement: 'bottom',
+      },
+      {
+        id: 'ob5',
+        title: 'No pierdas de vista los gastos',
+        body: [
+          'Registrar egresos a tiempo evita que la caja y reportes queden maquillados.',
+          'Hazlo desde este acceso o desde el inicio.',
+        ],
+        selector: tourSel(TOUR_TARGETS.expenses.panel),
+        route: '/expenses',
+        placement: 'bottom',
+      },
+      {
+        id: 'ob6',
+        title: 'Configura el negocio a tu medida',
+        body: [
+          'Aqui ajustas perfil, negocio, personalizacion y membresia.',
+          'Si cambian tus modulos o tu plan, Ayuda tambien se adapta desde aqui.',
+        ],
+        selector: tourSel(TOUR_TARGETS.settings.panel),
+        route: '/settings',
+        placement: 'right',
+      },
+    ],
+  },
+};
+
+const onboardingPro: TourModule = {
+  id: 'onboarding.pro',
+  title: 'Recorrido inicial',
+  description: 'Incluye inicio, ventas, cobros, reportes y configuracion.',
+  route: '/dashboard',
+  tour: {
+    id: 'onboarding.pro',
+    title: 'Primer recorrido',
+    duration: '4 min',
+    steps: [
+      {
+        id: 'op0',
+        route: '/dashboard',
+        title: 'Bienvenido a la version guiada de tu negocio',
+        body: [
+          'Este recorrido te ubica rapido en los modulos que mas suelen mover el dia.',
+          'Si algo cambia en tu plan, podras reabrir la ayuda desde el centro de aprendizaje.',
+        ],
+      },
+      {
+        id: 'op1',
+        title: 'Inicio: tu lectura rapida del dia',
+        body: [
+          'Usa este tablero para ver que pasa hoy antes de abrir un modulo especifico.',
+        ],
+        selector: tourSel(TOUR_TARGETS.dashboard.panel),
+        route: '/dashboard',
+        placement: 'bottom',
+      },
+      {
+        id: 'op2',
+        title: 'Ventas primero',
+        body: [
+          'Desde aqui registras ventas y dejas el movimiento listo para caja, cartera y reportes.',
+        ],
+        selector: tourSel(TOUR_TARGETS.sales.panel),
+        route: '/sales',
+        placement: 'bottom',
+      },
+      {
+        id: 'op3',
+        title: 'Cobros y seguimiento',
+        body: [
+          'Si vendes con saldo pendiente, este modulo te ayuda a priorizar vencidos y registrar abonos.',
+        ],
+        selector: tourSel(TOUR_TARGETS.payments.panel),
+        route: '/payments',
+        placement: 'bottom',
+      },
+      {
+        id: 'op4',
+        title: 'Reportes cuando necesites entender mas',
+        body: [
+          'No es para abrirlo todo el tiempo, sino para revisar resultados, comparativos y exportaciones.',
+        ],
+        selector: tourSel(TOUR_TARGETS.reports.panel),
+        route: '/reports',
+        placement: 'bottom',
+      },
+      {
+        id: 'op5',
+        title: 'Configuracion y membresia',
+        body: [
+          'Aqui cambias negocio, personalizacion, plantillas y plan del negocio.',
+        ],
+        selector: tourSel(TOUR_TARGETS.settings.panel),
+        route: '/settings',
+        placement: 'right',
+      },
+    ],
+  },
+};
+
+const onboardingBusiness: TourModule = {
+  id: 'onboarding.business',
+  title: 'Recorrido inicial',
+  description: 'Incluye inicio, ventas, cobros, reportes y bodega.',
+  route: '/dashboard',
+  tour: {
+    id: 'onboarding.business',
+    title: 'Primer recorrido',
+    duration: '5 min',
+    steps: [
+      {
+        id: 'obb0',
+        route: '/dashboard',
+        title: 'Bienvenido a una operacion mas completa',
+        body: [
+          'Este recorrido resume los flujos que suelen mover un negocio con mas control operativo.',
+          'Despues puedes ir a Ayuda para abrir tutoriales puntuales segun la tarea del dia.',
+        ],
+      },
+      {
+        id: 'obb1',
+        title: 'Todo arranca en el inicio',
+        body: [
+          'Aqui detectas rapido si hoy conviene vender, cobrar, revisar reportes o mirar la bodega.',
+        ],
+        selector: tourSel(TOUR_TARGETS.dashboard.panel),
+        route: '/dashboard',
+        placement: 'bottom',
+      },
+      {
+        id: 'obb2',
+        title: 'Ventas y cobros van juntos',
+        body: [
+          'Primero registras la venta. Luego sigues el saldo desde Cobros o cartera segun el flujo del negocio.',
+        ],
+        selector: tourSel(TOUR_TARGETS.sales.panel),
+        route: '/sales',
+        placement: 'bottom',
+      },
+      {
+        id: 'obb3',
+        title: 'Cobros y cartera con prioridad',
+        body: [
+          'Cuando la venta no queda pagada, aqui priorizas lo vencido y registras abonos con contexto.',
+        ],
+        selector: tourSel(TOUR_TARGETS.payments.panel),
+        route: '/payments',
+        placement: 'bottom',
+      },
+      {
+        id: 'obb4',
+        title: 'Reportes para decisiones',
+        body: [
+          'Esta vista te ayuda a mirar resultados, comparativos y rentabilidad sin improvisar.',
+        ],
+        selector: tourSel(TOUR_TARGETS.reports.panel),
+        route: '/reports',
+        placement: 'bottom',
+      },
+      {
+        id: 'obb5',
+        title: 'Bodega e insumos',
+        body: [
+          'Si produces o transformas, aqui controlas materias primas, movimientos y minimos.',
+        ],
+        selector: tourSel(TOUR_TARGETS.rawInventory.panel),
+        route: '/raw-inventory',
+        placement: 'bottom',
+      },
+      {
+        id: 'obb6',
+        title: 'No olvides configurar el negocio',
+        body: [
+          'Plantillas, personalizacion, equipo y membresia viven en Configuracion.',
+        ],
+        selector: tourSel(TOUR_TARGETS.settings.panel),
+        route: '/settings',
+        placement: 'right',
+      },
+    ],
+  },
+};
+
+const dashboardModule: TourModule = {
+  id: 'dashboard',
+  title: 'Inicio',
+  description: 'Entiende que significa cada zona del tablero y como usarla sin saturarte.',
+  route: '/dashboard',
+  tour: {
+    id: 'dashboard.expert',
+    title: 'Leer el inicio con criterio',
+    duration: '4 min',
+    steps: [
+      {
+        id: 'db1',
+        title: 'Esta es tu vista de control',
+        body: [
+          'No intenta reemplazar todos los modulos.',
+          'Te ayuda a decidir que atender primero.',
+        ],
+        selector: tourSel(TOUR_TARGETS.dashboard.panel),
+        route: '/dashboard',
+        placement: 'bottom',
+      },
+      {
+        id: 'db2',
+        title: 'Empieza por los indicadores',
+        body: [
+          'Ventas, gastos y saldos te dan una lectura rapida del momento.',
+        ],
+        selector: tourSel(TOUR_TARGETS.dashboard.kpis),
+        placement: 'bottom',
+      },
+      {
+        id: 'db3',
+        title: 'Cambia de vista segun la pregunta',
+        body: [
+          'Usa Caja cuando necesites operacion diaria.',
+          'Usa Analisis cuando quieras mas detalle.',
+        ],
+        selector: tourSel(TOUR_TARGETS.dashboard.tabs.balance),
+        placement: 'bottom',
+      },
+      {
+        id: 'db4',
+        title: 'Ventas recientes y pendientes',
+        body: [
+          'Estas tarjetas te ayudan a revisar lo recien registrado y lo que aun pide seguimiento.',
+        ],
+        selector: tourSel(TOUR_TARGETS.dashboard.charts),
+        placement: 'top',
+      },
+      {
+        id: 'db5',
+        title: 'Si algo exige atencion, suele aparecer aqui',
+        body: [
+          'Pendientes, alertas o recordatorios viven en esta zona del tablero.',
+        ],
+        selector: tourSel(TOUR_TARGETS.dashboard.alerts),
+        placement: 'left',
+      },
+    ],
+  },
 };
 
 const salesModule: TourModule = {
   id: 'sales',
   title: 'Ventas',
-  description: 'Registra ventas pagadas o fiadas, aplica descuentos y comparte por WhatsApp.',
+  description: 'Recorre el flujo real de venta: productos, cliente, cobro y cierre.',
   route: '/sales',
   tour: {
-      id: 'sales.expert',
-      title: 'Maestría en Ventas',
-      duration: '8 min',
-      steps: [
-        {
-          id: 'e1',
-          title: 'El Panel de Ventas',
-          body: ['Aquí gestionas todas tus operaciones.', 'Usa los atajos de teclado para agilidad.'],
-          selector: tourSel(TOUR_TARGETS.sales.panel),
-          route: '/sales',
-          placement: 'bottom'
+    id: 'sales.expert',
+    title: 'Registrar una venta con menos errores',
+    duration: '6 min',
+    steps: [
+      {
+        id: 's1',
+        title: 'Panel de ventas',
+        body: [
+          'Aqui quedan registradas las operaciones y el acceso para crear una nueva.',
+        ],
+        selector: tourSel(TOUR_TARGETS.sales.panel),
+        route: '/sales',
+        placement: 'bottom',
+      },
+      {
+        id: 's2',
+        title: 'Empieza una nueva venta',
+        body: [
+          'Entra por aqui para abrir el modal real de venta.',
+          'Cuando lo abras, el recorrido te ira guiando por cada paso del flujo.',
+        ],
+        targets: {
+          desktop: { selector: tourSel(TOUR_TARGETS.sales.primaryAction.desktop), placement: 'left' },
+          mobile: { selector: tourSel(TOUR_TARGETS.sales.primaryAction.mobile), placement: 'bottom' },
         },
-        {
-          id: 'e1_5',
-          title: 'Funciones Avanzadas',
-          body: ['Para ver las opciones avanzadas, necesitamos abrir una nueva venta.', 'Haz clic aquí para continuar.'],
-          targets: {
-            desktop: { selector: tourSel(TOUR_TARGETS.sales.primaryAction.desktop), placement: 'left' },
-            mobile: { selector: tourSel(TOUR_TARGETS.sales.primaryAction.mobile), placement: 'bottom' }
-          },
-          allowInteraction: true
-        },
-        {
-          id: 'e2',
-          title: 'Búsqueda Avanzada',
-          body: ['Puedes buscar por categoría o proveedor usando los filtros.', 'Tip: Usa el lector de código de barras si tienes uno.'],
-          selector: tourSel(TOUR_TARGETS.sales.modal.search),
-          placement: 'bottom',
-          waitFor: tourSel(TOUR_TARGETS.sales.modal.search)
-        },
-        {
-          id: 'e3',
-          title: 'Gestión de Precios',
-          body: ['Agrega un producto haciendo clic en él.'],
-          selector: tourSel(TOUR_TARGETS.sales.modal.products),
-          placement: 'top',
-          allowInteraction: true
-        },
-        {
-          id: 'e3_5',
-          title: 'Carrito de Compras',
-          body: ['Luego puedes ajustar su precio o cantidad directamente en el carrito.'],
-          selector: tourSel(TOUR_TARGETS.sales.modal.cart),
-          placement: 'left',
-          allowInteraction: true
-        },
-        {
-          id: 'e3_6',
-          title: 'Siguiente Paso',
-          body: ['Haz clic en Continuar para seleccionar el cliente.'],
-          selector: tourSel(TOUR_TARGETS.sales.modal.nextToClient),
-          placement: 'top',
-          allowInteraction: true
-        },
-        {
-          id: 'e4',
-          title: 'Cliente: ¿Contado o Fiado?',
-          body: ['Selecciona un cliente registrado para habilitar crédito.', 'Si es "Cliente Casual", la venta será solo de contado.'],
-          selector: tourSel(TOUR_TARGETS.sales.modal.clientSelect),
-          placement: 'bottom',
-          waitFor: tourSel(TOUR_TARGETS.sales.modal.clientSelect)
-        },
-        {
-          id: 'e5',
-          title: 'Detalles del Cliente',
-          body: ['Verifica su saldo pendiente antes de fiar más.', 'Error común: Fiar a clientes con deuda vencida.'],
-          selector: tourSel(TOUR_TARGETS.sales.modal.clientInfo),
-          placement: 'right',
-          optional: true
-        },
-        {
-          id: 'e5_5',
-          title: 'Ir al Pago',
-          body: ['Avanza a la sección final para cerrar la venta.'],
-          selector: tourSel(TOUR_TARGETS.sales.modal.nextToPayment),
-          placement: 'top',
-          allowInteraction: true
-        },
-        {
-          id: 'e6',
-          title: 'Métodos de Pago',
-          body: ['Registra pagos mixtos (Efectivo + Tarjeta).', 'Asegura que el total coincida.'],
-          selector: tourSel(TOUR_TARGETS.sales.modal.paymentMethods),
-          placement: 'top',
-          waitFor: tourSel(TOUR_TARGETS.sales.modal.paymentMethods)
-        },
-        {
-          id: 'e7',
-          title: 'Descuento Global',
-          body: ['Aplica un descuento al total de la venta.', 'Úsalo con precaución.'],
-          selector: tourSel(TOUR_TARGETS.sales.modal.discount),
-          placement: 'top'
-        },
-        {
-          id: 'e8',
-          title: 'Comprobante',
-          body: ['Puedes enviar el ticket por WhatsApp o imprimirlo.', 'Ahorra papel enviando digitalmente.'],
-          selector: tourSel(TOUR_TARGETS.sales.modal.receipt),
-          placement: 'left'
-        },
-        {
-          id: 'e8_5',
-          title: 'Cerrar Ventana',
-          body: ['Cierra el modal para volver al panel principal y ver las opciones finales.'],
-          selector: tourSel(TOUR_TARGETS.common.modalClose),
-          placement: 'left',
-          allowInteraction: true
-        },
-        {
-          id: 'e9',
-          title: 'Ventas Pendientes',
-          body: ['Si el cliente olvidó algo, guarda la venta como "Pendiente" y atiénde a otro.', 'No pierdas el progreso.'],
-          selector: tourSel(TOUR_TARGETS.sales.hold),
-          placement: 'bottom'
-        },
-        {
-          id: 'e10',
-          title: 'Cierre de Caja',
-          body: ['Al final del día, verifica que el efectivo coincida con tus ventas.', 'Usa el reporte de cierre.'],
-          selector: tourSel(TOUR_TARGETS.sales.kpis),
-          placement: 'bottom'
-        }
-      ]
-  }
+        allowInteraction: true,
+      },
+      {
+        id: 's3',
+        title: 'Busca lo que vas a vender',
+        body: [
+          'Empieza buscando productos o servicios por nombre o SKU.',
+          'Si trabajas con escaner, este es el paso donde normalmente arrancas.',
+        ],
+        selector: tourSel(TOUR_TARGETS.sales.modal.search),
+        waitFor: tourSel(TOUR_TARGETS.sales.modal.search),
+        placement: 'bottom',
+      },
+      {
+        id: 's4',
+        title: 'Agrega productos desde la lista',
+        body: [
+          'Toca una tarjeta para sumar productos o servicios a la venta.',
+          'El carrito se actualiza en esta misma pantalla mientras vas agregando items.',
+        ],
+        selector: tourSel(TOUR_TARGETS.sales.modal.products),
+        placement: 'top',
+      },
+      {
+        id: 's5',
+        title: 'Revisa carrito, cantidades y total',
+        body: [
+          'Aqui validas cantidades, precio unitario, descuento y total antes de seguir.',
+          'Si el boton para continuar aparece desactivado, primero agrega al menos un producto.',
+        ],
+        selector: tourSel(TOUR_TARGETS.sales.modal.cart),
+        placement: 'left',
+      },
+      {
+        id: 's6',
+        title: 'Pasa al paso de cliente y cobro',
+        body: [
+          'Este boton te lleva al siguiente paso del flujo.',
+          'Usalo cuando ya revisaste lo que el cliente lleva y el total de la venta.',
+        ],
+        selector: tourSel(TOUR_TARGETS.sales.modal.nextToClient),
+        placement: 'left',
+        allowInteraction: true,
+      },
+      {
+        id: 's7',
+        title: 'Elige cliente si la venta puede quedar pendiente',
+        body: [
+          'Cliente casual sirve para una venta de contado rapida.',
+          'Si la venta quedara con saldo o con abono, aqui si conviene elegir un cliente real.',
+        ],
+        selector: tourSel(TOUR_TARGETS.sales.modal.clientSelect),
+        waitFor: tourSel(TOUR_TARGETS.sales.modal.clientSelect),
+        placement: 'bottom',
+      },
+      {
+        id: 's8',
+        title: 'Continua al paso final de cobro',
+        body: [
+          'Cuando ya tienes claro el cliente, entra por aqui al paso final.',
+          'Alla defines si pagan todo hoy, dejan saldo o hacen un abono.',
+        ],
+        selector: tourSel(TOUR_TARGETS.sales.modal.nextToPayment),
+        placement: 'left',
+        allowInteraction: true,
+      },
+      {
+        id: 's9',
+        title: 'Define como se paga la venta',
+        body: [
+          'Aqui eliges si pagan todo hoy, dejan saldo pendiente o hacen un abono.',
+          'Tambien defines el metodo de pago antes de guardar.',
+        ],
+        selector: tourSel(TOUR_TARGETS.sales.modal.paymentMethods),
+        waitFor: tourSel(TOUR_TARGETS.sales.modal.paymentMethods),
+        placement: 'top',
+      },
+      {
+        id: 's10',
+        title: 'Guarda la venta cuando todo este correcto',
+        body: [
+          'Este es el cierre real del flujo.',
+          'Antes de guardar, confirma metodo de pago, nota interna y si la venta queda pagada o con saldo.',
+        ],
+        selector: tourSel(TOUR_TARGETS.sales.modal.confirm),
+        waitFor: tourSel(TOUR_TARGETS.sales.modal.confirm),
+        placement: 'bottom',
+      },
+    ],
+  },
 };
 
-const customersModule: TourModule = {
-  id: 'customers',
-  title: 'Clientes',
-  description: 'Detecta vencidos, edita plazo, revisa top clientes.',
-  route: '/customers',
+const paymentsModule: TourModule = {
+  id: 'payments',
+  title: 'Cobros',
+  description: 'Sigue saldos pendientes y registra abonos desde la vista correcta.',
+  route: '/payments',
   tour: {
-      id: 'customers.expert',
-      title: 'Fidelización y Crédito',
-      duration: '7 min',
-      steps: [
-        { id: 'ce_start', title: 'Selecciona un Cliente', body: ['Haz clic en un cliente para ver sus detalles avanzados.'], selector: tourSel(TOUR_TARGETS.customers.listItem), route: '/customers', placement: 'right', allowInteraction: true },
-        { id: 'ce1', title: 'Segmentación', body: ['Usa etiquetas para clasificar (VIP, Moroso).', 'Ayuda a decidir a quién dar crédito.'], selector: tourSel(TOUR_TARGETS.customers.tags), placement: 'bottom', optional: true },
-        { id: 'ce2', title: 'Límite de Crédito', body: ['Configura el monto máximo para fiar.', 'El sistema te avisará si se excede.'], selector: tourSel(TOUR_TARGETS.customers.creditLimit), placement: 'right' },
-        { id: 'ce3', title: 'Historial de Compras', body: ['Analiza qué compra más cada cliente.', 'Ofrece productos relacionados.'], selector: tourSel(TOUR_TARGETS.customers.history), placement: 'top', waitFor: tourSel(TOUR_TARGETS.customers.detail) },
-        { id: 'ce4', title: 'Abonos a Cuenta', body: ['Registra pagos parciales a la deuda total.', 'No es necesario ligarlo a una venta específica.'], selector: tourSel(TOUR_TARGETS.customers.payment), placement: 'left' },
-        { id: 'ce5', title: 'Recordatorios de Cobro', body: ['Envía un mensaje de cobro por WhatsApp.', 'Plantillas predefinidas disponibles.'], selector: tourSel(TOUR_TARGETS.customers.whatsappBtn), placement: 'left' },
-        { id: 'ce6', title: 'Ubicación', body: ['Guarda la dirección para entregas.', 'Se integra con Google Maps.'], selector: tourSel(TOUR_TARGETS.customers.address), placement: 'bottom' },
-        { id: 'ce7', title: 'Clientes Inactivos', body: ['Filtra quienes no compran hace tiempo.', 'Haz una campaña de reactivación.'], selector: tourSel(TOUR_TARGETS.customers.filterInactive), placement: 'bottom' }
-      ]
-  }
-};
-
-const dashboardModule: TourModule = {
-  id: 'dashboard',
-  title: 'Dashboard',
-  description: 'Domina tu negocio: KPIs, Balance, Analíticas y Recordatorios.',
-  route: '/dashboard',
-  plan: 'pro',
-  tour: {
-      id: 'dashboard.expert',
-      title: 'Centro de Comando',
-      duration: '6 min',
-      steps: [
-        { 
-          id: 'de_start', 
-          title: 'Visión General', 
-          body: ['Bienvenido a tu centro de control.', 'Aquí tienes un resumen en tiempo real de tu negocio.'], 
-          selector: tourSel(TOUR_TARGETS.dashboard.panel), 
-          route: '/dashboard', 
-          placement: 'bottom' 
+    id: 'payments.expert',
+    title: 'Cobrar sin perder contexto',
+    duration: '4 min',
+    steps: [
+      {
+        id: 'p1',
+        title: 'Aqui decides a quien cobrar primero',
+        body: [
+          'La pantalla combina clientes con saldo, cobros registrados y cuentas por vencer.',
+        ],
+        selector: tourSel(TOUR_TARGETS.payments.panel),
+        route: '/payments',
+        placement: 'bottom',
+      },
+      {
+        id: 'p2',
+        title: 'Mira el resumen antes de cobrar',
+        body: [
+          'Estos indicadores te muestran total pendiente, vencido y comportamiento de los pagos.',
+        ],
+        selector: tourSel(TOUR_TARGETS.payments.kpis),
+        placement: 'bottom',
+      },
+      {
+        id: 'p3',
+        title: 'Filtra por cliente o periodo',
+        body: [
+          'Usa esta barra para reducir el ruido antes de registrar un abono.',
+        ],
+        selector: tourSel(TOUR_TARGETS.payments.search),
+        placement: 'bottom',
+      },
+      {
+        id: 'p4',
+        title: 'Registrar un cobro',
+        body: [
+          'Desde aqui abres el flujo para aplicar el pago al cliente correcto.',
+        ],
+        targets: {
+          desktop: { selector: tourSel(TOUR_TARGETS.payments.primaryAction.desktop), placement: 'left' },
+          mobile: { selector: tourSel(TOUR_TARGETS.payments.primaryAction.mobile), placement: 'bottom' },
         },
-        { 
-            id: 'de_kpis', 
-            title: 'Indicadores Clave', 
-            body: ['Revisa tus ventas totales, ganancias y efectivo en caja al instante.'], 
-            selector: tourSel(TOUR_TARGETS.dashboard.kpis), 
-            placement: 'bottom' 
-        },
-        { 
-            id: 'de_tabs', 
-            title: 'Navegación Estratégica', 
-            body: ['El Dashboard se divide en 4 áreas vitales.', 'Exploremos cada una.'], 
-            selector: tourSel(TOUR_TARGETS.dashboard.periodSelector), 
-            placement: 'bottom' 
-        },
-        { 
-            id: 'de_hoy', 
-            title: 'Pestaña: Hoy', 
-            body: ['Aquí ves la operación del día en curso.', 'Haz clic para ver detalles diarios.'], 
-            selector: tourSel(TOUR_TARGETS.dashboard.tabs.hoy), 
-            placement: 'bottom', 
-            allowInteraction: true 
-        },
-        { 
-            id: 'de_balance', 
-            title: 'Pestaña: Balance', 
-            body: ['Analiza la salud financiera.', 'Ingresos vs Gastos y Margen de ganancia.', 'Haz clic para entrar.'], 
-            selector: tourSel(TOUR_TARGETS.dashboard.tabs.balance), 
-            placement: 'bottom', 
-            allowInteraction: true 
-        },
-        { 
-            id: 'de_balance_detail', 
-            title: 'Resumen Financiero', 
-            body: ['Visualiza la evolución de tus finanzas mes a mes.', 'Identifica tendencias de crecimiento.'], 
-            selector: tourSel(TOUR_TARGETS.dashboard.balance.summary), 
-            placement: 'top', 
-            waitFor: tourSel(TOUR_TARGETS.dashboard.balance.summary) 
-        },
-        { 
-            id: 'de_analytics', 
-            title: 'Pestaña: Analíticas', 
-            body: ['Toma decisiones basadas en datos.', 'Productos top, mejores clientes y más.', 'Haz clic para explorar.'], 
-            selector: tourSel(TOUR_TARGETS.dashboard.tabs.analytics), 
-            placement: 'bottom', 
-            allowInteraction: true 
-        },
-        { 
-            id: 'de_analytics_chart', 
-            title: 'Gráficos de Tendencia', 
-            body: ['Entiende los picos y valles de tu venta.', '¿Qué días vendes más?'], 
-            selector: tourSel(TOUR_TARGETS.dashboard.analytics.salesChart), 
-            placement: 'top', 
-            waitFor: tourSel(TOUR_TARGETS.dashboard.analytics.salesChart) 
-        },
-         { 
-            id: 'de_top_products', 
-            title: 'Productos Estrella', 
-            body: ['Descubre cuáles son tus productos más vendidos.', '¡Nunca te quedes sin stock de estos!'], 
-            selector: tourSel(TOUR_TARGETS.dashboard.topProducts), 
-            placement: 'left'
-        },
-        { 
-            id: 'de_reminders', 
-            title: 'Pestaña: Recordatorios', 
-            body: ['Tu asistente personal.', 'Cobros pendientes, pagos a proveedores y tareas.'], 
-            selector: tourSel(TOUR_TARGETS.dashboard.tabs.reminders), 
-            placement: 'bottom', 
-            allowInteraction: true 
-        }
-      ]
-  }
-};
-
-const productsModule: TourModule = {
-  id: 'products',
-  title: 'Productos',
-  description: 'Inventario inteligente, precios dinámicos y control total.',
-  route: '/products',
-  tour: {
-      id: 'products.expert',
-      title: 'Maestría en Inventario',
-      duration: '7 min',
-      steps: [
-        { 
-            id: 'p_start', 
-            title: 'Gestión de Productos', 
-            body: ['Aquí nace tu catálogo.', 'Controla precios, costos y existencias.'], 
-            selector: tourSel(TOUR_TARGETS.products.panel), 
-            route: '/products', 
-            placement: 'bottom' 
-        },
-        { 
-            id: 'p_new', 
-            title: 'Crear Producto', 
-            body: ['Agrega nuevos productos o servicios.', 'Soporta códigos de barra y categorías.'], 
-            selector: tourSel(TOUR_TARGETS.products.primaryAction), 
-            placement: 'left' 
-        },
-        { 
-            id: 'p_kpis', 
-            title: 'Valor del Inventario', 
-            body: ['Conoce cuánto dinero tienes invertido en mercancía.', 'Dato clave para tu balance.'], 
-            selector: tourSel(TOUR_TARGETS.products.kpis), 
-            placement: 'bottom' 
-        },
-        { 
-            id: 'p_search', 
-            title: 'Búsqueda Inteligente', 
-            body: ['Encuentra cualquier item por nombre, código o categoría.', 'Filtra para ver solo los de bajo stock.'], 
-            selector: tourSel(TOUR_TARGETS.products.search), 
-            placement: 'bottom' 
-        },
-        { 
-            id: 'p_tabs_inventory', 
-            title: 'Control de Stock', 
-            body: ['Gestiona entradas y salidas rápidamente.', 'Haz clic para ver la tabla de inventario.'], 
-            selector: tourSel(TOUR_TARGETS.products.tabs.inventory), 
-            placement: 'bottom', 
-            allowInteraction: true 
-        },
-        { 
-            id: 'p_inventory_adjust', 
-            title: 'Ajuste Rápido', 
-            body: ['¿Llegó mercancía? Súmala aquí sin entrar a editar.', 'Ahorra tiempo en la recepción.'], 
-            selector: tourSel(TOUR_TARGETS.products.inventory.quickAdjust), 
-            placement: 'left', 
-            waitFor: tourSel(TOUR_TARGETS.products.inventory.table) 
-        },
-        { 
-            id: 'p_tabs_pricing', 
-            title: 'Estrategia de Precios', 
-            body: ['Herramientas para calcular márgenes y precios masivos.', 'Haz clic para optimizar tus ganancias.'], 
-            selector: tourSel(TOUR_TARGETS.products.tabs.pricing), 
-            placement: 'bottom', 
-            allowInteraction: true 
-        },
-        { 
-            id: 'p_pricing_calc', 
-            title: 'Calculadora de Precios', 
-            body: ['Ajusta tus precios base o por porcentaje.', 'Ideal para cambios por inflación o temporada.'], 
-            selector: tourSel(TOUR_TARGETS.products.pricing.calculator), 
-            placement: 'right', 
-            waitFor: tourSel(TOUR_TARGETS.products.pricing.calculator) 
-        },
-        { 
-            id: 'p_export', 
-            title: 'Importar y Exportar', 
-            body: ['Maneja tu catálogo en Excel.', 'Útil para cargas iniciales o respaldos.'], 
-            selector: tourSel(TOUR_TARGETS.products.export), 
-            placement: 'left' 
-        }
-      ]
-  }
-};
-
-const ordersModule: TourModule = {
-  id: 'orders',
-  title: 'Pedidos',
-  description: 'Flujo de trabajo visual, seguimiento y entregas perfectas.',
-  route: '/orders',
-  plan: 'pro',
-  tour: {
-      id: 'orders.expert',
-      title: 'Logística Pro',
-      duration: '6 min',
-      steps: [
-        { 
-            id: 'o_start', 
-            title: 'Tablero de Pedidos', 
-            body: ['Gestiona el ciclo de vida de tus pedidos.', 'Desde la solicitud hasta la entrega.'], 
-            selector: tourSel(TOUR_TARGETS.orders.panel), 
-            route: '/orders', 
-            placement: 'bottom' 
-        },
-        { 
-            id: 'o_new', 
-            title: 'Crear Pedido', 
-            body: ['Registra un nuevo pedido manualmente.', 'Vamos a crear uno juntos.'], 
-            selector: tourSel(TOUR_TARGETS.orders.primaryAction), 
-            placement: 'left', 
-            allowInteraction: true 
-        },
-        { 
-            id: 'o_modal_products', 
-            title: 'Selección de Productos', 
-            body: ['Busca y agrega los productos solicitados.', 'Puedes ver el stock disponible.'], 
-            selector: tourSel(TOUR_TARGETS.orders.modal.products), 
-            placement: 'right', 
-            waitFor: tourSel(TOUR_TARGETS.orders.modal.products), 
-            allowInteraction: true 
-        },
-        { 
-            id: 'o_modal_cart', 
-            title: 'Resumen del Pedido', 
-            body: ['Verifica cantidades y precios.', 'Asegúrate que todo esté correcto.'], 
-            selector: tourSel(TOUR_TARGETS.orders.modal.cart), 
-            placement: 'left', 
-            allowInteraction: true 
-        },
-        { 
-            id: 'o_modal_next', 
-            title: 'Datos del Cliente', 
-            body: ['Avanza para asignar el pedido a un cliente.', 'Haz clic en Siguiente.'], 
-            selector: tourSel(TOUR_TARGETS.orders.modal.next), 
-            placement: 'top', 
-            allowInteraction: true 
-        },
-        { 
-            id: 'o_modal_client', 
-            title: 'Asignación y Estado', 
-            body: ['Elige el cliente y define si es para entrega o retiro.', 'Añade notas importantes.'], 
-            selector: tourSel(TOUR_TARGETS.orders.modal.client), 
-            placement: 'bottom', 
-            waitFor: tourSel(TOUR_TARGETS.orders.modal.client) 
-        },
-        { 
-            id: 'o_modal_close', 
-            title: 'Volver al Tablero', 
-            body: ['Cierra el modal para ver cómo quedó en el tablero.'], 
-            selector: tourSel(TOUR_TARGETS.common.modalClose), 
-            placement: 'left', 
-            allowInteraction: true 
-        },
-        { 
-            id: 'o_board', 
-            title: 'Vista Kanban', 
-            body: ['Visualiza el progreso de cada pedido.', 'Arrastra y suelta para cambiar de estado.'], 
-            selector: tourSel(TOUR_TARGETS.orders.board), 
-            placement: 'top' 
-        },
-        { 
-            id: 'o_card_actions', 
-            title: 'Acciones Rápidas', 
-            body: ['Contacta al cliente por WhatsApp directamente desde la tarjeta.', 'Duplica pedidos recurrentes.'], 
-            selector: tourSel(TOUR_TARGETS.orders.whatsapp),
-            placement: 'right' 
-        },
-        { 
-            id: 'o_settings', 
-            title: 'Configuración del Flujo', 
-            body: ['Personaliza tus columnas y estados.', 'Adapta el tablero a tu proceso real.'], 
-            selector: tourSel(TOUR_TARGETS.orders.settings), 
-            placement: 'bottom' 
-        }
-      ]
-  }
+        placement: 'left',
+      },
+      {
+        id: 'p5',
+        title: 'Elige el cliente y registra el valor',
+        body: [
+          'Primero seleccionas el cliente. Luego indicas el valor recibido y la fecha del pago.',
+        ],
+        selector: tourSel(TOUR_TARGETS.payments.modal.clientSearch),
+        waitFor: tourSel(TOUR_TARGETS.payments.modal.clientSearch),
+        placement: 'bottom',
+      },
+      {
+        id: 'p6',
+        title: 'No olvides revisar vencidos',
+        body: [
+          'Esta vista te ayuda a priorizar lo que requiere seguimiento hoy.',
+        ],
+        selector: tourSel(TOUR_TARGETS.payments.tabs.overdue),
+        placement: 'bottom',
+      },
+    ],
+  },
 };
 
 const expensesModule: TourModule = {
   id: 'expenses',
   title: 'Gastos',
-  description: 'Registra gastos, agenda recurrentes y arma presupuestos.',
+  description: 'Registra egresos y ubica recurrentes o categorias sin perder tiempo.',
   route: '/expenses',
   tour: {
-      id: 'expenses.expert',
-      title: 'Control de Costos',
-      duration: '5 min',
-      steps: [
-        { id: 'exe1', title: 'Nuevo Gasto', body: ['Registra un nuevo gasto manual.'], selector: tourSel(TOUR_TARGETS.expenses.primaryAction), route: '/expenses', placement: 'left', allowInteraction: true },
-        { id: 'exe2', title: 'Detalles del Gasto', body: ['Ingresa descripción, monto y fecha.'], selector: tourSel(TOUR_TARGETS.expenses.modal.description), placement: 'right', waitFor: tourSel(TOUR_TARGETS.expenses.modal.description), allowInteraction: true },
-        { id: 'exe3', title: 'Categorización', body: ['Clasifica tus gastos para mejores reportes (Ej: Nómina, Servicios).'], selector: tourSel(TOUR_TARGETS.expenses.modal.category), placement: 'right', allowInteraction: true },
-        { id: 'exe4', title: 'Comprobantes', body: ['Sube una foto de la factura o recibo.'], selector: tourSel(TOUR_TARGETS.expenses.modal.receipt), placement: 'top', allowInteraction: true },
-        { id: 'exe5', title: 'Confirmar', body: ['Guarda el gasto en tu historial.'], selector: tourSel(TOUR_TARGETS.expenses.modal.confirm), placement: 'top' },
-        { id: 'exe6', title: 'Cerrar Modal', body: ['Vuelve al panel principal.'], selector: tourSel(TOUR_TARGETS.common.modalClose), placement: 'left', allowInteraction: true },
-        { id: 'exe7', title: 'Gastos Recurrentes', body: ['Configura pagos fijos (Alquiler, Luz) que se generan automáticamente.'], selector: tourSel(TOUR_TARGETS.expenses.recurring), placement: 'top' },
-        { id: 'exe8', title: 'KPIs Financieros', body: ['Monitorea tus egresos totales y promedio.'], selector: tourSel(TOUR_TARGETS.expenses.kpis), placement: 'bottom' }
-      ]
-  }
+    id: 'expenses.expert',
+    title: 'Registrar un gasto completo',
+    duration: '3 min',
+    steps: [
+      {
+        id: 'e1',
+        title: 'Aqui quedan tus egresos',
+        body: [
+          'Esta pantalla concentra el historial, las categorias y el acceso para crear gastos.',
+        ],
+        selector: tourSel(TOUR_TARGETS.expenses.panel),
+        route: '/expenses',
+        placement: 'bottom',
+      },
+      {
+        id: 'e2',
+        title: 'Crear un gasto',
+        body: [
+          'Usa este acceso para registrar una salida real de dinero.',
+        ],
+        selector: tourSel(TOUR_TARGETS.expenses.primaryAction),
+        placement: 'left',
+      },
+      {
+        id: 'e3',
+        title: 'Completa los datos basicos',
+        body: [
+          'Descripcion, categoria y valor son la base para que caja y reportes queden bien.',
+        ],
+        selector: tourSel(TOUR_TARGETS.expenses.modal.description),
+        waitFor: tourSel(TOUR_TARGETS.expenses.modal.description),
+        placement: 'right',
+      },
+      {
+        id: 'e4',
+        title: 'Revisa los indicadores y recurrentes',
+        body: [
+          'Despues de registrar gastos, aqui podras revisar comportamiento y compromisos repetidos.',
+        ],
+        selector: tourSel(TOUR_TARGETS.expenses.kpis),
+        placement: 'bottom',
+      },
+    ],
+  },
 };
 
-const paymentsModule: TourModule = {
-  id: 'payments',
-  title: 'Pagos',
-  description: 'Aplica pagos automáticos o manuales, estados de cuenta y vencidas.',
-  route: '/payments',
+const productsModule: TourModule = {
+  id: 'products',
+  title: 'Productos',
+  description: 'Mantiene catalogo, stock comercial y herramientas de precios.',
+  route: '/products',
   tour: {
-      id: 'payments.expert',
-      title: 'Gestión de Cartera',
-      duration: '4 min',
-      steps: [
-        {
-          id: 'py1',
-          title: 'Registrar Pago',
-          body: ['Comienza registrando un abono o pago total.'],
-          targets: {
-            desktop: { selector: tourSel(TOUR_TARGETS.payments.primaryAction.desktop), placement: 'left' },
-            mobile: { selector: tourSel(TOUR_TARGETS.payments.primaryAction.mobile), placement: 'bottom' }
-          },
-          route: '/payments',
-          allowInteraction: true
-        },
-        { id: 'py2', title: 'Selección de Cliente', body: ['Busca al cliente que realiza el pago.'], selector: tourSel(TOUR_TARGETS.payments.modal.clientSearch), placement: 'bottom', waitFor: tourSel(TOUR_TARGETS.payments.modal.clientSearch), allowInteraction: true },
-        { id: 'py3', title: 'Lista de Clientes', body: ['Haz clic en el cliente para continuar.'], selector: tourSel(TOUR_TARGETS.payments.modal.clientList), placement: 'right', allowInteraction: true },
-        { id: 'py4', title: 'Monto y Fecha', body: ['Ingresa el valor recibido y la fecha del pago.'], selector: tourSel(TOUR_TARGETS.payments.modal.details), placement: 'bottom', waitFor: tourSel(TOUR_TARGETS.payments.modal.details) },
-        { id: 'py5', title: 'Continuar', body: ['Avanza a la aplicación del pago.'], selector: tourSel(TOUR_TARGETS.payments.modal.next), placement: 'top', allowInteraction: true },
-        { id: 'py6', title: 'Cerrar Modal', body: ['Cierra para volver al historial.'], selector: tourSel(TOUR_TARGETS.common.modalClose), placement: 'left', allowInteraction: true },
-        { id: 'py7', title: 'Pestaña Vencidas', body: ['Filtra rápidamente las cuentas por cobrar expiradas.'], selector: tourSel(TOUR_TARGETS.payments.tabs.overdue), placement: 'bottom' },
-        { id: 'py8', title: 'Historial de Transacciones', body: ['Revisa todos los pagos registrados en el periodo.'], selector: tourSel(TOUR_TARGETS.payments.list), placement: 'top' }
-      ]
-  }
+    id: 'products.expert',
+    title: 'Ordenar catalogo y stock',
+    duration: '5 min',
+    steps: [
+      {
+        id: 'pr1',
+        title: 'Productos y servicios en un solo lugar',
+        body: [
+          'Aqui organizas lo que vendes y encuentras sus herramientas operativas.',
+        ],
+        selector: tourSel(TOUR_TARGETS.products.panel),
+        route: '/products',
+        placement: 'bottom',
+      },
+      {
+        id: 'pr2',
+        title: 'Lee el resumen del catalogo',
+        body: [
+          'Los indicadores te ayudan a ver stock, archivados y valor general del catalogo.',
+        ],
+        selector: tourSel(TOUR_TARGETS.products.kpis),
+        placement: 'bottom',
+      },
+      {
+        id: 'pr3',
+        title: 'Filtra antes de editar',
+        body: [
+          'Busca por nombre o SKU y aplica filtros de estado, tipo o stock.',
+        ],
+        selector: tourSel(TOUR_TARGETS.products.search),
+        placement: 'bottom',
+      },
+      {
+        id: 'pr4',
+        title: 'Usa las vistas segun la tarea',
+        body: [
+          'Catalogo sirve para vender, Inventario para stock real y Precios para revisar calculos o ajustes.',
+        ],
+        selector: tourSel(TOUR_TARGETS.products.tabs.inventory),
+        placement: 'bottom',
+      },
+    ],
+  },
+};
+
+const invoicesModule: TourModule = {
+  id: 'invoices',
+  title: 'Facturas',
+  description: 'Ubica estados, acciones clave y accesos para emitir, configurar o sincronizar.',
+  route: '/invoices',
+  tour: {
+    id: 'invoices.expert',
+    title: 'Entender el modulo de facturas',
+    duration: '4 min',
+    steps: [
+      {
+        id: 'i1',
+        title: 'Este modulo organiza tus documentos',
+        body: [
+          'Aqui ves el historial de facturas y los accesos para crear, configurar o revisar cartera.',
+        ],
+        selector: tourSel(TOUR_TARGETS.invoices.panel),
+        route: '/invoices',
+        placement: 'bottom',
+      },
+      {
+        id: 'i2',
+        title: 'Filtra y revisa estados',
+        body: [
+          'Usa esta zona para buscar borradores, vencidas, pagadas o un cliente especifico.',
+        ],
+        selector: tourSel(TOUR_TARGETS.invoices.filters),
+        placement: 'bottom',
+      },
+      {
+        id: 'i3',
+        title: 'Lee primero el resumen',
+        body: [
+          'Estos indicadores te dicen cuanto facturaste, cuanto sigue pendiente y cuantos borradores quedan.',
+        ],
+        selector: tourSel(TOUR_TARGETS.invoices.summary),
+        placement: 'bottom',
+      },
+      {
+        id: 'i4',
+        title: 'La tabla es tu centro de seguimiento',
+        body: [
+          'Desde aqui revisas estado, saldo, cliente y acceso al detalle de cada documento.',
+        ],
+        selector: tourSel(TOUR_TARGETS.invoices.table),
+        placement: 'top',
+      },
+      {
+        id: 'i5',
+        title: 'Desde aqui saltas a cartera, ajustes o sync',
+        body: [
+          'No necesitas salir a buscar esas herramientas en otra parte del menu.',
+        ],
+        selector: tourSel(TOUR_TARGETS.invoices.receivables),
+        placement: 'bottom',
+      },
+    ],
+  },
+};
+
+const invoiceReceivablesModule: TourModule = {
+  id: 'invoice-receivables',
+  title: 'Cartera de facturas',
+  description: 'Prioriza cobranza segun saldo, vencimiento y cliente.',
+  route: '/invoices/receivables',
+  tour: {
+    id: 'invoice-receivables.expert',
+    title: 'Cobrar desde la cartera de facturas',
+    duration: '4 min',
+    steps: [
+      {
+        id: 'ir1',
+        title: 'Esta vista esta pensada para recaudo',
+        body: [
+          'Aqui el foco es saldo pendiente, vencimiento y accion de cobro por factura.',
+        ],
+        selector: tourSel(TOUR_TARGETS.invoiceReceivables.panel),
+        route: '/invoices/receivables',
+        placement: 'bottom',
+      },
+      {
+        id: 'ir2',
+        title: 'Filtra antes de llamar o escribir',
+        body: [
+          'Busca por cliente, estado, rango de fechas o texto libre para priorizar mejor.',
+        ],
+        selector: tourSel(TOUR_TARGETS.invoiceReceivables.filters),
+        placement: 'bottom',
+      },
+      {
+        id: 'ir3',
+        title: 'Diferencia saldo pendiente y saldo vencido',
+        body: [
+          'El resumen superior te ayuda a decidir donde empezar el seguimiento.',
+        ],
+        selector: tourSel(TOUR_TARGETS.invoiceReceivables.summary),
+        placement: 'bottom',
+      },
+      {
+        id: 'ir4',
+        title: 'Desde la tabla disparas la accion',
+        body: [
+          'Puedes abrir recordatorio, estado de cuenta o detalle de la factura segun necesites.',
+        ],
+        selector: tourSel(TOUR_TARGETS.invoiceReceivables.table),
+        placement: 'top',
+      },
+    ],
+  },
+};
+
+const rawInventoryModule: TourModule = {
+  id: 'raw-inventory',
+  title: 'Bodega',
+  description: 'Controla materias primas, movimientos y minimos de inventario.',
+  route: '/raw-inventory',
+  tour: {
+    id: 'raw-inventory.expert',
+    title: 'Mover y cuidar la bodega',
+    duration: '5 min',
+    steps: [
+      {
+        id: 'ri1',
+        title: 'Bodega vive separada del catalogo comercial',
+        body: [
+          'Aqui controlas insumos y materias primas, no los productos que vendes al cliente final.',
+        ],
+        selector: tourSel(TOUR_TARGETS.rawInventory.panel),
+        route: '/raw-inventory',
+        placement: 'bottom',
+      },
+      {
+        id: 'ri2',
+        title: 'Filtra por nombre o stock bajo',
+        body: [
+          'Usa estos filtros para enfocarte en lo urgente o encontrar un material rapido.',
+        ],
+        selector: tourSel(TOUR_TARGETS.rawInventory.filters),
+        placement: 'bottom',
+      },
+      {
+        id: 'ri3',
+        title: 'La lista te muestra el estado real',
+        body: [
+          'Aqui comparas stock actual, minimo y costo referencial antes de decidir un movimiento.',
+        ],
+        selector: tourSel(TOUR_TARGETS.rawInventory.list),
+        placement: 'top',
+      },
+      {
+        id: 'ri4',
+        title: 'El detalle concentra movimientos y trazabilidad',
+        body: [
+          'Cuando seleccionas un insumo, esta zona te ayuda a entender entradas, salidas y ajustes.',
+        ],
+        selector: tourSel(TOUR_TARGETS.rawInventory.movement),
+        placement: 'left',
+        optional: true,
+      },
+      {
+        id: 'ri5',
+        title: 'Abre el detalle para ver historial',
+        body: [
+          'Cuando necesites entradas, salidas o ajustes, el detalle te muestra la trazabilidad.',
+        ],
+        selector: tourSel(TOUR_TARGETS.rawInventory.detail),
+        placement: 'left',
+        optional: true,
+      },
+    ],
+  },
+};
+
+const settingsModule: TourModule = {
+  id: 'settings',
+  title: 'Configuracion',
+  description: 'Ubica donde cambia cada cosa: perfil, negocio, experiencia, plantillas y plan.',
+  route: '/settings',
+  tour: {
+    id: 'settings.expert',
+    title: 'Configurar sin perderse',
+    duration: '3 min',
+    steps: [
+      {
+        id: 'st1',
+        title: 'Esta pantalla reune los ajustes importantes',
+        body: [
+          'Aqui vives entre perfil, negocio, personalizacion, plantillas y membresia.',
+        ],
+        selector: tourSel(TOUR_TARGETS.settings.panel),
+        route: '/settings',
+        placement: 'right',
+      },
+      {
+        id: 'st2',
+        title: 'Perfil y negocio primero',
+        body: [
+          'Empieza por estas pestañas cuando necesites corregir informacion base del negocio activo.',
+        ],
+        selector: tourSel(TOUR_TARGETS.settings.business),
+        placement: 'right',
+      },
+      {
+        id: 'st3',
+        title: 'Personalizacion cambia la experiencia',
+        body: [
+          'Si tu operacion cambio, aqui puedes ajustar la experiencia y modulos sugeridos.',
+        ],
+        selector: tourSel(TOUR_TARGETS.settings.personalization),
+        placement: 'right',
+        optional: true,
+      },
+      {
+        id: 'st4',
+        title: 'Plantillas y membresia',
+        body: [
+          'Plantillas sirve para mensajes frecuentes. Membresia te muestra plan, cobro y upgrade.',
+        ],
+        selector: tourSel(TOUR_TARGETS.settings.billing),
+        placement: 'right',
+        optional: true,
+      },
+    ],
+  },
+};
+
+const personalizationModule: TourModule = {
+  id: 'personalization',
+  title: 'Personalizacion',
+  description: 'Adapta la app al tipo de negocio, a las areas activas y al menu que quieres priorizar.',
+  route: '/settings?tab=personalization',
+  tour: {
+    id: 'personalization.expert',
+    title: 'Ajustar la experiencia del negocio',
+    duration: '5 min',
+    steps: [
+      {
+        id: 'ps1',
+        title: 'Esta pantalla adapta la app a tu operacion',
+        body: [
+          'Personalizacion no cambia tus datos historicos.',
+          'Sirve para ordenar la experiencia, las areas activas y el menu del negocio.',
+        ],
+        selector: tourSel(TOUR_TARGETS.settings.personalizationPanel),
+        route: '/settings?tab=personalization',
+        placement: 'bottom',
+      },
+      {
+        id: 'ps2',
+        title: 'Empieza por la base del negocio',
+        body: [
+          'Aqui eliges el tipo de operacion que mejor describe tu negocio.',
+          'Eso ajusta recomendaciones de areas y menu sin borrar configuracion existente.',
+        ],
+        selector: tourSel(TOUR_TARGETS.settings.personalizationBase),
+        placement: 'bottom',
+      },
+      {
+        id: 'ps3',
+        title: 'Activa solo las areas que realmente usas',
+        body: [
+          'Esta seccion te ayuda a encender o apagar areas del negocio con menos ruido.',
+          'Lo ideal es dejar primero lo esencial y sumar lo opcional despues.',
+        ],
+        selector: tourSel(TOUR_TARGETS.settings.personalizationModules),
+        placement: 'bottom',
+      },
+      {
+        id: 'ps4',
+        title: 'Ordena lo que ves primero al entrar',
+        body: [
+          'Desde aqui priorizas accesos principales, visibles y ocultos.',
+          'Esto cambia el menu del usuario actual en este negocio, no los permisos del equipo.',
+        ],
+        selector: tourSel(TOUR_TARGETS.settings.personalizationMenu),
+        placement: 'bottom',
+      },
+      {
+        id: 'ps5',
+        title: 'Confirma la vista final antes de salir',
+        body: [
+          'La vista previa te deja revisar como quedara el menu en desktop y movil.',
+          'Usala para validar que la app refleje tu flujo real antes de seguir operando.',
+        ],
+        selector: tourSel(TOUR_TARGETS.settings.personalizationPreview),
+        placement: 'top',
+      },
+    ],
+  },
+};
+
+const invoiceSyncModule: TourModule = {
+  id: 'invoice-sync',
+  title: 'Sync de facturas',
+  description: 'Entiende la cola offline y como resolver reintentos o conflictos.',
+  route: '/invoices/sync',
+  tour: {
+    id: 'invoice-sync.expert',
+    title: 'Leer la cola de sincronizacion',
+    duration: '3 min',
+    steps: [
+      {
+        id: 'is1',
+        title: 'Esta es la cola offline de facturas',
+        body: [
+          'Aqui ves que cambios quedaron pendientes o presentaron conflicto cuando volvio la conexion.',
+        ],
+        selector: tourSel(TOUR_TARGETS.invoiceSync.panel),
+        route: '/invoices/sync',
+        placement: 'bottom',
+      },
+      {
+        id: 'is2',
+        title: 'Empieza por el resumen',
+        body: [
+          'Pendientes, conflictos, fallos y bloqueadas te dicen que requiere accion inmediata.',
+        ],
+        selector: tourSel(TOUR_TARGETS.invoiceSync.summary),
+        placement: 'bottom',
+      },
+      {
+        id: 'is3',
+        title: 'La tabla te explica cada caso',
+        body: [
+          'Desde aqui puedes reintentar, usar la version del servidor o quitar una operacion ya resuelta.',
+        ],
+        selector: tourSel(TOUR_TARGETS.invoiceSync.table),
+        placement: 'top',
+      },
+    ],
+  },
+};
+
+const customersModule: TourModule = {
+  id: 'customers',
+  title: 'Clientes',
+  description: 'Revisa clientes, detalle y contexto comercial.',
+  route: '/customers',
+  tour: {
+    id: 'customers.expert',
+    title: 'Leer mejor tu base de clientes',
+    duration: '3 min',
+    steps: [
+      {
+        id: 'c1',
+        title: 'Aqui administras tu base de clientes',
+        body: [
+          'La lista y el detalle te ayudan a revisar historial, saldo y datos de contacto.',
+        ],
+        selector: tourSel(TOUR_TARGETS.customers.panel),
+        route: '/customers',
+        placement: 'bottom',
+      },
+      {
+        id: 'c2',
+        title: 'Empieza por la lista',
+        body: [
+          'Busca, filtra y elige un cliente para abrir su detalle.',
+        ],
+        selector: tourSel(TOUR_TARGETS.customers.table),
+        placement: 'top',
+      },
+      {
+        id: 'c3',
+        title: 'El detalle concentra el contexto',
+        body: [
+          'Historial, pagos y seguimiento viven aqui cuando seleccionas un cliente.',
+        ],
+        selector: tourSel(TOUR_TARGETS.customers.detail),
+        placement: 'left',
+      },
+    ],
+  },
+};
+
+const ordersModule: TourModule = {
+  id: 'orders',
+  title: 'Pedidos',
+  description: 'Gestiona pedidos y su tablero de seguimiento.',
+  route: '/orders',
+  tour: {
+    id: 'orders.expert',
+    title: 'Seguir pedidos',
+    duration: '3 min',
+    steps: [
+      {
+        id: 'o1',
+        title: 'Panel de pedidos',
+        body: [
+          'Este modulo sirve para seguir compromisos y estados del pedido.',
+        ],
+        selector: tourSel(TOUR_TARGETS.orders.panel),
+        route: '/orders',
+        placement: 'bottom',
+      },
+      {
+        id: 'o2',
+        title: 'Crea un pedido desde aqui',
+        body: [
+          'Este boton abre el flujo para cargar un pedido nuevo.',
+        ],
+        selector: tourSel(TOUR_TARGETS.orders.primaryAction),
+        placement: 'left',
+      },
+      {
+        id: 'o3',
+        title: 'El tablero muestra el avance',
+        body: [
+          'Usa el tablero para revisar cada estado del proceso.',
+        ],
+        selector: tourSel(TOUR_TARGETS.orders.board),
+        placement: 'top',
+      },
+    ],
+  },
 };
 
 export const tourModules: Record<string, TourModule> = {
+  'onboarding.basic': onboardingBasic,
+  'onboarding.pro': onboardingPro,
+  'onboarding.business': onboardingBusiness,
+  dashboard: dashboardModule,
   sales: salesModule,
   customers: customersModule,
-  dashboard: dashboardModule,
-  products: productsModule,
-  orders: ordersModule,
-  expenses: expensesModule,
   payments: paymentsModule,
+  expenses: expensesModule,
+  products: productsModule,
+  invoices: invoicesModule,
+  'invoice-receivables': invoiceReceivablesModule,
+  'raw-inventory': rawInventoryModule,
+  settings: settingsModule,
+  personalization: personalizationModule,
+  'invoice-sync': invoiceSyncModule,
+  orders: ordersModule,
 };
 
-// Flat registry for ID lookup
-export const tours: Record<string, Tour> = Object.values(tourModules).reduce((acc, mod) => {
-  acc[mod.tour.id] = mod.tour;
+export const tours: Record<string, Tour> = Object.values(tourModules).reduce((acc, module) => {
+  acc[module.tour.id] = module.tour;
   return acc;
 }, {} as Record<string, Tour>);
 

@@ -5,6 +5,7 @@ import { Button } from '../components/ui/Button';
 import { Plus, Search, Trash2, Calendar, CheckCircle, Clock, Edit2 } from 'lucide-react';
 import { Input } from '../components/ui/Input';
 import { CreateRecurringExpenseModal } from '../components/Expenses/CreateRecurringExpenseModal';
+import { PageBody, PageHeader, PageLayout } from '../components/Layout/PageLayout';
 import api from '../services/api';
 
 export const RecurringExpenses = () => {
@@ -109,14 +110,19 @@ export const RecurringExpenses = () => {
   };
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-        <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Gastos Recurrentes</h1>
-        <Button onClick={handleCreate}>
-          <Plus className="w-4 h-4" />
-          Nuevo Recurrente
-        </Button>
-      </div>
+    <PageLayout>
+      <PageHeader
+        title="Gastos Recurrentes"
+        description="Programa pagos periódicos y regístralos sin mezclar esta vista con los movimientos ya ejecutados."
+        action={
+          <Button onClick={handleCreate}>
+            <Plus className="w-4 h-4" />
+            Nuevo Recurrente
+          </Button>
+        }
+      />
+
+      <PageBody className="space-y-6">
 
       <CreateRecurringExpenseModal
         isOpen={isModalOpen}
@@ -230,6 +236,7 @@ export const RecurringExpenses = () => {
           </table>
         </div>
       </div>
-    </div>
+      </PageBody>
+    </PageLayout>
   );
 };

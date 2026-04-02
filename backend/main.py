@@ -5,19 +5,24 @@ Punto de entrada de la aplicación Flask
 """
 import os
 import sys
+import json
+import time
+import hashlib
+from functools import wraps
 
 # Add parent directory to path to ensure 'backend' package is importable
 # This fixes the "ModuleNotFoundError" when running python main.py from backend/ dir
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from datetime import datetime, date, timedelta
-from flask import Flask, request, jsonify, send_from_directory, g, send_file, render_template, url_for
+from datetime import datetime, date, timedelta, timezone
+from flask import Flask, request, jsonify, send_from_directory, g, send_file, render_template, url_for, current_app, has_request_context
 from flask_cors import CORS
-from sqlalchemy import func
+import jwt # PyJWT for manual token verification
+from sqlalchemy import func, or_, and_, case, event, cast, String
+from sqlalchemy.orm import joinedload
 from itsdangerous import URLSafeTimedSerializer, SignatureExpired, BadSignature
 from io import BytesIO
-
-# xhtml2pdf for PDF generation
+from backend.services.response_cache import LocalTTLCache, SharedResponseCache
 try:
     from xhtml2pdf import pisa
     HAS_XHTML2PDF = True
@@ -37,8 +42,29 @@ import textwrap
 try:
     from backend.config import get_config
     from backend.database import db, init_db
-    from backend.auth import token_required, optional_token, AuthManager, create_token, permission_required
-    from backend.models import User, Business, Product, Customer, Sale, Expense, Payment, LedgerEntry, LedgerAllocation, Permission, Role, UserRole, RolePermission, AuditLog, SubscriptionPayment, AppSettings, Order, RecurringExpense, QuickNote, SalesGoal, Banner, FAQ, Debt, DebtPayment
+    from backend.auth import token_required, optional_token, AuthManager, create_token, permission_required, has_permission, _ensure_default_role, _log_audit, bump_user_session_version, is_account_code_activation_required, should_expose_verification_code_in_dev, emit_verification_code_debug, authenticate_request_user
+    from backend.account_access import (
+        CHECKOUT_PLAN_CODES,
+        build_plan_catalog,
+        ensure_account_access_allowed,
+        get_plan_duration_days,
+        grant_manual_account_access,
+        normalize_access_plan,
+        resolve_account_access,
+    )
+    from backend.demo_preview import build_account_access_payload, ensure_demo_preview_business, get_preview_session_state, should_block_preview_write, start_preview_session, stop_preview_session
+    from backend.bootstrap.startup import log_startup_bootstrap_status
+    from backend.routes.financial_restore_routes import register_financial_restore_routes
+    from backend.routes.raw_inventory_restore_routes import register_raw_inventory_restore_routes
+    from backend.routes.commercial_core_restore_routes import register_commercial_core_restore_routes
+    from backend.routes.commercial_quotes_restore_routes import register_commercial_quotes_restore_routes
+    from backend.routes.commercial_invoices_restore_routes import register_commercial_invoices_restore_routes
+    from backend.services.business_operational_profile import normalize_business_operational_profile
+    from backend.services.operational_inventory import InsufficientRawMaterialsError, clear_sale_origin_links, normalize_fulfillment_mode, register_stock_production, resolve_product_fulfillment_mode, reverse_sale_operational_effects
+    from backend.services.sale_inventory import apply_sale_inventory_effects
+    from backend.models import User, Business, BusinessModule, BUSINESS_MODULE_DEFAULTS, BUSINESS_MODULE_KEYS, Product, Customer, Sale, Expense, Payment, LedgerEntry, LedgerAllocation, Permission, Role, UserRole, RolePermission, AuditLog, SubscriptionPayment, AppSettings, Order, Invoice, InvoicePayment, RecurringExpense, QuickNote, Reminder, SalesGoal, Banner, FAQ, Debt, DebtPayment, ProductBarcode, ProductMovement, RawMaterial, RawMaterialMovement, Recipe, RecipeConsumption, RecipeConsumptionItem, RecipeItem, SupplierPayable, TeamMember, TeamInvitation, TeamFeedback, TreasuryAccount
+    from backend.services.rbac import active_module_keys_from_payload, extract_commercial_sections, extract_operational_profile, list_applicable_role_templates, list_business_permission_definitions, normalize_permission_names, resolve_effective_permissions, serialize_role_definition
+    from backend.runtime import build_liveness_payload, build_readiness_result
 except ImportError:
     import sys, importlib.util
     _BASE = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -53,6 +79,19 @@ except ImportError:
     db_mod = _load("backend.database", "database.py")
     mdl_mod = _load("backend.models", "models.py")
     auth_mod = _load("backend.auth", "auth.py")
+    account_access_mod = _load("backend.account_access", "account_access.py")
+    demo_preview_mod = _load("backend.demo_preview", "demo_preview.py")
+    startup_mod = _load("backend.bootstrap.startup", os.path.join("bootstrap", "startup.py"))
+    runtime_mod = _load("backend.runtime", "runtime.py")
+    financial_routes_mod = _load("backend.routes.financial_restore_routes", os.path.join("routes", "financial_restore_routes.py"))
+    raw_inventory_routes_mod = _load("backend.routes.raw_inventory_restore_routes", os.path.join("routes", "raw_inventory_restore_routes.py"))
+    commercial_core_routes_mod = _load("backend.routes.commercial_core_restore_routes", os.path.join("routes", "commercial_core_restore_routes.py"))
+    commercial_quotes_routes_mod = _load("backend.routes.commercial_quotes_restore_routes", os.path.join("routes", "commercial_quotes_restore_routes.py"))
+    commercial_invoices_routes_mod = _load("backend.routes.commercial_invoices_restore_routes", os.path.join("routes", "commercial_invoices_restore_routes.py"))
+    operational_profile_mod = _load("backend.services.business_operational_profile", os.path.join("services", "business_operational_profile.py"))
+    rbac_mod = _load("backend.services.rbac", os.path.join("services", "rbac.py"))
+    operational_inventory_mod = _load("backend.services.operational_inventory", os.path.join("services", "operational_inventory.py"))
+    sale_inventory_mod = _load("backend.services.sale_inventory", os.path.join("services", "sale_inventory.py"))
     get_config = cfg_mod.get_config
     db = db_mod.db
     init_db = db_mod.init_db
@@ -61,8 +100,54 @@ except ImportError:
     AuthManager = auth_mod.AuthManager
     create_token = auth_mod.create_token
     permission_required = auth_mod.permission_required
+    has_permission = auth_mod.has_permission
+    _ensure_default_role = auth_mod._ensure_default_role
+    _log_audit = auth_mod._log_audit
+    bump_user_session_version = auth_mod.bump_user_session_version
+    is_account_code_activation_required = auth_mod.is_account_code_activation_required
+    should_expose_verification_code_in_dev = auth_mod.should_expose_verification_code_in_dev
+    emit_verification_code_debug = auth_mod.emit_verification_code_debug
+    authenticate_request_user = auth_mod.authenticate_request_user
+    build_plan_catalog = account_access_mod.build_plan_catalog
+    CHECKOUT_PLAN_CODES = account_access_mod.CHECKOUT_PLAN_CODES
+    ensure_account_access_allowed = account_access_mod.ensure_account_access_allowed
+    get_plan_duration_days = account_access_mod.get_plan_duration_days
+    grant_manual_account_access = account_access_mod.grant_manual_account_access
+    normalize_access_plan = account_access_mod.normalize_access_plan
+    resolve_account_access = account_access_mod.resolve_account_access
+    build_account_access_payload = demo_preview_mod.build_account_access_payload
+    ensure_demo_preview_business = demo_preview_mod.ensure_demo_preview_business
+    get_preview_session_state = demo_preview_mod.get_preview_session_state
+    should_block_preview_write = demo_preview_mod.should_block_preview_write
+    start_preview_session = demo_preview_mod.start_preview_session
+    stop_preview_session = demo_preview_mod.stop_preview_session
+    normalize_business_operational_profile = operational_profile_mod.normalize_business_operational_profile
+    active_module_keys_from_payload = rbac_mod.active_module_keys_from_payload
+    extract_commercial_sections = rbac_mod.extract_commercial_sections
+    extract_operational_profile = rbac_mod.extract_operational_profile
+    list_applicable_role_templates = rbac_mod.list_applicable_role_templates
+    list_business_permission_definitions = rbac_mod.list_business_permission_definitions
+    normalize_permission_names = rbac_mod.normalize_permission_names
+    resolve_effective_permissions = rbac_mod.resolve_effective_permissions
+    serialize_role_definition = rbac_mod.serialize_role_definition
+    InsufficientRawMaterialsError = operational_inventory_mod.InsufficientRawMaterialsError
+    clear_sale_origin_links = operational_inventory_mod.clear_sale_origin_links
+    normalize_fulfillment_mode = operational_inventory_mod.normalize_fulfillment_mode
+    register_stock_production = operational_inventory_mod.register_stock_production
+    resolve_product_fulfillment_mode = operational_inventory_mod.resolve_product_fulfillment_mode
+    reverse_sale_operational_effects = operational_inventory_mod.reverse_sale_operational_effects
+    apply_sale_inventory_effects = sale_inventory_mod.apply_sale_inventory_effects
+    log_startup_bootstrap_status = startup_mod.log_startup_bootstrap_status
+    register_financial_restore_routes = financial_routes_mod.register_financial_restore_routes
+    register_raw_inventory_restore_routes = raw_inventory_routes_mod.register_raw_inventory_restore_routes
+    register_commercial_core_restore_routes = commercial_core_routes_mod.register_commercial_core_restore_routes
+    register_commercial_quotes_restore_routes = commercial_quotes_routes_mod.register_commercial_quotes_restore_routes
+    register_commercial_invoices_restore_routes = commercial_invoices_routes_mod.register_commercial_invoices_restore_routes
     User = mdl_mod.User
     Business = mdl_mod.Business
+    BusinessModule = mdl_mod.BusinessModule
+    BUSINESS_MODULE_DEFAULTS = mdl_mod.BUSINESS_MODULE_DEFAULTS
+    BUSINESS_MODULE_KEYS = mdl_mod.BUSINESS_MODULE_KEYS
     Product = mdl_mod.Product
     Customer = mdl_mod.Customer
     Sale = mdl_mod.Sale
@@ -78,14 +163,1300 @@ except ImportError:
     SubscriptionPayment = mdl_mod.SubscriptionPayment
     AppSettings = mdl_mod.AppSettings
     Order = mdl_mod.Order
+    Invoice = mdl_mod.Invoice
+    InvoicePayment = mdl_mod.InvoicePayment
     RecurringExpense = mdl_mod.RecurringExpense
     QuickNote = mdl_mod.QuickNote
+    Reminder = mdl_mod.Reminder
     SalesGoal = mdl_mod.SalesGoal
-    Debt = mdl_mod.Debt
-    DebtPayment = mdl_mod.DebtPayment
     Banner = mdl_mod.Banner
     FAQ = mdl_mod.FAQ
+    Debt = mdl_mod.Debt
+    DebtPayment = mdl_mod.DebtPayment
+    ProductBarcode = mdl_mod.ProductBarcode
+    ProductMovement = mdl_mod.ProductMovement
+    RawMaterial = mdl_mod.RawMaterial
+    RawMaterialMovement = mdl_mod.RawMaterialMovement
+    Recipe = mdl_mod.Recipe
+    RecipeConsumption = mdl_mod.RecipeConsumption
+    RecipeConsumptionItem = mdl_mod.RecipeConsumptionItem
+    RecipeItem = mdl_mod.RecipeItem
+    SupplierPayable = mdl_mod.SupplierPayable
+    TeamMember = mdl_mod.TeamMember
+    TeamInvitation = mdl_mod.TeamInvitation
+    TeamFeedback = mdl_mod.TeamFeedback
+    TreasuryAccount = mdl_mod.TreasuryAccount
 
+from backend.services.summary_aggregate_service import DASHBOARD_CACHE_NAMESPACE, SUMMARY_CACHE_NAMESPACE, build_snapshot_lock_name, build_summary_payload_from_daily_aggregate, enqueue_namespace_refresh, get_namespace_dirty_snapshot, get_namespace_state_snapshot, mark_business_payloads_dirty, mark_namespace_rebuilt, persist_shared_snapshot, snapshot_is_fresh, snapshot_is_servable
+from backend.services.audit_service import present_audit_log, record_audit_event, snapshot_model
+
+def get_current_role_snapshot(user, business_id):
+    """
+    Obtener el nombre del rol del usuario en el contexto de un negocio.
+    Retorna "Propietario", "Admin", o el nombre del rol personalizado.
+    """
+    if not user:
+        return "Desconocido"
+    
+    # 1. Check Owner
+    business = Business.query.get(business_id)
+    if business and business.user_id == user.id:
+        return "Propietario"
+        
+    # 2. Check Team Member
+    member = TeamMember.query.filter_by(user_id=user.id, business_id=business_id, status='active').first()
+    if member and member.role:
+        return member.role.name
+        
+    # 3. Fallback (maybe System Admin?)
+    if user.is_admin:
+        return "SuperAdmin"
+        
+    return "Usuario"
+
+
+AUDIT_SNAPSHOT_KEYS = {
+    "business": ["id", "name", "currency", "timezone", "monthly_sales_goal", "settings", "whatsapp_templates"],
+    "product": ["id", "name", "description", "type", "sku", "price", "cost", "unit", "stock", "low_stock_threshold", "active"],
+    "customer": ["id", "name", "phone", "address", "notes", "active"],
+    "sale": ["id", "customer_id", "sale_date", "subtotal", "discount", "total", "balance", "payment_method", "paid", "note"],
+    "payment": ["id", "customer_id", "sale_id", "payment_date", "amount", "method", "note"],
+    "team_member": ["id", "user_id", "business_id", "role_id", "status"],
+    "team_invitation": ["id", "email", "role_id", "business_id", "status", "expires_at"],
+}
+
+
+def _audit_snapshot(entity_type, instance):
+    return snapshot_model(instance, AUDIT_SNAPSHOT_KEYS.get(entity_type))
+
+
+def _audit_source_path(module, entity_id=None):
+    if module == "sales":
+        return f"/sales/{entity_id}" if entity_id else "/sales"
+    if module == "accounts_receivable":
+        return f"/payments/{entity_id}" if entity_id else "/payments"
+    if module == "customers":
+        return f"/customers/{entity_id}" if entity_id else "/customers"
+    if module in {"products", "raw_inventory"}:
+        return f"/products/{entity_id}" if entity_id else "/products"
+    if module == "team":
+        return "/settings?section=team"
+    if module == "settings":
+        return "/settings"
+    return None
+
+
+def _build_audit_metadata(detail=None, source_path=None, **extra):
+    metadata = {}
+    if detail:
+        metadata["detail"] = detail
+    if source_path:
+        metadata["source_path"] = source_path
+    for key, value in extra.items():
+        if value is not None:
+            metadata[key] = value
+    return metadata or None
+
+
+def _record_business_audit(
+    *,
+    business_id,
+    module,
+    entity_type,
+    entity_id,
+    action,
+    summary,
+    actor_user=None,
+    detail=None,
+    metadata=None,
+    before=None,
+    after=None,
+):
+    source_path = None
+    if isinstance(metadata, dict):
+        source_path = metadata.get("source_path")
+    if source_path is None:
+        source_path = _audit_source_path(module, entity_id)
+
+    normalized_metadata = metadata.copy() if isinstance(metadata, dict) else {}
+    if detail and "detail" not in normalized_metadata:
+        normalized_metadata["detail"] = detail
+    if source_path and "source_path" not in normalized_metadata:
+        normalized_metadata["source_path"] = source_path
+
+    record_audit_event(
+        business_id=business_id,
+        actor_user=actor_user,
+        module=module,
+        entity_type=entity_type,
+        entity_id=entity_id,
+        action=action,
+        summary=summary,
+        metadata=normalized_metadata or None,
+        before=before,
+        after=after,
+        allow_without_plan=True,
+        commit=False,
+    )
+
+
+def _user_can_view_business_audit(user, business):
+    if not user or not business:
+        return False
+    if getattr(user, "is_admin", False):
+        return True
+    if business.user_id == getattr(user, "id", None):
+        return True
+    return has_permission(user, "business.update", business.id) or has_permission(user, "team.manage", business.id)
+
+def ensure_business_modules_initialized(business_id, auto_commit=True):
+    existing_rows = BusinessModule.query.filter_by(business_id=business_id).all()
+    existing_map = {row.module_key: row for row in existing_rows}
+    created = False
+
+    for module_key, enabled in BUSINESS_MODULE_DEFAULTS.items():
+        if module_key in existing_map:
+            continue
+        row = BusinessModule(
+            business_id=business_id,
+            module_key=module_key,
+            enabled=enabled,
+        )
+        db.session.add(row)
+        existing_map[module_key] = row
+        created = True
+
+    if created and auto_commit:
+        db.session.commit()
+
+    return existing_map
+
+def serialize_business_modules(module_map):
+    modules = []
+    for module_key in BUSINESS_MODULE_KEYS:
+        row = module_map.get(module_key)
+        modules.append({
+            "module_key": module_key,
+            "enabled": bool(row.enabled) if row else bool(BUSINESS_MODULE_DEFAULTS[module_key]),
+            "config": row.config if row else None,
+            "updated_at": row.updated_at.isoformat() if row and row.updated_at else None,
+        })
+    return modules
+
+def get_business_modules(business_id):
+    module_map = ensure_business_modules_initialized(business_id)
+    return serialize_business_modules(module_map)
+
+def is_module_enabled(business_id, module_key):
+    if module_key not in BUSINESS_MODULE_DEFAULTS:
+        raise ValueError(f"Invalid module key: {module_key}")
+    module_map = ensure_business_modules_initialized(business_id)
+    row = module_map.get(module_key)
+    if not row:
+        return bool(BUSINESS_MODULE_DEFAULTS[module_key])
+    return bool(row.enabled)
+
+def ensure_module_enabled(business_id, module_key):
+    if module_key not in BUSINESS_MODULE_DEFAULTS:
+        return jsonify({"error": "Módulo inválido", "module_key": module_key}), 400
+    if is_module_enabled(business_id, module_key):
+        return None
+    return jsonify({
+        "error": "El módulo no está habilitado para este negocio",
+        "module_key": module_key,
+        "enabled": False,
+    }), 403
+
+def module_required(module_key):
+    def decorator(f):
+        @wraps(f)
+        def decorated(*args, **kwargs):
+            business_id = kwargs.get("business_id") or request.args.get("business_id")
+            if not business_id and request.is_json:
+                data = request.get_json(silent=True) or {}
+                if isinstance(data, dict):
+                    business_id = data.get("business_id")
+
+            try:
+                business_id = int(business_id)
+            except (TypeError, ValueError):
+                return jsonify({"error": "business_id es requerido"}), 400
+
+            response = ensure_module_enabled(business_id, module_key)
+            if response:
+                return response
+
+            return f(*args, **kwargs)
+        return decorated
+    return decorator
+
+def attach_modules_to_business_dict(business, business_dict=None):
+    payload = business_dict or business.to_dict()
+    payload["settings"] = normalize_business_settings(payload.get("settings"))
+    payload["modules"] = get_business_modules(business.id)
+    return payload
+
+
+def _safe_float(value, default=0.0):
+    try:
+        return float(value)
+    except (TypeError, ValueError):
+        return float(default)
+
+
+def _resolve_treasury_account_id(business_id, payment_method=None, treasury_account_id=None):
+    resolved_id = treasury_account_id
+    if resolved_id not in (None, ""):
+        try:
+            resolved_id = int(resolved_id)
+        except (TypeError, ValueError):
+            raise ValueError("Cuenta de caja invalida")
+        account = TreasuryAccount.query.filter_by(id=resolved_id, business_id=business_id, is_active=True).first()
+        if not account:
+            raise ValueError("La cuenta de caja seleccionada no existe")
+        return account.id
+
+    method_key = str(payment_method or "").strip().lower()
+    if method_key:
+        linked_account = TreasuryAccount.query.filter_by(
+            business_id=business_id,
+            payment_method_key=method_key,
+            is_active=True,
+        ).order_by(TreasuryAccount.is_default.desc(), TreasuryAccount.id.asc()).first()
+        if linked_account:
+            return linked_account.id
+
+    default_account = TreasuryAccount.query.filter_by(
+        business_id=business_id,
+        is_active=True,
+        is_default=True,
+    ).order_by(TreasuryAccount.id.asc()).first()
+    if default_account:
+        return default_account.id
+
+    fallback_account = TreasuryAccount.query.filter_by(
+        business_id=business_id,
+        is_active=True,
+    ).order_by(TreasuryAccount.id.asc()).first()
+    return fallback_account.id if fallback_account else None
+
+
+def _apply_sale_inventory_effects(
+    *,
+    business,
+    sale,
+    items,
+    actor_user,
+    role_snapshot,
+):
+    return apply_sale_inventory_effects(
+        business=business,
+        sale=sale,
+        items=items,
+        actor_user=actor_user,
+        role_snapshot=role_snapshot,
+        raw_material_consumption_mode="sale",
+    )
+
+def get_response_cache():
+    extensions = getattr(current_app, "extensions", None)
+    if not isinstance(extensions, dict):
+        return None
+    return extensions.get("local_response_cache")
+
+COMMERCIAL_SECTION_DEFAULTS = {
+    "invoices": True,
+    "orders": True,
+    "sales_goals": True,
+}
+COMMERCIAL_SECTION_KEYS = tuple(COMMERCIAL_SECTION_DEFAULTS.keys())
+INITIAL_SETUP_DEFAULTS = {
+    "version": 1,
+    "onboarding_profile": {
+        "business_category": None,
+        "inventory_mode": None,
+        "sales_flow": None,
+        "home_focus": None,
+        "team_mode": None,
+        "documents_mode": None,
+        "operations_mode": None,
+        "operational_model": None,
+        "raw_materials_mode": None,
+        "recipe_mode": None,
+        "selling_mode": None,
+        "production_control": None,
+    },
+    "onboarding_completed": False,
+    "onboarding_completed_at": None,
+    "initial_modules_applied": [],
+    "initial_home_focus": None,
+    "initial_dashboard_tab": "hoy",
+    "recommended_tutorials": [],
+    "simplicity_level": "guided",
+    "highlighted_tools": [],
+    "hidden_tools": [],
+}
+
+def normalize_business_settings(settings):
+    normalized_settings = dict(settings or {}) if isinstance(settings, dict) else {}
+    normalized_settings["operational_profile"] = normalize_business_operational_profile(
+        normalized_settings.get("operational_profile")
+    )
+    personalization = normalized_settings.get("personalization")
+    if not isinstance(personalization, dict):
+        personalization = {}
+    commercial_sections = personalization.get("commercial_sections")
+    normalized_sections = {
+        key: bool(enabled)
+        for key, enabled in COMMERCIAL_SECTION_DEFAULTS.items()
+    }
+    if isinstance(commercial_sections, dict):
+        for key in COMMERCIAL_SECTION_KEYS:
+            if key in commercial_sections:
+                normalized_sections[key] = bool(commercial_sections[key])
+    personalization["commercial_sections"] = normalized_sections
+    normalized_settings["personalization"] = personalization
+    initial_setup = normalized_settings.get("initial_setup")
+    if not isinstance(initial_setup, dict):
+        initial_setup = {}
+    initial_profile = initial_setup.get("onboarding_profile")
+    if not isinstance(initial_profile, dict):
+        initial_profile = {}
+    try:
+        initial_setup_version = int(initial_setup.get("version") or INITIAL_SETUP_DEFAULTS["version"])
+    except Exception:
+        initial_setup_version = INITIAL_SETUP_DEFAULTS["version"]
+    normalized_initial_setup = {
+        "version": initial_setup_version,
+        "onboarding_profile": {
+            "business_category": initial_profile.get("business_category"),
+            "inventory_mode": initial_profile.get("inventory_mode"),
+            "sales_flow": initial_profile.get("sales_flow"),
+            "home_focus": initial_profile.get("home_focus"),
+            "team_mode": initial_profile.get("team_mode"),
+            "documents_mode": initial_profile.get("documents_mode"),
+            "operations_mode": initial_profile.get("operations_mode"),
+            "operational_model": initial_profile.get("operational_model"),
+            "raw_materials_mode": initial_profile.get("raw_materials_mode"),
+            "recipe_mode": initial_profile.get("recipe_mode"),
+            "selling_mode": initial_profile.get("selling_mode"),
+            "production_control": initial_profile.get("production_control"),
+        },
+        "onboarding_completed": bool(initial_setup.get("onboarding_completed")),
+        "onboarding_completed_at": initial_setup.get("onboarding_completed_at") or None,
+        "initial_modules_applied": [
+            module_key
+            for module_key in (initial_setup.get("initial_modules_applied") or [])
+            if module_key
+        ],
+        "initial_home_focus": initial_setup.get("initial_home_focus") or None,
+        "initial_dashboard_tab": initial_setup.get("initial_dashboard_tab") or INITIAL_SETUP_DEFAULTS["initial_dashboard_tab"],
+        "recommended_tutorials": [
+            tutorial_id
+            for tutorial_id in (initial_setup.get("recommended_tutorials") or [])
+            if tutorial_id
+        ],
+        "simplicity_level": initial_setup.get("simplicity_level") or INITIAL_SETUP_DEFAULTS["simplicity_level"],
+        "highlighted_tools": [
+            label
+            for label in (initial_setup.get("highlighted_tools") or [])
+            if label
+        ],
+        "hidden_tools": [
+            label
+            for label in (initial_setup.get("hidden_tools") or [])
+            if label
+        ],
+    }
+    normalized_settings["initial_setup"] = normalized_initial_setup
+    return normalized_settings
+
+def get_business_commercial_sections(business_or_settings):
+    settings = business_or_settings.settings if hasattr(business_or_settings, "settings") else business_or_settings
+    normalized_settings = normalize_business_settings(settings)
+    personalization = normalized_settings.get("personalization") or {}
+    commercial_sections = personalization.get("commercial_sections") or {}
+    return {
+        key: bool(commercial_sections.get(key, COMMERCIAL_SECTION_DEFAULTS[key]))
+        for key in COMMERCIAL_SECTION_KEYS
+    }
+
+def is_commercial_section_enabled(business, section_key):
+    if section_key not in COMMERCIAL_SECTION_DEFAULTS:
+        raise ValueError(f"Invalid commercial section key: {section_key}")
+    return bool(get_business_commercial_sections(business).get(section_key, COMMERCIAL_SECTION_DEFAULTS[section_key]))
+
+def ensure_commercial_section_enabled(business_id, section_key):
+    if section_key not in COMMERCIAL_SECTION_DEFAULTS:
+        return jsonify({"error": "Sección comercial inválida", "section_key": section_key}), 400
+    business = Business.query.get(business_id)
+    if not business:
+        return jsonify({"error": "Negocio no encontrado"}), 404
+    if is_commercial_section_enabled(business, section_key):
+        return None
+    return jsonify({
+        "error": "La sección comercial no está habilitada para este negocio",
+        "section_key": section_key,
+        "enabled": False,
+    }), 403
+
+def commercial_section_required(section_key):
+    def decorator(f):
+        @wraps(f)
+        def decorated(*args, **kwargs):
+            business_id = kwargs.get("business_id") or request.args.get("business_id")
+            if not business_id and request.is_json:
+                data = request.get_json(silent=True) or {}
+                if isinstance(data, dict):
+                    business_id = data.get("business_id")
+
+            try:
+                business_id = int(business_id)
+            except (TypeError, ValueError):
+                return jsonify({"error": "business_id es requerido"}), 400
+
+            response = ensure_commercial_section_enabled(business_id, section_key)
+            if response:
+                return response
+
+            return f(*args, **kwargs)
+        return decorated
+    return decorator
+
+def get_shared_response_cache():
+    extensions = getattr(current_app, "extensions", None)
+    if not isinstance(extensions, dict):
+        return None
+    cache = extensions.get("shared_response_cache")
+    return cache if isinstance(cache, SharedResponseCache) and cache.enabled else None
+
+AUTH_BOOTSTRAP_CACHE_NAMESPACE = "auth-bootstrap"
+
+def _get_request_query_count() -> int:
+    try:
+        return int(getattr(g, "_sql_query_count", 0) or 0)
+    except Exception:
+        return 0
+
+def _get_request_query_time_ms() -> float:
+    try:
+        return float(getattr(g, "_sql_query_time_ms", 0.0) or 0.0)
+    except Exception:
+        return 0.0
+
+def _record_profile_stage(profile: dict | None, stage_name: str, started_at: float, *, extra: dict | None = None) -> None:
+    if profile is None:
+        return
+    stages = profile.setdefault("stages", {})
+    stage = stages.setdefault(
+        stage_name,
+        {
+            "count": 0,
+            "wall_ms": 0.0,
+            "queries": 0,
+            "sql_time_ms": 0.0,
+        },
+    )
+    stage["count"] = int(stage.get("count") or 0) + 1
+    stage["wall_ms"] = round(float(stage.get("wall_ms") or 0.0) + ((time.perf_counter() - started_at) * 1000.0), 3)
+    stage["queries"] = int(stage.get("queries") or 0)
+    stage["sql_time_ms"] = round(float(stage.get("sql_time_ms") or 0.0), 3)
+    if extra:
+        for key, value in extra.items():
+            stage[key] = value
+
+def _profile_sql_stage(profile: dict | None, stage_name: str, func):
+    started_at = time.perf_counter()
+    queries_before = _get_request_query_count()
+    sql_before = _get_request_query_time_ms()
+    result = func()
+    if profile is not None:
+        stages = profile.setdefault("stages", {})
+        stage = stages.setdefault(
+            stage_name,
+            {
+                "count": 0,
+                "wall_ms": 0.0,
+                "queries": 0,
+                "sql_time_ms": 0.0,
+            },
+        )
+        stage["count"] = int(stage.get("count") or 0) + 1
+        stage["wall_ms"] = round(float(stage.get("wall_ms") or 0.0) + ((time.perf_counter() - started_at) * 1000.0), 3)
+        stage["queries"] = int(stage.get("queries") or 0) + max(_get_request_query_count() - queries_before, 0)
+        stage["sql_time_ms"] = round(float(stage.get("sql_time_ms") or 0.0) + max(_get_request_query_time_ms() - sql_before, 0.0), 3)
+    return result
+
+def _finalize_profile(profile: dict | None, started_at: float, *, extra: dict | None = None) -> dict | None:
+    if profile is None:
+        return None
+    total_wall_ms = round((time.perf_counter() - started_at) * 1000.0, 3)
+    sql_time_ms = round(_get_request_query_time_ms(), 3)
+    stages = profile.get("stages") or {}
+    instrumented_wall_ms = round(
+        sum(float((stage or {}).get("wall_ms") or 0.0) for stage in stages.values()),
+        3,
+    )
+    profile["total_wall_ms"] = total_wall_ms
+    profile["query_count"] = _get_request_query_count()
+    profile["sql_time_ms"] = sql_time_ms
+    profile["python_time_ms"] = round(max(total_wall_ms - sql_time_ms, 0.0), 3)
+    profile["instrumented_wall_ms"] = instrumented_wall_ms
+    profile["unaccounted_wall_ms"] = round(max(total_wall_ms - instrumented_wall_ms, 0.0), 3)
+    if extra:
+        profile.update(extra)
+    return profile
+
+def _attach_profile_headers(response, profile: dict | None):
+    if profile is None:
+        return response
+    compact_profile = {
+        "total_wall_ms": float(profile.get("total_wall_ms") or 0.0),
+        "query_count": int(profile.get("query_count") or 0),
+        "sql_time_ms": float(profile.get("sql_time_ms") or 0.0),
+        "python_time_ms": float(profile.get("python_time_ms") or 0.0),
+        "instrumented_wall_ms": float(profile.get("instrumented_wall_ms") or 0.0),
+        "unaccounted_wall_ms": float(profile.get("unaccounted_wall_ms") or 0.0),
+        "cache": profile.get("cache"),
+        "stages": profile.get("stages") or {},
+    }
+    response.headers["X-Profile-Query-Count"] = str(compact_profile["query_count"])
+    response.headers["X-Profile-Sql-Time-Ms"] = str(compact_profile["sql_time_ms"])
+    response.headers["X-Profile-Total-Wall-Ms"] = str(compact_profile["total_wall_ms"])
+    response.headers["X-Profile-Summary"] = json.dumps(compact_profile, separators=(",", ":"), ensure_ascii=False, default=str)
+    return response
+
+def _serialize_modules_without_writes(module_rows_by_business: dict[int, list[BusinessModule]], business_id: int):
+    module_rows = module_rows_by_business.get(int(business_id), [])
+    module_map = {row.module_key: row for row in module_rows}
+    modules = []
+    for module_key in BUSINESS_MODULE_KEYS:
+        row = module_map.get(module_key)
+        modules.append({
+            "module_key": module_key,
+            "enabled": bool(row.enabled) if row else bool(BUSINESS_MODULE_DEFAULTS[module_key]),
+            "config": row.config if row else None,
+            "updated_at": row.updated_at.isoformat() if row and row.updated_at else None,
+        })
+    return modules
+
+
+def _resolve_business_rbac_metadata(user, business_dict, modules):
+    settings = normalize_business_settings(business_dict.get("settings"))
+    operational_profile = extract_operational_profile(settings)
+    commercial_sections = extract_commercial_sections(settings)
+    active_modules = active_module_keys_from_payload(modules)
+    access = resolve_account_access(user)
+    plan = access.get("plan") or "basic"
+    suggested_roles = list_applicable_role_templates(
+        plan=plan,
+        operational_profile=operational_profile,
+        active_modules=active_modules,
+        commercial_sections=commercial_sections,
+    )
+    return {
+        "plan": plan,
+        "operational_profile": operational_profile,
+        "commercial_sections": commercial_sections,
+        "active_modules": active_modules,
+        "suggested_roles": suggested_roles,
+    }
+
+
+def _ensure_permission_record(permission_name):
+    permission = Permission.query.filter_by(name=permission_name).first()
+    if permission:
+        return permission
+    definition = next(
+        (item for item in list_business_permission_definitions(include_compatibility=True) if item.get("name") == permission_name),
+        None,
+    )
+    if not definition:
+        return None
+    permission = Permission(
+        name=definition["name"],
+        description=definition.get("description", ""),
+        category=definition.get("category", "general"),
+        scope=definition.get("scope", "business"),
+    )
+    db.session.add(permission)
+    db.session.flush()
+    return permission
+
+def _build_default_templates_payload():
+    return {
+        "collection_message": (
+            "Hola {cliente} \n"
+            "Te escribo de *{negocio}*.\n\n"
+            "Según mi registro, tienes un saldo pendiente de *${deuda}*.\n"
+            "¿Me confirmas por favor cuándo puedes realizar el pago?\n\n"
+            "Gracias "
+        ),
+        "sale_message": (
+            "Hola {cliente}, gracias por tu compra en *{negocio}*.\n\n"
+            "*Detalle:*\n{items}\n"
+            "*TOTAL: ${total}*\n"
+            "Pagado: ${pagado}\n"
+            "Saldo: ${saldo}\n\n"
+            "¡Esperamos verte pronto! "
+        )
+    }
+
+def _build_bootstrap_cache_version(user, businesses, memberships, current_member_role_ids):
+    parts = [
+        f"user:{int(user.id)}",
+        f"user_updated:{getattr(user, 'updated_at', None) or ''}",
+        f"user_plan:{getattr(user, 'plan', '')}",
+        f"user_type:{getattr(user, 'account_type', '')}",
+    ]
+    for business in sorted(businesses, key=lambda item: int(item.id)):
+        parts.append(f"business:{business.id}:{business.updated_at or ''}:{business.user_id}")
+    for membership in sorted(memberships, key=lambda item: int(item.business_id)):
+        role = getattr(membership, "role", None)
+        parts.append(f"member:{membership.business_id}:{membership.updated_at or ''}:{membership.role_id}:{getattr(role, 'name', '')}")
+        if role and getattr(role, "permissions", None):
+            for role_perm in role.permissions:
+                permission = getattr(role_perm, "permission", None)
+                parts.append(f"perm:{membership.business_id}:{membership.role_id}:{getattr(permission, 'name', '')}:{getattr(role_perm, 'granted_at', None) or ''}")
+    for role_id in sorted({int(role_id) for role_id in current_member_role_ids if role_id}):
+        parts.append(f"current_role:{role_id}")
+    return hashlib.sha1("|".join(parts).encode("utf-8")).hexdigest()
+
+def _load_business_bootstrap_payload(user, preferred_business_id=None, profile=None):
+    normalized_preferred_business_id = int(preferred_business_id or 0)
+    owned_businesses = []
+    memberships = []
+    legacy_business = None
+    legacy_role_permissions = []
+    legacy_role_name = None
+    current_member_role_ids = []
+    if getattr(user, "account_type", None) == "personal":
+        owned_businesses = _profile_sql_stage(
+            profile,
+            "bootstrap_owned_businesses_lookup",
+            lambda: Business.query.options(joinedload(Business.user)).filter_by(user_id=user.id).all(),
+        )
+        memberships = _profile_sql_stage(
+            profile,
+            "bootstrap_membership_lookup",
+            lambda: TeamMember.query.options(
+                joinedload(TeamMember.role).joinedload(Role.permissions).joinedload(RolePermission.permission),
+                joinedload(TeamMember.business).joinedload(Business.user),
+            ).filter_by(user_id=user.id, status='active').all(),
+        )
+    else:
+        legacy_user = _profile_sql_stage(
+            profile,
+            "bootstrap_membership_lookup",
+            lambda: User.query.options(
+                joinedload(User.roles).joinedload(UserRole.role).joinedload(Role.permissions).joinedload(RolePermission.permission),
+                joinedload(User.linked_business).joinedload(Business.user),
+            ).filter_by(id=user.id).first(),
+        )
+        if legacy_user is not None:
+            legacy_business = legacy_user.linked_business
+            if legacy_user.roles and legacy_user.roles[0].role:
+                legacy_role_name = legacy_user.roles[0].role.name
+                current_member_role_ids.append(legacy_user.roles[0].role.id)
+                legacy_role_permissions = [
+                    role_perm.permission.name
+                    for role_perm in legacy_user.roles[0].role.permissions
+                    if role_perm.permission
+                ]
+
+    business_map = {int(business.id): business for business in owned_businesses}
+    member_map = {}
+    for membership in memberships:
+        business = membership.business
+        if business is None:
+            continue
+        business_map[int(business.id)] = business
+        member_map[int(business.id)] = membership
+        if membership.role_id:
+            current_member_role_ids.append(int(membership.role_id))
+    if legacy_business is not None:
+        business_map[int(legacy_business.id)] = legacy_business
+
+    ordered_businesses = [business_map[business_id] for business_id in sorted(business_map.keys())]
+    module_rows = []
+    if ordered_businesses:
+        business_ids = [int(business.id) for business in ordered_businesses]
+        module_rows = _profile_sql_stage(
+            profile,
+            "bootstrap_modules_lookup",
+            lambda: BusinessModule.query.filter(BusinessModule.business_id.in_(business_ids)).all(),
+        )
+    module_rows_by_business = {}
+    for row in module_rows:
+        module_rows_by_business.setdefault(int(row.business_id), []).append(row)
+
+    default_templates = _build_default_templates_payload()
+    response_data = []
+    for business in ordered_businesses:
+        business_dict = business.to_dict()
+        business_dict["settings"] = normalize_business_settings(business_dict.get("settings"))
+        if not business_dict.get("whatsapp_templates"):
+            business_dict["whatsapp_templates"] = default_templates
+        business_dict["modules"] = _serialize_modules_without_writes(module_rows_by_business, business.id)
+        rbac_metadata = _resolve_business_rbac_metadata(user, business_dict, business_dict["modules"])
+        if int(business.user_id) == int(user.id):
+            business_dict["role"] = "OWNER"
+            business_permissions = resolve_effective_permissions(
+                plan=rbac_metadata["plan"],
+                operational_profile=rbac_metadata["operational_profile"],
+                active_modules=rbac_metadata["active_modules"],
+                role_name="PROPIETARIO",
+                commercial_sections=rbac_metadata["commercial_sections"],
+                is_owner=True,
+            )
+        elif int(business.id) in member_map:
+            membership = member_map[int(business.id)]
+            business_dict["role"] = membership.role.name if membership.role else "MEMBER"
+            business_permissions = resolve_effective_permissions(
+                plan=rbac_metadata["plan"],
+                operational_profile=rbac_metadata["operational_profile"],
+                active_modules=rbac_metadata["active_modules"],
+                role_name=membership.role.name if membership.role else None,
+                base_permissions=[
+                    role_perm.permission.name
+                    for role_perm in (membership.role.permissions if membership.role else [])
+                    if role_perm.permission
+                ],
+                commercial_sections=rbac_metadata["commercial_sections"],
+            )
+        elif legacy_business is not None and int(business.id) == int(legacy_business.id):
+            business_dict["role"] = legacy_role_name or "MEMBER"
+            business_permissions = resolve_effective_permissions(
+                plan=rbac_metadata["plan"],
+                operational_profile=rbac_metadata["operational_profile"],
+                active_modules=rbac_metadata["active_modules"],
+                role_name=legacy_role_name,
+                base_permissions=legacy_role_permissions,
+                commercial_sections=rbac_metadata["commercial_sections"],
+            )
+        else:
+            business_dict["role"] = "MEMBER"
+            business_permissions = resolve_effective_permissions(
+                plan=rbac_metadata["plan"],
+                operational_profile=rbac_metadata["operational_profile"],
+                active_modules=rbac_metadata["active_modules"],
+                role_name="MEMBER",
+                base_permissions=[],
+                commercial_sections=rbac_metadata["commercial_sections"],
+            )
+        business_dict["plan"] = rbac_metadata["plan"]
+        business_dict["permissions"] = business_permissions["effective_permissions"]
+        business_dict["permissions_canonical"] = business_permissions["canonical_permissions"]
+        business_dict["rbac"] = {
+            "plan": rbac_metadata["plan"],
+            "suggested_roles": rbac_metadata["suggested_roles"],
+            "commercial_sections": rbac_metadata["commercial_sections"],
+            "operational_profile": rbac_metadata["operational_profile"],
+        }
+        response_data.append(business_dict)
+
+    active_business = None
+    if normalized_preferred_business_id > 0:
+        active_business = next((item for item in response_data if int(item.get("id") or 0) == normalized_preferred_business_id), None)
+    if active_business is None and response_data:
+        active_business = response_data[0]
+
+    version = _build_bootstrap_cache_version(user, ordered_businesses, memberships, current_member_role_ids)
+    return {
+        "businesses": response_data,
+        "active_business": active_business,
+        "cache_version": version,
+    }
+
+def _get_business_bootstrap_payload(user, preferred_business_id=None, profile=None):
+    normalized_preferred_business_id = int(preferred_business_id or 0)
+    shared_cache = get_shared_response_cache()
+    cache_key = None
+    snapshot = None
+    if shared_cache is not None:
+        cache_key = {
+            "user_id": int(user.id),
+            "preferred_business_id": normalized_preferred_business_id,
+            "account_type": getattr(user, "account_type", None),
+        }
+    if shared_cache is not None and cache_key is not None:
+        snapshot = shared_cache.get_snapshot(AUTH_BOOTSTRAP_CACHE_NAMESPACE, cache_key)
+        if snapshot and float(snapshot.get("fresh_until_epoch") or 0.0) >= time.time():
+            cached_payload = snapshot.get("payload")
+            if isinstance(cached_payload, dict):
+                if profile is not None:
+                    profile["cache"] = {"hit": True, "namespace": AUTH_BOOTSTRAP_CACHE_NAMESPACE}
+                return cached_payload
+    payload = _load_business_bootstrap_payload(user, preferred_business_id=normalized_preferred_business_id, profile=profile)
+    if shared_cache is None or cache_key is None:
+        if profile is not None:
+            profile["cache"] = {"hit": False, "namespace": AUTH_BOOTSTRAP_CACHE_NAMESPACE}
+        return payload
+    fresh_ttl = int(current_app.config.get("AUTH_BOOTSTRAP_CACHE_FRESH_TTL_SECONDS", 30) or 30)
+    stale_ttl = int(current_app.config.get("AUTH_BOOTSTRAP_CACHE_STALE_TTL_SECONDS", 180) or 180)
+    shared_cache.set_snapshot(
+        AUTH_BOOTSTRAP_CACHE_NAMESPACE,
+        normalized_preferred_business_id or int(user.id),
+        cache_key,
+        payload,
+        fresh_ttl_seconds=fresh_ttl,
+        stale_ttl_seconds=stale_ttl,
+        metadata={"cache_version": payload.get("cache_version")},
+    )
+    if profile is not None:
+        profile["cache"] = {"hit": False, "namespace": AUTH_BOOTSTRAP_CACHE_NAMESPACE}
+    return payload
+
+def serialize_sale_list_payload(sale):
+    return {
+        "id": sale.id,
+        "business_id": sale.business_id,
+        "customer_id": sale.customer_id,
+        "sale_date": sale.sale_date.isoformat() if sale.sale_date else None,
+        "items": [],
+        "subtotal": sale.subtotal,
+        "discount": sale.discount,
+        "total": sale.total,
+        "balance": sale.balance,
+        "collected_amount": sale.collected_amount,
+        "total_cost": sale.total_cost,
+        "payment_method": sale.payment_method,
+        "treasury_account_id": sale.treasury_account_id,
+        "treasury_account_name": sale.treasury_account.name if sale.treasury_account else None,
+        "treasury_account_type": sale.treasury_account.account_type if sale.treasury_account else None,
+        "paid": sale.paid,
+        "note": sale.note,
+        "customer_name": sale.customer.name if sale.customer else None,
+        "created_at": sale.created_at.isoformat() if sale.created_at else None,
+        "created_by_name": sale.created_by_name,
+        "created_by_role": sale.created_by_role,
+        "updated_by_user_id": sale.updated_by_user_id,
+    }
+
+def get_payment_allocations_map(payment_ids):
+    normalized_payment_ids = [int(payment_id) for payment_id in payment_ids if payment_id is not None]
+    if not normalized_payment_ids:
+        return {}
+    rows = db.session.query(
+        LedgerEntry.ref_id,
+        LedgerAllocation.amount,
+        LedgerEntry.ref_id,
+    ).join(
+        LedgerAllocation,
+        LedgerAllocation.charge_id == LedgerEntry.id,
+    ).filter(
+        LedgerAllocation.payment_id.in_(
+            db.session.query(LedgerEntry.id).filter(
+                LedgerEntry.ref_type == "payment",
+                LedgerEntry.ref_id.in_(normalized_payment_ids),
+            )
+        ),
+        LedgerEntry.ref_type == "sale",
+        LedgerEntry.entry_type == "charge",
+    ).all()
+    payment_entry_map_rows = db.session.query(LedgerEntry.id, LedgerEntry.ref_id).filter(
+        LedgerEntry.ref_type == "payment",
+        LedgerEntry.ref_id.in_(normalized_payment_ids),
+    ).all()
+    payment_entry_to_payment_id = {ledger_entry_id: payment_id for ledger_entry_id, payment_id in payment_entry_map_rows}
+    allocation_rows = db.session.query(
+        LedgerAllocation.payment_id,
+        LedgerEntry.ref_id,
+        LedgerAllocation.amount,
+    ).join(
+        LedgerEntry,
+        LedgerAllocation.charge_id == LedgerEntry.id,
+    ).filter(
+        LedgerAllocation.payment_id.in_(payment_entry_to_payment_id.keys()),
+        LedgerEntry.ref_type == "sale",
+        LedgerEntry.entry_type == "charge",
+    ).order_by(LedgerAllocation.id.asc()).all()
+    allocations_map = {payment_id: [] for payment_id in normalized_payment_ids}
+    for payment_entry_id, sale_id, amount in allocation_rows:
+        payment_id = payment_entry_to_payment_id.get(payment_entry_id)
+        if payment_id is None:
+            continue
+        allocations_map.setdefault(payment_id, []).append({
+            "sale_id": sale_id,
+            "amount": amount,
+        })
+    return allocations_map
+
+def serialize_payment_payload(payment, allocations_map=None, include_allocations=False):
+    payload = payment.to_dict()
+    if not include_allocations:
+        return payload
+    if allocations_map is None:
+        payload["allocations"] = []
+        return payload
+    payload["allocations"] = allocations_map.get(payment.id, [])
+    return payload
+
+def invalidate_business_payloads(business_id, namespaces=("summary", "dashboard")):
+    cache = get_response_cache()
+    if cache is None:
+        return
+    normalized_business_id = int(business_id)
+    for namespace in namespaces:
+        cache.invalidate_namespace(
+            namespace,
+            lambda key, normalized_business_id=normalized_business_id: isinstance(key, tuple) and len(key) > 0 and key[0] == normalized_business_id,
+        )
+
+def build_cached_payload(namespace, cache_key, ttl_seconds, builder):
+    cache = get_response_cache()
+    if cache is None:
+        return builder()
+    payload, _ = cache.get_or_set(namespace, cache_key, ttl_seconds, builder)
+    return payload
+
+def set_cached_payload(namespace, cache_key, ttl_seconds, payload):
+    cache = get_response_cache()
+    if cache is None:
+        return
+    cache.set(namespace, cache_key, payload, ttl_seconds)
+
+def _parse_iso_date(value):
+    if not value:
+        return None
+    return datetime.strptime(str(value), "%Y-%m-%d").date()
+
+def resolve_snapshot_builder(namespace, cache_key):
+    normalized_namespace = str(namespace or "").strip()
+    if normalized_namespace == SUMMARY_CACHE_NAMESPACE:
+        if not isinstance(cache_key, (list, tuple)) or len(cache_key) != 3:
+            return None
+        business_id, start_date_str, end_date_str = cache_key
+        start_date = _parse_iso_date(start_date_str)
+        end_date = _parse_iso_date(end_date_str)
+        if start_date is None or end_date is None:
+            return None
+        return lambda business_id=int(business_id), start_date=start_date, end_date=end_date: build_summary_payload_from_daily_aggregate(
+            business_id,
+            start_date,
+            end_date,
+        )
+    if normalized_namespace != DASHBOARD_CACHE_NAMESPACE:
+        return None
+    if not isinstance(cache_key, (list, tuple)):
+        return None
+    if len(cache_key) == 3 and cache_key[2] == "legacy":
+        business_id, today_str, _ = cache_key
+        today = _parse_iso_date(today_str)
+        if today is None:
+            return None
+        return lambda business_id=int(business_id), today=today: build_legacy_dashboard_payload(business_id, today)
+    if len(cache_key) == 2:
+        business_id, today_str = cache_key
+        today = _parse_iso_date(today_str)
+        if today is None:
+            return None
+        thirty_days_ago = today - timedelta(days=30)
+        sixty_days_ago = today - timedelta(days=60)
+        return lambda business_id=int(business_id), today=today, thirty_days_ago=thirty_days_ago, sixty_days_ago=sixty_days_ago: build_modern_dashboard_payload(
+            business_id,
+            today,
+            thirty_days_ago,
+            sixty_days_ago,
+        )
+    return None
+
+def build_business_payload(namespace, cache_key, ttl_seconds, builder, *, business_id, start_date=None, end_date=None):
+    shared_cache = get_shared_response_cache()
+    state_snapshot = get_namespace_state_snapshot(
+        business_id,
+        namespace,
+        start_date=start_date,
+        end_date=end_date,
+    )
+    if shared_cache is None:
+        return build_cached_payload(namespace, cache_key, ttl_seconds, builder)
+
+    snapshot = shared_cache.get_snapshot(namespace, cache_key)
+    if snapshot_is_fresh(snapshot, state_snapshot):
+        payload = snapshot.get("payload")
+        set_cached_payload(namespace, cache_key, ttl_seconds, payload)
+        return payload
+    if snapshot_is_servable(snapshot):
+        enqueue_namespace_refresh(business_id, namespace)
+        payload = snapshot.get("payload")
+        set_cached_payload(namespace, cache_key, ttl_seconds, payload)
+        return payload
+
+    lock_name = build_snapshot_lock_name(namespace, business_id, cache_key)
+    lock_ttl_seconds = float(current_app.config.get("SHARED_RESPONSE_CACHE_LOCK_TTL_SECONDS", 60) or 60)
+    wait_timeout_seconds = float(current_app.config.get("SHARED_RESPONSE_CACHE_WAIT_FOR_SNAPSHOT_SECONDS", 5) or 5)
+    lock_token = shared_cache.acquire_lock(lock_name, ttl_seconds=lock_ttl_seconds)
+    if lock_token is None:
+        waited_snapshot = shared_cache.wait_for_snapshot(
+            namespace,
+            cache_key,
+            timeout_seconds=wait_timeout_seconds,
+        )
+        if snapshot_is_servable(waited_snapshot):
+            payload = waited_snapshot.get("payload")
+            set_cached_payload(namespace, cache_key, ttl_seconds, payload)
+            return payload
+        lock_token = shared_cache.acquire_lock(lock_name, ttl_seconds=lock_ttl_seconds)
+        if lock_token is None:
+            final_snapshot = shared_cache.wait_for_snapshot(
+                namespace,
+                cache_key,
+                timeout_seconds=wait_timeout_seconds,
+            )
+            if snapshot_is_servable(final_snapshot):
+                payload = final_snapshot.get("payload")
+                set_cached_payload(namespace, cache_key, ttl_seconds, payload)
+                return payload
+            return build_cached_payload(namespace, cache_key, ttl_seconds, builder)
+
+    try:
+        latest_snapshot = shared_cache.get_snapshot(namespace, cache_key)
+        latest_state = get_namespace_state_snapshot(
+            business_id,
+            namespace,
+            start_date=start_date,
+            end_date=end_date,
+        )
+        if snapshot_is_fresh(latest_snapshot, latest_state) or snapshot_is_servable(latest_snapshot):
+            payload = latest_snapshot.get("payload")
+            set_cached_payload(namespace, cache_key, ttl_seconds, payload)
+            return payload
+        builder_func = resolve_snapshot_builder(namespace, cache_key)
+        if builder_func is None:
+            return build_cached_payload(namespace, cache_key, ttl_seconds, builder)
+        payload = builder_func()
+        dirty_snapshot = get_namespace_dirty_snapshot(
+            business_id,
+            namespace,
+            start_date=start_date,
+            end_date=end_date,
+        )
+        persist_shared_snapshot(
+            namespace,
+            business_id,
+            cache_key,
+            payload,
+            state_snapshot=get_namespace_state_snapshot(
+                business_id,
+                namespace,
+                start_date=start_date,
+                end_date=end_date,
+            ),
+        )
+        if dirty_snapshot is not None:
+            mark_namespace_rebuilt(business_id, namespace, dirty_snapshot=dirty_snapshot)
+            db.session.commit()
+        set_cached_payload(namespace, cache_key, ttl_seconds, payload)
+        return payload
+    except Exception:
+        db.session.rollback()
+        raise
+    finally:
+        if lock_token is not None:
+            shared_cache.release_lock(lock_name, lock_token)
+
+def build_legacy_dashboard_payload(business_id, today):
+    sales_stats = db.session.query(
+        func.coalesce(func.sum(Sale.total), 0.0),
+        func.count(Sale.id),
+        func.coalesce(
+            func.sum(
+                case(
+                    (
+                        and_(Sale.payment_method == "cash", Sale.paid == True),
+                        Sale.total,
+                    ),
+                    else_=0.0,
+                )
+            ),
+            0.0,
+        ),
+    ).filter(
+        Sale.business_id == business_id,
+        Sale.sale_date == today,
+    ).first()
+
+    expenses_stats = db.session.query(
+        func.coalesce(func.sum(Expense.amount), 0.0),
+        func.count(Expense.id),
+    ).filter(
+        Expense.business_id == business_id,
+        Expense.expense_date == today,
+    ).first()
+
+    ledger_stats = db.session.query(
+        func.coalesce(
+            func.sum(
+                case(
+                    (
+                        and_(LedgerEntry.entry_date == today, LedgerEntry.entry_type == "payment"),
+                        LedgerEntry.amount,
+                    ),
+                    else_=0.0,
+                )
+            ),
+            0.0,
+        ),
+        func.coalesce(
+            func.sum(
+                case(
+                    (LedgerEntry.entry_type == "charge", LedgerEntry.amount),
+                    else_=0.0,
+                )
+            ),
+            0.0,
+        ),
+        func.coalesce(
+            func.sum(
+                case(
+                    (LedgerEntry.entry_type == "payment", LedgerEntry.amount),
+                    else_=0.0,
+                )
+            ),
+            0.0,
+        ),
+    ).filter(
+        LedgerEntry.business_id == business_id,
+    ).first()
+
+    debt_payments_today = db.session.query(func.coalesce(func.sum(DebtPayment.amount), 0.0)).join(Debt).filter(
+        Debt.business_id == business_id,
+        DebtPayment.payment_date == today,
+    ).scalar() or 0.0
+
+    recent_sales = Sale.query.options(
+        joinedload(Sale.customer),
+        joinedload(Sale.treasury_account),
+    ).filter_by(business_id=business_id).order_by(Sale.sale_date.desc(), Sale.created_at.desc()).limit(10).all()
+
+    sales_total_today = float((sales_stats or (0, 0, 0))[0] or 0)
+    sales_count_today = int((sales_stats or (0, 0, 0))[1] or 0)
+    sales_cash_today = float((sales_stats or (0, 0, 0))[2] or 0)
+    expenses_today = float((expenses_stats or (0, 0))[0] or 0)
+    expenses_count_today = int((expenses_stats or (0, 0))[1] or 0)
+    ledger_payments_today = float((ledger_stats or (0, 0, 0))[0] or 0)
+    total_charges = float((ledger_stats or (0, 0, 0))[1] or 0)
+    total_payments = float((ledger_stats or (0, 0, 0))[2] or 0)
+    cash_in = sales_cash_today + ledger_payments_today
+    cash_out = expenses_today + float(debt_payments_today or 0)
+    total_receivable = total_charges - total_payments
+
+    return {
+        "summary": {
+            "sales": {
+                "total": sales_total_today,
+                "count": sales_count_today
+            },
+            "expenses": {
+                "total": expenses_today,
+                "count": expenses_count_today
+            },
+            "cash_flow": {
+                "in": cash_in,
+                "out": cash_out,
+                "net": cash_in - cash_out
+            },
+            "accounts_receivable": total_receivable
+        },
+        "dashboard": {
+            "recent_sales": [sale.to_dict() for sale in recent_sales]
+        }
+    }
+
+def build_modern_dashboard_payload(business_id, today, thirty_days_ago, sixty_days_ago):
+    sales_30_days = db.session.query(func.sum(Sale.total)).filter(
+        Sale.business_id == business_id,
+        Sale.sale_date >= thirty_days_ago
+    ).scalar() or 0
+
+    sales_prev_30 = db.session.query(func.sum(Sale.total)).filter(
+        Sale.business_id == business_id,
+        Sale.sale_date >= sixty_days_ago,
+        Sale.sale_date < thirty_days_ago
+    ).scalar() or 0
+
+    growth_rate = 0
+    if sales_prev_30 > 0:
+        growth_rate = (sales_30_days - sales_prev_30) / sales_prev_30
+        projected_next_30 = sales_30_days * (1 + growth_rate)
+    else:
+        projected_next_30 = sales_30_days
+
+    low_stock_products = Product.query.filter(
+        Product.business_id == business_id,
+        Product.active == True,
+        Product.stock <= Product.low_stock_threshold
+    ).order_by(Product.stock).limit(10).all()
+
+    low_stock_alerts = [{
+        "id": p.id,
+        "name": p.name,
+        "sku": p.sku,
+        "stock": p.stock,
+        "threshold": p.low_stock_threshold,
+        "unit": p.unit
+    } for p in low_stock_products]
+
+    unpaid_sales = Sale.query.options(joinedload(Sale.customer)).filter(
+        Sale.business_id == business_id,
+        Sale.paid == False,
+        Sale.balance > 0
+    ).order_by(Sale.sale_date).limit(10).all()
+
+    fiados_alerts = []
+    total_fiados = 0
+    for sale in unpaid_sales:
+        fiados_alerts.append({
+            "id": sale.id,
+            "customer_name": sale.customer.name if sale.customer else "Sin cliente",
+            "date": sale.sale_date.isoformat(),
+            "total": sale.total,
+            "balance": sale.balance
+        })
+        total_fiados += sale.balance
+
+    recent_sales = Sale.query.options(joinedload(Sale.customer)).filter_by(business_id=business_id).order_by(Sale.sale_date.desc()).limit(5).all()
+
+    return {
+        "projections": {
+            "daily_average": round((sales_30_days / 30) if sales_30_days > 0 else 0, 2),
+            "last_30_days": round(sales_30_days, 2),
+            "previous_30_days": round(sales_prev_30, 2),
+            "projected_next_30": round(projected_next_30, 2),
+            "growth_rate": round(growth_rate * 100, 1) if sales_prev_30 > 0 else 0
+        },
+        "inventory_alerts": {
+            "count": len(low_stock_alerts),
+            "products": low_stock_alerts
+        },
+        "fiados_alerts": {
+            "count": len(fiados_alerts),
+            "total": round(total_fiados, 2),
+            "sales": fiados_alerts
+        },
+        "recent_sales": [{
+            "id": s.id,
+            "date": s.sale_date.isoformat(),
+            "total": s.total,
+            "customer_name": s.customer.name if s.customer else "Venta rápida"
+        } for s in recent_sales]
+    }
+
+def refresh_summary_materialized_days(business_id, *affected_dates):
+    normalized_dates = sorted({item for item in affected_dates if item is not None})
+    if not normalized_dates:
+        return
+    try:
+        mark_business_payloads_dirty(int(business_id), normalized_dates)
+    except Exception:
+        current_app.logger.exception(
+            "summary payload dirty mark failed",
+            extra={
+                "business_id": int(business_id),
+                "affected_dates": [item.isoformat() for item in normalized_dates],
+            },
+        )
 
 def create_app(config_class=None):
     """Crear aplicación Flask"""
@@ -97,8 +1468,74 @@ def create_app(config_class=None):
     else:
         app.config.from_object(get_config())
 
+    app.config.setdefault("LOCAL_RESPONSE_CACHE_ENABLED", False)
+    app.config.setdefault("LOCAL_RESPONSE_CACHE_TTL_SUMMARY_SECONDS", 5)
+    app.config.setdefault("LOCAL_RESPONSE_CACHE_TTL_DASHBOARD_SECONDS", 5)
+    app.config.setdefault("SUMMARY_CACHE_DIRTY_DEBOUNCE_SECONDS", 2)
+    app.config.setdefault("SHARED_RESPONSE_CACHE_ENABLED", True)
+    app.config.setdefault("REDIS_URL", "redis://localhost:6379/0")
+    if app.config.get("LOCAL_RESPONSE_CACHE_ENABLED"):
+        app.extensions["local_response_cache"] = LocalTTLCache()
+    if app.config.get("SHARED_RESPONSE_CACHE_ENABLED"):
+        app.extensions["shared_response_cache"] = SharedResponseCache(
+            app.config.get("REDIS_URL"),
+            prefix=app.config.get("SHARED_RESPONSE_CACHE_PREFIX", "cuaderno"),
+        )
+    app.extensions["summary_refresh_builder_resolver"] = resolve_snapshot_builder
+
     # Inicializar extensiones
     init_db(app)
+    with app.app_context():
+        engine = db.engine
+        if not getattr(engine, "_cuaderno_request_sql_profiler_installed", False):
+            @event.listens_for(engine, "before_cursor_execute")
+            def _before_cursor_execute(conn, cursor, statement, parameters, context, executemany):
+                if not has_request_context():
+                    return
+                context._cuaderno_query_started_at = time.perf_counter()
+
+            @event.listens_for(engine, "after_cursor_execute")
+            def _after_cursor_execute(conn, cursor, statement, parameters, context, executemany):
+                if not has_request_context():
+                    return
+                started_at = getattr(context, "_cuaderno_query_started_at", None)
+                elapsed_ms = 0.0
+                if started_at is not None:
+                    elapsed_ms = (time.perf_counter() - started_at) * 1000.0
+                g._sql_query_count = int(getattr(g, "_sql_query_count", 0) or 0) + 1
+                g._sql_query_time_ms = float(getattr(g, "_sql_query_time_ms", 0.0) or 0.0) + elapsed_ms
+
+            engine._cuaderno_request_sql_profiler_installed = True
+
+    @app.before_request
+    def initialize_request_sql_profile():
+        g._sql_query_count = 0
+        g._sql_query_time_ms = 0.0
+
+    @app.before_request
+    def enforce_demo_preview_read_only():
+        if not request.path.startswith("/api/"):
+            return None
+
+        user, _, _, _ = authenticate_request_user()
+        if not user:
+            return None
+
+        preview_state = get_preview_session_state(user)
+        if not preview_state.get("active"):
+            return None
+
+        g.preview_session_state = preview_state
+        g.authenticated_user = user
+
+        if should_block_preview_write(request.path, request.method):
+            return jsonify({
+                "error": "Vista previa interactiva: puedes probar la app, pero los cambios no se persisten. Activa un plan para guardar información real.",
+                "code": "preview_no_persist",
+            }), 403
+
+        return None
+
     # Compress(app) - Removed due to build errors
     
     # Implement Gzip compression manually to avoid Flask-Compress/brotli dependency
@@ -258,11 +1695,17 @@ def create_app(config_class=None):
     # ========== HEALTH CHECK ==========
     @app.route("/api/health")
     def health_check():
-        return jsonify({
-            "status": "ok",
-            "timestamp": datetime.utcnow().isoformat(),
-            "version": "1.0.0"
-        })
+        return jsonify(build_liveness_payload(app))
+
+    @app.route("/api/ready")
+    def readiness_check():
+        payload, status_code = build_readiness_result(app, db)
+        return jsonify(payload), status_code
+
+    @app.route("/api/readiness")
+    def readiness_alias():
+        payload, status_code = build_readiness_result(app, db)
+        return jsonify(payload), status_code
 
     @app.route("/api/ping")
     def ping():
@@ -342,42 +1785,40 @@ def create_app(config_class=None):
         plan = data.get("plan", "pro_monthly")
         payment_method = (data.get("payment_method") or "card").lower()
 
-        if plan not in {"pro_monthly", "pro_quarterly", "pro_annual"}:
+        valid_plans = CHECKOUT_PLAN_CODES
+
+        if plan not in valid_plans:
             return jsonify({"error": "Plan inválido"}), 400
 
         if payment_method not in {"nequi", "card", "bancolombia", "pse"}:
             return jsonify({"error": "Método de pago inválido"}), 400
 
+        pricing_catalog = build_plan_catalog()
+        plan_key = normalize_access_plan(plan)
+        cycle_key = "monthly"
+        if plan.endswith("_quarterly"):
+            cycle_key = "quarterly"
+        elif plan.endswith("_annual"):
+            cycle_key = "annual"
+
         # Obtener tasa de cambio
         usd_cop_rate = get_usd_cop_rate()
         app.logger.info(f"Using USD/COP Rate: {usd_cop_rate}")
 
-        monthly_usd = app.config.get("PRO_MONTHLY_PRICE_USD", 5.99)
-        quarterly_discount = app.config.get("PRO_QUARTERLY_DISCOUNT", 0.10)
-        annual_discount = app.config.get("PRO_ANNUAL_DISCOUNT", 0.30)
-        
-        # Calcular precios en USD con descuento
-        monthly_total_usd = monthly_usd
-        quarterly_total_usd = monthly_usd * 3 * (1 - quarterly_discount)
-        annual_total_usd = monthly_usd * 12 * (1 - annual_discount)
-
-        # Convertir a COP y redondear a la centena más cercana
+        # Helper to convert to COP
         def to_cop(usd_val):
             val = usd_val * usd_cop_rate
             return int(round(val / 100.0) * 100)
 
-        monthly = to_cop(monthly_total_usd)
-        quarterly = to_cop(quarterly_total_usd)
-        annual = to_cop(annual_total_usd)
+        plan_catalog_entry = ((pricing_catalog.get("plans") or {}).get(plan_key or ""))
+        cycle_catalog_entry = ((plan_catalog_entry or {}).get("cycles") or {}).get(cycle_key)
+        if not plan_catalog_entry or not cycle_catalog_entry:
+            return jsonify({"error": "No se pudo resolver el plan seleccionado"}), 400
 
-        app.logger.info(f"Calculated Prices (COP): Monthly={monthly}, Quarterly={quarterly}, Annual={annual}")
+        amount = to_cop(float(cycle_catalog_entry.get("total_usd") or 0))
+        plan_name = f"{plan_catalog_entry.get('display_name', plan_key)} {cycle_catalog_entry.get('label', cycle_key)}"
 
-        if plan == "pro_monthly":
-            amount = monthly
-        elif plan == "pro_quarterly":
-            amount = quarterly
-        else:
-            amount = annual
+        app.logger.info(f"Calculated Price (COP) for {plan}: {amount}")
 
         wompi_pk = (os.getenv("WOMPI_PUBLIC_KEY") or app.config.get("WOMPI_PUBLIC_KEY") or "").strip()
         wompi_sk = (os.getenv("WOMPI_PRIVATE_KEY") or app.config.get("WOMPI_PRIVATE_KEY") or "").strip()
@@ -400,17 +1841,8 @@ def create_app(config_class=None):
             redirect_url = (os.getenv("MP_SUCCESS_URL") or app.config.get("MP_SUCCESS_URL") or "http://localhost:5000")
             amount_cents = int(amount * 100)
 
-            payload = {
-                "name": f"EnCaja {'Mensual' if plan=='pro_monthly' else 'Trimestral' if plan=='pro_quarterly' else 'Anual'}",
-                "description": f"Suscripción {plan}",
-                "single_use": False,
-                "collect_shipping": False,
-                "currency": "COP",
-                "amount_in_cents": amount_cents,
-                "redirect_url": redirect_url
-            }
             h = {"Authorization": f"Bearer {wompi_sk}", "Content-Type": "application/json"}
-            
+
             # Wompi API v1 requires amount in cents to be integer
             # Ensure redirect_url is valid
             if not redirect_url or "localhost" in redirect_url:
@@ -419,8 +1851,8 @@ def create_app(config_class=None):
                 redirect_url = "https://app.encaja.co" 
                 
             payload = {
-                "name": f"EnCaja {'Mensual' if plan=='pro_monthly' else 'Trimestral' if plan=='pro_quarterly' else 'Anual'}",
-                "description": f"Suscripción {plan}",
+                "name": f"EnCaja {plan_name}",
+                "description": f"Suscripción {plan_name}",
                 "single_use": False,
                 "collect_shipping": False,
                 "currency": "COP",
@@ -545,26 +1977,23 @@ def create_app(config_class=None):
                         "type": "update_payment"
                      })
 
-                plan = "pro_monthly"
-                if "pro_annual" in reference:
-                    plan = "pro_annual"
-                elif "pro_quarterly" in reference:
-                    plan = "pro_quarterly"
+                plan = "pro_monthly" # default
+                for candidate in CHECKOUT_PLAN_CODES:
+                    if candidate in reference:
+                        plan = candidate
+                        break
                 
-                duration_days = 30
-                if plan == "pro_quarterly":
-                    duration_days = 90
-                elif plan == "pro_annual":
-                    duration_days = 365
+                duration_days = get_plan_duration_days(plan)
                 
-                user = g.current_user
+                user = getattr(g, "authenticated_user", None) or g.current_user
                 now = datetime.utcnow()
                 base_start = now
                 if user.membership_end and user.membership_end > now:
                     base_start = user.membership_end
                 membership_end = base_start + timedelta(days=duration_days)
                 
-                user.plan = "pro"
+                resolved_plan = normalize_access_plan(plan) or "basic"
+                user.plan = resolved_plan
                 user.membership_plan = plan
                 user.membership_start = now
                 user.membership_end = membership_end
@@ -585,8 +2014,9 @@ def create_app(config_class=None):
                 
                 return jsonify({
                     "success": True, 
-                    "message": "Pago aprobado. ¡Ahora eres PRO!",
+                    "message": f"Pago aprobado. ¡Ahora tienes {str(resolved_plan).upper()} activo!",
                     "plan": user.plan,
+                    "account_access": build_account_access_payload(user, resolve_account_access(user)),
                     "membership": {
                         "plan": user.membership_plan,
                         "start": user.membership_start.isoformat() if user.membership_start else None,
@@ -611,7 +2041,8 @@ def create_app(config_class=None):
     @token_required
     def get_billing_status():
         """Estado de la suscripción"""
-        user = g.current_user
+        user = getattr(g, "authenticated_user", None) or g.current_user
+        access = build_account_access_payload(user, resolve_account_access(user))
         
         # Get latest payment for method info
         last_payment = SubscriptionPayment.query.filter_by(user_id=user.id).order_by(SubscriptionPayment.created_at.desc()).first()
@@ -635,25 +2066,28 @@ def create_app(config_class=None):
                 "pdfUrl": f"/api/billing/invoices/{p.id}/download"
             })
             
+        billing_cycle = "monthly"
+        if access.get("membership_plan_code"):
+            if "quarterly" in access["membership_plan_code"]:
+                billing_cycle = "quarterly"
+            elif "annual" in access["membership_plan_code"]:
+                billing_cycle = "annual"
+        
         return jsonify({
-            "plan": user.plan,
-            "status": "active" if user.plan == "pro" else "inactive",
-            "nextBillingDate": user.membership_end.isoformat() if user.membership_end else None,
-            "billingCycle": "monthly" if "monthly" in (user.membership_plan or "") else "yearly",
+            "plan": access.get("plan") or user.plan,
+            "status": "active" if access.get("active") else access.get("status") or "inactive",
+            "source": access.get("source"),
+            "nextBillingDate": access.get("membership_end"),
+            "billingCycle": billing_cycle,
             "paymentMethod": method_info,
-            "invoices": invoices
+            "invoices": invoices,
+            "account_access": access,
         })
 
     @app.route("/api/billing/pricing", methods=["GET"])
     def get_billing_pricing():
-        """Retorna precios centralizados"""
-        return jsonify({
-            "currency": "COP",
-            "monthly": 29000,
-            "quarterly": 78300,   # 3*29000*0.90
-            "annual": 295800,     # 12*29000*0.85
-            "discounts": { "quarterly": 0.10, "annual": 0.15 }
-        })
+        """Retorna catálogo central de planes"""
+        return jsonify(build_plan_catalog())
 
     @app.route("/api/billing/portal", methods=["POST"])
     @token_required
@@ -685,7 +2119,7 @@ def create_app(config_class=None):
     @app.route("/api/billing/save-payment-source", methods=["POST"]) 
     @token_required
     def save_payment_source():
-        user = g.current_user
+        user = getattr(g, "authenticated_user", None) or g.current_user
         payload = request.get_json() or {}
         token = payload.get("token")
         if not token:
@@ -724,7 +2158,7 @@ def create_app(config_class=None):
     @app.route("/api/billing/save-nequi-source", methods=["POST"]) 
     @token_required
     def save_nequi_source():
-        user = g.current_user
+        user = getattr(g, "authenticated_user", None) or g.current_user
         payload = request.get_json() or {}
         phone = payload.get("phone")
         prefix = payload.get("prefix") or "+57"
@@ -777,7 +2211,7 @@ def create_app(config_class=None):
     @app.route("/api/billing/save-googlepay-source", methods=["POST"]) 
     @token_required
     def save_googlepay_source():
-        user = g.current_user
+        user = getattr(g, "authenticated_user", None) or g.current_user
         payload = request.get_json() or {}
         token = payload.get("token")
         if not token:
@@ -813,7 +2247,7 @@ def create_app(config_class=None):
     @app.route("/api/billing/check-nequi-token", methods=["POST"]) 
     @token_required
     def check_nequi_token():
-        user = g.current_user
+        user = getattr(g, "authenticated_user", None) or g.current_user
         payload = request.get_json() or {}
         nequi_token = payload.get("token")
         phone = payload.get("phone")
@@ -858,7 +2292,7 @@ def create_app(config_class=None):
     @token_required
     def update_payment_method():
         """Genera link para actualizar método de pago (Cobro de validación)"""
-        user = g.current_user
+        user = getattr(g, "authenticated_user", None) or g.current_user
         try:
             import requests, uuid, traceback
             # Config Wompi
@@ -934,23 +2368,58 @@ def create_app(config_class=None):
     @token_required
     def change_billing_cycle():
         """Cambia el ciclo de facturación (Genera nuevo pago)"""
-        user = g.current_user
+        user = getattr(g, "authenticated_user", None) or g.current_user
         data = request.get_json() or {}
         cycle = data.get("cycle")
         
         if cycle not in ["monthly", "quarterly", "annual"]:
             return jsonify({"error": "Ciclo inválido"}), 400
             
-        # Precios
-        prices = {
-            "monthly": 29000,
-            "quarterly": 78300,
-            "annual": 295800
-        }
-        amount = prices.get(cycle)
-        plan_code = f"pro_{cycle}" if cycle != "annual" else "pro_annual" # map to pro_monthly, pro_quarterly, pro_annual
-        if cycle == "quarterly": plan_code = "pro_quarterly"
-        if cycle == "monthly": plan_code = "pro_monthly"
+        # Determine current plan base (pro or business)
+        current_plan_base = "pro"
+        if user.plan == "business" or (user.membership_plan and "business" in user.membership_plan):
+            current_plan_base = "business"
+            
+        # Calculate price dynamically
+        usd_cop_rate = get_usd_cop_rate()
+        def to_cop(usd_val):
+            val = usd_val * usd_cop_rate
+            return int(round(val / 100.0) * 100)
+            
+        amount = 0
+        plan_name = ""
+        plan_code = ""
+        
+        if current_plan_base == "pro":
+            monthly_usd = app.config.get("PRO_MONTHLY_PRICE_USD", 5.99)
+            if cycle == "monthly":
+                amount = to_cop(monthly_usd)
+                plan_name = "Pro Mensual"
+                plan_code = "pro_monthly"
+            elif cycle == "quarterly":
+                discount = app.config.get("PRO_QUARTERLY_DISCOUNT", 0.10)
+                amount = to_cop(monthly_usd * 3 * (1 - discount))
+                plan_name = "Pro Trimestral"
+                plan_code = "pro_quarterly"
+            else: # annual
+                discount = app.config.get("PRO_ANNUAL_DISCOUNT", 0.30)
+                amount = to_cop(monthly_usd * 12 * (1 - discount))
+                plan_name = "Pro Anual"
+                plan_code = "pro_annual"
+        else: # business
+            monthly_usd = 12.99
+            if cycle == "monthly":
+                amount = to_cop(monthly_usd)
+                plan_name = "Business Mensual"
+                plan_code = "business_monthly"
+            elif cycle == "quarterly":
+                amount = to_cop(monthly_usd * 3 * (1 - 0.10))
+                plan_name = "Business Trimestral"
+                plan_code = "business_quarterly"
+            else: # annual
+                amount = to_cop(monthly_usd * 12 * (1 - 0.15))
+                plan_name = "Business Anual"
+                plan_code = "business_annual"
         
         try:
             import requests, uuid
@@ -965,8 +2434,8 @@ def create_app(config_class=None):
             redirect_url = (os.getenv("MP_SUCCESS_URL") or app.config.get("MP_SUCCESS_URL") or "http://localhost:5000")
             
             payload = {
-                "name": f"EnCaja {cycle.capitalize()}",
-                "description": f"Cambio de plan a {cycle}",
+                "name": f"EnCaja {plan_name}",
+                "description": f"Cambio de plan a {plan_name}",
                 "single_use": False,
                 "collect_shipping": False,
                 "currency": "COP",
@@ -991,7 +2460,7 @@ def create_app(config_class=None):
     @token_required
     def get_invoices():
         """Lista facturas"""
-        user = g.current_user
+        user = getattr(g, "authenticated_user", None) or g.current_user
         payments = SubscriptionPayment.query.filter_by(user_id=user.id).order_by(SubscriptionPayment.created_at.desc()).limit(20).all()
         return jsonify([p.to_dict() for p in payments])
 
@@ -999,7 +2468,7 @@ def create_app(config_class=None):
     @token_required
     def download_invoice(invoice_id):
         """Descarga factura PDF"""
-        user = g.current_user
+        user = getattr(g, "authenticated_user", None) or g.current_user
         payment = SubscriptionPayment.query.filter_by(id=invoice_id, user_id=user.id).first()
         if not payment:
             return jsonify({"error": "Factura no encontrada"}), 404
@@ -1053,7 +2522,7 @@ def create_app(config_class=None):
     @token_required
     def cancel_subscription():
         """Cancela renovación"""
-        user = g.current_user
+        user = getattr(g, "authenticated_user", None) or g.current_user
         user.membership_auto_renew = False
         db.session.commit()
         return jsonify({"success": True, "message": "Suscripción cancelada exitosamente"})
@@ -1062,7 +2531,7 @@ def create_app(config_class=None):
     @app.route("/api/upgrade-to-pro", methods=["POST"])
     @token_required
     def upgrade_to_pro():
-        user = g.current_user
+        user = getattr(g, "authenticated_user", None) or g.current_user
         user.plan = "pro"
         db.session.commit()
         
@@ -1079,6 +2548,7 @@ def create_app(config_class=None):
         email = data.get("email", "").strip().lower()
         password = data.get("password", "")
         name = data.get("name", "").strip()
+        activation_required = is_account_code_activation_required()
         
         print(f"[DEBUG] Register - name: {name}, email: {email}")
 
@@ -1108,20 +2578,29 @@ def create_app(config_class=None):
             return jsonify({
                 "user": user.to_dict(),
                 "access_token": access_token,
-                "refresh_token": refresh_token
+                "refresh_token": refresh_token,
+                "verification_required": False,
+                "activation_required": False,
+                "account_access": build_account_access_payload(user, resolve_account_access(user)),
             }), 201
 
         # Return verification code in response for development (when SMTP is not configured)
         # In production, the code is sent via email
         response_data = {
             "user": user.to_dict(),
-            "verification_required": True,
-            "message": "Revisa tu correo para el código de verificación"
+            "verification_required": activation_required,
+            "activation_required": activation_required,
+            "message": "Revisa tu correo para el código de verificación",
+            "account_access": build_account_access_payload(user, resolve_account_access(user)),
         }
         
-        # Include verification code for development/debugging purposes
-        # This helps when SMTP is not configured
-        if app.config.get("DEBUG"):
+        if activation_required and user.email_verification_code:
+            emit_verification_code_debug(user.email, user.email_verification_code)
+
+        # Include verification code for development/debugging purposes.
+        # Also enable this automatically on localhost so the frontend can show it
+        # even when the backend is not being watched in a visible terminal.
+        if activation_required and user.email_verification_code and should_expose_verification_code_in_dev():
             response_data["verification_code"] = user.email_verification_code
         
         return jsonify(response_data), 201
@@ -1164,12 +2643,16 @@ def create_app(config_class=None):
             "message": "Email verificado correctamente",
             "user": user.to_dict(),
             "access_token": access_token,
-            "refresh_token": refresh_token
+            "refresh_token": refresh_token,
+            "activation_required": is_account_code_activation_required(),
+            "account_access": build_account_access_payload(user, resolve_account_access(user)),
         })
 
     @app.route("/api/auth/login", methods=["POST"])
     def login():
         try:
+            profile_started_at = time.perf_counter()
+            profile = {"endpoint": "auth.login"}
             # Force JSON parsing or fail gracefully
             if not request.is_json:
                 # Try to parse anyway if content-type is missing but body exists
@@ -1186,25 +2669,143 @@ def create_app(config_class=None):
             data = data or {}
             email = data.get("email", "").strip().lower()
             password = data.get("password", "")
+            is_team_login = data.get("is_team_login", False)
+            business_name = data.get("business_name")
 
             if not email or not password:
                 return jsonify({"error": "Email y password son requeridos"}), 400
 
-            user, access_token, refresh_token, error = AuthManager.login(email, password)
+            user, access_token, refresh_token, error = AuthManager.login(
+                email, password, is_team_login=is_team_login, business_name=business_name, profile=profile
+            )
+            
             if error:
-                return jsonify({"error": error}), 401
+                response = jsonify({"error": error})
+                return _attach_profile_headers(response, _finalize_profile(profile, profile_started_at)), 401
 
-            return jsonify({
-                "user": user.to_dict(),
-                "access_token": access_token,
-                "refresh_token": refresh_token
-            })
+            # Resolucion de contextos accesibles (Single Identity Phase 1)
+            try:
+                from backend.membership import get_user_accessible_businesses, resolve_active_context
+                accessible_contexts = _profile_sql_stage(
+                    profile,
+                    "resolve_accessible_contexts",
+                    lambda: get_user_accessible_businesses(user),
+                )
+                
+                # Phase 2: Auto-select if only one context
+                active_context = None
+                if len(accessible_contexts) == 1:
+                    ctx = accessible_contexts[0]
+                    # Simulate selection
+                    active_context, target_user = _profile_sql_stage(
+                        profile,
+                        "resolve_active_context",
+                        lambda: resolve_active_context(user, ctx["business_id"], accessible_contexts=accessible_contexts),
+                    )
+                    if target_user and target_user.id != user.id:
+                        # Identity switch happened (legacy), update token
+                        user = target_user
+                        token_started_at = time.perf_counter()
+                        access_token = create_token(user.id, "access")
+                        refresh_token = create_token(user.id, "refresh")
+                        _record_profile_stage(profile, "token_session_creation", token_started_at, extra={"identity_switched": True})
+
+            except Exception as e:
+                app.logger.error(f"Error resolving contexts: {e}")
+                accessible_contexts = []
+                active_context = None
+
+            response = _profile_sql_stage(
+                profile,
+                "serialization_response",
+                lambda: jsonify({
+                    "user": user.to_dict(),
+                    "access_token": access_token,
+                    "refresh_token": refresh_token,
+                    "activation_required": is_account_code_activation_required(),
+                    "account_access": build_account_access_payload(user, resolve_account_access(user)),
+                    "accessible_contexts": accessible_contexts,
+                    "active_context": active_context
+                }),
+            )
+            return _attach_profile_headers(response, _finalize_profile(profile, profile_started_at))
         except Exception as e:
             app.logger.error(f"Login error: {str(e)}")
             import traceback
             app.logger.error(traceback.format_exc())
             # Ensure 500 errors are returned as JSON
             return jsonify({"error": "Error interno del servidor", "details": str(e)}), 500
+
+    @app.route("/api/auth/select-context", methods=["POST"])
+    @token_required
+    def select_context():
+        """
+        Seleccionar contexto activo.
+        Input: { "business_id": 123 }
+        Output: { "active_context": {...}, "access_token": "...", "user": {...} }
+        """
+        try:
+            profile_started_at = time.perf_counter()
+            profile = {"endpoint": "auth.select_context"}
+            data = request.get_json() or {}
+            business_id = data.get("business_id")
+            
+            if not business_id:
+                return jsonify({"error": "business_id es requerido"}), 400
+                
+            from backend.membership import resolve_active_context
+            
+            # g.current_user es el usuario actual (Personal o ya Legacy)
+            # Intentamos resolver desde la identidad actual
+            active_context, target_user = _profile_sql_stage(
+                profile,
+                "roles_permissions_lookup",
+                lambda: resolve_active_context(g.current_user, business_id),
+            )
+            
+            if not active_context:
+                return jsonify({"error": "No tienes acceso a este negocio"}), 403
+                
+            response = {
+                "active_context": active_context,
+                "user": target_user.to_dict()
+            }
+            
+            # Si hubo cambio de identidad (Legacy), generar nuevo token
+            if target_user.id != g.current_user.id:
+                token_started_at = time.perf_counter()
+                new_access_token = create_token(target_user.id, "access")
+                new_refresh_token = create_token(target_user.id, "refresh")
+                response["access_token"] = new_access_token
+                response["refresh_token"] = new_refresh_token
+                _record_profile_stage(profile, "token_session_creation", token_started_at, extra={"identity_switched": True})
+            
+            flask_response = jsonify(response)
+            return _attach_profile_headers(flask_response, _finalize_profile(profile, profile_started_at))
+            
+        except Exception as e:
+            app.logger.error(f"Select Context Error: {e}")
+            return jsonify({"error": "Error al seleccionar contexto"}), 500
+
+    @app.route("/api/auth/bootstrap", methods=["GET"])
+    @token_required
+    def auth_bootstrap():
+        try:
+            profile_started_at = time.perf_counter()
+            profile = {"endpoint": "auth.bootstrap"}
+            preferred_business_id = request.args.get("business_id") or request.args.get("preferred_business_id")
+            payload = _get_business_bootstrap_payload(g.current_user, preferred_business_id=preferred_business_id, profile=profile)
+            access_user = getattr(g, "authenticated_user", None) or g.current_user
+            account_access = build_account_access_payload(access_user, resolve_account_access(access_user))
+            response = jsonify({
+                "businesses": payload.get("businesses", []),
+                "active_business": payload.get("active_business"),
+                "account_access": account_access,
+            })
+            return _attach_profile_headers(response, _finalize_profile(profile, profile_started_at))
+        except Exception as e:
+            app.logger.error(f"Auth Bootstrap Error: {e}")
+            return jsonify({"error": "Error al construir bootstrap"}), 500
 
     @app.route("/api/auth/refresh", methods=["POST"])
     def refresh():
@@ -1220,6 +2821,13 @@ def create_app(config_class=None):
 
         return jsonify({"access_token": new_token})
 
+    @app.route("/api/auth/logout", methods=["POST"])
+    @token_required
+    def logout():
+        user = getattr(g, "authenticated_user", None) or g.current_user
+        bump_user_session_version(user.id)
+        return jsonify({"success": True, "message": "Sesión cerrada correctamente"})
+
     @app.route("/api/auth/change-password", methods=["POST"])
     @token_required
     def change_password():
@@ -1233,12 +2841,13 @@ def create_app(config_class=None):
         if len(new_password) < 6:
             return jsonify({"error": "La nueva contraseña debe tener al menos 6 caracteres"}), 400
 
-        user = g.current_user
+        user = getattr(g, "authenticated_user", None) or g.current_user
         if not user.check_password(current_password):
             return jsonify({"error": "La contraseña actual no es correcta"}), 400
 
         user.set_password(new_password)
         db.session.commit()
+        bump_user_session_version(user.id)
 
         return jsonify({"message": "Contraseña actualizada"})
 
@@ -1293,13 +2902,14 @@ def create_app(config_class=None):
         user.reset_password_code = None
         user.reset_password_expires = None
         db.session.commit()
+        bump_user_session_version(user.id)
 
         return jsonify({"message": "Contraseña restablecida correctamente"})
 
     @app.route("/api/auth/me", methods=["GET"])
     @token_required
     def get_current_user():
-        user = g.current_user
+        user = getattr(g, "authenticated_user", None) or g.current_user
         try:
             from backend.membership import ensure_membership_active
             ensure_membership_active(user)
@@ -1325,12 +2935,61 @@ def create_app(config_class=None):
             'payments': has_permission(user, 'payments.*'),
             'payments_read': has_permission(user, 'payments.read'),
         }
-        return jsonify({"user": user_data})
+        return jsonify({"user": user_data, "account_access": build_account_access_payload(user, resolve_account_access(user))})
+
+    @app.route("/api/account/access", methods=["GET"])
+    @token_required
+    def get_account_access():
+        user = getattr(g, "authenticated_user", None) or g.current_user
+        return jsonify({
+            "account_access": build_account_access_payload(user, resolve_account_access(user)),
+            "pricing": build_plan_catalog(),
+        })
+
+    @app.route("/api/account/preview/start", methods=["POST"])
+    @token_required
+    def start_account_preview():
+        user = getattr(g, "authenticated_user", None) or g.current_user
+        access = resolve_account_access(user)
+        access_payload = build_account_access_payload(user, access)
+
+        if not access_payload.get("demo_preview_available"):
+            return jsonify({
+                "error": "La vista previa no estÃ¡ disponible para esta cuenta.",
+                "code": "preview_not_available",
+                "account_access": access_payload,
+            }), 403
+
+        if access.get("active") or access.get("existing_access"):
+            return jsonify({
+                "error": "Tu cuenta ya tiene acceso real; no necesita vista previa.",
+                "code": "preview_not_available",
+                "account_access": access_payload,
+            }), 400
+
+        ensure_demo_preview_business()
+        start_preview_session(user)
+        return jsonify({
+            "ok": True,
+            "account_access": build_account_access_payload(user, access),
+            "pricing": build_plan_catalog(),
+        })
+
+    @app.route("/api/account/preview/stop", methods=["POST"])
+    @token_required
+    def stop_account_preview():
+        user = getattr(g, "authenticated_user", None) or g.current_user
+        stop_preview_session(user)
+        return jsonify({
+            "ok": True,
+            "account_access": build_account_access_payload(user, resolve_account_access(user)),
+            "pricing": build_plan_catalog(),
+        })
 
     @app.route("/api/membership/cancel", methods=["POST"])
     @token_required
     def cancel_membership():
-        user = g.current_user
+        user = getattr(g, "authenticated_user", None) or g.current_user
         if not getattr(user, "membership_plan", None) or not getattr(user, "membership_end", None):
             return jsonify({"error": "No tienes una membresía activa"}), 400
         user.membership_auto_renew = False
@@ -1345,32 +3004,16 @@ def create_app(config_class=None):
     @app.route("/api/businesses", methods=["GET"])
     @token_required
     def get_businesses():
-        businesses = Business.query.filter_by(user_id=g.current_user.id).all()
-        default_templates = {
-            "collection_message": (
-                "Hola {cliente} 😊\n"
-                "Te escribo de *{negocio}*.\n\n"
-                "Según mi registro, tienes un saldo pendiente de *${deuda}*.\n"
-                "¿Me confirmas por favor cuándo puedes realizar el pago?\n\n"
-                "Gracias 🙌"
-            ),
-            "sale_message": (
-                "Hola {cliente}, gracias por tu compra en *{negocio}*.\n\n"
-                "*Detalle:*\n{items}\n"
-                "*TOTAL: ${total}*\n"
-                "Pagado: ${pagado}\n"
-                "Saldo: ${saldo}\n\n"
-                "¡Esperamos verte pronto! 👋"
-            )
-        }
-        changed = False
-        for b in businesses:
-            if not b.whatsapp_templates:
-                b.whatsapp_templates = default_templates
-                changed = True
-        if changed:
-            db.session.commit()
-        return jsonify({"businesses": [b.to_dict() for b in businesses]})
+        try:
+            profile_started_at = time.perf_counter()
+            profile = {"endpoint": "businesses.list"}
+            payload = _get_business_bootstrap_payload(g.current_user, preferred_business_id=request.args.get("preferred_business_id"), profile=profile)
+            response = jsonify({"businesses": payload.get("businesses", [])})
+            return _attach_profile_headers(response, _finalize_profile(profile, profile_started_at))
+        except Exception as e:
+            import traceback
+            traceback.print_exc()
+            return jsonify({"error": str(e)}), 500
 
     @app.route("/api/businesses", methods=["POST"])
     @token_required
@@ -1380,6 +3023,13 @@ def create_app(config_class=None):
         
         if not name:
             return jsonify({"error": "Nombre del negocio es requerido"}), 400
+
+        account_access_allowed, account_access = ensure_account_access_allowed(g.current_user)
+        if not account_access_allowed:
+            return jsonify({
+                "error": "Necesitas un plan activo para configurar tu primer negocio.",
+                "account_access": account_access,
+            }), 403
 
         # Verificar límite del plan free
         if g.current_user.plan == "free":
@@ -1412,19 +3062,795 @@ def create_app(config_class=None):
             name=name,
             currency=data.get("currency", "COP"),
             timezone=data.get("timezone", "America/Bogota"),
-            settings=data.get("settings", {}),
+            settings=normalize_business_settings(data.get("settings", {})),
             whatsapp_templates=default_templates
         )
 
         db.session.add(business)
         db.session.commit()
 
-        return jsonify({"business": business.to_dict()}), 201
+        return jsonify({"business": attach_modules_to_business_dict(business)}), 201
+
+    @app.route("/api/businesses/<int:business_id>/team", methods=["GET"])
+    @token_required
+    @permission_required("team.manage")
+    def get_team_members(business_id):
+        # 1. Real members
+        members = TeamMember.query.filter_by(business_id=business_id).all()
+        members_data = [m.to_dict() for m in members]
+        
+        # 2. Pending invitations
+        invitations = TeamInvitation.query.filter_by(business_id=business_id, status="pending").all()
+        for inv in invitations:
+            members_data.append({
+                "id": -inv.id, # Negative ID to distinguish invitations
+                "business_id": business_id,
+                "user_id": 0,
+                "user_name": "",
+                "user_email": inv.email,
+                "role": inv.role.name if inv.role else "Unknown",
+                "role_id": inv.role_id,
+                "status": "invited",
+                "created_at": inv.created_at.isoformat()
+            })
+            
+        return jsonify({"members": members_data})
+
+    @app.route("/api/businesses/<int:business_id>/team/invite", methods=["POST"])
+    @token_required
+    @permission_required("team.manage")
+    def invite_team_member(business_id):
+        data = request.get_json()
+        email = data.get("email", "").strip().lower()
+        role_id = data.get("role_id")
+        
+        if not email or not role_id:
+            return jsonify({"error": "Email y rol requeridos"}), 400
+
+        # Fix: Ensure role_id is valid integer
+        try:
+            role_id = int(role_id)
+        except ValueError:
+            return jsonify({"error": "ID de rol inválido"}), 400
+            
+        # Validar si ya es miembro
+        existing_user = User.query.filter_by(email=email).first()
+        if existing_user:
+            # Check ownership
+            b = Business.query.get(business_id)
+            if b.user_id == existing_user.id:
+                 return jsonify({"error": "El usuario es el dueño del negocio"}), 400
+                 
+            member = TeamMember.query.filter_by(business_id=business_id, user_id=existing_user.id).first()
+            if member:
+                return jsonify({"error": "El usuario ya es miembro del equipo"}), 400
+        
+        # Validar si ya hay invitación pendiente
+        # Fix: Check expiration too? For now, just check pending status.
+        existing_invite = TeamInvitation.query.filter_by(business_id=business_id, email=email, status="pending").first()
+        if existing_invite:
+             # If exists, maybe we should resend? Or just return error?
+             # Let's return error but maybe with a specific code so frontend can handle it (e.g. "Resend?")
+             # For now, stick to error.
+             return jsonify({"error": "Ya existe una invitación pendiente para este email"}), 400
+             
+        # Crear invitación
+        import secrets
+        token = secrets.token_urlsafe(32)
+        expires = datetime.utcnow() + timedelta(days=7)
+        
+        invite = TeamInvitation(
+            business_id=business_id,
+            email=email,
+            role_id=role_id,
+            token=token,
+            expires_at=expires,
+            invited_by=g.current_user.id
+        )
+        db.session.add(invite)
+        db.session.flush()
+        _record_business_audit(
+            business_id=business_id,
+            actor_user=g.current_user,
+            module="team",
+            entity_type="team_invitation",
+            entity_id=invite.id,
+            action="invite",
+            summary=f"Invitó a {email} al equipo",
+            detail="Se generó una invitación de equipo para el negocio.",
+            metadata=_build_audit_metadata(
+                source_path="/settings?section=team",
+                email=email,
+                role_id=role_id,
+                invitation_status=invite.status,
+            ),
+            after=_audit_snapshot("team_invitation", invite),
+        )
+        db.session.commit()
+        
+        # Enviar email (simulado o real)
+        email_result = {"success": False}
+        invite_url = ""
+        
+        try:
+            # Determine Base URL - prioritize env vars
+            client_url = os.getenv("CLIENT_URL") or os.getenv("PUBLIC_BASE_URL") or current_app.config.get("CLIENT_URL", "http://localhost:5173")
+            client_url = client_url.rstrip("/")
+            invite_url = f"{client_url}/accept-invite?token={token}"
+            
+            # Obtener nombre del negocio
+            business_name = Business.query.get(business_id).name
+            
+            print(f"[INVITE LOG] Sending invitation to {email} for business {business_name} (ID: {business_id})")
+            print(f"[INVITE LOG] Token: {token}")
+            print(f"[INVITE LOG] Link: {invite_url}")
+            
+            email_result = AuthManager.send_invitation_email(email, business_name, invite_url)
+            
+            # Update invitation status based on email result
+            invite.provider = email_result.get("provider")
+            invite.send_attempts += 1
+            invite.last_sent_at = datetime.utcnow()
+            
+            if email_result.get("success"):
+                invite.delivery_status = "sent"
+                if email_result.get("message_id"):
+                    invite.message_id = email_result.get("message_id")
+                print(f"[INVITE SUCCESS] Email sent to {email}. Message ID: {invite.message_id}")
+            else:
+                invite.delivery_status = "failed"
+                invite.last_email_error = str(email_result.get("error"))
+                print(f"[INVITE FAILED] Failed to send invite email: {email_result}")
+            
+            db.session.commit()
+            
+        except Exception as e:
+            print(f"[INVITE EXCEPTION] Error enviando email: {e}")
+            invite.delivery_status = "error"
+            invite.last_email_error = str(e)
+            db.session.commit()
+            import traceback
+            traceback.print_exc()
+            email_result = {"success": False, "error": str(e)}
+        
+        is_dev = os.getenv("FLASK_ENV") == "development" or os.getenv("APP_ENV") == "dev"
+        
+        response_data = {
+            "message": "Invitación creada" if email_result.get("success") else "Invitación creada pero falló el envío del correo",
+            "invitation": invite.to_dict(), 
+            "email_sent": email_result.get("success", False),
+            "invite_url": invite_url, # Always return for fallback
+            "provider_error": email_result.get("error") if not email_result.get("success") else None
+        }
+        
+        if is_dev:
+            response_data["debug_token"] = token
+            response_data["email_details"] = email_result
+            if email_result.get("dev_url"):
+                response_data["dev_url"] = email_result.get("dev_url")
+            
+        return jsonify(response_data), 200 if email_result.get("success") else 202
+
+    @app.route("/api/roles", methods=["GET"])
+    @token_required
+    def get_roles():
+        business_id = request.args.get("business_id")
+        
+        target_business_id = None
+        if business_id:
+            try:
+                target_business_id = int(business_id)
+            except ValueError:
+                pass
+        elif g.current_user.account_type == 'team_member' and g.current_user.linked_business_id:
+            target_business_id = g.current_user.linked_business_id
+            
+        query = Role.query
+        
+        if target_business_id:
+            # Business Context: Custom roles OR System roles (Templates)
+            # EXCLUDE Platform Administration roles (SUPERADMIN)
+            query = query.filter(
+                or_(
+                    Role.business_id == target_business_id,
+                    and_(Role.is_system == True, Role.name != 'SUPERADMIN')
+                )
+            )
+        else:
+            # Global Context: System roles and Global Custom roles
+            query = query.filter(or_(Role.is_system == True, Role.business_id == None))
+        
+        roles = query.all()
+        plan = "basic"
+        active_modules = set()
+        operational_profile = {}
+        commercial_sections = {}
+        suggested_roles = []
+        if target_business_id:
+            business = Business.query.get(target_business_id)
+            if business:
+                business_dict = business.to_dict()
+                business_dict["settings"] = normalize_business_settings(business_dict.get("settings"))
+                modules = get_business_modules(target_business_id)
+                rbac_metadata = _resolve_business_rbac_metadata(g.current_user, business_dict, modules)
+                plan = rbac_metadata["plan"]
+                active_modules = rbac_metadata["active_modules"]
+                operational_profile = rbac_metadata["operational_profile"]
+                commercial_sections = rbac_metadata["commercial_sections"]
+                suggested_roles = rbac_metadata["suggested_roles"]
+        serialized_roles = [
+            serialize_role_definition(
+                role,
+                plan=plan,
+                operational_profile=operational_profile,
+                active_modules=active_modules,
+                commercial_sections=commercial_sections,
+            )
+            for role in roles
+        ]
+        return jsonify({
+            "roles": serialized_roles,
+            "suggested_roles": suggested_roles,
+            "rbac": {
+                "plan": plan,
+                "operational_profile": operational_profile,
+                "commercial_sections": commercial_sections,
+            },
+        })
+
+    @app.route("/api/permissions", methods=["GET"])
+    @token_required
+    def get_permissions():
+        scope = request.args.get('scope')
+        business_id = request.args.get("business_id")
+        grouped = {}
+        if scope == 'system' and g.current_user.is_admin:
+            perms = Permission.query.filter(Permission.scope == 'system').all()
+            for permission in perms:
+                if permission.category not in grouped:
+                    grouped[permission.category] = []
+                grouped[permission.category].append(permission.to_dict())
+            return jsonify({"permissions": grouped})
+
+        definitions = list_business_permission_definitions(include_compatibility=False)
+        if business_id:
+            try:
+                target_business_id = int(business_id)
+            except (TypeError, ValueError):
+                target_business_id = None
+            if target_business_id:
+                business = Business.query.get(target_business_id)
+                if business:
+                    business_dict = business.to_dict()
+                    business_dict["settings"] = normalize_business_settings(business_dict.get("settings"))
+                    modules = get_business_modules(target_business_id)
+                    rbac_metadata = _resolve_business_rbac_metadata(g.current_user, business_dict, modules)
+                    filtered = []
+                    for definition in definitions:
+                        resolved = resolve_effective_permissions(
+                            plan=rbac_metadata["plan"],
+                            operational_profile=rbac_metadata["operational_profile"],
+                            active_modules=rbac_metadata["active_modules"],
+                            base_permissions=[definition["name"]],
+                            commercial_sections=rbac_metadata["commercial_sections"],
+                        )
+                        if definition["name"] in resolved["canonical_permissions"]:
+                            filtered.append(definition)
+                    definitions = filtered
+        for definition in definitions:
+            if definition["category"] not in grouped:
+                grouped[definition["category"]] = []
+            grouped[definition["category"]].append(definition)
+        return jsonify({"permissions": grouped})
+
+    @app.route("/api/roles", methods=["POST"])
+    @token_required
+    @permission_required("team.manage")
+    def create_role():
+        data = request.get_json() or {}
+        name = data.get("name", "").strip().upper()
+        description = data.get("description", "")
+        permissions = normalize_permission_names(data.get("permissions", []))
+        business_id = data.get("business_id")
+        
+        # Resolve business_id if not provided but context exists
+        if not business_id and g.current_user.account_type == 'team_member':
+            business_id = g.current_user.linked_business_id
+
+        if not name:
+            return jsonify({"error": "Nombre del rol requerido"}), 400
+
+        # Check existing in this context
+        query = Role.query.filter_by(name=name)
+        if business_id:
+            query = query.filter_by(business_id=business_id)
+        else:
+            query = query.filter_by(business_id=None) # Global?
+            
+        existing = query.first()
+        if existing:
+            return jsonify({"error": "El rol ya existe en este contexto"}), 400
+
+        role = Role(name=name, description=description, is_system=False, business_id=business_id)
+        db.session.add(role)
+        db.session.flush()
+
+        # Add permissions
+        for perm_name in permissions:
+            perm = _ensure_permission_record(perm_name)
+            if perm:
+                # Security: Prevent assigning system permissions to business roles
+                if business_id and perm.scope == 'system':
+                    return jsonify({"error": f"No se pueden asignar permisos de sistema ({perm.name}) a roles de negocio"}), 400
+                
+                rp = RolePermission(role_id=role.id, permission_id=perm.id)
+                db.session.add(rp)
+
+        _log_audit(g.current_user, "create", "role", role.id, None, {"name": name, "permissions": permissions, "business_id": business_id})
+        db.session.commit()
+        if business_id:
+            business = Business.query.get(business_id)
+            business_dict = business.to_dict() if business else {"settings": {}}
+            business_dict["settings"] = normalize_business_settings(business_dict.get("settings"))
+            modules = get_business_modules(business_id)
+            rbac_metadata = _resolve_business_rbac_metadata(g.current_user, business_dict, modules)
+            return jsonify(
+                serialize_role_definition(
+                    role,
+                    plan=rbac_metadata["plan"],
+                    operational_profile=rbac_metadata["operational_profile"],
+                    active_modules=rbac_metadata["active_modules"],
+                    commercial_sections=rbac_metadata["commercial_sections"],
+                )
+            ), 201
+        return jsonify(role.to_dict()), 201
+
+    @app.route("/api/roles/<int:role_id>", methods=["PUT"])
+    @token_required
+    @permission_required("team.manage")
+    def update_role(role_id):
+        role = Role.query.get(role_id)
+        if not role:
+            return jsonify({"error": "Rol no encontrado"}), 404
+
+        data = request.get_json()
+        if not isinstance(data, dict):
+            data = {}
+        business_id = data.get("business_id")
+        if "permissions" in data:
+            data["permissions"] = normalize_permission_names(data.get("permissions", []))
+        
+        # Resolve business_id if not provided
+        if not business_id and g.current_user.account_type == 'team_member':
+            business_id = g.current_user.linked_business_id
+            
+        try:
+            # HANDLE SYSTEM ROLE OVERRIDE
+            if role.is_system:
+                if not business_id:
+                     return jsonify({"error": "Se requiere contexto de negocio para modificar un rol de sistema"}), 400
+                
+                print(f"[RBAC] Overriding system role {role.name} for business {business_id}")
+                
+                # Create new custom role
+                new_name = f"{role.name} (Custom)"
+                # Check if already exists to avoid duplicates
+                existing_custom = Role.query.filter_by(business_id=business_id, name=new_name).first()
+                if existing_custom:
+                    # If already exists, maybe we should update THAT one instead? 
+                    # But the user clicked on the System Role ID.
+                    # Let's switch to the existing custom role
+                    role = existing_custom
+                    print(f"[RBAC] Switched to existing custom role {role.id}")
+                else:
+                    new_role = Role(
+                        name=new_name, 
+                        description=role.description, 
+                        is_system=False, 
+                        business_id=business_id
+                    )
+                    db.session.add(new_role)
+                    db.session.flush() # Get ID
+                    
+                    # Copy old permissions first? Or just use new ones from payload?
+                    # The payload contains the DESIRED permissions. So use them.
+                    
+                    # Migrate Team Members
+                    # Find members of this business who have the OLD role
+                    members_to_migrate = TeamMember.query.filter_by(business_id=business_id, role_id=role.id).all()
+                    for m in members_to_migrate:
+                        m.role_id = new_role.id
+                        
+                    # Also UserRoles?
+                    # UserRoles are for Personal account roles usually, or global admin. 
+                    # Team Members use TeamMember table.
+                    
+                    role = new_role # Switch context to new role
+            
+            # Update Role (Now it's either a custom role or the new one)
+            if "description" in data:
+                role.description = data["description"]
+            
+            if "permissions" in data:
+                # Clear existing
+                old_perms = RolePermission.query.filter_by(role_id=role.id).all()
+                for op in old_perms:
+                    db.session.delete(op)
+                
+                # Add new
+                seen_perms = set()
+                for perm_name in data["permissions"]:
+                    if perm_name in seen_perms:
+                        continue
+                    seen_perms.add(perm_name)
+                    
+                    perm = _ensure_permission_record(perm_name)
+                    if perm:
+                        # Security: Prevent assigning system permissions to business roles
+                        if role.business_id and perm.scope == 'system':
+                             return jsonify({"error": f"No se pueden asignar permisos de sistema ({perm.name}) a roles de negocio"}), 400
+
+                        rp = RolePermission(role_id=role.id, permission_id=perm.id)
+                        db.session.add(rp)
+
+            # Log audit
+            safe_data = data.copy() if data else {}
+            _log_audit(g.current_user, "update", "role", role.id, None, safe_data)
+            
+            db.session.commit()
+            refreshed_role = Role.query.get(role.id)
+            if refreshed_role and role.business_id:
+                business = Business.query.get(role.business_id)
+                business_dict = business.to_dict() if business else {"settings": {}}
+                business_dict["settings"] = normalize_business_settings(business_dict.get("settings"))
+                modules = get_business_modules(role.business_id)
+                rbac_metadata = _resolve_business_rbac_metadata(g.current_user, business_dict, modules)
+                return jsonify(
+                    serialize_role_definition(
+                        refreshed_role,
+                        plan=rbac_metadata["plan"],
+                        operational_profile=rbac_metadata["operational_profile"],
+                        active_modules=rbac_metadata["active_modules"],
+                        commercial_sections=rbac_metadata["commercial_sections"],
+                    )
+                )
+            return jsonify(role.to_dict())
+            
+        except Exception as e:
+            db.session.rollback()
+            import traceback
+            traceback.print_exc()
+            return jsonify({"error": str(e)}), 500
+
+    @app.route("/api/roles/<int:role_id>", methods=["DELETE"])
+    @token_required
+    @permission_required("team.manage")
+    def delete_role(role_id):
+        role = Role.query.get(role_id)
+        if not role:
+            return jsonify({"error": "Rol no encontrado"}), 404
+
+        if role.is_system:
+            return jsonify({"error": "No se pueden eliminar roles del sistema"}), 403
+
+        # Check usage
+        users_count = UserRole.query.filter_by(role_id=role_id).count()
+        team_count = TeamMember.query.filter_by(role_id=role_id).count()
+        
+        if users_count > 0 or team_count > 0:
+            return jsonify({"error": f"El rol está asignado a {users_count + team_count} usuarios/miembros"}), 400
+
+        _log_audit(g.current_user, "delete", "role", role.id, {"name": role.name}, None)
+        db.session.delete(role)
+        db.session.commit()
+        return jsonify({"message": "Rol eliminado"})
+        
+    @app.route("/api/businesses/<int:business_id>/team/<member_id>", methods=["PUT"])
+    @token_required
+    @permission_required("team.manage")
+    def update_team_member(business_id, member_id):
+        data = request.get_json()
+        new_role_id = data.get("role_id")
+        
+        try:
+            member_id = int(member_id)
+        except ValueError:
+            return jsonify({"error": "ID inválido"}), 400
+
+        member = TeamMember.query.get(member_id)
+        if not member or member.business_id != business_id:
+            return jsonify({"error": "Miembro no encontrado"}), 404
+            
+        if not new_role_id:
+            return jsonify({"error": "Rol requerido"}), 400
+            
+        role = Role.query.get(new_role_id)
+        if not role:
+            return jsonify({"error": "Rol no válido"}), 400
+            
+        old_role_name = member.role.name if member.role else "None"
+        before_snapshot = _audit_snapshot("team_member", member)
+        member.role_id = new_role_id
+        _record_business_audit(
+            business_id=business_id,
+            actor_user=g.current_user,
+            module="team",
+            entity_type="team_member",
+            entity_id=member.id,
+            action="assign",
+            summary=f"Actualizó el rol de un miembro del equipo a {role.name}",
+            detail=f"El miembro pasó de {old_role_name} a {role.name}.",
+            metadata=_build_audit_metadata(
+                source_path="/settings?section=team",
+                old_role=old_role_name,
+                new_role=role.name,
+                member_user_id=member.user_id,
+            ),
+            before=before_snapshot,
+            after=_audit_snapshot("team_member", member),
+        )
+        
+        # Notify user via email
+        if member.user and member.user.email:
+            try:
+                AuthManager._send_brevo_email(
+                    member.user.email,
+                    "Tu rol ha sido actualizado",
+                    f"Hola {member.user.name}, tu rol en el equipo ha sido actualizado a: {role.name}.",
+                    None
+                )
+            except Exception as e:
+                print(f"Error sending role update email: {e}")
+        
+        db.session.commit()
+        
+        return jsonify(member.to_dict())
+
+    @app.route("/api/businesses/<int:business_id>/team/<member_id>", methods=["DELETE"])
+    @token_required
+    @permission_required("team.manage")
+    def remove_team_member(business_id, member_id):
+        print(f"[DEBUG] Removing team member: business_id={business_id}, member_id={member_id}")
+        try:
+            member_id = int(member_id)
+        except ValueError:
+            return jsonify({"error": "ID inválido"}), 400
+
+        # Handle negative IDs for invitations
+        if member_id < 0:
+            invite_id = abs(member_id)
+            print(f"[DEBUG] Looking for invitation {invite_id}")
+            try:
+                invite = TeamInvitation.query.get(invite_id)
+                if not invite:
+                    print(f"[DEBUG] Invitation {invite_id} not found")
+                    return jsonify({"error": "Invitación no encontrada"}), 404
+                
+                if invite.business_id != business_id:
+                    print(f"[DEBUG] Invitation {invite_id} belongs to business {invite.business_id}, not {business_id}")
+                    return jsonify({"error": "Invitación no encontrada"}), 404
+                
+                print(f"[DEBUG] Deleting invitation {invite_id}")
+                _record_business_audit(
+                    business_id=business_id,
+                    actor_user=g.current_user,
+                    module="team",
+                    entity_type="team_invitation",
+                    entity_id=invite.id,
+                    action="delete",
+                    summary=f"Canceló la invitación de {invite.email}",
+                    detail="Se canceló una invitación pendiente del equipo.",
+                    metadata=_build_audit_metadata(
+                        source_path="/settings?section=team",
+                        email=invite.email,
+                        role_id=invite.role_id,
+                    ),
+                    before=_audit_snapshot("team_invitation", invite),
+                )
+                db.session.delete(invite)
+                db.session.commit()
+                print(f"[DEBUG] Invitation {invite_id} deleted successfully")
+                return jsonify({"message": "Invitación cancelada"})
+            except Exception as e:
+                db.session.rollback()
+                print(f"[ERROR] Failed to delete invitation: {e}")
+                import traceback
+                traceback.print_exc()
+                return jsonify({"error": str(e)}), 500
+        
+        member = TeamMember.query.get(member_id)
+        if not member or member.business_id != business_id:
+            return jsonify({"error": "Miembro no encontrado"}), 404
+            
+        before_snapshot = _audit_snapshot("team_member", member)
+        _record_business_audit(
+            business_id=business_id,
+            actor_user=g.current_user,
+            module="team",
+            entity_type="team_member",
+            entity_id=member.id,
+            action="delete",
+            summary="Eliminó un miembro del equipo",
+            detail="Se retiró a un miembro activo del equipo del negocio.",
+            metadata=_build_audit_metadata(
+                source_path="/settings?section=team",
+                member_user_id=member.user_id,
+                role_id=member.role_id,
+            ),
+            before=before_snapshot,
+        )
+        db.session.delete(member)
+        db.session.commit()
+        return jsonify({"message": "Miembro eliminado"})
+        
+    @app.route("/api/invitations/info", methods=["GET"])
+    def get_invitation_info():
+        token = request.args.get("token")
+        if not token:
+            return jsonify({"error": "Token requerido"}), 400
+        
+        invite = TeamInvitation.query.filter_by(token=token).first()
+        if not invite:
+            return jsonify({"error": "Invitación no encontrada"}), 404
+            
+        if invite.status != "pending":
+            return jsonify({"error": f"Invitación no válida (Estado: {invite.status})"}), 400
+            
+        if invite.expires_at < datetime.utcnow():
+            invite.status = "expired"
+            db.session.commit()
+            return jsonify({"error": "La invitación ha expirado"}), 400
+            
+        business = Business.query.get(invite.business_id)
+        
+        return jsonify({
+            "email": invite.email,
+            "business_name": business.name if business else "Desconocido",
+            "role_name": invite.role.name if invite.role else "Miembro",
+            "inviter_name": invite.inviter.name if invite.inviter else "Sistema"
+        })
+
+    @app.route("/api/invitations/register", methods=["POST"])
+    def register_via_invitation():
+        data = request.get_json()
+        token = data.get("token")
+        name = data.get("name")
+        password = data.get("password")
+        
+        if not token or not name or not password:
+            return jsonify({"error": "Faltan datos requeridos"}), 400
+            
+        invite = TeamInvitation.query.filter_by(token=token).first()
+        if not invite:
+            return jsonify({"error": "Invitación no encontrada"}), 404
+            
+        if invite.status != "pending":
+            return jsonify({"error": "Invitación no válida"}), 400
+            
+        if invite.expires_at < datetime.utcnow():
+            return jsonify({"error": "La invitación ha expirado"}), 400
+
+        # Check if TEAM user exists for this business
+        existing_team_user = User.query.filter_by(
+            email=invite.email.lower(), 
+            account_type='team_member',
+            linked_business_id=invite.business_id
+        ).first()
+        
+        if existing_team_user:
+            return jsonify({"error": "Ya tienes una cuenta de equipo para este negocio. Por favor inicia sesión."}), 400
+            
+        # Create User (Team Member Entity)
+        new_user = User(
+            email=invite.email.lower(),
+            name=name,
+            plan="free",
+            email_verified=True, # Verified via invite token
+            is_active=True,
+            account_type='team_member',
+            linked_business_id=invite.business_id
+        )
+        new_user.set_password(password)
+        db.session.add(new_user)
+        db.session.flush() # Get ID
+        
+        # Create Team Member
+        new_member = TeamMember(
+             business_id=invite.business_id,
+             user_id=new_user.id,
+             role_id=invite.role_id,
+             status="active"
+        )
+        db.session.add(new_member)
+        
+        invite.status = "accepted"
+        
+        # Ensure default role (Not needed for team member usually, but safe)
+        # _ensure_default_role(new_user) 
+        
+        db.session.commit()
+        
+        # Auto Login
+        access_token = create_token(new_user.id, "access")
+        refresh_token = create_token(new_user.id, "refresh")
+        
+        return jsonify({
+            "message": "Registro exitoso",
+            "user": new_user.to_dict(),
+            "access_token": access_token,
+            "refresh_token": refresh_token
+        })
+
+    @app.route("/api/invitations/accept", methods=["POST"])
+    @token_required
+    def accept_invitation():
+        data = request.get_json()
+        token = data.get("token")
+        
+        if not token:
+            return jsonify({"error": "Token requerido"}), 400
+
+        invite = TeamInvitation.query.filter_by(token=token).first()
+        if not invite:
+            return jsonify({"error": "Invitación no encontrada"}), 404
+            
+        if invite.status == "accepted":
+             # Check if user is already a member
+             member = TeamMember.query.filter_by(business_id=invite.business_id, user_id=g.current_user.id).first()
+             if member:
+                  return jsonify({"message": "Ya eres miembro del equipo (invitación ya aceptada)", "business_id": invite.business_id})
+             else:
+                  return jsonify({"error": "Esta invitación ya fue usada"}), 400
+
+        if invite.status != "pending":
+             return jsonify({"error": f"Invitación no válida (Estado: {invite.status})"}), 400
+             
+        if invite.expires_at < datetime.utcnow():
+             invite.status = "expired"
+             db.session.commit()
+             return jsonify({"error": "La invitación ha expirado"}), 400
+            
+        # Check email match? Ideally yes, but if user registered with different email?
+        # Let's be strict: email must match.
+        if invite.email.lower() != g.current_user.email.lower():
+             return jsonify({"error": f"Esta invitación fue enviada a {invite.email}, pero tu cuenta es {g.current_user.email}. Por favor inicia sesión con la cuenta correcta o regístrate con el correo invitado."}), 403
+            
+        # Check if already member
+        existing_member = TeamMember.query.filter_by(business_id=invite.business_id, user_id=g.current_user.id).first()
+        if existing_member:
+             invite.status = "accepted"
+             db.session.commit()
+             return jsonify({"message": "Ya eres miembro del equipo", "business_id": invite.business_id})
+
+        # Crear miembro
+        new_member = TeamMember(
+             business_id=invite.business_id,
+             user_id=g.current_user.id,
+             role_id=invite.role_id,
+             status="active"
+        )
+        db.session.add(new_member)
+        
+        invite.status = "accepted"
+        # invite.accepted_at = datetime.utcnow() # If model doesn't support this field, skip it.
+        
+        db.session.commit()
+        
+        return jsonify({"message": "Invitación aceptada exitosamente", "business_id": invite.business_id})
 
     @app.route("/api/businesses/<int:business_id>", methods=["GET"])
     @token_required
     def get_business(business_id):
+        member = None
+        # 1. Try owner
         business = Business.query.filter_by(id=business_id, user_id=g.current_user.id).first()
+        
+        # 2. Try member
+        if not business:
+            member = TeamMember.query.filter_by(user_id=g.current_user.id, business_id=business_id, status='active').first()
+            if member:
+                business = member.business
+
         if not business:
             return jsonify({"error": "Negocio no encontrado"}), 404
         if not business.whatsapp_templates:
@@ -1445,16 +3871,54 @@ def create_app(config_class=None):
                     "¡Esperamos verte pronto! 👋"
                 )
             }
-            db.session.commit()
-        return jsonify({"business": business.to_dict()})
+            # Solo guardar si es owner (evitar errores de permisos de escritura si el miembro no debe)
+            if business.user_id == g.current_user.id:
+                db.session.commit()
+                
+        b_dict = business.to_dict()
+        if business.user_id == g.current_user.id:
+            b_dict['role'] = 'OWNER'
+            b_dict['permissions'] = ['*']
+        else:
+            # Re-fetch member if needed, but we have it from above if we entered branch 2
+            # If we entered branch 1 (owner), we are done.
+            # Wait, if we are in branch 1, member is None.
+            # If we are in branch 2, member is set.
+            # But what if I am owner? member is None.
+            # What if I am member? business is found via member.
+            
+            # Logic check:
+            # If business.user_id == current_user.id -> Owner.
+            # Else -> Member (or error, but we checked existence).
+            
+            if not member: 
+                 # Could be that we found business via ID but we are not owner?
+                 # Ah, branch 1 checks user_id=current_user.id.
+                 # Branch 2 checks member table.
+                 # So if we are here, and not owner, we MUST be member.
+                 # BUT, variable 'member' is only set if we entered branch 2.
+                 # If we entered branch 1, member is None.
+                 # So if business.user_id != g.current_user.id, we must have found it via branch 2, so member is set.
+                 pass
+
+        if business.user_id != g.current_user.id and member and member.role:
+             b_dict['role'] = member.role.name
+             b_dict['permissions'] = [rp.permission.name for rp in member.role.permissions if rp.permission]
+        elif business.user_id != g.current_user.id:
+             b_dict['role'] = 'MEMBER'
+             b_dict['permissions'] = []
+
+        return jsonify({"business": attach_modules_to_business_dict(business, b_dict)})
 
     @app.route("/api/businesses/<int:business_id>", methods=["PUT"])
     @token_required
+    @permission_required("business.update")
     def update_business(business_id):
-        business = Business.query.filter_by(id=business_id, user_id=g.current_user.id).first()
+        business = Business.query.get(business_id)
         if not business:
             return jsonify({"error": "Negocio no encontrado"}), 404
 
+        before_snapshot = _audit_snapshot("business", business)
         data = request.get_json() or {}
         if "name" in data:
             business.name = data["name"].strip()
@@ -1477,15 +3941,146 @@ def create_app(config_class=None):
             
         if "settings" in data:
             # Merge settings (preserve existing logo if not provided)
-            current_settings = business.settings or {}
+            current_settings = normalize_business_settings(business.settings)
             new_settings = data["settings"]
             # Ensure we don't overwrite the logo if it's not in the new settings but exists in current
             if "logo" in current_settings and "logo" not in new_settings:
                 new_settings["logo"] = current_settings["logo"]
-            business.settings = new_settings
+            business.settings = normalize_business_settings(new_settings)
 
+        after_snapshot = _audit_snapshot("business", business)
+        _record_business_audit(
+            business_id=business_id,
+            actor_user=g.current_user,
+            module="settings",
+            entity_type="business",
+            entity_id=business.id,
+            action="update",
+            summary=f"Actualizó la configuración del negocio {business.name}",
+            detail="Se modificaron datos generales, metas o preferencias del negocio.",
+            metadata=_build_audit_metadata(changed_fields=sorted((data or {}).keys())),
+            before=before_snapshot,
+            after=after_snapshot,
+        )
         db.session.commit()
-        return jsonify({"business": business.to_dict()})
+        return jsonify({"business": attach_modules_to_business_dict(business)})
+
+    @app.route("/api/businesses/<int:business_id>/modules", methods=["GET"])
+    @token_required
+    def get_business_modules_endpoint(business_id):
+        business = Business.query.get(business_id)
+        if not business:
+            return jsonify({"error": "Negocio no encontrado"}), 404
+        if not has_permission(g.current_user, "business.update", business_id):
+            return jsonify({"error": "Permiso requerido: business.update"}), 403
+        return jsonify({"modules": get_business_modules(business_id)})
+
+    @app.route("/api/businesses/<int:business_id>/modules", methods=["PUT", "PATCH"])
+    @token_required
+    def update_business_modules_endpoint(business_id):
+        business = Business.query.get(business_id)
+        if not business:
+            return jsonify({"error": "Negocio no encontrado"}), 404
+        if not has_permission(g.current_user, "business.update", business_id):
+            return jsonify({"error": "Permiso requerido: business.update"}), 403
+
+        data = request.get_json() or {}
+        modules_payload = data.get("modules")
+
+        if not isinstance(modules_payload, dict):
+            return jsonify({"error": "El payload debe incluir un objeto 'modules' válido"}), 400
+
+        invalid_keys = [key for key in modules_payload.keys() if key not in BUSINESS_MODULE_DEFAULTS]
+        if invalid_keys:
+            return jsonify({"error": "Se recibieron module_key inválidas", "invalid_keys": invalid_keys}), 400
+
+        invalid_values = [key for key, value in modules_payload.items() if not isinstance(value, bool)]
+        if invalid_values:
+            return jsonify({"error": "Cada módulo debe enviarse como boolean", "invalid_keys": invalid_values}), 400
+
+        module_map = ensure_business_modules_initialized(business_id, auto_commit=False)
+        before_modules = {module_key: bool(module_row.enabled) for module_key, module_row in module_map.items()}
+
+        for module_key, enabled in modules_payload.items():
+            module_row = module_map[module_key]
+            module_row.enabled = enabled
+
+        after_modules = {module_key: bool(module_row.enabled) for module_key, module_row in module_map.items()}
+        changed_modules = [
+            {
+                "module_key": module_key,
+                "before": before_modules.get(module_key),
+                "after": after_modules.get(module_key),
+            }
+            for module_key in modules_payload.keys()
+            if before_modules.get(module_key) != after_modules.get(module_key)
+        ]
+        _record_business_audit(
+            business_id=business_id,
+            actor_user=g.current_user,
+            module="settings",
+            entity_type="business_modules",
+            entity_id=business_id,
+            action="update",
+            summary=f"Actualizó los módulos del negocio {business.name}",
+            detail="Se activaron o desactivaron módulos del negocio.",
+            metadata=_build_audit_metadata(changed_modules=changed_modules),
+            before=before_modules,
+            after=after_modules,
+        )
+        db.session.commit()
+        return jsonify({"modules": get_business_modules(business_id)})
+
+    @app.route("/api/businesses/<int:business_id>/audit", methods=["GET"])
+    @token_required
+    def get_business_audit_logs(business_id):
+        business = Business.query.get(business_id)
+        if not business:
+            return jsonify({"error": "Negocio no encontrado"}), 404
+        if not _user_can_view_business_audit(g.current_user, business):
+            return jsonify({"error": "No tienes permisos para ver la auditoría del negocio"}), 403
+
+        page = max(request.args.get("page", 1, type=int), 1)
+        per_page = min(max(request.args.get("per_page", 20, type=int), 1), 100)
+        module = (request.args.get("module") or "").strip()
+        action = (request.args.get("action") or "").strip()
+        search = (request.args.get("q") or request.args.get("search") or "").strip()
+
+        query = AuditLog.query.filter(AuditLog.business_id == business_id)
+
+        if module:
+            query = query.filter(AuditLog.module == module)
+        if action:
+            query = query.filter(AuditLog.action == action)
+        if search:
+            pattern = f"%{search}%"
+            query = query.filter(
+                or_(
+                    AuditLog.actor_name.ilike(pattern),
+                    AuditLog.actor_role.ilike(pattern),
+                    AuditLog.summary.ilike(pattern),
+                    AuditLog.entity.ilike(pattern),
+                    AuditLog.entity_type.ilike(pattern),
+                    cast(AuditLog.metadata_json, String).ilike(pattern),
+                    cast(AuditLog.before_json, String).ilike(pattern),
+                    cast(AuditLog.after_json, String).ilike(pattern),
+                )
+            )
+
+        pagination = query.order_by(AuditLog.timestamp.desc()).paginate(
+            page=page,
+            per_page=per_page,
+            error_out=False,
+        )
+
+        return jsonify({
+            "logs": [log.to_dict() for log in pagination.items],
+            "entries": [present_audit_log(log) for log in pagination.items],
+            "total": pagination.total,
+            "page": page,
+            "per_page": per_page,
+            "pages": pagination.pages or 1,
+        })
 
     @app.route("/api/businesses/<int:business_id>/logo", methods=["POST"])
     @token_required
@@ -1509,9 +4104,23 @@ def create_app(config_class=None):
         file.save(filepath)
         
         # Update business settings with logo path
+        before_snapshot = _audit_snapshot("business", business)
         settings = business.settings or {}
         settings['logo'] = '/' + filepath.replace('\\', '/')
         business.settings = settings
+        _record_business_audit(
+            business_id=business_id,
+            actor_user=g.current_user,
+            module="settings",
+            entity_type="business",
+            entity_id=business.id,
+            action="update",
+            summary=f"Actualizó el logo del negocio {business.name}",
+            detail="Se cambió la imagen de logo del negocio.",
+            metadata=_build_audit_metadata(changed_fields=["settings.logo"]),
+            before=before_snapshot,
+            after=_audit_snapshot("business", business),
+        )
         db.session.commit()
         
         return jsonify({"logo_url": settings['logo']})
@@ -1530,9 +4139,10 @@ def create_app(config_class=None):
     # ========== PRODUCT ROUTES ==========
     @app.route("/api/businesses/<int:business_id>/products", methods=["GET"])
     @token_required
+    @module_required("products")
     @permission_required('products.read')
     def get_products(business_id):
-        business = Business.query.filter_by(id=business_id, user_id=g.current_user.id).first()
+        business = Business.query.get(business_id)
         if not business:
             return jsonify({"error": "Negocio no encontrado"}), 404
 
@@ -1552,9 +4162,10 @@ def create_app(config_class=None):
 
     @app.route("/api/businesses/<int:business_id>/products", methods=["POST"])
     @token_required
+    @module_required("products")
     @permission_required('products.create')
     def create_product(business_id):
-        business = Business.query.filter_by(id=business_id, user_id=g.current_user.id).first()
+        business = Business.query.get(business_id)
         if not business:
             return jsonify({"error": "Negocio no encontrado"}), 404
         # Plan FREE: limitar a 5 productos
@@ -1569,6 +4180,7 @@ def create_app(config_class=None):
         data = request.get_json() or {}
         name = data.get("name", "").strip()
         price = data.get("price")
+        product_type = str(data.get("type", "product") or "product").strip().lower() or "product"
 
         if not name:
             return jsonify({"error": "Nombre del producto es requerido"}), 400
@@ -1584,22 +4196,68 @@ def create_app(config_class=None):
             business_id=business_id,
             name=name,
             description=data.get("description", "").strip() or None,
-            type=data.get("type", "product"),
+            type=product_type,
             sku=data.get("sku", "").strip() or None,
             price=price,
             cost=data.get("cost"),
             unit=data.get("unit", "und"),
             stock=data.get("stock", 0),
-            low_stock_threshold=data.get("low_stock_threshold", 5)
+            low_stock_threshold=data.get("low_stock_threshold", 5),
+            fulfillment_mode=resolve_product_fulfillment_mode(
+                product=None,
+                business=business,
+                explicit_mode=data.get("fulfillment_mode") or ("service" if product_type == "service" else None),
+            ),
+            image=data.get("image")
         )
 
         db.session.add(product)
+        db.session.flush()
+
+        # GESTIÓN DE BARCODES
+        barcodes = data.get("barcodes", [])
+        if barcodes and isinstance(barcodes, list) and len(barcodes) > 0:
+            # Plan FREE: No permitir múltiples barcodes
+            if g.current_user.plan == "free":
+                return jsonify({
+                    "error": "Tu plan gratuito no soporta múltiples códigos de barras. Actualiza a Pro.",
+                    "upgrade_url": "/upgrade"
+                }), 403
+
+            for code in barcodes:
+                code = str(code).strip()
+                if code:
+                    # Verificar duplicados globales
+                    if ProductBarcode.query.filter_by(code=code).first():
+                        db.session.rollback()
+                        return jsonify({"error": f"El código de barras '{code}' ya está asignado a otro producto"}), 400
+                    
+                    new_barcode = ProductBarcode(product_id=product.id, code=code)
+                    db.session.add(new_barcode)
+
+        _record_business_audit(
+            business_id=business_id,
+            actor_user=g.current_user,
+            module="products",
+            entity_type="product",
+            entity_id=product.id,
+            action="create",
+            summary=f"Creó el producto {product.name}",
+            detail="Se registró un nuevo producto en el catálogo del negocio.",
+            metadata=_build_audit_metadata(
+                source_path="/products",
+                sku=product.sku,
+                product_type=product.type,
+            ),
+            after=_audit_snapshot("product", product),
+        )
         db.session.commit()
 
         return jsonify({"product": product.to_dict()}), 201
 
     @app.route("/api/businesses/<int:business_id>/products/<int:product_id>", methods=["GET"])
     @token_required
+    @module_required("products")
     def get_product(business_id, product_id):
         product = Product.query.filter_by(id=product_id, business_id=business_id).first()
         if not product:
@@ -1608,13 +4266,16 @@ def create_app(config_class=None):
 
     @app.route("/api/businesses/<int:business_id>/products/<int:product_id>", methods=["PUT"])
     @token_required
+    @module_required("products")
     @permission_required('products.update')
     def update_product(business_id, product_id):
         product = Product.query.filter_by(id=product_id, business_id=business_id).first()
         if not product:
             return jsonify({"error": "Producto no encontrado"}), 404
 
+        before_snapshot = _audit_snapshot("product", product)
         data = request.get_json() or {}
+        business = Business.query.get(business_id)
         if "name" in data:
             product.name = data["name"]
         if "description" in data:
@@ -1635,28 +4296,439 @@ def create_app(config_class=None):
             product.low_stock_threshold = float(data["low_stock_threshold"]) if data["low_stock_threshold"] else 5
         if "active" in data:
             product.active = bool(data["active"])
+        if "image" in data:
+            product.image = data["image"]
+        if "fulfillment_mode" in data or "type" in data:
+            requested_fulfillment_mode = data.get("fulfillment_mode") if "fulfillment_mode" in data else None
+            normalized_requested_fulfillment_mode = normalize_fulfillment_mode(requested_fulfillment_mode)
 
+            current_app.logger.warning(
+                "[products.update] payload fulfillment_mode=%s normalized=%s type=%s product_id=%s business_id=%s",
+                requested_fulfillment_mode,
+                normalized_requested_fulfillment_mode,
+                product.type,
+                product.id,
+                business_id,
+            )
+
+            if "fulfillment_mode" in data and requested_fulfillment_mode not in (None, "") and normalized_requested_fulfillment_mode is None:
+                return jsonify({"error": "fulfillment_mode inválido"}), 400
+
+            explicit_fulfillment_mode = (
+                normalized_requested_fulfillment_mode
+                if "fulfillment_mode" in data
+                else ("service" if product.type == "service" else product.fulfillment_mode)
+            )
+            resolved_fulfillment_mode = resolve_product_fulfillment_mode(
+                product=product,
+                business=business,
+                explicit_mode=explicit_fulfillment_mode,
+            )
+            current_app.logger.warning(
+                "[products.update] resolved fulfillment_mode=%s previous=%s product_id=%s",
+                resolved_fulfillment_mode,
+                product.fulfillment_mode,
+                product.id,
+            )
+            product.fulfillment_mode = resolved_fulfillment_mode
+            Product.query.filter_by(id=product.id, business_id=business_id).update(
+                {"fulfillment_mode": resolved_fulfillment_mode},
+                synchronize_session=False,
+            )
+
+        # GESTIÓN DE BARCODES
+        if "barcodes" in data and isinstance(data["barcodes"], list):
+            # Plan FREE: No permitir múltiples barcodes
+            if g.current_user.plan == "free" and len(data["barcodes"]) > 0:
+                return jsonify({
+                    "error": "Tu plan gratuito no soporta múltiples códigos de barras. Actualiza a Pro.",
+                    "upgrade_url": "/upgrade"
+                }), 403
+
+            # 1. Eliminar códigos actuales
+            ProductBarcode.query.filter_by(product_id=product.id).delete()
+
+            # 2. Agregar nuevos validando duplicados
+            for code in data["barcodes"]:
+                code = str(code).strip()
+                if code:
+                    existing = ProductBarcode.query.filter_by(code=code).first()
+                    if existing and existing.product_id != product.id:
+                        db.session.rollback()
+                        return jsonify({"error": f"El código de barras '{code}' ya está asignado a otro producto"}), 400
+
+                    db.session.add(ProductBarcode(product_id=product.id, code=code))
+
+        _record_business_audit(
+            business_id=business_id,
+            actor_user=g.current_user,
+            module="products",
+            entity_type="product",
+            entity_id=product.id,
+            action="update",
+            summary=f"Actualizó el producto {product.name}",
+            detail="Se modificaron datos del producto o sus códigos de barras.",
+            metadata=_build_audit_metadata(
+                source_path=f"/products/{product.id}",
+                changed_fields=sorted((data or {}).keys()),
+            ),
+            before=before_snapshot,
+            after=_audit_snapshot("product", product),
+        )
+        db.session.flush()
         db.session.commit()
+        db.session.refresh(product)
+        current_app.logger.warning(
+            "[products.update] persisted fulfillment_mode=%s product_id=%s business_id=%s",
+            product.fulfillment_mode,
+            product.id,
+            business_id,
+        )
         return jsonify({"product": product.to_dict()})
 
     @app.route("/api/businesses/<int:business_id>/products/<int:product_id>", methods=["DELETE"])
     @token_required
+    @module_required("products")
     @permission_required('products.delete')
     def delete_product(business_id, product_id):
         product = Product.query.filter_by(id=product_id, business_id=business_id).first()
         if not product:
             return jsonify({"error": "Producto no encontrado"}), 404
 
+        before_snapshot = _audit_snapshot("product", product)
+        _record_business_audit(
+            business_id=business_id,
+            actor_user=g.current_user,
+            module="products",
+            entity_type="product",
+            entity_id=product.id,
+            action="delete",
+            summary=f"Eliminó el producto {product.name}",
+            detail="Se eliminó un producto del catálogo del negocio.",
+            metadata=_build_audit_metadata(source_path="/products"),
+            before=before_snapshot,
+        )
         db.session.delete(product)
         db.session.commit()
         return jsonify({"ok": True})
 
-    # ========== CUSTOMER ROUTES ==========
+    # ========== INVENTORY MOVEMENTS ROUTES (BUSINESS) ==========
+    @app.route("/api/businesses/<int:business_id>/products/<int:product_id>/movements", methods=["GET"])
+    @token_required
+    @module_required("products")
+    @permission_required('products.read')
+    def get_product_movements(business_id, product_id):
+        product = Product.query.filter_by(id=product_id, business_id=business_id).first()
+        if not product:
+            return jsonify({"error": "Producto no encontrado"}), 404
+
+        # Business Plan Check (only for detailed history view)
+        if g.current_user.plan not in ["business"]:
+             return jsonify({
+                "error": "El historial detallado es exclusivo para usuarios Business",
+                "upgrade_required": True
+            }), 403
+
+        limit = request.args.get("limit", 50, type=int)
+        movements = product.movements.order_by(ProductMovement.created_at.desc()).limit(limit).all()
+        return jsonify({"movements": [m.to_dict() for m in movements]})
+
+    @app.route("/api/businesses/<int:business_id>/products/<int:product_id>/movements", methods=["POST"])
+    @token_required
+    @module_required("products")
+    @permission_required('products.update')
+    def create_product_movement(business_id, product_id):
+        product = Product.query.filter_by(id=product_id, business_id=business_id).first()
+        if not product:
+            return jsonify({"error": "Producto no encontrado"}), 404
+
+        # Business Plan Check (only for advanced movements with reasons)
+        if g.current_user.plan not in ["business"]:
+             return jsonify({
+                "error": "Los movimientos avanzados son exclusivos para usuarios Business",
+                "upgrade_required": True
+            }), 403
+
+        data = request.get_json() or {}
+        type_ = data.get("type") # in, out
+        
+        try:
+            quantity = float(data.get("quantity", 0))
+            if quantity <= 0:
+                raise ValueError()
+        except:
+             return jsonify({"error": "Cantidad debe ser mayor a 0"}), 400
+
+        reason = (data.get("reason") or "").strip()
+        if not reason:
+             return jsonify({"error": "El motivo es obligatorio en Business"}), 400
+
+        if type_ not in ["in", "out"]:
+            return jsonify({"error": "Tipo de movimiento inválido (in/out)"}), 400
+        
+        # Apply logic
+        if type_ == "in":
+            product.stock += quantity
+        elif type_ == "out":
+            # Allow negative stock? User said "Pro... stock actual... ajuste manual". 
+            # Business might want strict control.
+            # But usually we warn rather than block unless strict mode is on.
+            # Let's just update.
+            product.stock -= quantity
+        
+        role_snapshot = get_current_role_snapshot(g.current_user, business_id)
+
+        # Create Movement
+        movement = ProductMovement(
+            product_id=product.id,
+            business_id=business_id,
+            user_id=g.current_user.id,
+            type=type_,
+            quantity=quantity,
+            reason=reason,
+            created_by_name=g.current_user.name,
+            created_by_role=role_snapshot
+        )
+        
+        db.session.add(movement)
+        db.session.flush()
+        _record_business_audit(
+            business_id=business_id,
+            actor_user=g.current_user,
+            module="raw_inventory",
+            entity_type="product_movement",
+            entity_id=movement.id,
+            action="adjust",
+            summary=f"Registró un movimiento de inventario para {product.name}",
+            detail=f"Movimiento {type_} por {quantity} {product.unit or 'und'} con motivo: {reason}.",
+            metadata=_build_audit_metadata(
+                source_path=f"/products/{product.id}",
+                product_id=product.id,
+                product_name=product.name,
+                movement_type=type_,
+                quantity=quantity,
+                unit=product.unit,
+                reason=reason,
+                resulting_stock=product.stock,
+            ),
+            after=movement.to_dict(),
+        )
+        db.session.commit()
+        
+        return jsonify({
+            "ok": True, 
+            "product": product.to_dict(),
+            "movement": movement.to_dict()
+        }), 201
+
+    @app.route("/api/businesses/<int:business_id>/products/<int:product_id>/production", methods=["POST"])
+    @token_required
+    @module_required("products")
+    @permission_required('products.update')
+    def register_product_production(business_id, product_id):
+        business = Business.query.get(business_id)
+        if not business:
+            return jsonify({"error": "Negocio no encontrado"}), 404
+        module_response = ensure_module_enabled(business_id, "raw_inventory")
+        if module_response:
+            return module_response
+        product = Product.query.filter_by(id=product_id, business_id=business_id).first()
+        if not product:
+            return jsonify({"error": "Producto no encontrado"}), 404
+        data = request.get_json() or {}
+        try:
+            quantity = float(data.get("quantity") or data.get("quantity_produced") or 0)
+        except Exception:
+            quantity = 0
+        if quantity <= 0:
+            return jsonify({"error": "La cantidad producida debe ser mayor a 0"}), 400
+
+        role_snapshot = get_current_role_snapshot(g.current_user, business_id)
+        try:
+            result = register_stock_production(
+                business=business,
+                product=product,
+                quantity=quantity,
+                actor_user=g.current_user,
+                role_snapshot=role_snapshot,
+                notes=(data.get("notes") or "").strip() or None,
+            )
+        except InsufficientRawMaterialsError as exc:
+            db.session.rollback()
+            return jsonify({
+                "error": str(exc),
+                "code": "INSUFFICIENT_RAW_MATERIALS",
+                "product_name": exc.product_name,
+                "shortages": exc.shortages,
+            }), 400
+        except ValueError as exc:
+            db.session.rollback()
+            return jsonify({"error": str(exc)}), 400
+
+        _record_business_audit(
+            business_id=business_id,
+            actor_user=g.current_user,
+            module="raw_inventory",
+            entity_type="recipe_consumption",
+            entity_id=result["recipe_consumption"].id,
+            action="produce",
+            summary=f"Registró producción para {product.name}",
+            detail=f"Se produjo {quantity} {product.unit or 'und'} de {product.name} consumiendo materias primas y aumentando stock terminado.",
+            metadata=_build_audit_metadata(
+                source_path=f"/products/{product.id}",
+                product_id=product.id,
+                quantity=quantity,
+                recipe_id=result["recipe"].id,
+                recipe_consumption_id=result["recipe_consumption"].id,
+            ),
+            after={
+                "product": result["product"].to_dict(),
+                "movement": result["movement"].to_dict(),
+                "recipe_consumption": result["recipe_consumption"].to_dict(),
+            },
+        )
+        db.session.commit()
+
+        return jsonify({
+            "product": result["product"].to_dict(),
+            "movement": result["movement"].to_dict(),
+            "recipe_consumption": result["recipe_consumption"].to_dict(),
+            "raw_material_items": result["raw_material_items"],
+            "previous_stock": result["previous_stock"],
+            "new_stock": result["new_stock"],
+            "total_reference_cost": result["total_reference_cost"],
+        }), 201
+
+    @app.route("/api/businesses/<int:business_id>/products/bulk-adjustment", methods=["POST"])
+    @token_required
+    @module_required("products")
+    @permission_required('products.update')
+    def bulk_adjustment(business_id):
+        business = Business.query.get(business_id)
+        if not business:
+            return jsonify({"error": "Negocio no encontrado"}), 404
+            
+        data = request.get_json()
+        adjustments = data.get("adjustments", []) # List of { product_id, type: 'in'|'out'|'set', quantity, reason }
+        
+        if not adjustments:
+            return jsonify({"error": "No hay ajustes para procesar"}), 400
+            
+        processed = []
+        errors = []
+        
+        for adj in adjustments:
+            try:
+                pid = adj.get("product_id")
+                type_ = adj.get("type")
+                qty = float(adj.get("quantity", 0))
+                reason = adj.get("reason", "Ajuste masivo")
+                
+                product = Product.query.filter_by(id=pid, business_id=business_id).first()
+                if not product:
+                    errors.append(f"Producto ID {pid} no encontrado")
+                    continue
+                    
+                if qty < 0: 
+                    errors.append(f"Cantidad negativa en producto {product.name}")
+                    continue
+                    
+                old_stock = product.stock
+                
+                if type_ == "set":
+                    # Calculate diff
+                    diff = qty - old_stock
+                    if diff == 0: continue
+                    
+                    product.stock = qty
+                    movement_type = "adjustment"
+                    movement_qty = abs(diff)
+                    final_reason = f"{reason} (Ajuste de {old_stock} a {qty})"
+                elif type_ == "in":
+                    product.stock += qty
+                    movement_type = "in"
+                    movement_qty = qty
+                    final_reason = reason
+                elif type_ == "out":
+                    product.stock -= qty
+                    movement_type = "out"
+                    movement_qty = qty
+                    final_reason = reason
+                else:
+                    errors.append(f"Tipo desconocido '{type_}' en {product.name}")
+                    continue
+                    
+                movement = ProductMovement(
+                    product_id=product.id,
+                    business_id=business_id,
+                    user_id=g.current_user.id,
+                    type=movement_type,
+                    quantity=movement_qty,
+                    reason=final_reason
+                )
+                db.session.add(movement)
+                processed.append(product.id)
+                
+            except Exception as e:
+                errors.append(f"Error procesando item: {str(e)}")
+                
+        if processed:
+            _record_business_audit(
+                business_id=business_id,
+                actor_user=g.current_user,
+                module="raw_inventory",
+                entity_type="inventory_adjustment",
+                entity_id=None,
+                action="adjust",
+                summary=f"Ejecutó un ajuste masivo de inventario sobre {len(processed)} productos",
+                detail="Se aplicó un ajuste masivo de inventario en el negocio.",
+                metadata=_build_audit_metadata(
+                    source_path="/products",
+                    processed_product_ids=processed,
+                    errors=errors or None,
+                    adjustment_count=len(adjustments),
+                ),
+                after={"processed_count": len(processed), "errors": errors},
+            )
+            db.session.commit()
+            
+        return jsonify({
+            "processed_count": len(processed),
+            "errors": errors
+        })
+    @app.route("/api/businesses/<int:business_id>/dashboard", methods=["GET"])
+    @token_required
+    @permission_required('summary.read')
+    def get_dashboard_stats(business_id):
+        business = Business.query.get(business_id)
+        if not business:
+            return jsonify({"error": "Negocio no encontrado"}), 404
+
+        date_str = request.args.get("date")
+        if date_str:
+            try:
+                today = datetime.strptime(date_str, "%Y-%m-%d").date()
+            except:
+                today = date.today()
+        else:
+            today = date.today()
+
+        dashboard_cache_key = (business_id, today.isoformat(), "legacy")
+        payload = build_business_payload(
+            DASHBOARD_CACHE_NAMESPACE,
+            dashboard_cache_key,
+            current_app.config.get("LOCAL_RESPONSE_CACHE_TTL_DASHBOARD_SECONDS", 5),
+            lambda: build_legacy_dashboard_payload(business_id, today),
+            business_id=business_id,
+        )
+        return jsonify(payload)
+
     @app.route("/api/businesses/<int:business_id>/customers", methods=["GET"])
     @token_required
-    @permission_required('clients.read')
+    @module_required("customers")
+    @permission_required('customers.read')
     def get_customers(business_id):
-        business = Business.query.filter_by(id=business_id, user_id=g.current_user.id).first()
+        business = Business.query.get(business_id)
         if not business:
             return jsonify({"error": "Negocio no encontrado"}), 404
 
@@ -1672,53 +4744,66 @@ def create_app(config_class=None):
 
     @app.route("/api/businesses/<int:business_id>/customers", methods=["POST"])
     @token_required
+    @module_required("customers")
     @permission_required('clients.create')
     def create_customer(business_id):
-        business = Business.query.filter_by(id=business_id, user_id=g.current_user.id).first()
+        business = Business.query.get(business_id)
         if not business:
             return jsonify({"error": "Negocio no encontrado"}), 404
-        # Plan FREE: limitar a 5 clientes
-        if g.current_user.plan == "free":
-            customer_count = Customer.query.filter_by(business_id=business_id).count()
-            if customer_count >= 5:
-                return jsonify({
-                    "error": "Tu plan gratuito permite hasta 5 clientes. Actualiza a Pro para registrar más.",
-                    "upgrade_url": "/upgrade"
-                }), 403
 
         data = request.get_json() or {}
-        name = data.get("name", "").strip()
+        name = (data.get("name") or "").strip()
 
         if not name:
             return jsonify({"error": "Nombre del cliente es requerido"}), 400
 
+        role_snapshot = get_current_role_snapshot(g.current_user, business_id)
         customer = Customer(
             business_id=business_id,
             name=name,
-            phone=data.get("phone", "").strip() or None,
-            address=data.get("address", "").strip() or None,
-            notes=data.get("notes", "").strip() or None
+            phone=(data.get("phone") or "").strip() or None,
+            address=(data.get("address") or "").strip() or None,
+            notes=(data.get("notes") or "").strip() or None,
+            active=bool(data.get("active", True)),
+            created_by_user_id=g.current_user.id,
+            created_by_name=g.current_user.name,
+            created_by_role=role_snapshot,
+            updated_by_user_id=g.current_user.id,
         )
 
         db.session.add(customer)
+        db.session.flush()
+        _record_business_audit(
+            business_id=business_id,
+            actor_user=g.current_user,
+            module="customers",
+            entity_type="customer",
+            entity_id=customer.id,
+            action="create",
+            summary=f"Creó el cliente {customer.name}",
+            detail="Se registró un nuevo cliente en el negocio.",
+            metadata=_build_audit_metadata(
+                source_path="/customers",
+                phone=customer.phone,
+            ),
+            after=_audit_snapshot("customer", customer),
+        )
         db.session.commit()
-
         return jsonify({"customer": customer.to_dict()}), 201
 
     @app.route("/api/businesses/<int:business_id>/customers/debtors", methods=["GET"])
     @token_required
-    @permission_required('clients.read')
+    @module_required("accounts_receivable")
+    @permission_required('payments.read')
     def get_debtors(business_id):
-        business = Business.query.filter_by(id=business_id, user_id=g.current_user.id).first()
+        business = Business.query.get(business_id)
         if not business:
             return jsonify({"error": "Negocio no encontrado"}), 404
 
-        # Get customers with balance
         customers = Customer.query.filter_by(business_id=business_id).all()
         debtors = []
 
         for customer in customers:
-            # Calculate balance
             charges = db.session.query(db.func.sum(LedgerEntry.amount)).filter(
                 LedgerEntry.customer_id == customer.id,
                 LedgerEntry.entry_type == "charge"
@@ -1732,7 +4817,6 @@ def create_app(config_class=None):
             balance = charges - payments
 
             if balance > 0:
-                # Get oldest debt date
                 oldest_charge = LedgerEntry.query.filter_by(
                     customer_id=customer.id,
                     entry_type="charge"
@@ -1746,16 +4830,16 @@ def create_app(config_class=None):
                     "since": oldest_charge.entry_date.isoformat() if oldest_charge else None
                 })
 
-        # Sort by balance descending
         debtors.sort(key=lambda x: x["balance"], reverse=True)
 
         return jsonify({"debtors": debtors})
 
     @app.route("/api/businesses/<int:business_id>/customers/<int:customer_id>/whatsapp-collection-message", methods=["GET"])
     @token_required
+    @module_required("accounts_receivable")
     @permission_required('clients.read')
     def get_whatsapp_collection_message(business_id, customer_id):
-        business = Business.query.filter_by(id=business_id, user_id=g.current_user.id).first()
+        business = Business.query.get(business_id)
         if not business:
             return jsonify({"error": "Negocio no encontrado"}), 404
 
@@ -1810,39 +4894,302 @@ def create_app(config_class=None):
             "debt": balance
         })
 
+    def _safe_round(value, digits=2):
+        return round(float(value or 0), digits)
+
+    def _history_timestamp(value):
+        if not value:
+            return datetime.min
+        if isinstance(value, datetime):
+            return value.astimezone(timezone.utc).replace(tzinfo=None) if value.tzinfo else value
+        if isinstance(value, date):
+            return datetime.combine(value, datetime.min.time())
+        raw_value = str(value).strip()
+        if not raw_value:
+            return datetime.min
+        try:
+            parsed = datetime.fromisoformat(raw_value.replace("Z", "+00:00"))
+            return parsed.astimezone(timezone.utc).replace(tzinfo=None) if parsed.tzinfo else parsed
+        except Exception:
+            try:
+                return datetime.combine(date.fromisoformat(raw_value[:10]), datetime.min.time())
+            except Exception:
+                return datetime.min
+
+    def _load_customer_commercial_records(business_id, customer_id):
+        sales = Sale.query.filter(
+            Sale.business_id == business_id,
+            Sale.customer_id == customer_id,
+        ).order_by(Sale.sale_date.desc(), Sale.id.desc()).all()
+        payments = Payment.query.options(
+            joinedload(Payment.treasury_account),
+        ).filter(
+            Payment.business_id == business_id,
+            Payment.customer_id == customer_id,
+        ).order_by(Payment.payment_date.desc(), Payment.id.desc()).all()
+        orders = Order.query.filter(
+            Order.business_id == business_id,
+            Order.customer_id == customer_id,
+        ).order_by(Order.order_date.desc(), Order.id.desc()).all()
+        invoices = Invoice.query.options(
+            joinedload(Invoice.payments),
+        ).filter(
+            Invoice.business_id == business_id,
+            Invoice.customer_id == customer_id,
+        ).order_by(Invoice.issue_date.desc(), Invoice.id.desc()).all()
+        invoice_payloads = [invoice.to_dict() for invoice in invoices]
+        invoice_payments = []
+        for invoice in invoices:
+            for payment in invoice.payments or []:
+                invoice_payments.append({
+                    "invoice_id": invoice.id,
+                    "invoice_number": invoice.invoice_number,
+                    "payment": payment,
+                })
+        return {
+            "sales": sales,
+            "payments": payments,
+            "orders": orders,
+            "invoices": invoices,
+            "invoice_payloads": invoice_payloads,
+            "invoice_payments": invoice_payments,
+        }
+
+    def _build_customer_commercial_summary(customer, records):
+        sales = records["sales"]
+        payments = records["payments"]
+        orders = records["orders"]
+        invoice_payloads = records["invoice_payloads"]
+        invoice_payments = records["invoice_payments"]
+
+        active_invoices = [invoice for invoice in invoice_payloads if str(invoice.get("status") or "").lower() != "cancelled"]
+        sales_total = _safe_round(sum(float(sale.total or 0) for sale in sales))
+        sales_outstanding_balance = _safe_round(sum(float(sale.balance or 0) for sale in sales))
+        order_total = _safe_round(sum(float(order.total or 0) for order in orders))
+        invoice_total = _safe_round(sum(float(invoice.get("total") or 0) for invoice in active_invoices))
+        invoice_outstanding_balance = _safe_round(sum(float(invoice.get("outstanding_balance") or 0) for invoice in active_invoices))
+        total_paid_sales = _safe_round(sum(float(payment.amount or 0) for payment in payments))
+        total_paid_invoices = _safe_round(sum(float(getattr(item["payment"], "signed_amount", item["payment"].amount or 0) or 0) for item in invoice_payments))
+        purchase_documents = []
+        for sale in sales:
+            purchase_documents.append({
+                "date": sale.sale_date.isoformat() if sale.sale_date else None,
+                "total": _safe_round(sale.total),
+                "type": "sale",
+            })
+        for invoice in active_invoices:
+            purchase_documents.append({
+                "date": invoice.get("issue_date"),
+                "total": _safe_round(invoice.get("total")),
+                "type": "invoice",
+            })
+        purchase_documents.sort(key=lambda item: (_history_timestamp(item.get("date")), float(item.get("total") or 0)), reverse=True)
+        last_purchase = purchase_documents[0] if purchase_documents else None
+        total_purchases_value = _safe_round(sales_total + invoice_total)
+        total_purchases_count = len(purchase_documents)
+        average_ticket = _safe_round(total_purchases_value / total_purchases_count) if total_purchases_count > 0 else 0.0
+        outstanding_balance = _safe_round(sales_outstanding_balance + invoice_outstanding_balance)
+        total_paid = _safe_round(total_paid_sales + total_paid_invoices)
+
+        last_activity_candidates = [
+            *(sale.sale_date.isoformat() if sale.sale_date else None for sale in sales),
+            *(payment.payment_date.isoformat() if payment.payment_date else None for payment in payments),
+            *(order.order_date.isoformat() if order.order_date else None for order in orders),
+            *(invoice.get("issue_date") for invoice in active_invoices),
+            *(item["payment"].payment_date.isoformat() if item["payment"].payment_date else None for item in invoice_payments),
+        ]
+        last_activity_date = None
+        for candidate in last_activity_candidates:
+            if not candidate:
+                continue
+            if last_activity_date is None or _history_timestamp(candidate) > _history_timestamp(last_activity_date):
+                last_activity_date = candidate
+
+        if outstanding_balance > 0.01:
+            customer_status = "with_balance"
+            customer_status_label = "Con saldo pendiente"
+        elif total_purchases_count == 0 and len(orders) == 0:
+            customer_status = "new"
+            customer_status_label = "Sin movimientos"
+        elif last_activity_date and (_history_timestamp(datetime.utcnow()) - _history_timestamp(last_activity_date)).days <= 90:
+            customer_status = "active"
+            customer_status_label = "Activo"
+        else:
+            customer_status = "inactive"
+            customer_status_label = "Inactivo"
+
+        return {
+            "total_purchases_value": total_purchases_value,
+            "total_purchases_count": total_purchases_count,
+            "last_purchase_date": last_purchase.get("date") if last_purchase else None,
+            "last_purchase_value": _safe_round(last_purchase.get("total") if last_purchase else 0),
+            "outstanding_balance": outstanding_balance,
+            "sales_outstanding_balance": sales_outstanding_balance,
+            "invoice_outstanding_balance": invoice_outstanding_balance,
+            "total_paid": total_paid,
+            "average_ticket": average_ticket,
+            "customer_status": customer_status,
+            "customer_status_label": customer_status_label,
+            "sales_count": len(sales),
+            "sales_total": sales_total,
+            "payment_count": len(payments),
+            "orders_count": len(orders),
+            "orders_total": order_total,
+            "last_order_date": orders[0].order_date.isoformat() if orders and orders[0].order_date else None,
+            "last_order_value": _safe_round(orders[0].total) if orders else 0.0,
+            "invoice_count": len(active_invoices),
+            "invoice_total": invoice_total,
+            "invoice_payment_count": len(invoice_payments),
+            "last_activity_date": last_activity_date,
+        }
+
+    def _build_customer_history_entries(customer, records):
+        entries = []
+        for sale in records["sales"]:
+            entries.append({
+                "id": f"sale-{sale.id}",
+                "entry_type": "sale",
+                "date": sale.sale_date.isoformat() if sale.sale_date else None,
+                "document_id": sale.id,
+                "document_label": f"Venta #{sale.id}",
+                "title": f"Venta #{sale.id}",
+                "subtitle": "Pagada" if sale.paid else "Con saldo pendiente",
+                "amount": _safe_round(sale.total),
+                "signed_amount": _safe_round(sale.total),
+                "balance": _safe_round(sale.balance),
+                "status": "paid" if sale.paid else "pending",
+                "note": sale.note,
+            })
+        for payment in records["payments"]:
+            entries.append({
+                "id": f"payment-{payment.id}",
+                "entry_type": "payment",
+                "date": payment.payment_date.isoformat() if payment.payment_date else None,
+                "document_id": payment.id,
+                "document_label": f"Pago #{payment.id}",
+                "title": "Pago recibido",
+                "subtitle": payment.method or "Sin método",
+                "amount": _safe_round(payment.amount),
+                "signed_amount": _safe_round(payment.amount),
+                "balance": None,
+                "status": "completed",
+                "note": payment.note,
+                "related_sale_id": payment.sale_id,
+                "treasury_account_name": payment.treasury_account.name if payment.treasury_account else None,
+            })
+        for order in records["orders"]:
+            entries.append({
+                "id": f"order-{order.id}",
+                "entry_type": "order",
+                "date": order.order_date.isoformat() if order.order_date else None,
+                "document_id": order.id,
+                "document_label": order.order_number or f"Pedido #{order.id}",
+                "title": order.order_number or f"Pedido #{order.id}",
+                "subtitle": order.status,
+                "amount": _safe_round(order.total),
+                "signed_amount": _safe_round(order.total),
+                "balance": None,
+                "status": order.status,
+                "note": order.notes,
+            })
+        for invoice in records["invoice_payloads"]:
+            entries.append({
+                "id": f"invoice-{invoice.get('id')}",
+                "entry_type": "invoice",
+                "date": invoice.get("issue_date"),
+                "document_id": invoice.get("id"),
+                "document_label": invoice.get("invoice_number") or f"Factura #{invoice.get('id')}",
+                "title": invoice.get("invoice_number") or f"Factura #{invoice.get('id')}",
+                "subtitle": invoice.get("status") or "draft",
+                "amount": _safe_round(invoice.get("total")),
+                "signed_amount": _safe_round(invoice.get("total")),
+                "balance": _safe_round(invoice.get("outstanding_balance")),
+                "status": invoice.get("status") or "draft",
+                "note": invoice.get("notes"),
+            })
+        for item in records["invoice_payments"]:
+            payment = item["payment"]
+            event_type = str(payment.event_type or "payment").strip().lower() or "payment"
+            entries.append({
+                "id": f"invoice-payment-{payment.id}",
+                "entry_type": f"invoice_{event_type}",
+                "date": payment.payment_date.isoformat() if payment.payment_date else None,
+                "document_id": payment.id,
+                "document_label": item["invoice_number"] or f"Factura #{item['invoice_id']}",
+                "title": item["invoice_number"] or f"Factura #{item['invoice_id']}",
+                "subtitle": event_type,
+                "amount": _safe_round(payment.amount),
+                "signed_amount": _safe_round(getattr(payment, "signed_amount", payment.amount or 0)),
+                "balance": None,
+                "status": event_type,
+                "note": payment.note,
+                "related_invoice_id": item["invoice_id"],
+            })
+
+        entries.sort(key=lambda item: (_history_timestamp(item.get("date")), str(item.get("id") or "")), reverse=True)
+        return entries
+
     @app.route("/api/businesses/<int:business_id>/customers/<int:customer_id>", methods=["GET"])
     @token_required
+    @module_required("customers")
     def get_customer(business_id, customer_id):
         customer = Customer.query.filter_by(id=customer_id, business_id=business_id).first()
         if not customer:
             return jsonify({"error": "Cliente no encontrado"}), 404
 
-        # Get balance
-        charges = db.session.query(db.func.sum(LedgerEntry.amount)).filter(
-            LedgerEntry.customer_id == customer_id,
-            LedgerEntry.entry_type == "charge"
-        ).scalar() or 0
-
-        payments = db.session.query(db.func.sum(LedgerEntry.amount)).filter(
-            LedgerEntry.customer_id == customer_id,
-            LedgerEntry.entry_type == "payment"
-        ).scalar() or 0
-
-        balance = charges - payments
+        records = _load_customer_commercial_records(business_id, customer_id)
+        summary = _build_customer_commercial_summary(customer, records)
 
         customer_data = customer.to_dict()
-        customer_data["balance"] = round(balance, 2)
+        customer_data["balance"] = _safe_round(summary["outstanding_balance"])
+        customer_data["sales_balance"] = _safe_round(summary["sales_outstanding_balance"])
+        customer_data["invoice_balance"] = _safe_round(summary["invoice_outstanding_balance"])
+        customer_data["total_balance"] = _safe_round(summary["outstanding_balance"])
+        customer_data.update(summary)
+        customer_data["commercial_summary"] = summary
 
         return jsonify({"customer": customer_data})
 
+    @app.route("/api/businesses/<int:business_id>/customers/<int:customer_id>/history", methods=["GET"])
+    @token_required
+    @module_required("customers")
+    def get_customer_history(business_id, customer_id):
+        customer = Customer.query.filter_by(id=customer_id, business_id=business_id).first()
+        if not customer:
+            return jsonify({"error": "Cliente no encontrado"}), 404
+
+        page = max(int(request.args.get("page") or 1), 1)
+        per_page = min(max(int(request.args.get("per_page") or 20), 1), 50)
+        records = _load_customer_commercial_records(business_id, customer_id)
+        entries = _build_customer_history_entries(customer, records)
+        total = len(entries)
+        start = (page - 1) * per_page
+        end = start + per_page
+        paginated_entries = entries[start:end]
+        pages = (total + per_page - 1) // per_page if total > 0 else 0
+
+        return jsonify({
+            "customer_id": customer_id,
+            "history": paginated_entries,
+            "pagination": {
+                "page": page,
+                "per_page": per_page,
+                "total": total,
+                "pages": pages,
+                "has_more": end < total,
+            },
+        })
+
     @app.route("/api/businesses/<int:business_id>/customers/<int:customer_id>", methods=["PUT"])
     @token_required
+    @module_required("customers")
     @permission_required('clients.update')
     def update_customer(business_id, customer_id):
         customer = Customer.query.filter_by(id=customer_id, business_id=business_id).first()
         if not customer:
             return jsonify({"error": "Cliente no encontrado"}), 404
 
+        before_snapshot = _audit_snapshot("customer", customer)
         data = request.get_json() or {}
         if "name" in data:
             customer.name = data["name"].strip()
@@ -1855,27 +5202,57 @@ def create_app(config_class=None):
         if "active" in data:
             customer.active = bool(data["active"])
 
+        customer.updated_by_user_id = g.current_user.id
+        _record_business_audit(
+            business_id=business_id,
+            actor_user=g.current_user,
+            module="customers",
+            entity_type="customer",
+            entity_id=customer.id,
+            action="update",
+            summary=f"Actualizó el cliente {customer.name}",
+            detail="Se modificaron los datos del cliente.",
+            metadata=_build_audit_metadata(
+                source_path=f"/customers/{customer.id}",
+                changed_fields=sorted((data or {}).keys()),
+            ),
+            before=before_snapshot,
+            after=_audit_snapshot("customer", customer),
+        )
         db.session.commit()
         return jsonify({"customer": customer.to_dict()})
 
     @app.route("/api/businesses/<int:business_id>/customers/<int:customer_id>", methods=["DELETE"])
     @token_required
+    @module_required("customers")
     @permission_required('clients.delete')
     def delete_customer(business_id, customer_id):
         customer = Customer.query.filter_by(id=customer_id, business_id=business_id).first()
         if not customer:
             return jsonify({"error": "Cliente no encontrado"}), 404
 
+        before_snapshot = _audit_snapshot("customer", customer)
+        _record_business_audit(
+            business_id=business_id,
+            actor_user=g.current_user,
+            module="customers",
+            entity_type="customer",
+            entity_id=customer.id,
+            action="delete",
+            summary=f"Eliminó el cliente {customer.name}",
+            detail="Se eliminó el registro del cliente del negocio.",
+            metadata=_build_audit_metadata(source_path="/customers"),
+            before=before_snapshot,
+        )
         db.session.delete(customer)
         db.session.commit()
         return jsonify({"ok": True})
-
-    # ========== SALE ROUTES ==========
     @app.route("/api/businesses/<int:business_id>/sales", methods=["GET"])
     @token_required
+    @module_required("sales")
     @permission_required('sales.read')
     def get_sales(business_id):
-        business = Business.query.filter_by(id=business_id, user_id=g.current_user.id).first()
+        business = Business.query.get(business_id)
         if not business:
             return jsonify({"error": "Negocio no encontrado"}), 404
 
@@ -1884,8 +5261,12 @@ def create_app(config_class=None):
         end_date = request.args.get("end_date")
         search = request.args.get("search")
         status = request.args.get("status")
+        include_items = str(request.args.get("include_items", "false")).strip().lower() in {"true", "1", "yes"}
 
-        query = Sale.query.filter_by(business_id=business_id)
+        query = Sale.query.options(
+            joinedload(Sale.customer),
+            joinedload(Sale.treasury_account),
+        ).filter_by(business_id=business_id)
 
         if start_date:
             try:
@@ -1913,21 +5294,43 @@ def create_app(config_class=None):
             query = query.filter(Sale.paid == False)
 
         sales = query.order_by(Sale.sale_date.desc()).limit(500).all()
-        return jsonify({"sales": [s.to_dict() for s in sales]})
+        if include_items:
+            sales_payload = [sale.to_dict(include_items=True) for sale in sales]
+        else:
+            sales_payload = [serialize_sale_list_payload(sale) for sale in sales]
+        return jsonify({"sales": sales_payload})
+
+    @app.route("/api/businesses/<int:business_id>/sales/<int:sale_id>", methods=["GET"])
+    @token_required
+    @module_required("sales")
+    @permission_required('sales.read')
+    def get_sale(business_id, sale_id):
+        sale = Sale.query.options(
+            joinedload(Sale.customer),
+            joinedload(Sale.treasury_account),
+        ).filter_by(id=sale_id, business_id=business_id).first()
+        if not sale:
+            return jsonify({"error": "Venta no encontrada"}), 404
+        return jsonify({"sale": sale.to_dict(include_items=True)})
 
     @app.route("/api/businesses/<int:business_id>/sales", methods=["POST"])
     @token_required
+    @module_required("sales")
     @permission_required('sales.create')
     def create_sale(business_id):
-        business = Business.query.filter_by(id=business_id, user_id=g.current_user.id).first()
+        business = Business.query.get(business_id)
         if not business:
             return jsonify({"error": "Negocio no encontrado"}), 404
-        # Plan FREE: limitar a 20 ventas
-        if g.current_user.plan == "free":
+        # Plan FREE: limitar a 20 ventas (Solo para dueños, empleados heredan el plan del negocio)
+        effective_plan = g.current_user.plan
+        if g.current_user.account_type == 'team_member' and business:
+            effective_plan = business.user.plan if business.user else 'free'
+            
+        if effective_plan == "free":
             sales_count = Sale.query.filter_by(business_id=business_id).count()
             if sales_count >= 20:
                 return jsonify({
-                    "error": "Tu plan gratuito permite hasta 20 ventas. Actualiza a Pro para seguir registrando.",
+                    "error": "El plan gratuito de este negocio permite hasta 20 ventas. El administrador debe actualizar a Pro para seguir registrando.",
                     "upgrade_url": "/upgrade"
                 }), 403
 
@@ -1971,6 +5374,27 @@ def create_app(config_class=None):
                 balance = 0
                 is_paid = True
 
+        try:
+            treasury_account_id = (
+                _resolve_treasury_account_id(
+                    business_id,
+                    payment_method=payment_method,
+                    treasury_account_id=data.get("treasury_account_id"),
+                )
+                if amount_paid > 0
+                else None
+            )
+        except ValueError as exc:
+            return jsonify({"error": str(exc)}), 400
+
+        if amount_paid > 0 and treasury_account_id is None:
+            return jsonify({"error": "Debes seleccionar o configurar una cuenta de caja para registrar una venta pagada"}), 400
+
+        if (not is_paid or payment_method == "credit") and data.get("customer_id"):
+            ar_response = ensure_module_enabled(business_id, "accounts_receivable")
+            if ar_response:
+                return ar_response
+
         # Parse sale date
         sale_date = date.today()
         if data.get("sale_date"):
@@ -1979,8 +5403,11 @@ def create_app(config_class=None):
             except:
                 pass
 
+        role_snapshot = get_current_role_snapshot(g.current_user, business_id)
+
         sale = Sale(
             business_id=business_id,
+            user_id=g.current_user.id,
             customer_id=data.get("customer_id"),
             sale_date=sale_date,
             items=items,
@@ -1988,30 +5415,34 @@ def create_app(config_class=None):
             discount=discount,
             total=total,
             balance=balance,
+            collected_amount=amount_paid,
+            treasury_account_id=treasury_account_id if amount_paid > 0 else None,
             payment_method=payment_method,
             paid=is_paid,
-            note=data.get("note", "").strip() or None
+            note=data.get("note", "").strip() or None,
+            created_by_name=g.current_user.name,
+            created_by_role=role_snapshot,
+            updated_by_user_id=g.current_user.id
         )
 
-        # Calculate total cost for profit tracking
-        total_cost = 0
         try:
-            for item in items:
-                pid = item.get("product_id")
-                qty = float(item.get("qty", 1))
-                if pid:
-                    product = Product.query.get(pid)
-                    if product and product.cost:
-                        total_cost += product.cost * qty
+            db.session.add(sale)
+            db.session.flush()  # Get sale.id
+            sale.total_cost = _apply_sale_inventory_effects(
+                business=business,
+                sale=sale,
+                items=items,
+                actor_user=g.current_user,
+                role_snapshot=role_snapshot,
+            )
+        except ValueError as exc:
+            db.session.rollback()
+            return jsonify({"error": str(exc)}), 400
         except Exception as e:
-            print(f"Error calculating sale cost: {e}")
-            pass
-            
-        sale.total_cost = total_cost
-
-        db.session.add(sale)
-        db.session.flush()  # Get sale.id
-
+            db.session.rollback()
+            print(f"Error applying sale inventory effects: {e}")
+            return jsonify({"error": "No fue posible aplicar inventario y consumos de la venta"}), 500
+        
         # If not fully paid and customer exists, update Ledger (Accounts Receivable)
         if not is_paid and data.get("customer_id"):
             # 1. Create Charge for the FULL amount
@@ -2029,7 +5460,7 @@ def create_app(config_class=None):
             
             # 2. If there was a partial payment, create a Payment entry
             if amount_paid > 0:
-                payment = LedgerEntry(
+                ledger_payment = LedgerEntry(
                     business_id=business_id,
                     customer_id=data["customer_id"],
                     entry_type="payment",
@@ -2039,8 +5470,45 @@ def create_app(config_class=None):
                     ref_type="sale",
                     ref_id=sale.id
                 )
-                db.session.add(payment)
+                db.session.add(ledger_payment)
 
+        if amount_paid > 0 and data.get("customer_id"):
+            payment = Payment(
+                business_id=business_id,
+                customer_id=data["customer_id"],
+                sale_id=sale.id,
+                payment_date=sale_date,
+                amount=amount_paid,
+                method=payment_method,
+                treasury_account_id=treasury_account_id,
+                note=data.get("note", "").strip() or None,
+                created_by_user_id=g.current_user.id,
+                created_by_name=g.current_user.name,
+                created_by_role=role_snapshot,
+                updated_by_user_id=g.current_user.id,
+            )
+            db.session.add(payment)
+
+        mark_business_payloads_dirty(business_id, [sale_date])
+        _record_business_audit(
+            business_id=business_id,
+            actor_user=g.current_user,
+            module="sales",
+            entity_type="sale",
+            entity_id=sale.id,
+            action="create",
+            summary=f"Registró la venta #{sale.id}",
+            detail=f"Venta por {total} con método {payment_method}.",
+            metadata=_build_audit_metadata(
+                source_path=f"/sales/{sale.id}",
+                customer_id=sale.customer_id,
+                item_count=len(items),
+                total=total,
+                balance=balance,
+                payment_method=payment_method,
+            ),
+            after=_audit_snapshot("sale", sale),
+        )
         db.session.commit()
 
         # Generate invoice URL
@@ -2056,61 +5524,47 @@ def create_app(config_class=None):
             "invoice_url": invoice_url
         }), 201
 
-    @app.route("/api/businesses/<int:business_id>/fix-costs", methods=["POST"])
-    @token_required
-    def fix_sales_costs(business_id):
-        """Fix missing total_cost for historical sales"""
-        business = Business.query.filter_by(id=business_id, user_id=g.current_user.id).first()
-        if not business:
-            return jsonify({"error": "Negocio no encontrado"}), 404
-            
-        sales = Sale.query.filter(
-            Sale.business_id == business_id,
-            (Sale.total_cost == 0) | (Sale.total_cost == None)
-        ).all()
-        
-        count = 0
-        
-        # Batch processing to avoid memory issues
-        for sale in sales:
-            try:
-                total_cost = 0
-                if sale.items:
-                    for item in sale.items:
-                        pid = item.get("product_id")
-                        qty = float(item.get("qty", 1))
-                        if pid:
-                            product = Product.query.get(pid)
-                            if product and product.cost:
-                                total_cost += product.cost * qty
-                sale.total_cost = total_cost
-                count += 1
-            except Exception as e:
-                print(f"Error fixing sale {sale.id}: {e}")
-        
-        db.session.commit()
-        return jsonify({"message": f"Updated costs for {count} sales"})
-
-    @app.route("/api/businesses/<int:business_id>/sales/<int:sale_id>", methods=["GET"])
-    @token_required
-    def get_sale(business_id, sale_id):
-        sale = Sale.query.filter_by(id=sale_id, business_id=business_id).first()
-        if not sale:
-            return jsonify({"error": "Venta no encontrada"}), 404
-        return jsonify({"sale": sale.to_dict()})
-
     @app.route("/api/businesses/<int:business_id>/sales/<int:sale_id>", methods=["DELETE"])
     @token_required
+    @module_required("sales")
     @permission_required('sales.delete')
     def delete_sale(business_id, sale_id):
         sale = Sale.query.filter_by(id=sale_id, business_id=business_id).first()
         if not sale:
             return jsonify({"error": "Venta no encontrada"}), 404
 
+        business = Business.query.get(business_id)
+        role_snapshot = get_current_role_snapshot(g.current_user, business_id)
+        before_snapshot = _audit_snapshot("sale", sale)
+        reverse_sale_operational_effects(
+            business=business,
+            sale=sale,
+            actor_user=g.current_user,
+            role_snapshot=role_snapshot,
+        )
+        clear_sale_origin_links(sale=sale)
+        _record_business_audit(
+            business_id=business_id,
+            actor_user=g.current_user,
+            module="sales",
+            entity_type="sale",
+            entity_id=sale.id,
+            action="delete",
+            summary=f"Eliminó la venta #{sale.id}",
+            detail="Se eliminó una venta y sus movimientos asociados de cartera.",
+            metadata=_build_audit_metadata(
+                source_path="/sales",
+                customer_id=sale.customer_id,
+                total=sale.total,
+            ),
+            before=before_snapshot,
+        )
         # Delete related ledger entries
+        Payment.query.filter_by(sale_id=sale_id).delete()
         LedgerEntry.query.filter_by(ref_type="sale", ref_id=sale_id).delete()
         
         db.session.delete(sale)
+        refresh_summary_materialized_days(business_id, sale.sale_date)
         db.session.commit()
         return jsonify({"ok": True})
 
@@ -2137,19 +5591,12 @@ def create_app(config_class=None):
                 
                 if pid:
                     product = Product.query.get(pid)
-                    if product:
-                        # Discount stock for physical products
-                        if product.type == 'product':
-                            product.stock = (product.stock or 0) - qty
-                        
-                        # Calculate cost
-                        if product.cost:
-                            total_cost += (product.cost or 0) * qty
+                    if product and product.cost:
+                        total_cost += (product.cost or 0) * qty
 
             # Payment logic
             payment_details = payment_details or {}
             method = payment_details.get('method', 'cash')
-            
             total = float(order.total or 0)
             
             # If explicit paid_amount is provided, use it. Otherwise default to total (full payment)
@@ -2162,23 +5609,60 @@ def create_app(config_class=None):
             if balance < 0: balance = 0 # Avoid negative balance
             
             is_paid = balance <= 0.01 # Float tolerance
+            treasury_account_id = (
+                _resolve_treasury_account_id(
+                    order.business_id,
+                    payment_method=method,
+                    treasury_account_id=payment_details.get("treasury_account_id"),
+                )
+                if paid_amount > 0
+                else None
+            )
+            if paid_amount > 0 and treasury_account_id is None:
+                raise ValueError("Debes seleccionar o configurar una cuenta de caja para registrar una venta pagada")
+
+            if not is_paid and order.customer_id:
+                if not is_module_enabled(order.business_id, "accounts_receivable"):
+                    raise ValueError("El módulo accounts_receivable no está habilitado para este negocio")
+
+            # Contexto de usuario (si existe)
+            try:
+                user_id = g.current_user.id
+                user_name = g.current_user.name
+                role_snapshot = get_current_role_snapshot(g.current_user, order.business_id)
+            except:
+                user_id = None
+                user_name = "Sistema (Pedido)"
+                role_snapshot = "Sistema"
 
             sale = Sale(
                 business_id=order.business_id,
                 customer_id=order.customer_id,
+                user_id=user_id,
                 sale_date=sale_date or date.today(),
                 items=items,
                 subtotal=order.subtotal or 0,
                 discount=order.discount or 0,
                 total=total,
                 balance=balance,
+                collected_amount=paid_amount,
+                treasury_account_id=treasury_account_id if paid_amount > 0 else None,
                 payment_method=method,
                 paid=is_paid,
-                note=note_tag
+                note=note_tag,
+                created_by_name=user_name,
+                created_by_role=role_snapshot,
+                updated_by_user_id=user_id
             )
-            sale.total_cost = total_cost
             db.session.add(sale)
             db.session.flush()
+            sale.total_cost = _apply_sale_inventory_effects(
+                business=Business.query.get(order.business_id),
+                sale=sale,
+                items=items,
+                actor_user=getattr(g, "current_user", None),
+                role_snapshot=role_snapshot,
+            )
             
             # Ledger Entries (Accounts Receivable) - Only for credit/partial sales
             if not is_paid and order.customer_id:
@@ -2218,373 +5702,190 @@ def create_app(config_class=None):
                     amount=paid_amount,
                     payment_date=sale_date or date.today(),
                     method=method,
+                    treasury_account_id=treasury_account_id,
                     note="Pago inicial desde pedido"
                 )
                 db.session.add(payment)
 
             db.session.flush()
+            refresh_summary_materialized_days(order.business_id, sale.sale_date)
             return sale
         except Exception as e:
             app.logger.error(f"Error creando venta desde pedido {order.id}: {e}")
             return None
 
-    @app.route("/api/businesses/<int:business_id>/orders", methods=["GET"])
-    @token_required
-    @permission_required('sales.read')
-    def get_orders(business_id):
-        business = Business.query.filter_by(id=business_id, user_id=g.current_user.id).first()
-        if not business:
-            return jsonify({"error": "Negocio no encontrado"}), 404
-
-        # Filters
-        status = request.args.get("status")
-        customer_id = request.args.get("customer_id")
-        search = request.args.get("search")
-        start_date = request.args.get("start_date")
-        end_date = request.args.get("end_date")
-        sort = request.args.get("sort", "newest")  # newest, oldest, highest, lowest
-
-        query = Order.query.filter_by(business_id=business_id)
-
-        if status:
-            query = query.filter(Order.status == status)
-
-        if customer_id:
-            query = query.filter(Order.customer_id == customer_id)
-
-        if search:
-            query = query.filter(Order.order_number.ilike(f"%{search}%"))
-
-        if start_date:
-            try:
-                start = datetime.strptime(start_date, "%Y-%m-%d")
-                query = query.filter(Order.order_date >= start)
-            except:
-                pass
-
-        if end_date:
-            try:
-                end = datetime.strptime(end_date, "%Y-%m-%d")
-                query = query.filter(Order.order_date <= end)
-            except:
-                pass
-
-        # Sorting
-        if sort == "oldest":
-            query = query.order_by(Order.order_date.asc())
-        elif sort == "highest":
-            query = query.order_by(Order.total.desc())
-        elif sort == "lowest":
-            query = query.order_by(Order.total.asc())
-        else:  # newest
-            query = query.order_by(Order.order_date.desc())
-
-        orders = query.limit(500).all()
-        return jsonify({"orders": [o.to_dict() for o in orders]})
-
-    @app.route("/api/businesses/<int:business_id>/orders", methods=["POST"])
-    @token_required
-    @permission_required('sales.create')
-    def create_order(business_id):
-        business = Business.query.filter_by(id=business_id, user_id=g.current_user.id).first()
-        if not business:
-            return jsonify({"error": "Negocio no encontrado"}), 404
-
-        data = request.get_json()
-
-        # Generate unique order number scoped to business
-        # Format: ORD-{business_id}-{sequence}
-        count = Order.query.filter_by(business_id=business_id).count()
-        next_num = count + 1
-        
-        while True:
-            order_number = f"ORD-{business_id}-{next_num:05d}"
-            if not Order.query.filter_by(order_number=order_number).first():
-                break
-            next_num += 1
-
-        customer_id = data.get("customer_id")
-        if customer_id == "":
-            customer_id = None
-            
-        items = data.get("items", [])
-        subtotal = data.get("subtotal", 0)
-        discount = data.get("discount", 0)
-        total = data.get("total", subtotal - discount)
-        notes = data.get("notes", "")
-        
-        # Handle order date
-        order_date_str = data.get("order_date")
-        order_date = datetime.utcnow()
-        if order_date_str:
-            try:
-                # Append current time to the date if only date is provided
-                # Or just parse the date and set time to now or 00:00
-                # Assuming format YYYY-MM-DD
-                dt = datetime.strptime(order_date_str, "%Y-%m-%d")
-                # Keep current time for precision if it's today, otherwise use end of day or start?
-                # Let's just use the date part combined with current time for ordering
-                now = datetime.utcnow()
-                order_date = dt.replace(hour=now.hour, minute=now.minute, second=now.second)
-            except ValueError:
-                pass # Use default
-
-        order = Order(
-            business_id=business_id,
-            customer_id=customer_id,
-            order_number=order_number,
-            status="pending",
-            items=items,
-            subtotal=subtotal,
-            discount=discount,
-            total=total,
-            notes=notes,
-            order_date=order_date
-        )
-
-        db.session.add(order)
-        db.session.commit()
-
-        return jsonify({"order": order.to_dict()}), 201
-
-    @app.route("/api/businesses/<int:business_id>/orders/<int:order_id>", methods=["GET"])
-    @token_required
-    @permission_required('sales.read')
-    def get_order(business_id, order_id):
-        order = Order.query.filter_by(id=order_id, business_id=business_id).first()
-        if not order:
-            return jsonify({"error": "Pedido no encontrado"}), 404
-        return jsonify({"order": order.to_dict()})
-
-    @app.route("/api/businesses/<int:business_id>/orders/<int:order_id>", methods=["PUT"])
-    @token_required
-    @permission_required('sales.update')
-    def update_order(business_id, order_id):
-        order = Order.query.filter_by(id=order_id, business_id=business_id).first()
-        if not order:
-            return jsonify({"error": "Pedido no encontrado"}), 404
-
-        data = request.get_json()
-
-        prev_status = order.status
-        if "status" in data:
-            order.status = data["status"]
-        if "customer_id" in data:
-            order.customer_id = data["customer_id"]
-        if "items" in data:
-            order.items = data["items"]
-        if "subtotal" in data:
-            order.subtotal = data["subtotal"]
-        if "discount" in data:
-            order.discount = data["discount"]
-        if "total" in data:
-            order.total = data["total"]
-        if "notes" in data:
-            order.notes = data["notes"]
-
-        try:
-            if prev_status != "completed" and order.status == "completed":
-                sale_date = None
-                date_str = data.get("sale_date") or data.get("completed_at")
-                if date_str:
-                    try:
-                        sale_date = datetime.strptime(date_str, "%Y-%m-%d").date()
-                    except:
-                        pass
-                
-                # Extract payment details
-                payment_details = data.get("payment_details", {})
-                sale = _ensure_sale_from_order(order, sale_date=sale_date, payment_details=payment_details)
-                if not sale:
-                    db.session.rollback()
-                    return jsonify({"error": "No se pudo crear la venta asociada. Revise los logs del servidor."}), 500
-        except Exception as e:
-            app.logger.error(f"No se pudo crear la venta desde el pedido {order.id}: {e}")
-            db.session.rollback()
-            return jsonify({"error": str(e)}), 500
-
-        db.session.commit()
-        return jsonify({"order": order.to_dict()})
-
-    @app.route("/api/businesses/<int:business_id>/orders/<int:order_id>", methods=["DELETE"])
-    @token_required
-    @permission_required('sales.delete')
-    def delete_order(business_id, order_id):
-        order = Order.query.filter_by(id=order_id, business_id=business_id).first()
-        if not order:
-            return jsonify({"error": "Pedido no encontrado"}), 404
-
-        db.session.delete(order)
-        db.session.commit()
-        return jsonify({"ok": True})
-
-    @app.route("/api/businesses/<int:business_id>/orders/<int:order_id>/status", methods=["PATCH"])
-    @token_required
-    @permission_required('sales.update')
-    def update_order_status(business_id, order_id):
-        order = Order.query.filter_by(id=order_id, business_id=business_id).first()
-        if not order:
-            return jsonify({"error": "Pedido no encontrado"}), 404
-
-        data = request.get_json()
-        status = data.get("status")
-
-        if status not in ["pending", "in_progress", "completed", "cancelled"]:
-            return jsonify({"error": "Estado inválido"}), 400
-
-        prev_status = order.status
-        order.status = status
-        try:
-            if prev_status != "completed" and status == "completed":
-                sale_date = None
-                date_str = data.get("sale_date") or data.get("completed_at")
-                if date_str:
-                    try:
-                        sale_date = datetime.strptime(date_str, "%Y-%m-%d").date()
-                    except:
-                        pass
-                
-                payment_details = data.get("payment_details", {})
-                sale = _ensure_sale_from_order(order, sale_date=sale_date, payment_details=payment_details)
-                if not sale:
-                    db.session.rollback()
-                    return jsonify({"error": "No se pudo crear la venta asociada"}), 500
-        except Exception as e:
-            app.logger.error(f"No se pudo crear la venta desde el pedido {order.id}: {e}")
-            db.session.rollback()
-            return jsonify({"error": str(e)}), 500
-
-        db.session.commit()
-
-        return jsonify({"order": order.to_dict()})
-
-    @app.route("/api/businesses/<int:business_id>/orders/<int:order_id>/pdf", methods=["GET"])
-    @token_required
-    def get_order_pdf(business_id, order_id):
-        order = Order.query.filter_by(id=order_id, business_id=business_id).first()
-        if not order:
-            return jsonify({"error": "Pedido no encontrado"}), 404
-
-        # Get business profile
-        settings = AppSettings.query.all()
-        settings_dict = {s.key: s.value for s in settings}
-        business = Business.query.get(business_id)
-        
-        # Prepare context
-        context = {
-            "order": order,
-            "business": business,
-            "items": order.items,
-            "customer": order.customer,
-            "date": order.order_date.strftime("%d/%m/%Y"),
-            "settings": settings_dict,
-            "logo_url": business.settings.get("logo") if business.settings else None,
-            "subtotal": order.subtotal,
-            "discount": order.discount,
-            "total": order.total,
-            "notes": order.notes
-        }
-
-        # Render HTML
-        html_content = render_template("order_pdf.html", **context)
-        
-        # Create PDF
-        if not HAS_XHTML2PDF:
-            return jsonify({"error": "La librería de generación de PDF no está instalada en el servidor"}), 500
-
-        pdf_buffer = BytesIO()
-        try:
-            pisa_status = pisa.CreatePDF(html_content, dest=pdf_buffer)
-            if pisa_status.err:
-                return jsonify({"error": "Error al generar PDF"}), 500
-        except Exception as e:
-            return jsonify({"error": f"Error: {str(e)}"}), 500
-            
-        pdf_buffer.seek(0)
-        return send_file(
-            pdf_buffer,
-            mimetype='application/pdf',
-            as_attachment=True,
-            download_name=f'Pedido_{order.order_number}.pdf'
-        )
-
-    @app.route("/api/businesses/<int:business_id>/orders/stats", methods=["GET"])
-    @token_required
-    @permission_required('sales.read')
-    def get_order_stats(business_id):
-        business = Business.query.filter_by(id=business_id, user_id=g.current_user.id).first()
-        if not business:
-            return jsonify({"error": "Negocio no encontrado"}), 404
-
-        # Total orders
-        total_orders = Order.query.filter_by(business_id=business_id).count()
-
-        # Orders by status
-        pending = Order.query.filter_by(business_id=business_id, status="pending").count()
-        in_progress = Order.query.filter_by(business_id=business_id, status="in_progress").count()
-        completed = Order.query.filter_by(business_id=business_id, status="completed").count()
-        cancelled = Order.query.filter_by(business_id=business_id, status="cancelled").count()
-
-        # Total revenue from completed orders
-        from sqlalchemy import func
-        revenue_result = db.session.query(func.sum(Order.total)).filter(
-            Order.business_id == business_id,
-            Order.status == "completed"
-        ).scalar() or 0
-
-        return jsonify({
-            "total_orders": total_orders,
-            "pending": pending,
-            "in_progress": in_progress,
-            "completed": completed,
-            "cancelled": cancelled,
-            "total_revenue": revenue_result
-        })
-
-    # ========== EXPENSE ROUTES ==========
     @app.route("/api/businesses/<int:business_id>/expenses", methods=["GET"])
     @token_required
     @permission_required('expenses.read')
     def get_expenses(business_id):
-        business = Business.query.filter_by(id=business_id, user_id=g.current_user.id).first()
+        business = Business.query.get(business_id)
         if not business:
             return jsonify({"error": "Negocio no encontrado"}), 404
 
-        start_date = request.args.get("start_date")
-        end_date = request.args.get("end_date")
-        category = request.args.get("category")
-        search = request.args.get("search")
+        start_date = request.args.get("start_date") or request.args.get("from")
+        end_date = request.args.get("end_date") or request.args.get("to")
+        category = (request.args.get("category") or "").strip()
+        search = (request.args.get("search") or "").strip()
+        page = request.args.get("page", type=int)
+        limit = request.args.get("limit", type=int)
 
-        query = Expense.query.filter_by(business_id=business_id)
+        query = Expense.query.filter(Expense.business_id == business_id)
 
         if start_date:
             try:
                 start = datetime.strptime(start_date, "%Y-%m-%d").date()
                 query = query.filter(Expense.expense_date >= start)
-            except:
+            except Exception:
                 pass
 
         if end_date:
             try:
                 end = datetime.strptime(end_date, "%Y-%m-%d").date()
                 query = query.filter(Expense.expense_date <= end)
-            except:
+            except Exception:
                 pass
 
-        if category:
+        if category and category.lower() != "all":
             query = query.filter(Expense.category == category)
 
         if search:
-            query = query.filter(Expense.description.ilike(f"%{search}%"))
+            query = query.filter(
+                or_(
+                    Expense.description.ilike(f"%{search}%"),
+                    Expense.category.ilike(f"%{search}%"),
+                )
+            )
 
-        expenses = query.order_by(Expense.expense_date.desc()).limit(500).all()
-        return jsonify({"expenses": [e.to_dict() for e in expenses]})
+        ordered_query = query.order_by(Expense.expense_date.desc(), Expense.created_at.desc())
+
+        response_payload = {
+            "expenses": [],
+            "filters": {
+                "start_date": start_date,
+                "end_date": end_date,
+                "from": start_date,
+                "to": end_date,
+                "category": category or None,
+                "search": search or None,
+            },
+        }
+
+        if page or limit:
+            safe_page = max(page or 1, 1)
+            safe_limit = min(max(limit or 50, 1), 200)
+            total = ordered_query.count()
+            expenses = ordered_query.offset((safe_page - 1) * safe_limit).limit(safe_limit).all()
+            response_payload["expenses"] = [expense.to_dict() for expense in expenses]
+            response_payload["pagination"] = {
+                "page": safe_page,
+                "limit": safe_limit,
+                "total": total,
+                "pages": max((total + safe_limit - 1) // safe_limit, 1),
+                "has_more": safe_page * safe_limit < total,
+            }
+            return jsonify(response_payload)
+
+        expenses = ordered_query.all()
+        response_payload["expenses"] = [expense.to_dict() for expense in expenses]
+        response_payload["total"] = len(response_payload["expenses"])
+        return jsonify(response_payload)
+
+    @app.route("/api/businesses/<int:business_id>/recurring-expenses", methods=["GET"])
+    @token_required
+    @permission_required('expenses.read')
+    def get_recurring_expenses(business_id):
+        business = Business.query.get(business_id)
+        if not business:
+            return jsonify({"error": "Negocio no encontrado"}), 404
+
+        recurring_expenses = RecurringExpense.query.filter(
+            RecurringExpense.business_id == business_id,
+        ).order_by(
+            RecurringExpense.is_active.desc(),
+            case((RecurringExpense.next_due_date.is_(None), 1), else_=0),
+            RecurringExpense.next_due_date.asc(),
+            RecurringExpense.created_at.desc(),
+        ).all()
+
+        return jsonify({"recurring_expenses": [expense.to_dict() for expense in recurring_expenses]})
+
+    @app.route("/api/businesses/<int:business_id>/supplier-payables", methods=["GET"])
+    @token_required
+    @module_required("raw_inventory")
+    @permission_required('supplier_payables.read')
+    def get_supplier_payables(business_id):
+        business = Business.query.get(business_id)
+        if not business:
+            return jsonify({"error": "Negocio no encontrado"}), 404
+
+        status = (request.args.get("status") or "").strip().lower()
+        supplier_id = request.args.get("supplier_id")
+        search = (request.args.get("search") or "").strip().lower()
+
+        query = SupplierPayable.query.options(
+            joinedload(SupplierPayable.supplier),
+            joinedload(SupplierPayable.raw_purchase),
+        ).filter(
+            SupplierPayable.business_id == business_id,
+        )
+
+        if status in {"pending", "partial", "paid"}:
+            query = query.filter(SupplierPayable.status == status)
+
+        if supplier_id:
+            try:
+                query = query.filter(SupplierPayable.supplier_id == int(supplier_id))
+            except (TypeError, ValueError):
+                return jsonify({"error": "supplier_id inválido"}), 400
+
+        payables = query.order_by(
+            case((SupplierPayable.due_date.is_(None), 1), else_=0),
+            SupplierPayable.due_date.asc(),
+            SupplierPayable.created_at.desc(),
+        ).all()
+
+        supplier_payables = [payable.to_dict() for payable in payables]
+
+        if search:
+            supplier_payables = [
+                payable for payable in supplier_payables
+                if search in str(payable.get("supplier_name") or "").lower()
+                or search in str(payable.get("raw_purchase_number") or "").lower()
+                or search in str(payable.get("notes") or "").lower()
+            ]
+
+        suppliers_summary_map = {}
+        for payable in supplier_payables:
+            supplier_key = payable.get("supplier_id")
+            if supplier_key is None:
+                continue
+            summary = suppliers_summary_map.get(supplier_key)
+            if not summary:
+                summary = {
+                    "supplier_id": supplier_key,
+                    "supplier_name": payable.get("supplier_name") or "Proveedor",
+                    "total_amount": 0,
+                    "amount_paid": 0,
+                    "balance_due": 0,
+                    "pending_count": 0,
+                }
+                suppliers_summary_map[supplier_key] = summary
+            summary["total_amount"] = round(summary["total_amount"] + float(payable.get("amount_total") or 0), 4)
+            summary["amount_paid"] = round(summary["amount_paid"] + float(payable.get("amount_paid") or 0), 4)
+            summary["balance_due"] = round(summary["balance_due"] + float(payable.get("balance_due") or 0), 4)
+            if payable.get("status") != "paid":
+                summary["pending_count"] += 1
+
+        return jsonify({
+            "supplier_payables": supplier_payables,
+            "suppliers_summary": list(suppliers_summary_map.values()),
+        })
 
     @app.route("/api/businesses/<int:business_id>/expenses", methods=["POST"])
     @token_required
     @permission_required('expenses.create')
     def create_expense(business_id):
-        business = Business.query.filter_by(id=business_id, user_id=g.current_user.id).first()
+        business = Business.query.get(business_id)
         if not business:
             return jsonify({"error": "Negocio no encontrado"}), 404
 
@@ -2609,15 +5910,22 @@ def create_app(config_class=None):
             except:
                 pass
 
+        role_snapshot = get_current_role_snapshot(g.current_user, business_id)
+
         expense = Expense(
             business_id=business_id,
             expense_date=expense_date,
             category=category,
             amount=amount,
-            description=data.get("description", "").strip() or None
+            description=data.get("description", "").strip() or None,
+            created_by_user_id=g.current_user.id,
+            created_by_name=g.current_user.name,
+            created_by_role=role_snapshot,
+            updated_by_user_id=g.current_user.id
         )
 
         db.session.add(expense)
+        mark_business_payloads_dirty(business_id, [expense_date])
         db.session.commit()
 
         return jsonify({"expense": expense.to_dict()}), 201
@@ -2630,6 +5938,7 @@ def create_app(config_class=None):
         if not expense:
             return jsonify({"error": "Gasto no encontrado"}), 404
 
+        original_expense_date = expense.expense_date
         data = request.get_json() or {}
         if "category" in data:
             expense.category = data["category"].strip()
@@ -2643,6 +5952,8 @@ def create_app(config_class=None):
             except:
                 pass
 
+        expense.updated_by_user_id = g.current_user.id
+        refresh_summary_materialized_days(business_id, original_expense_date, expense.expense_date)
         db.session.commit()
         return jsonify({"expense": expense.to_dict()})
 
@@ -2654,330 +5965,70 @@ def create_app(config_class=None):
         if not expense:
             return jsonify({"error": "Gasto no encontrado"}), 404
 
+        affected_expense_date = expense.expense_date
         db.session.delete(expense)
+        refresh_summary_materialized_days(business_id, affected_expense_date)
         db.session.commit()
         return jsonify({"ok": True})
 
-    # ========== RECURRING EXPENSE ROUTES ==========
-    @app.route("/api/businesses/<int:business_id>/recurring-expenses", methods=["GET"])
-    @token_required
-    @permission_required('expenses.read')
-    def get_recurring_expenses(business_id):
-        business = Business.query.get(business_id)
-        if not business:
-            return jsonify({"error": "Negocio no encontrado"}), 404
-            
-        if not g.current_user.is_admin and business.user_id != g.current_user.id:
-            return jsonify({"error": "No autorizado"}), 403
-
-        expenses = RecurringExpense.query.filter_by(business_id=business_id).order_by(RecurringExpense.due_day).all()
-        return jsonify({"recurring_expenses": [e.to_dict() for e in expenses]})
-
-    @app.route("/api/businesses/<int:business_id>/recurring-expenses", methods=["POST"])
-    @token_required
-    @permission_required('expenses.create')
-    def create_recurring_expense(business_id):
-        business = Business.query.get(business_id)
-        if not business:
-            return jsonify({"error": "Negocio no encontrado"}), 404
-            
-        if not g.current_user.is_admin and business.user_id != g.current_user.id:
-            return jsonify({"error": "No autorizado"}), 403
-
-        data = request.get_json()
-        if not data or not data.get("name") or not data.get("amount") or not data.get("due_day"):
-            return jsonify({"error": "Datos incompletos"}), 400
-
-        try:
-            due_day = int(data["due_day"])
-            if not (1 <= due_day <= 31):
-                return jsonify({"error": "Día debe ser entre 1 y 31"}), 400
-
-            # Calculate initial next_due_date
-            today = date.today()
-            frequency = data.get("frequency", "monthly")
-            import calendar
-
-            def get_valid_date(y, m, d):
-                # Normalize month (handle overflow)
-                # Simple year increment if month > 12
-                while m > 12:
-                    m -= 12
-                    y += 1
-                last_day = calendar.monthrange(y, m)[1]
-                return date(y, m, min(d, last_day))
-
-            # Try to set date to this month's due_day
-            next_due = get_valid_date(today.year, today.month, due_day)
-            
-            # If passed, move to next interval
-            if next_due < today:
-                if frequency == 'monthly':
-                    next_due = get_valid_date(next_due.year, next_due.month + 1, due_day)
-                elif frequency == 'annual':
-                    next_due = get_valid_date(next_due.year + 1, next_due.month, due_day)
-                elif frequency == 'weekly':
-                     while next_due < today:
-                         next_due += timedelta(days=7)
-                elif frequency == 'biweekly':
-                     while next_due < today:
-                         next_due += timedelta(days=15)
-            
-            expense = RecurringExpense(
-                business_id=business_id,
-                name=data["name"],
-                amount=float(data["amount"]),
-                due_day=due_day,
-                frequency=frequency,
-                next_due_date=next_due,
-                category=data.get("category"),
-                is_active=data.get("is_active", True)
-            )
-            db.session.add(expense)
-            db.session.commit()
-            return jsonify({"recurring_expense": expense.to_dict()}), 201
-        except Exception as e:
-            return jsonify({"error": str(e)}), 400
-
-    @app.route("/api/businesses/<int:business_id>/recurring-expenses/<int:expense_id>", methods=["PUT"])
-    @token_required
-    @permission_required('expenses.update')
-    def update_recurring_expense(business_id, expense_id):
-        expense = RecurringExpense.query.filter_by(id=expense_id, business_id=business_id).first()
-        if not expense:
-            return jsonify({"error": "Gasto recurrente no encontrado"}), 404
-
-        data = request.get_json()
-        try:
-            if "name" in data:
-                expense.name = data["name"]
-            if "amount" in data:
-                expense.amount = float(data["amount"])
-            if "due_day" in data:
-                due_day = int(data["due_day"])
-                if not (1 <= due_day <= 31):
-                    return jsonify({"error": "Día debe ser entre 1 y 31"}), 400
-                expense.due_day = due_day
-            if "frequency" in data:
-                expense.frequency = data["frequency"]
-            if "next_due_date" in data:
-                # Expect YYYY-MM-DD
-                try:
-                    expense.next_due_date = datetime.strptime(data["next_due_date"], "%Y-%m-%d").date()
-                except:
-                    pass # Ignore invalid date format
-            if "category" in data:
-                expense.category = data["category"]
-            if "is_active" in data:
-                expense.is_active = bool(data["is_active"])
-            
-            db.session.commit()
-            return jsonify({"recurring_expense": expense.to_dict()})
-        except Exception as e:
-            return jsonify({"error": str(e)}), 400
-
-    @app.route("/api/businesses/<int:business_id>/recurring-expenses/<int:expense_id>", methods=["DELETE"])
-    @token_required
-    @permission_required('expenses.delete')
-    def delete_recurring_expense(business_id, expense_id):
-        expense = RecurringExpense.query.filter_by(id=expense_id, business_id=business_id).first()
-        if not expense:
-            return jsonify({"error": "Gasto recurrente no encontrado"}), 404
-
-        db.session.delete(expense)
-        db.session.commit()
-        return jsonify({"ok": True})
-
-    # ========== SALES GOALS ROUTES (PRO) ==========
-    @app.route("/api/businesses/<int:business_id>/sales-goals", methods=["GET"])
-    @token_required
-    def get_sales_goals(business_id):
-        # PRO Check - Disabled for demo/fix
-        # if g.current_user.plan != 'pro':
-        #     return jsonify({"code": "PRO_REQUIRED", "message": "Disponible solo en PRO"}), 403
-
-        business = Business.query.filter_by(id=business_id, user_id=g.current_user.id).first()
-        if not business:
-            return jsonify({"error": "Negocio no encontrado"}), 404
-
-        status_filter = request.args.get("status", "active")
-        
-        query = SalesGoal.query.filter_by(business_id=business_id)
-        if status_filter == 'active':
-            # Active or Achieved but not yet archived/congrats_archived
-            query = query.filter(SalesGoal.congrats_archived == False)
-        elif status_filter == 'archived':
-            query = query.filter(SalesGoal.congrats_archived == True)
-            
-        goals = query.order_by(SalesGoal.end_date).all()
-        
-        results = []
-        for goal in goals:
-            # Calculate current amount
-            current_amount = db.session.query(func.sum(Sale.total)).filter(
-                Sale.business_id == business_id,
-                Sale.sale_date >= goal.start_date,
-                Sale.sale_date <= goal.end_date
-            ).scalar() or 0
-            
-            # Check achievement
-            if goal.status == 'active' and current_amount >= goal.target_amount:
-                goal.status = 'achieved'
-                goal.achieved_at = datetime.utcnow()
-                db.session.commit()
-            
-            progress_pct = min(100, (current_amount / goal.target_amount) * 100) if goal.target_amount > 0 else 0
-            
-            should_show_congrats = (
-                goal.status == 'achieved' and 
-                not goal.congrats_archived and 
-                goal.last_congrats_seen_at is None
-            )
-            
-            data = goal.to_dict()
-            data['current_amount'] = current_amount
-            data['progress_pct'] = progress_pct
-            data['should_show_congrats'] = should_show_congrats
-            results.append(data)
-            
-        return jsonify({"sales_goals": results})
-
-    @app.route("/api/businesses/<int:business_id>/sales-goals", methods=["POST"])
-    @token_required
-    def create_sales_goal(business_id):
-        # if g.current_user.plan != 'pro':
-        #     return jsonify({"code": "PRO_REQUIRED", "message": "Disponible solo en PRO"}), 403
-
-        business = Business.query.filter_by(id=business_id, user_id=g.current_user.id).first()
-        if not business:
-            return jsonify({"error": "Negocio no encontrado"}), 404
-
-        data = request.get_json()
-        if not data.get("title") or not data.get("target_amount") or not data.get("start_date") or not data.get("end_date"):
-            return jsonify({"error": "Datos incompletos"}), 400
-
-        try:
-            start_date = datetime.strptime(data["start_date"], "%Y-%m-%d").date()
-            end_date = datetime.strptime(data["end_date"], "%Y-%m-%d").date()
-            if end_date < start_date:
-                return jsonify({"error": "Fecha fin debe ser mayor o igual a inicio"}), 400
-            
-            goal = SalesGoal(
-                user_id=g.current_user.id,
-                business_id=business_id,
-                title=data["title"],
-                description=data.get("description"),
-                target_amount=float(data["target_amount"]),
-                start_date=start_date,
-                end_date=end_date
-            )
-            db.session.add(goal)
-            db.session.commit()
-            return jsonify({"sales_goal": goal.to_dict()}), 201
-        except Exception as e:
-            return jsonify({"error": str(e)}), 400
-
-    @app.route("/api/businesses/<int:business_id>/sales-goals/<int:goal_id>", methods=["PUT"])
-    @token_required
-    def update_sales_goal(business_id, goal_id):
-        # if g.current_user.plan != 'pro':
-        #     return jsonify({"code": "PRO_REQUIRED", "message": "Disponible solo en PRO"}), 403
-
-        goal = SalesGoal.query.filter_by(id=goal_id, business_id=business_id).first()
-        if not goal:
-            return jsonify({"error": "Meta no encontrada"}), 404
-            
-        if goal.status == 'archived' or goal.congrats_archived:
-             return jsonify({"error": "No se puede editar una meta archivada"}), 400
-
-        data = request.get_json()
-        try:
-            if "title" in data: goal.title = data["title"]
-            if "description" in data: goal.description = data["description"]
-            if "target_amount" in data: goal.target_amount = float(data["target_amount"])
-            if "start_date" in data: goal.start_date = datetime.strptime(data["start_date"], "%Y-%m-%d").date()
-            if "end_date" in data: goal.end_date = datetime.strptime(data["end_date"], "%Y-%m-%d").date()
-            
-            if goal.end_date < goal.start_date:
-                 return jsonify({"error": "Fecha fin debe ser mayor o igual a inicio"}), 400
-
-            db.session.commit()
-            return jsonify({"sales_goal": goal.to_dict()})
-        except Exception as e:
-            return jsonify({"error": str(e)}), 400
-
-    @app.route("/api/businesses/<int:business_id>/sales-goals/<int:goal_id>/archive", methods=["POST"])
-    @token_required
-    def archive_sales_goal(business_id, goal_id):
-        # if g.current_user.plan != 'pro':
-        #     return jsonify({"code": "PRO_REQUIRED", "message": "Disponible solo en PRO"}), 403
-
-        goal = SalesGoal.query.filter_by(id=goal_id, business_id=business_id).first()
-        if not goal:
-            return jsonify({"error": "Meta no encontrada"}), 404
-
-        goal.status = 'archived'
-        goal.congrats_archived = True
-        db.session.commit()
-        return jsonify({"ok": True})
-
-    @app.route("/api/businesses/<int:business_id>/sales-goals/<int:goal_id>/mark-congrats-seen", methods=["POST"])
-    @token_required
-    def mark_sales_goal_seen(business_id, goal_id):
-        if g.current_user.plan != 'pro':
-            return jsonify({"code": "PRO_REQUIRED", "message": "Disponible solo en PRO"}), 403
-
-        goal = SalesGoal.query.filter_by(id=goal_id, business_id=business_id).first()
-        if not goal:
-            return jsonify({"error": "Meta no encontrada"}), 404
-
-        goal.last_congrats_seen_at = datetime.utcnow()
-        db.session.commit()
-        return jsonify({"ok": True})
-
-    # ========== PAYMENT ROUTES ==========
     @app.route("/api/businesses/<int:business_id>/payments", methods=["GET"])
     @token_required
+    @module_required("accounts_receivable")
     @permission_required('payments.read')
     def get_payments(business_id):
-        business = Business.query.filter_by(id=business_id, user_id=g.current_user.id).first()
+        business = Business.query.get(business_id)
         if not business:
             return jsonify({"error": "Negocio no encontrado"}), 404
-        
+
         start_date = request.args.get("start_date")
         end_date = request.args.get("end_date")
-        search = request.args.get("search")
-        
-        query = Payment.query.filter_by(business_id=business_id)
-        
+        search = (request.args.get("search") or "").strip()
+        include_allocations = str(request.args.get("include_allocations", "false")).strip().lower() in {"true", "1", "yes"}
+
+        query = Payment.query.options(
+            joinedload(Payment.customer),
+            joinedload(Payment.treasury_account),
+        ).filter(
+            Payment.business_id == business_id,
+        )
+
         if start_date:
             try:
                 start = datetime.strptime(start_date, "%Y-%m-%d").date()
                 query = query.filter(Payment.payment_date >= start)
             except:
                 pass
-        
+
         if end_date:
             try:
                 end = datetime.strptime(end_date, "%Y-%m-%d").date()
                 query = query.filter(Payment.payment_date <= end)
             except:
                 pass
-        
+
         if search:
-            # Search in customer name through customer relationship
-            query = query.join(Customer, Payment.customer_id == Customer.id).filter(
-                Customer.name.ilike(f"%{search}%")
+            query = query.outerjoin(Customer, Payment.customer_id == Customer.id).filter(
+                or_(
+                    Customer.name.ilike(f"%{search}%"),
+                    Payment.note.ilike(f"%{search}%"),
+                )
             )
-        
-        payments = query.order_by(Payment.payment_date.desc()).limit(500).all()
-        return jsonify({"payments": [p.to_dict() for p in payments]})
+
+        payments = query.order_by(Payment.payment_date.desc(), Payment.created_at.desc()).all()
+        allocations_map = get_payment_allocations_map([payment.id for payment in payments]) if include_allocations else None
+        return jsonify({
+            "payments": [
+                serialize_payment_payload(payment, allocations_map, include_allocations=include_allocations)
+                for payment in payments
+            ]
+        })
 
     @app.route("/api/businesses/<int:business_id>/payments", methods=["POST"])
     @token_required
+    @module_required("accounts_receivable")
     @permission_required('payments.create')
     def create_payment(business_id):
-        business = Business.query.filter_by(id=business_id, user_id=g.current_user.id).first()
+        business = Business.query.get(business_id)
         if not business:
             return jsonify({"error": "Negocio no encontrado"}), 404
 
@@ -3002,6 +6053,18 @@ def create_app(config_class=None):
             except:
                 pass
 
+        role_snapshot = get_current_role_snapshot(g.current_user, business_id)
+        try:
+            treasury_account_id = _resolve_treasury_account_id(
+                business_id,
+                payment_method=data.get("method", "cash"),
+                treasury_account_id=data.get("treasury_account_id"),
+            )
+        except ValueError as exc:
+            return jsonify({"error": str(exc)}), 400
+        if treasury_account_id is None:
+            return jsonify({"error": "Debes seleccionar o configurar una cuenta de caja para registrar el pago"}), 400
+
         payment = Payment(
             business_id=business_id,
             customer_id=customer_id,
@@ -3009,7 +6072,12 @@ def create_app(config_class=None):
             payment_date=payment_date,
             amount=amount,
             method=data.get("method", "cash"),
-            note=data.get("note", "").strip() or None
+            treasury_account_id=treasury_account_id,
+            note=data.get("note", "").strip() or None,
+            created_by_user_id=g.current_user.id,
+            created_by_name=g.current_user.name,
+            created_by_role=role_snapshot,
+            updated_by_user_id=g.current_user.id
         )
 
         db.session.add(payment)
@@ -3032,6 +6100,7 @@ def create_app(config_class=None):
         # --- Auto-allocation Logic ---
         # Automatically apply payment to pending sales (FIFO)
         remaining_payment = amount
+        realized_cost_total = 0.0
         
         # Find pending sales for this customer, ordered by date
         pending_sales = Sale.query.filter(
@@ -3053,6 +6122,11 @@ def create_app(config_class=None):
             if amount_to_pay > 0:
                 # Update sale balance
                 sale.balance -= amount_to_pay
+                sale.collected_amount = round(float(sale.collected_amount or 0) + amount_to_pay, 2)
+                sale_total = float(sale.total or 0)
+                sale_cost = float(sale.total_cost or 0)
+                if sale_total > 0 and sale_cost > 0:
+                    realized_cost_total += amount_to_pay * (sale_cost / sale_total)
                 remaining_payment -= amount_to_pay
                 
                 # If balance is effectively zero, mark as paid
@@ -3077,20 +6151,41 @@ def create_app(config_class=None):
                         amount=amount_to_pay
                     )
                     db.session.add(allocation)
-        # -----------------------------
 
+        mark_business_payloads_dirty(business_id, [payment_date])
+        _record_business_audit(
+            business_id=business_id,
+            actor_user=g.current_user,
+            module="accounts_receivable",
+            entity_type="payment",
+            entity_id=payment.id,
+            action="pay",
+            summary=f"Registró el pago #{payment.id}",
+            detail=f"Pago por {amount} para el cliente #{customer_id}.",
+            metadata=_build_audit_metadata(
+                source_path=f"/payments/{payment.id}",
+                customer_id=customer_id,
+                sale_id=payment.sale_id,
+                amount=amount,
+                method=payment.method,
+            ),
+            after=_audit_snapshot("payment", payment),
+        )
         db.session.commit()
 
         return jsonify({"payment": payment.to_dict()}), 201
 
     @app.route("/api/businesses/<int:business_id>/payments/<int:payment_id>", methods=["PUT"])
     @token_required
+    @module_required("accounts_receivable")
     @permission_required('payments.update')
     def update_payment(business_id, payment_id):
         payment = Payment.query.filter_by(id=payment_id, business_id=business_id).first()
         if not payment:
             return jsonify({"error": "Pago no encontrado"}), 404
 
+        before_snapshot = _audit_snapshot("payment", payment)
+        original_payment_date = payment.payment_date
         data = request.get_json() or {}
         
         # 1. Handle Amount Change (Complex)
@@ -3109,6 +6204,7 @@ def create_app(config_class=None):
                         sale = Sale.query.get(charge.ref_id)
                         if sale:
                             sale.balance += alloc.amount
+                            sale.collected_amount = round(max(0.0, float(sale.collected_amount or 0) - alloc.amount), 2)
                             if sale.balance > 0.01:
                                 sale.paid = False
                 
@@ -3143,6 +6239,7 @@ def create_app(config_class=None):
                     
                     if amount_to_pay > 0:
                         sale.balance -= amount_to_pay
+                        sale.collected_amount = round(float(sale.collected_amount or 0) + amount_to_pay, 2)
                         remaining_payment -= amount_to_pay
                         
                         if sale.balance <= 0.01:
@@ -3179,6 +6276,19 @@ def create_app(config_class=None):
 
         if "method" in data:
             payment.method = data["method"]
+
+        if "treasury_account_id" in data:
+            treasury_account_id = data.get("treasury_account_id")
+            if treasury_account_id not in (None, ""):
+                try:
+                    treasury_account_id = int(treasury_account_id)
+                except (TypeError, ValueError):
+                    return jsonify({"error": "Cuenta de caja invalida"}), 400
+                if not TreasuryAccount.query.filter_by(id=treasury_account_id, business_id=business_id).first():
+                    return jsonify({"error": "La cuenta de caja seleccionada no existe"}), 400
+            else:
+                treasury_account_id = None
+            payment.treasury_account_id = treasury_account_id
             
         if "note" in data:
             payment.note = data["note"]
@@ -3187,25 +6297,37 @@ def create_app(config_class=None):
             if ledger_entry:
                 ledger_entry.note = data["note"]
 
+        refresh_summary_materialized_days(business_id, original_payment_date, payment.payment_date)
+        _record_business_audit(
+            business_id=business_id,
+            actor_user=g.current_user,
+            module="accounts_receivable",
+            entity_type="payment",
+            entity_id=payment.id,
+            action="update",
+            summary=f"Actualizó el pago #{payment.id}",
+            detail="Se modificaron datos del pago o su asignación de cartera.",
+            metadata=_build_audit_metadata(
+                source_path=f"/payments/{payment.id}",
+                changed_fields=sorted((data or {}).keys()),
+            ),
+            before=before_snapshot,
+            after=_audit_snapshot("payment", payment),
+        )
         db.session.commit()
-        return jsonify({"payment": payment.to_dict()})
-
-    @app.route("/api/businesses/<int:business_id>/payments/<int:payment_id>", methods=["GET"])
-    @token_required
-    def get_payment(business_id, payment_id):
-        payment = Payment.query.filter_by(id=payment_id, business_id=business_id).first()
-        if not payment:
-            return jsonify({"error": "Pago no encontrado"}), 404
         return jsonify({"payment": payment.to_dict()})
 
     @app.route("/api/businesses/<int:business_id>/payments/<int:payment_id>", methods=["DELETE"])
     @token_required
+    @module_required("accounts_receivable")
     @permission_required('payments.delete')
     def delete_payment(business_id, payment_id):
         payment = Payment.query.filter_by(id=payment_id, business_id=business_id).first()
         if not payment:
             return jsonify({"error": "Pago no encontrado"}), 404
 
+        before_snapshot = _audit_snapshot("payment", payment)
+        affected_payment_date = payment.payment_date
         # Reverse allocations
         ledger_entry = LedgerEntry.query.filter_by(ref_type="payment", ref_id=payment.id).first()
         if ledger_entry:
@@ -3217,64 +6339,80 @@ def create_app(config_class=None):
                     sale = Sale.query.get(charge.ref_id)
                     if sale:
                         sale.balance += alloc.amount
+                        sale.collected_amount = round(max(0.0, float(sale.collected_amount or 0) - alloc.amount), 2)
                         # If balance restored, it might not be paid anymore? 
                         # Actually, if balance > 0, it's not paid.
                         # Floating point tolerance
                         if sale.balance > 0.01:
                             sale.paid = False
             
-            # Delete allocations
+            affected_payment_date = payment.payment_date
+        if ledger_entry:
             LedgerAllocation.query.filter_by(payment_id=ledger_entry.id).delete()
-            # Delete ledger entry
             db.session.delete(ledger_entry)
-
+        _record_business_audit(
+            business_id=business_id,
+            actor_user=g.current_user,
+            module="accounts_receivable",
+            entity_type="payment",
+            entity_id=payment.id,
+            action="delete",
+            summary=f"Eliminó el pago #{payment.id}",
+            detail="Se eliminó el pago y se revirtieron sus asignaciones.",
+            metadata=_build_audit_metadata(
+                source_path="/payments",
+                customer_id=payment.customer_id,
+                sale_id=payment.sale_id,
+                amount=payment.amount,
+            ),
+            before=before_snapshot,
+        )
         db.session.delete(payment)
+        mark_business_payloads_dirty(business_id, [affected_payment_date])
         db.session.commit()
         return jsonify({"ok": True})
 
     # ========== REPORT ROUTES ==========
     @app.route("/api/businesses/<int:business_id>/reports/daily", methods=["GET"])
     @token_required
+    @module_required("reports")
     def daily_report(business_id):
         business = Business.query.filter_by(id=business_id, user_id=g.current_user.id).first()
         if not business:
+            member = TeamMember.query.filter_by(user_id=g.current_user.id, business_id=business_id, status='active').first()
+            if member:
+                business = member.business
+
+        if not business:
             return jsonify({"error": "Negocio no encontrado"}), 404
-        
+
         today = date.today()
-        
-        # Get period parameter: today, week, month
         period = request.args.get("period", "today")
-        
-        # Calculate date range based on period
+
         if period == "week":
-            # Get start of week (Monday)
             start_date = today - timedelta(days=today.weekday())
             end_date = today
         elif period == "month":
-            # Get start of month
             start_date = today.replace(day=1)
             end_date = today
         else:
-            # Default to today
             start_date = today
             end_date = today
-        
-        # Allow custom date range override
+
         if request.args.get("start_date"):
             try:
                 start_date = datetime.strptime(request.args.get("start_date"), "%Y-%m-%d").date()
             except:
                 pass
-        
+
         if request.args.get("end_date"):
             try:
                 end_date = datetime.strptime(request.args.get("end_date"), "%Y-%m-%d").date()
             except:
                 pass
-        
-        target_date = start_date  # For compatibility with existing code
-        
-        # Sales for the period
+
+        target_date = start_date
+
         sales = Sale.query.filter(
             Sale.business_id == business_id,
             Sale.sale_date >= start_date,
@@ -3282,8 +6420,7 @@ def create_app(config_class=None):
         ).all()
         sales_total = sum(s.total for s in sales)
         sales_count = len(sales)
-        
-        # Expenses for the period
+
         expenses = Expense.query.filter(
             Expense.business_id == business_id,
             Expense.expense_date >= start_date,
@@ -3291,19 +6428,17 @@ def create_app(config_class=None):
         ).all()
         expenses_total = sum(e.amount for e in expenses)
         expenses_count = len(expenses)
-        
-        # Payments for the period
+
         payments = Payment.query.filter(
             Payment.business_id == business_id,
             Payment.payment_date >= start_date,
             Payment.payment_date <= end_date
         ).all()
         payments_total = sum(p.amount for p in payments)
-        
-        # Cash flow
+
         cash_in = sum(s.total for s in sales if s.payment_method == "cash") + payments_total
         cash_out = expenses_total
-        
+
         return jsonify({
             "date": target_date.isoformat(),
             "period": period,
@@ -3331,8 +6466,15 @@ def create_app(config_class=None):
     @app.route("/api/businesses/<int:business_id>/reports/summary", methods=["GET"])
     @app.route("/api/businesses/<int:business_id>/summary", methods=["GET"])
     @token_required
+    @module_required("reports")
     def summary_report(business_id):
+        # Check access (Owner or Member)
         business = Business.query.filter_by(id=business_id, user_id=g.current_user.id).first()
+        if not business:
+            member = TeamMember.query.filter_by(user_id=g.current_user.id, business_id=business_id, status='active').first()
+            if member:
+                business = member.business
+                
         if not business:
             return jsonify({"error": "Negocio no encontrado"}), 404
 
@@ -3377,220 +6519,29 @@ def create_app(config_class=None):
         start_of_month = start_date
         today = end_date
 
-        # Sales
-        # Optimize: Aggregate sales total and count in SQL
-        sales_stats = db.session.query(
-            func.sum(Sale.total),
-            func.count(Sale.id)
-        ).filter(
-            Sale.business_id == business_id,
-            Sale.sale_date >= start_of_month,
-            Sale.sale_date <= today
-        ).first()
-        
-        sales_total = sales_stats[0] or 0
-        sales_count = sales_stats[1] or 0
-        
-        # Calculate costs for profit (Optimized)
-        total_cost = 0
-        try:
-            # First try using the total_cost column (instant)
-            total_cost_query = db.session.query(func.sum(Sale.total_cost)).filter(
-                Sale.business_id == business_id,
-                Sale.sale_date >= start_of_month,
-                Sale.sale_date <= today
-            ).scalar()
-            
-            if total_cost_query is not None and total_cost_query > 0:
-                total_cost = total_cost_query
-            else:
-                # Fallback: Calculate from items if total_cost is missing/zero (slow but necessary for old data)
-                # Optimize: Fetch only items JSON to avoid full object hydration
-                sales_items = db.session.query(Sale.items).filter(
-                    Sale.business_id == business_id,
-                    Sale.sale_date >= start_of_month,
-                    Sale.sale_date <= today,
-                    (Sale.total_cost == 0) | (Sale.total_cost == None)
-                ).all()
-
-                # Only proceed if there are sales needing calculation
-                if sales_items:
-                    # Get all product IDs from sales items
-                    product_ids = set()
-                    for (items_json,) in sales_items:
-                        if not items_json: continue
-                        for item in items_json:
-                            pid = item.get("product_id")
-                            if pid:
-                                product_ids.add(pid)
-                    
-                    # Fetch products map
-                    products_map = {}
-                    if product_ids:
-                        products = Product.query.filter(Product.id.in_(product_ids)).all()
-                        products_map = {p.id: p for p in products}
-
-                    for (items_json,) in sales_items:
-                        if not items_json: continue
-                        for item in items_json:
-                            pid = item.get("product_id")
-                            if pid and pid in products_map:
-                                product = products_map[pid]
-                                if product.cost:
-                                    qty = float(item.get("qty", 1))
-                                    total_cost += product.cost * qty
-        except Exception as e:
-            print(f"Error calculating costs: {e}")
-            pass
-
-        # Expenses
-        expenses_total = 0
-        expenses_count = 0
-        try:
-            # Optimize: Aggregate expenses total and count in SQL
-            expenses_stats = db.session.query(
-                func.sum(Expense.amount),
-                func.count(Expense.id)
-            ).filter(
-                Expense.business_id == business_id,
-                Expense.expense_date >= start_of_month,
-                Expense.expense_date <= today
-            ).first()
-            
-            if expenses_stats:
-                expenses_total = expenses_stats[0] or 0
-                expenses_count = expenses_stats[1] or 0
-        except Exception as e:
-            print(f"Error calculating expenses: {e}")
-            pass
-
-        # Accounts receivable logic - SIMPLIFIED and ROBUST
-        # Directly use Sale balance which is always available and safer
-        try:
-            accounts_receivable = db.session.query(func.sum(Sale.balance)).filter(
-                Sale.business_id == business_id,
-                Sale.balance > 0
-            ).scalar() or 0
-        except Exception as e:
-            print(f"Error calculating receivables: {e}")
-            accounts_receivable = 0
-
-        # Payments for the period
-        payments = Payment.query.filter(
-            Payment.business_id == business_id,
-            Payment.payment_date >= start_of_month,
-            Payment.payment_date <= today
-        ).all()
-        payments_total = sum(p.amount for p in payments)
-        
-        # Cash flow: Cash Sales + Payments
-        cash_sales = db.session.query(func.sum(Sale.total)).filter(
-            Sale.business_id == business_id,
-            Sale.sale_date >= start_of_month,
-            Sale.sale_date <= today,
-            Sale.payment_method == "cash"
-        ).scalar() or 0
-        
-        # Calculate Cost of Goods Sold for Realized Profit (Cash Basis)
-        # 1. Cost of Cash Sales (fully realized)
-        cash_sales_cost = 0
-        try:
-            # Get items for cash sales in period
-            cash_sales_items = db.session.query(Sale.items).filter(
-                Sale.business_id == business_id,
-                Sale.sale_date >= start_of_month,
-                Sale.sale_date <= today,
-                Sale.payment_method == "cash"
-            ).all()
-            
-            # Calculate cost
-            # (Reuse logic or simplify)
-            # For efficiency, we can query total_cost directly if available
-            cash_sales_cost_query = db.session.query(func.sum(Sale.total_cost)).filter(
-                Sale.business_id == business_id,
-                Sale.sale_date >= start_of_month,
-                Sale.sale_date <= today,
-                Sale.payment_method == "cash"
-            ).scalar()
-            
-            if cash_sales_cost_query is not None and cash_sales_cost_query > 0:
-                cash_sales_cost = cash_sales_cost_query
-            else:
-                # Fallback to calculating from items (simplified for brevity)
-                pass # Assume total_cost is populated or accept 0 for legacy
-        except:
-            pass
-            
-        # 2. Cost portion of Payments (for Credit/Partial sales)
-        payments_cost = 0
-        try:
-            # Get payments in period that are for sales (not generic income if any)
-            # We need to fetch payments with their associated sale to get the cost ratio
-            payments_with_sales = db.session.query(Payment, Sale).join(Sale, Payment.sale_id == Sale.id).filter(
-                Payment.business_id == business_id,
-                Payment.payment_date >= start_of_month,
-                Payment.payment_date <= today
-            ).all()
-            
-            for pay, sale in payments_with_sales:
-                if sale.total > 0:
-                    # Calculate Cost Ratio of the Sale
-                    # Sale.total_cost should be populated. If not, margin is unknown (assume 0 cost? or 100% profit? safer to assume 0 cost for cash flow if unknown)
-                    sale_cost = sale.total_cost or 0
-                    cost_ratio = sale_cost / sale.total
-                    
-                    # Realized Cost for this payment
-                    realized_cost = pay.amount * cost_ratio
-                    payments_cost += realized_cost
-        except Exception as e:
-            print(f"Error calculating payments cost: {e}")
-            pass
-
-        cash_in = cash_sales + payments_total
-        cash_out = expenses_total
-        
-        # Realized Profit (Utilidad) = Cash In - Cash Out - Realized Cost
-        # Realized Cost = Cost of Cash Sales + Cost portion of Payments
-        total_realized_cost = cash_sales_cost + payments_cost
-        
-        # Net Cash Flow (Net Cash Increase) = Cash In - Cash Out
-        # But "Utilidad" usually means Profit.
-        # User asked: "quiero que tambien saques el costo del producto para que al actualizarce en el resumen, tambien se saque el valor de la utilidad"
-        # So "Utilidad" in the summary box should be Realized Profit.
-        
-        realized_profit = cash_in - cash_out - total_realized_cost
-        cash_net = realized_profit # User likely wants this "Profit" to be shown as the utility
-
-
-        return jsonify({
-            "period": {
-                "start": start_of_month.isoformat(),
-                "end": today.isoformat()
-            },
-            "sales": {
-                "count": sales_count,
-                "total": sales_total
-            },
-            "expenses": {
-                "count": expenses_count,
-                "total": expenses_total
-            },
-            "profit": {
-                "gross": sales_total - total_cost,
-                "net": sales_total - total_cost - expenses_total
-            },
-            "cash_flow": {
-                "in": cash_in,
-                "out": cash_out,
-                "net": cash_net
-            },
-            "accounts_receivable": round(accounts_receivable, 2)
-        })
+        summary_cache_key = (business_id, start_of_month.isoformat(), today.isoformat())
+        payload = build_business_payload(
+            SUMMARY_CACHE_NAMESPACE,
+            summary_cache_key,
+            current_app.config.get("LOCAL_RESPONSE_CACHE_TTL_SUMMARY_SECONDS", 5),
+            lambda: build_summary_payload_from_daily_aggregate(business_id, start_of_month, today),
+            business_id=business_id,
+            start_date=start_of_month,
+            end_date=today,
+        )
+        return jsonify(payload)
 
     @app.route("/api/businesses/<int:business_id>/reports/top-products", methods=["GET"])
     @token_required
+    @module_required("reports")
     def top_products(business_id):
+        # Check access (Owner or Member)
         business = Business.query.filter_by(id=business_id, user_id=g.current_user.id).first()
+        if not business:
+            member = TeamMember.query.filter_by(user_id=g.current_user.id, business_id=business_id, status='active').first()
+            if member:
+                business = member.business
+        
         if not business:
             return jsonify({"error": "Negocio no encontrado"}), 404
 
@@ -3619,113 +6570,35 @@ def create_app(config_class=None):
         return jsonify({"top_products": sorted_products})
 
     # ========== DASHBOARD ROUTES ==========
-    @app.route("/api/businesses/<int:business_id>/dashboard", methods=["GET"])
-    @token_required
     def get_dashboard(business_id):
+        # Check access (Owner or Member)
         business = Business.query.filter_by(id=business_id, user_id=g.current_user.id).first()
         if not business:
-            return jsonify({"error": "Negocio no encontrado"}), 404
+            member = TeamMember.query.filter_by(user_id=g.current_user.id, business_id=business_id, status='active').first()
+            if member:
+                business = member.business
 
-        from datetime import date, timedelta
-        from sqlalchemy import func
-        from sqlalchemy.orm import joinedload # Add joinedload import
+        if not business:
+            return jsonify({"error": "Negocio no encontrado"}), 404
 
         today = date.today()
         thirty_days_ago = today - timedelta(days=30)
         sixty_days_ago = today - timedelta(days=60)
 
-        # Sales stats for projections (last 30 days)
-        sales_30_days = db.session.query(func.sum(Sale.total)).filter(
-            Sale.business_id == business_id,
-            Sale.sale_date >= thirty_days_ago
-        ).scalar() or 0
-
-        # Previous 30 days for comparison
-        sales_prev_30 = db.session.query(func.sum(Sale.total)).filter(
-            Sale.business_id == business_id,
-            Sale.sale_date >= sixty_days_ago,
-            Sale.sale_date < thirty_days_ago
-        ).scalar() or 0
-
-        # Daily average
-        daily_avg = sales_30_days / 30 if sales_30_days > 0 else 0
-        
-        # Initialize growth_rate
-        growth_rate = 0
-        
-        # Projection: next 30 days based on trend
-        if sales_prev_30 > 0:
-            growth_rate = (sales_30_days - sales_prev_30) / sales_prev_30
-            projected_next_30 = sales_30_days * (1 + growth_rate)
-        else:
-            projected_next_30 = sales_30_days
-
-        # Inventory alerts (low stock)
-        low_stock_products = Product.query.filter(
-            Product.business_id == business_id,
-            Product.active == True,
-            Product.stock <= Product.low_stock_threshold
-        ).order_by(Product.stock).limit(10).all()
-
-        low_stock_alerts = [{
-            "id": p.id,
-            "name": p.name,
-            "sku": p.sku,
-            "stock": p.stock,
-            "threshold": p.low_stock_threshold,
-            "unit": p.unit
-        } for p in low_stock_products]
-
-        # Fiados alerts (unpaid sales)
-        unpaid_sales = Sale.query.options(joinedload(Sale.customer)).filter(
-            Sale.business_id == business_id,
-            Sale.paid == False,
-            Sale.balance > 0
-        ).order_by(Sale.sale_date).limit(10).all()
-
-        fiados_alerts = []
-        total_fiados = 0
-        for sale in unpaid_sales:
-            fiados_alerts.append({
-                "id": sale.id,
-                "customer_name": sale.customer.name if sale.customer else "Sin cliente",
-                "date": sale.sale_date.isoformat(),
-                "total": sale.total,
-                "balance": sale.balance
-            })
-            total_fiados += sale.balance
-
-        # Recent activity (last 5 sales)
-        recent_sales = Sale.query.options(joinedload(Sale.customer)).filter_by(business_id=business_id).order_by(Sale.sale_date.desc()).limit(5).all()
-
-        return jsonify({
-            "projections": {
-                "daily_average": round(daily_avg, 2),
-                "last_30_days": round(sales_30_days, 2),
-                "previous_30_days": round(sales_prev_30, 2),
-                "projected_next_30": round(projected_next_30, 2),
-                "growth_rate": round(growth_rate * 100, 1) if sales_prev_30 > 0 else 0
-            },
-            "inventory_alerts": {
-                "count": len(low_stock_alerts),
-                "products": low_stock_alerts
-            },
-            "fiados_alerts": {
-                "count": len(fiados_alerts),
-                "total": round(total_fiados, 2),
-                "sales": fiados_alerts
-            },
-            "recent_sales": [{
-                "id": s.id,
-                "date": s.sale_date.isoformat(),
-                "total": s.total,
-                "customer_name": s.customer.name if s.customer else "Venta rápida"
-            } for s in recent_sales]
-        })
+        dashboard_cache_key = (business_id, today.isoformat())
+        payload = build_business_payload(
+            DASHBOARD_CACHE_NAMESPACE,
+            dashboard_cache_key,
+            current_app.config.get("LOCAL_RESPONSE_CACHE_TTL_DASHBOARD_SECONDS", 5),
+            lambda: build_modern_dashboard_payload(business_id, today, thirty_days_ago, sixty_days_ago),
+            business_id=business_id,
+        )
+        return jsonify(payload)
 
     # ========== ANALYTICS ROUTES ==========
     @app.route("/api/businesses/<int:business_id>/analytics/sales-trend", methods=["GET"])
     @token_required
+    @module_required("reports")
     def sales_trend(business_id):
         business = Business.query.filter_by(id=business_id, user_id=g.current_user.id).first()
         if not business:
@@ -3798,8 +6671,9 @@ def create_app(config_class=None):
 
     @app.route("/api/businesses/<int:business_id>/quick-notes", methods=["GET"])
     @token_required
+    @permission_required('reminders.manage')
     def get_quick_notes(business_id):
-        business = Business.query.filter_by(id=business_id, user_id=g.current_user.id).first()
+        business = Business.query.get(business_id)
         if not business:
             return jsonify({"error": "Negocio no encontrado"}), 404
 
@@ -3808,8 +6682,9 @@ def create_app(config_class=None):
 
     @app.route("/api/businesses/<int:business_id>/quick-notes", methods=["POST"])
     @token_required
+    @permission_required('reminders.manage')
     def create_quick_note(business_id):
-        business = Business.query.filter_by(id=business_id, user_id=g.current_user.id).first()
+        business = Business.query.get(business_id)
         if not business:
             return jsonify({"error": "Negocio no encontrado"}), 404
 
@@ -3833,6 +6708,7 @@ def create_app(config_class=None):
 
     @app.route("/api/businesses/<int:business_id>/quick-notes/<int:note_id>", methods=["DELETE"])
     @token_required
+    @permission_required('reminders.manage')
     def delete_quick_note(business_id, note_id):
         note = QuickNote.query.filter_by(id=note_id, business_id=business_id).first()
         if not note:
@@ -3842,8 +6718,97 @@ def create_app(config_class=None):
         db.session.commit()
         return jsonify({"ok": True})
 
+    # ========== REMINDERS ROUTES (FULL) ==========
+    @app.route("/api/businesses/<int:business_id>/reminders", methods=["GET"])
+    @token_required
+    @permission_required('reminders.manage')
+    def get_reminders(business_id):
+        business = Business.query.get(business_id)
+        if not business:
+            return jsonify({"error": "Negocio no encontrado"}), 404
+
+        reminders = Reminder.query.filter_by(business_id=business_id).order_by(Reminder.created_at.desc()).all()
+        return jsonify({"reminders": [r.to_dict() for r in reminders]})
+
+    @app.route("/api/businesses/<int:business_id>/reminders", methods=["POST"])
+    @token_required
+    @permission_required('reminders.manage')
+    def create_reminder(business_id):
+        business = Business.query.get(business_id)
+        if not business:
+            return jsonify({"error": "Negocio no encontrado"}), 404
+
+        data = request.get_json()
+        
+        import uuid
+        reminder_id = data.get("id") or str(uuid.uuid4())
+        
+        role_snapshot = get_current_role_snapshot(g.current_user, business_id)
+        
+        reminder = Reminder(
+            id=reminder_id,
+            business_id=business_id,
+            title=data.get("title", "Sin título"),
+            content=data.get("content", ""),
+            priority=data.get("priority", "medium"),
+            due_date=data.get("dueDate"),
+            due_time=data.get("dueTime"),
+            tags=data.get("tags", []),
+            status=data.get("status", "active"),
+            pinned=data.get("pinned", False),
+            created_at=datetime.utcnow(),
+            updated_at=datetime.utcnow(),
+            created_by_user_id=g.current_user.id,
+            created_by_name=g.current_user.name,
+            created_by_role=role_snapshot,
+            updated_by_user_id=g.current_user.id
+        )
+        
+        db.session.add(reminder)
+        db.session.commit()
+        
+        return jsonify({"reminder": reminder.to_dict()}), 201
+
+    @app.route("/api/businesses/<int:business_id>/reminders/<reminder_id>", methods=["PUT"])
+    @token_required
+    @permission_required('reminders.manage')
+    def update_reminder(business_id, reminder_id):
+        reminder = Reminder.query.filter_by(id=reminder_id, business_id=business_id).first()
+        if not reminder:
+            return jsonify({"error": "Recordatorio no encontrado"}), 404
+            
+        data = request.get_json()
+        
+        if "title" in data: reminder.title = data["title"]
+        if "content" in data: reminder.content = data["content"]
+        if "priority" in data: reminder.priority = data["priority"]
+        if "dueDate" in data: reminder.due_date = data["dueDate"]
+        if "dueTime" in data: reminder.due_time = data["dueTime"]
+        if "tags" in data: reminder.tags = data["tags"]
+        if "status" in data: reminder.status = data["status"]
+        if "pinned" in data: reminder.pinned = data["pinned"]
+
+        reminder.updated_by_user_id = g.current_user.id
+        reminder.updated_at = datetime.utcnow()
+
+        db.session.commit()
+        return jsonify({"reminder": reminder.to_dict()})
+
+    @app.route("/api/businesses/<int:business_id>/reminders/<reminder_id>", methods=["DELETE"])
+    @token_required
+    @permission_required('reminders.manage')
+    def delete_reminder(business_id, reminder_id):
+        reminder = Reminder.query.filter_by(id=reminder_id, business_id=business_id).first()
+        if not reminder:
+            return jsonify({"error": "Recordatorio no encontrado"}), 404
+            
+        db.session.delete(reminder)
+        db.session.commit()
+        return jsonify({"ok": True})
+
     @app.route("/api/businesses/<int:business_id>/analytics/comparison", methods=["GET"])
     @token_required
+    @module_required("reports")
     def period_comparison(business_id):
         business = Business.query.filter_by(id=business_id, user_id=g.current_user.id).first()
         if not business:
@@ -4014,6 +6979,7 @@ def create_app(config_class=None):
 
     @app.route("/api/businesses/<int:business_id>/analytics/metrics", methods=["GET"])
     @token_required
+    @module_required("reports")
     def business_metrics(business_id):
         business = Business.query.filter_by(id=business_id, user_id=g.current_user.id).first()
         if not business:
@@ -4095,6 +7061,7 @@ def create_app(config_class=None):
     # ========== EXPORT ROUTES ==========
     @app.route("/api/businesses/<int:business_id>/export/sales", methods=["GET"])
     @token_required
+    @module_required("reports")
     def export_sales(business_id):
         business = Business.query.filter_by(id=business_id, user_id=g.current_user.id).first()
         if not business:
@@ -4120,6 +7087,7 @@ def create_app(config_class=None):
 
     @app.route("/api/businesses/<int:business_id>/export/expenses", methods=["GET"])
     @token_required
+    @module_required("reports")
     def export_expenses(business_id):
         business = Business.query.filter_by(id=business_id, user_id=g.current_user.id).first()
         if not business:
@@ -4145,6 +7113,7 @@ def create_app(config_class=None):
 
     @app.route("/api/businesses/<int:business_id>/export/combined", methods=["GET"])
     @token_required
+    @module_required("reports")
     def export_combined(business_id):
         business = Business.query.filter_by(id=business_id, user_id=g.current_user.id).first()
         if not business:
@@ -4174,8 +7143,26 @@ def create_app(config_class=None):
             return jsonify({"error": str(e)}), 500
 
     @app.route("/api/download/<filename>", methods=["GET"])
-    @token_required
     def download_file(filename):
+        # Permitir token en query param para descargas directas (fallback)
+        token = None
+        if 'Authorization' in request.headers:
+            token = request.headers['Authorization'].split(" ")[1]
+        else:
+            token = request.args.get('token')
+        
+        # Validar token (aunque sea simplificado para descarga)
+        if not token:
+             return jsonify({"error": "Token requerido"}), 401
+
+        try:
+            # Verificar firma del token
+            # Usar JWT_SECRET_KEY que es la usada para firmar en auth.py, no SECRET_KEY de Flask
+            jwt.decode(token, app.config['JWT_SECRET_KEY'], algorithms=["HS256"])
+        except Exception as e:
+            print(f"Token verification failed: {e}")
+            return jsonify({"error": "Token inválido o expirado"}), 401
+
         export_dir = app.config.get("EXPORT_DIR", "exports")
         
         # Ensure export_dir is absolute
@@ -4191,6 +7178,29 @@ def create_app(config_class=None):
         except Exception as e:
             print(f"ERROR DOWNLOADING FILE: {str(e)}")
             return jsonify({"error": "Archivo no encontrado"}), 404
+
+    @app.route("/api/businesses/<int:business_id>/bi/token", methods=["GET"])
+    @token_required
+    def get_bi_token(business_id):
+        # 1. Security Check: Plan Business Only
+        if g.current_user.plan != "business":
+            return jsonify({
+                "error": "El acceso a Business Intelligence es exclusivo del plan Business.",
+                "upgrade_url": "/upgrade?plan=business"
+            }), 403
+
+        # 2. Security Check: Business Ownership
+        business = Business.query.filter_by(id=business_id, user_id=g.current_user.id).first()
+        if not business:
+            return jsonify({"error": "Negocio no encontrado"}), 404
+
+        # 3. Generate Token
+        from backend.services.pbi_service import pbi_service
+        try:
+            embed_config = pbi_service.get_embed_params_for_single_report(business_id)
+            return jsonify(embed_config)
+        except Exception as e:
+            return jsonify({"error": str(e)}), 500
 
     # ========== BACKUP ROUTES ==========
     @app.route("/api/businesses/<int:business_id>/backup", methods=["GET"])
@@ -4255,6 +7265,7 @@ def create_app(config_class=None):
         total_users = User.query.count()
         free_users = User.query.filter_by(plan="free").count()
         pro_users = User.query.filter_by(plan="pro").count()
+        business_users = User.query.filter_by(plan="business").count()
         
         # Activity stats
         thirty_days_ago = datetime.utcnow() - timedelta(days=30)
@@ -4296,24 +7307,43 @@ def create_app(config_class=None):
         if income_last_month > 0:
             income_growth = ((income_this_month - income_last_month) / income_last_month) * 100
         
-        # Payments by plan type
+        # Payments by plan type (Pro)
         pro_monthly_payments = SubscriptionPayment.query.filter_by(plan="pro_monthly", status="completed").count()
+        pro_quarterly_payments = SubscriptionPayment.query.filter_by(plan="pro_quarterly", status="completed").count()
         pro_annual_payments = SubscriptionPayment.query.filter_by(plan="pro_annual", status="completed").count()
+        
         pro_monthly_income = db.session.query(db.func.sum(SubscriptionPayment.amount)).filter(
             SubscriptionPayment.plan == "pro_monthly",
             SubscriptionPayment.status == "completed"
         ).scalar() or 0
+        
+        pro_quarterly_income = db.session.query(db.func.sum(SubscriptionPayment.amount)).filter(
+            SubscriptionPayment.plan == "pro_quarterly",
+            SubscriptionPayment.status == "completed"
+        ).scalar() or 0
+
         pro_annual_income = db.session.query(db.func.sum(SubscriptionPayment.amount)).filter(
             SubscriptionPayment.plan == "pro_annual",
             SubscriptionPayment.status == "completed"
         ).scalar() or 0
         
-        pro_quarterly_payments = SubscriptionPayment.query.filter(
-            SubscriptionPayment.plan == "pro_quarterly",
+        # Payments by plan type (Business)
+        business_monthly_payments = SubscriptionPayment.query.filter_by(plan="business_monthly", status="completed").count()
+        business_quarterly_payments = SubscriptionPayment.query.filter_by(plan="business_quarterly", status="completed").count()
+        business_annual_payments = SubscriptionPayment.query.filter_by(plan="business_annual", status="completed").count()
+
+        business_monthly_income = db.session.query(db.func.sum(SubscriptionPayment.amount)).filter(
+            SubscriptionPayment.plan == "business_monthly",
             SubscriptionPayment.status == "completed"
-        ).count()
-        pro_quarterly_income = db.session.query(db.func.sum(SubscriptionPayment.amount)).filter(
-            SubscriptionPayment.plan == "pro_quarterly",
+        ).scalar() or 0
+        
+        business_quarterly_income = db.session.query(db.func.sum(SubscriptionPayment.amount)).filter(
+            SubscriptionPayment.plan == "business_quarterly",
+            SubscriptionPayment.status == "completed"
+        ).scalar() or 0
+
+        business_annual_income = db.session.query(db.func.sum(SubscriptionPayment.amount)).filter(
+            SubscriptionPayment.plan == "business_annual",
             SubscriptionPayment.status == "completed"
         ).scalar() or 0
 
@@ -4321,6 +7351,7 @@ def create_app(config_class=None):
             "total_users": total_users,
             "free_users": free_users,
             "pro_users": pro_users,
+            "business_users": business_users,
             "new_users_30d": new_users_30d,
             "active_users_30d": active_users_30d,
             "total_businesses": total_businesses,
@@ -4330,21 +7361,1097 @@ def create_app(config_class=None):
             "total_membership_income": total_membership_income,
             "income_this_month": income_this_month,
             "income_growth": income_growth,
+            # Pro stats
             "pro_monthly_payments": pro_monthly_payments,
             "pro_quarterly_payments": pro_quarterly_payments,
             "pro_annual_payments": pro_annual_payments,
             "pro_monthly_income": pro_monthly_income,
             "pro_quarterly_income": pro_quarterly_income,
-            "pro_annual_income": pro_annual_income
+            "pro_annual_income": pro_annual_income,
+            # Business stats
+            "business_monthly_payments": business_monthly_payments,
+            "business_quarterly_payments": business_quarterly_payments,
+            "business_annual_payments": business_annual_payments,
+            "business_monthly_income": business_monthly_income,
+            "business_quarterly_income": business_quarterly_income,
+            "business_annual_income": business_annual_income
         })
+
+    def _admin_plan_from_user(user):
+        return normalize_access_plan(getattr(user, "membership_plan", None)) or normalize_access_plan(getattr(user, "plan", None)) or "free"
+
+    def _admin_plan_code_from_user(user):
+        normalized = _admin_plan_from_user(user)
+        membership_plan = str(getattr(user, "membership_plan", "") or "").strip().lower()
+        if membership_plan:
+            return membership_plan
+        if normalized in {"basic", "pro", "business"}:
+            return f"{normalized}_manual"
+        return None
+
+    def _admin_billing_cycle(plan_code):
+        normalized = str(plan_code or "").strip().lower()
+        if normalized.endswith("_annual"):
+            return "annual"
+        if normalized.endswith("_quarterly"):
+            return "quarterly"
+        if normalized.endswith("_manual"):
+            return "manual"
+        return "monthly"
+
+    def _admin_payment_monthly_equivalent(amount, billing_cycle):
+        value = float(amount or 0)
+        if billing_cycle == "annual":
+            return value / 12.0
+        if billing_cycle == "quarterly":
+            return value / 3.0
+        return value
+
+    def _build_owner_admin_rows(range_days=30):
+        now = datetime.utcnow()
+        window_start = now - timedelta(days=max(int(range_days or 30), 1))
+        businesses = Business.query.options(joinedload(Business.user)).all()
+        if not businesses:
+            return []
+
+        business_ids = [business.id for business in businesses]
+        owner_ids = list({business.user_id for business in businesses if business.user_id})
+
+        sales_rows = db.session.query(
+            Sale.business_id,
+            func.count(Sale.id),
+            func.coalesce(func.sum(Sale.total), 0),
+        ).filter(
+            Sale.business_id.in_(business_ids),
+            Sale.created_at >= window_start,
+        ).group_by(Sale.business_id).all()
+        sales_30d = {
+            business_id: {
+                "count": int(count or 0),
+                "total": float(total or 0),
+            }
+            for business_id, count, total in sales_rows
+        }
+
+        audit_count_rows = db.session.query(
+            AuditLog.business_id,
+            func.count(AuditLog.id),
+        ).filter(
+            AuditLog.business_id.in_(business_ids),
+            AuditLog.timestamp >= window_start,
+        ).group_by(AuditLog.business_id).all()
+        audit_counts = {business_id: int(count or 0) for business_id, count in audit_count_rows}
+
+        latest_sale_rows = db.session.query(
+            Sale.business_id,
+            func.max(Sale.created_at),
+        ).filter(
+            Sale.business_id.in_(business_ids),
+        ).group_by(Sale.business_id).all()
+        latest_sale_at = {business_id: value for business_id, value in latest_sale_rows}
+
+        latest_audit_rows = db.session.query(
+            AuditLog.business_id,
+            func.max(AuditLog.timestamp),
+        ).filter(
+            AuditLog.business_id.in_(business_ids),
+        ).group_by(AuditLog.business_id).all()
+        latest_audit_at = {business_id: value for business_id, value in latest_audit_rows}
+
+        team_count_rows = db.session.query(
+            TeamMember.business_id,
+            func.count(TeamMember.id),
+        ).filter(
+            TeamMember.business_id.in_(business_ids),
+        ).group_by(TeamMember.business_id).all()
+        team_counts = {business_id: int(count or 0) for business_id, count in team_count_rows}
+
+        payment_rows = SubscriptionPayment.query.filter(
+            SubscriptionPayment.user_id.in_(owner_ids),
+        ).order_by(
+            SubscriptionPayment.user_id.asc(),
+            SubscriptionPayment.payment_date.desc(),
+            SubscriptionPayment.created_at.desc(),
+        ).all()
+        payments_by_user = {}
+        for payment in payment_rows:
+            payments_by_user.setdefault(payment.user_id, []).append(payment)
+
+        total_income_by_user = {}
+        latest_completed_by_user = {}
+        latest_failed_by_user = {}
+        latest_plan_change_by_user = {}
+        for user_id, payments in payments_by_user.items():
+            completed = [payment for payment in payments if str(payment.status or "").lower() == "completed"]
+            failed = [payment for payment in payments if str(payment.status or "").lower() == "failed"]
+            total_income_by_user[user_id] = round(sum(float(payment.amount or 0) for payment in completed), 2)
+            latest_completed_by_user[user_id] = completed[0] if completed else None
+            latest_failed_by_user[user_id] = failed[0] if failed else None
+            if len(completed) >= 2:
+                current_payment = completed[0]
+                previous_payment = completed[1]
+                current_plan = normalize_access_plan(current_payment.plan)
+                previous_plan = normalize_access_plan(previous_payment.plan)
+                direction = None
+                plan_rank = {"basic": 1, "pro": 2, "business": 3}
+                if current_plan and previous_plan and current_plan != previous_plan:
+                    if plan_rank.get(current_plan, 0) > plan_rank.get(previous_plan, 0):
+                        direction = "upgrade"
+                    elif plan_rank.get(current_plan, 0) < plan_rank.get(previous_plan, 0):
+                        direction = "downgrade"
+                latest_plan_change_by_user[user_id] = {
+                    "current_plan": current_plan,
+                    "previous_plan": previous_plan,
+                    "changed_at": current_payment.payment_date.isoformat() if current_payment.payment_date else None,
+                    "direction": direction,
+                }
+            else:
+                latest_plan_change_by_user[user_id] = None
+
+        rows = []
+        for business in businesses:
+            owner = business.user
+            if not owner:
+                continue
+
+            plan = _admin_plan_from_user(owner)
+            plan_code = _admin_plan_code_from_user(owner)
+            billing_cycle = _admin_billing_cycle(plan_code)
+            latest_payment = latest_completed_by_user.get(owner.id)
+            failed_payment = latest_failed_by_user.get(owner.id)
+            monthly_equivalent = _admin_payment_monthly_equivalent(
+                latest_payment.amount if latest_payment else 0,
+                billing_cycle,
+            )
+            arr_equivalent = monthly_equivalent * 12
+            last_activity_at = max(
+                [value for value in [latest_sale_at.get(business.id), latest_audit_at.get(business.id), owner.last_login] if value],
+                default=None,
+            )
+
+            risk_flags = []
+            if owner.membership_end and owner.membership_end < now:
+                risk_flags.append("plan_expired")
+            elif owner.membership_end and owner.membership_end <= now + timedelta(days=7):
+                risk_flags.append("plan_expiring")
+            if plan != "free" and not owner.membership_auto_renew:
+                risk_flags.append("auto_renew_off")
+            if failed_payment and failed_payment.payment_date and failed_payment.payment_date >= now - timedelta(days=30):
+                risk_flags.append("failed_payment")
+            if not last_activity_at or last_activity_at < now - timedelta(days=45):
+                risk_flags.append("inactive_usage")
+            if not owner.last_login or owner.last_login < now - timedelta(days=30):
+                risk_flags.append("owner_inactive")
+
+            health_score = 100
+            for flag in risk_flags:
+                if flag in {"plan_expired", "failed_payment"}:
+                    health_score -= 30
+                elif flag in {"inactive_usage", "owner_inactive"}:
+                    health_score -= 20
+                else:
+                    health_score -= 10
+            if team_counts.get(business.id, 0) > 0:
+                health_score += 5
+            health_score = max(min(health_score, 100), 10)
+            churn_risk = health_score <= 60 or "failed_payment" in risk_flags or "plan_expired" in risk_flags
+
+            if plan == "free":
+                lifecycle_status = "free"
+            elif "plan_expired" in risk_flags:
+                lifecycle_status = "expired"
+            elif "failed_payment" in risk_flags:
+                lifecycle_status = "expired"
+            elif "plan_expiring" in risk_flags:
+                lifecycle_status = "expiring_soon"
+            elif "auto_renew_off" in risk_flags:
+                lifecycle_status = "renewal_off"
+            elif billing_cycle == "manual":
+                lifecycle_status = "manual"
+            else:
+                lifecycle_status = "active"
+
+            sales_snapshot = sales_30d.get(business.id, {"count": 0, "total": 0.0})
+            latest_payment_payload = latest_payment.to_dict() if latest_payment else None
+            rows.append({
+                "business_id": business.id,
+                "business_name": business.name,
+                "owner_id": owner.id,
+                "owner_name": owner.name,
+                "owner_email": owner.email,
+                "plan": plan,
+                "membership_plan": plan_code,
+                "billing_cycle": billing_cycle,
+                "lifecycle_status": lifecycle_status,
+                "membership_start": owner.membership_start.isoformat() if owner.membership_start else None,
+                "membership_end": owner.membership_end.isoformat() if owner.membership_end else None,
+                "membership_auto_renew": bool(owner.membership_auto_renew),
+                "monthly_equivalent": round(monthly_equivalent, 2),
+                "arr_equivalent": round(arr_equivalent, 2),
+                "failed_payment_at": failed_payment.payment_date.isoformat() if failed_payment and failed_payment.payment_date else None,
+                "last_activity_at": last_activity_at.isoformat() if last_activity_at else None,
+                "sales_total_30d": round(float(sales_snapshot["total"] or 0), 2),
+                "sales_count_30d": int(sales_snapshot["count"] or 0),
+                "events_30d": int(audit_counts.get(business.id, 0) or 0),
+                "health_score": int(health_score),
+                "churn_risk": bool(churn_risk),
+                "risk_flags": risk_flags,
+                "lifetime_membership_income": round(float(total_income_by_user.get(owner.id, 0) or 0), 2),
+                "latest_payment": latest_payment_payload,
+                "latest_plan_change": latest_plan_change_by_user.get(owner.id),
+            })
+
+        return rows
+
+    def _build_admin_support_metrics(rows, *, now=None):
+        now = now or datetime.utcnow()
+        business_ids = [row["business_id"] for row in rows]
+        if not business_ids:
+            return {}, {}
+
+        unread_feedback_rows = db.session.query(
+            TeamFeedback.business_id,
+            func.count(TeamFeedback.id),
+        ).filter(
+            TeamFeedback.business_id.in_(business_ids),
+            TeamFeedback.status == "unread",
+        ).group_by(TeamFeedback.business_id).all()
+        unread_feedback = {business_id: int(count or 0) for business_id, count in unread_feedback_rows}
+
+        pending_invitation_rows = db.session.query(
+            TeamInvitation.business_id,
+            func.count(TeamInvitation.id),
+        ).filter(
+            TeamInvitation.business_id.in_(business_ids),
+            TeamInvitation.status == "pending",
+            TeamInvitation.expires_at >= now,
+        ).group_by(TeamInvitation.business_id).all()
+        pending_invitations = {business_id: int(count or 0) for business_id, count in pending_invitation_rows}
+
+        return unread_feedback, pending_invitations
+
+    def _get_owner_control_settings(business):
+        settings = normalize_business_settings(business.settings)
+        owner_control = settings.get("owner_control")
+        if not isinstance(owner_control, dict):
+            owner_control = {}
+        structured_notes = owner_control.get("structured_notes")
+        if not isinstance(structured_notes, list):
+            structured_notes = []
+        return {
+            "admin_status": owner_control.get("admin_status") or "normal",
+            "follow_up": bool(owner_control.get("follow_up")),
+            "high_priority": bool(owner_control.get("high_priority")),
+            "last_reason": owner_control.get("last_reason") or None,
+            "updated_at": owner_control.get("updated_at") or None,
+            "structured_notes": structured_notes,
+        }
+
+    def _save_owner_control_settings(business, owner_control):
+        settings = normalize_business_settings(business.settings)
+        settings["owner_control"] = owner_control
+        business.settings = settings
+
+    def _build_owner_intervention_summary(action, business_name):
+        labels = {
+            "extend_membership": f"Extendió la membresía de {business_name}",
+            "toggle_auto_renew": f"Actualizó la renovación automática de {business_name}",
+            "set_owner_active": f"Actualizó el acceso del owner de {business_name}",
+            "set_priority": f"Actualizó la prioridad operativa de {business_name}",
+            "add_structured_note": f"Registró una nota estructurada para {business_name}",
+        }
+        return labels.get(action, f"Registró una intervención owner para {business_name}")
+
+    @app.route("/api/admin/owner-overview", methods=["GET"])
+    @token_required
+    @permission_required('admin.*')
+    def get_owner_overview_admin():
+        now = datetime.utcnow()
+        rows = _build_owner_admin_rows(range_days=30)
+        total_businesses = len(rows)
+        active_businesses = sum(1 for row in rows if row["last_activity_at"] and datetime.fromisoformat(row["last_activity_at"]) >= now - timedelta(days=30))
+        inactive_businesses_count = max(total_businesses - active_businesses, 0)
+        at_risk_rows = [row for row in rows if row["risk_flags"]]
+        total_users = User.query.count()
+        active_users_30d = User.query.filter(User.last_login != None, User.last_login >= now - timedelta(days=30)).count()
+        new_users_7d = User.query.filter(User.created_at >= now - timedelta(days=7)).count()
+        new_businesses_30d = Business.query.filter(Business.created_at >= now - timedelta(days=30)).count()
+        total_membership_income = float(db.session.query(func.coalesce(func.sum(SubscriptionPayment.amount), 0)).filter(SubscriptionPayment.status == "completed").scalar() or 0)
+        paid_rows = [row for row in rows if row["plan"] in {"basic", "pro", "business"}]
+        estimated_mrr = round(sum(float(row["monthly_equivalent"] or 0) for row in paid_rows), 2)
+        estimated_arr = round(estimated_mrr * 12, 2)
+        mrr_unknown_accounts = sum(1 for row in paid_rows if float(row["monthly_equivalent"] or 0) <= 0)
+        expiring_soon_count = sum(1 for row in rows if "plan_expiring" in row["risk_flags"])
+        expired_count = sum(1 for row in rows if "plan_expired" in row["risk_flags"])
+        auto_renew_off_count = sum(1 for row in rows if "auto_renew_off" in row["risk_flags"])
+        failed_payments_30d = sum(1 for row in rows if "failed_payment" in row["risk_flags"])
+        recent_audit_events_24h = AuditLog.query.filter(AuditLog.timestamp >= now - timedelta(hours=24)).count()
+        failed_logins_30d = AuditLog.query.filter(AuditLog.action == "failed_login", AuditLog.timestamp >= now - timedelta(days=30)).count()
+        successful_logins_30d = AuditLog.query.filter(AuditLog.action == "login", AuditLog.timestamp >= now - timedelta(days=30)).count()
+        total_login_attempts_30d = successful_logins_30d + failed_logins_30d
+        login_success_rate = round((successful_logins_30d / total_login_attempts_30d) * 100, 1) if total_login_attempts_30d else 100.0
+
+        current_month_start = datetime(now.year, now.month, 1)
+        previous_month_end = current_month_start
+        previous_month_start = (current_month_start - timedelta(days=1)).replace(day=1)
+        current_income = float(db.session.query(func.coalesce(func.sum(SubscriptionPayment.amount), 0)).filter(SubscriptionPayment.status == "completed", SubscriptionPayment.payment_date >= current_month_start).scalar() or 0)
+        previous_income = float(db.session.query(func.coalesce(func.sum(SubscriptionPayment.amount), 0)).filter(SubscriptionPayment.status == "completed", SubscriptionPayment.payment_date >= previous_month_start, SubscriptionPayment.payment_date < previous_month_end).scalar() or 0)
+        income_growth = round(((current_income - previous_income) / previous_income) * 100, 1) if previous_income else (100.0 if current_income > 0 else 0.0)
+
+        plan_distribution = {}
+        for row in rows:
+            plan_distribution[row["plan"]] = int(plan_distribution.get(row["plan"], 0) + 1)
+
+        month_labels = []
+        membership_revenue = []
+        new_businesses_chart = []
+        for offset in range(5, -1, -1):
+            month_anchor = (current_month_start - timedelta(days=offset * 30))
+            month_start = datetime(month_anchor.year, month_anchor.month, 1)
+            if month_start.month == 12:
+                next_month = datetime(month_start.year + 1, 1, 1)
+            else:
+                next_month = datetime(month_start.year, month_start.month + 1, 1)
+            month_labels.append(month_start.strftime("%b"))
+            month_income = float(db.session.query(func.coalesce(func.sum(SubscriptionPayment.amount), 0)).filter(SubscriptionPayment.status == "completed", SubscriptionPayment.payment_date >= month_start, SubscriptionPayment.payment_date < next_month).scalar() or 0)
+            month_new_businesses = Business.query.filter(Business.created_at >= month_start, Business.created_at < next_month).count()
+            membership_revenue.append(round(month_income, 2))
+            new_businesses_chart.append(int(month_new_businesses))
+
+        if failed_payments_30d > 0:
+            health_status = {"status": "critical", "label": "Acción requerida"}
+        elif expired_count > 0 or expiring_soon_count > 0 or len(at_risk_rows) > 0:
+            health_status = {"status": "attention", "label": "Bajo observación"}
+        else:
+            health_status = {"status": "healthy", "label": "Operación estable"}
+
+        alerts = []
+        if failed_payments_30d > 0:
+            alerts.append({
+                "id": "failed-payments",
+                "level": "high",
+                "title": "Pagos fallidos recientes",
+                "message": f"Hay {failed_payments_30d} cuentas con señales de cobro fallido en los últimos 30 días.",
+                "cta_label": "Ir a Revenue",
+                "cta_to": "/admin/revenue?status=expired",
+            })
+        if expiring_soon_count > 0:
+            alerts.append({
+                "id": "expiring-soon",
+                "level": "medium",
+                "title": "Renovaciones por vencer",
+                "message": f"{expiring_soon_count} cuentas necesitan seguimiento antes de vencer.",
+                "cta_label": "Abrir Business 360",
+                "cta_to": "/admin/businesses?status=at_risk",
+            })
+        if inactive_businesses_count > 0:
+            alerts.append({
+                "id": "inactive-adoption",
+                "level": "low",
+                "title": "Adopción inactiva",
+                "message": f"{inactive_businesses_count} negocios llevan más de 30 días sin actividad visible.",
+                "cta_label": "Revisar actividad",
+                "cta_to": "/admin/activity",
+            })
+
+        recent_activity_logs = AuditLog.query.order_by(AuditLog.timestamp.desc()).limit(12).all()
+
+        return jsonify({
+            "generated_at": now.isoformat(),
+            "kpis": {
+                "total_businesses": total_businesses,
+                "active_businesses": active_businesses,
+                "inactive_businesses": inactive_businesses_count,
+                "at_risk_businesses": len(at_risk_rows),
+                "total_users": total_users,
+                "active_users_30d": active_users_30d,
+                "new_users_7d": new_users_7d,
+                "new_businesses_30d": new_businesses_30d,
+            },
+            "revenue": {
+                "income_growth": income_growth,
+                "estimated_mrr": estimated_mrr,
+                "estimated_arr": estimated_arr,
+                "total_membership_income": round(total_membership_income, 2),
+                "active_paid_accounts": len(paid_rows),
+                "mrr_unknown_accounts": mrr_unknown_accounts,
+            },
+            "billing": {
+                "expiring_soon_count": expiring_soon_count,
+                "expired_count": expired_count,
+                "auto_renew_off_count": auto_renew_off_count,
+                "failed_payments_30d": failed_payments_30d,
+            },
+            "usage": {
+                "recent_audit_events_24h": recent_audit_events_24h,
+                "failed_logins_30d": failed_logins_30d,
+                "login_success_rate": login_success_rate,
+            },
+            "health": health_status,
+            "plan_distribution": {
+                "businesses": plan_distribution,
+            },
+            "charts": {
+                "labels": month_labels,
+                "membership_revenue": membership_revenue,
+                "new_businesses": new_businesses_chart,
+            },
+            "alerts": alerts[:4],
+            "at_risk_businesses": [
+                {
+                    "id": row["business_id"],
+                    "name": row["business_name"],
+                    "owner_email": row["owner_email"],
+                    "plan": row["plan"],
+                    "risk_level": "high" if any(flag in {"plan_expired", "failed_payment"} for flag in row["risk_flags"]) else "medium",
+                    "risk_flags": row["risk_flags"],
+                    "last_activity_at": row["last_activity_at"],
+                }
+                for row in sorted(at_risk_rows, key=lambda item: (0 if "failed_payment" in item["risk_flags"] or "plan_expired" in item["risk_flags"] else 1, item["health_score"]))[:8]
+            ],
+            "high_value_businesses": [
+                {
+                    "id": row["business_id"],
+                    "name": row["business_name"],
+                    "owner_email": row["owner_email"],
+                    "plan": row["plan"],
+                    "sales_total_30d": row["sales_total_30d"],
+                    "sales_total": row["lifetime_membership_income"],
+                    "last_activity_at": row["last_activity_at"],
+                }
+                for row in sorted(rows, key=lambda item: (float(item["sales_total_30d"] or 0), float(item["monthly_equivalent"] or 0)), reverse=True)[:6]
+            ],
+            "inactive_businesses": [
+                {
+                    "id": row["business_id"],
+                    "name": row["business_name"],
+                    "owner_email": row["owner_email"],
+                    "plan": row["plan"],
+                    "risk_flags": row["risk_flags"],
+                    "last_activity_at": row["last_activity_at"],
+                }
+                for row in sorted(
+                    [item for item in rows if "inactive_usage" in item["risk_flags"]],
+                    key=lambda item: item["last_activity_at"] or "",
+                )[:6]
+            ],
+            "recent_activity": [
+                {
+                    "id": log.id,
+                    "actor_name": log.actor_name or (log.user.name if log.user else None),
+                    "user_email": log.user.email if log.user else None,
+                    "action": log.action,
+                    "entity": log.entity_type or log.entity,
+                    "business_name": Business.query.get(log.business_id).name if log.business_id and Business.query.get(log.business_id) else None,
+                    "timestamp": log.timestamp.isoformat() if log.timestamp else None,
+                }
+                for log in recent_activity_logs
+            ],
+        })
+
+    @app.route("/api/admin/revenue", methods=["GET"])
+    @token_required
+    @permission_required('admin.*')
+    def get_admin_revenue_center():
+        search = (request.args.get("search") or "").strip().lower()
+        plan_filter = (request.args.get("plan") or "").strip().lower()
+        status_filter = (request.args.get("status") or "").strip().lower()
+        range_days = request.args.get("range_days", 30, type=int) or 30
+        rows = _build_owner_admin_rows(range_days=range_days)
+
+        if search:
+            rows = [
+                row for row in rows
+                if search in str(row["business_name"] or "").lower()
+                or search in str(row["owner_name"] or "").lower()
+                or search in str(row["owner_email"] or "").lower()
+            ]
+        if plan_filter:
+            rows = [row for row in rows if str(row["plan"] or "").lower() == plan_filter]
+        if status_filter:
+            rows = [row for row in rows if str(row["lifecycle_status"] or "").lower() == status_filter]
+
+        plan_distribution = {}
+        for row in rows:
+            plan_distribution[row["plan"]] = int(plan_distribution.get(row["plan"], 0) + 1)
+
+        active_paid_rows = [row for row in rows if row["plan"] in {"basic", "pro", "business"}]
+        response_payload = {
+            "summary": {
+                "range_days": int(range_days),
+                "mrr": round(sum(float(row["monthly_equivalent"] or 0) for row in active_paid_rows), 2),
+                "arr": round(sum(float(row["arr_equivalent"] or 0) for row in active_paid_rows), 2),
+                "active_paid_accounts": len(active_paid_rows),
+                "expiring_soon_count": sum(1 for row in rows if row["lifecycle_status"] == "expiring_soon"),
+                "failed_payments_count": sum(1 for row in rows if "failed_payment" in row["risk_flags"]),
+                "upgrades_recent": sum(1 for row in rows if (row.get("latest_plan_change") or {}).get("direction") == "upgrade"),
+                "downgrades_recent": sum(1 for row in rows if (row.get("latest_plan_change") or {}).get("direction") == "downgrade"),
+                "trial_supported": False,
+                "trial_accounts": None,
+            },
+            "plan_distribution": plan_distribution,
+            "rows": sorted(rows, key=lambda item: (float(item["monthly_equivalent"] or 0), float(item["sales_total_30d"] or 0)), reverse=True),
+            "high_value_accounts": sorted(rows, key=lambda item: (float(item["monthly_equivalent"] or 0), float(item["arr_equivalent"] or 0)), reverse=True)[:6],
+            "churn_watchlist": sorted(
+                [row for row in rows if row["churn_risk"] or "failed_payment" in row["risk_flags"] or row["lifecycle_status"] in {"expired", "expiring_soon"}],
+                key=lambda item: (0 if "failed_payment" in item["risk_flags"] else 1, item["health_score"]),
+            )[:6],
+            "filters": {
+                "plan": ["basic", "pro", "business"],
+                "status": ["active", "expiring_soon", "renewal_off", "expired", "manual", "free"],
+                "range_days": [30, 60, 90, 180],
+            },
+        }
+        return jsonify(response_payload)
+
+    @app.route("/api/admin/alerts", methods=["GET"])
+    @token_required
+    @permission_required('admin.*')
+    def get_admin_alerts_center():
+        now = datetime.utcnow()
+        severity_filter = (request.args.get("severity") or "").strip().lower()
+        kind_filter = (request.args.get("kind") or "").strip().lower()
+        state_filter = (request.args.get("state") or "open").strip().lower()
+        business_id_filter = request.args.get("business_id", type=int)
+        search = (request.args.get("search") or "").strip().lower()
+
+        rows = _build_owner_admin_rows(range_days=30)
+        unread_feedback, pending_invitations = _build_admin_support_metrics(rows, now=now)
+        alerts = []
+        for row in rows:
+            if business_id_filter and row["business_id"] != business_id_filter:
+                continue
+            if search and search not in str(row["business_name"] or "").lower() and search not in str(row["owner_name"] or "").lower() and search not in str(row["owner_email"] or "").lower():
+                continue
+
+            last_activity_at = row.get("last_activity_at")
+            base_payload = {
+                "business_id": row["business_id"],
+                "business_name": row["business_name"],
+                "owner_email": row["owner_email"],
+                "owner_name": row["owner_name"],
+                "plan": row["plan"],
+                "last_activity_at": last_activity_at,
+                "sales_total_30d": row["sales_total_30d"],
+                "sales_count_30d": row["sales_count_30d"],
+                "events_30d": row["events_30d"],
+                "state": "open",
+            }
+
+            if "failed_payment" in row["risk_flags"] or "plan_expired" in row["risk_flags"] or "plan_expiring" in row["risk_flags"]:
+                if "failed_payment" in row["risk_flags"] or "plan_expired" in row["risk_flags"]:
+                    severity = "high"
+                    title = "Cuenta con riesgo de facturación"
+                else:
+                    severity = "medium"
+                    title = "Renovación por atender"
+                alerts.append({
+                    **base_payload,
+                    "id": f"billing-{row['business_id']}",
+                    "severity": severity,
+                    "kind": "billing",
+                    "reason": "Pago fallido, plan vencido o renovación próxima detectada en la cuenta.",
+                    "title": title,
+                    "cta_to": f"/admin/businesses?business_id={row['business_id']}",
+                    "cta_label": "Abrir Business 360",
+                    "created_at": now.isoformat(),
+                })
+
+            if "inactive_usage" in row["risk_flags"] or "owner_inactive" in row["risk_flags"]:
+                alerts.append({
+                    **base_payload,
+                    "id": f"adoption-{row['business_id']}",
+                    "severity": "medium" if row["sales_count_30d"] > 0 else "low",
+                    "kind": "adoption",
+                    "reason": "La cuenta muestra baja actividad reciente o el dueño no ha vuelto a entrar.",
+                    "title": "Seguimiento de adopción",
+                    "cta_to": f"/admin/activity?business_id={row['business_id']}",
+                    "cta_label": "Ver actividad",
+                    "created_at": now.isoformat(),
+                })
+
+            feedback_count = int(unread_feedback.get(row["business_id"], 0) or 0)
+            invite_count = int(pending_invitations.get(row["business_id"], 0) or 0)
+            if feedback_count > 0 or invite_count > 0:
+                alerts.append({
+                    **base_payload,
+                    "id": f"support-{row['business_id']}",
+                    "severity": "medium" if feedback_count > 0 else "low",
+                    "kind": "support",
+                    "reason": f"{feedback_count} feedback sin leer y {invite_count} invitaciones pendientes requieren revisión.",
+                    "title": "Pendientes de soporte y equipo",
+                    "cta_to": f"/admin/system-health",
+                    "cta_label": "Abrir Health Center",
+                    "created_at": now.isoformat(),
+                })
+
+            if row["churn_risk"]:
+                alerts.append({
+                    **base_payload,
+                    "id": f"churn-{row['business_id']}",
+                    "severity": "high" if row["health_score"] <= 40 else "medium",
+                    "kind": "churn",
+                    "reason": "Señales combinadas de baja adopción, fricción de cobro o deterioro de salud de la cuenta.",
+                    "title": "Riesgo de churn",
+                    "cta_to": f"/admin/revenue?status={row['lifecycle_status']}",
+                    "cta_label": "Ir a Revenue",
+                    "created_at": now.isoformat(),
+                })
+
+        if severity_filter:
+            alerts = [alert for alert in alerts if alert["severity"] == severity_filter]
+        if kind_filter:
+            alerts = [alert for alert in alerts if alert["kind"] == kind_filter]
+        if state_filter:
+            alerts = [alert for alert in alerts if alert["state"] == state_filter]
+
+        summary = {
+            "high": sum(1 for alert in alerts if alert["severity"] == "high"),
+            "medium": sum(1 for alert in alerts if alert["severity"] == "medium"),
+            "low": sum(1 for alert in alerts if alert["severity"] == "low"),
+            "billing": sum(1 for alert in alerts if alert["kind"] == "billing"),
+            "adoption": sum(1 for alert in alerts if alert["kind"] == "adoption"),
+            "support": sum(1 for alert in alerts if alert["kind"] == "support"),
+            "churn": sum(1 for alert in alerts if alert["kind"] == "churn"),
+        }
+
+        return jsonify({
+            "alerts": sorted(alerts, key=lambda item: (0 if item["severity"] == "high" else 1 if item["severity"] == "medium" else 2, item["business_name"])),
+            "summary": summary,
+            "filters": {
+                "severity": ["high", "medium", "low"],
+                "kind": ["billing", "adoption", "support", "churn"],
+                "state": ["open"],
+            },
+        })
+
+    @app.route("/api/admin/activity", methods=["GET"])
+    @token_required
+    @permission_required('admin.*')
+    def get_admin_activity_center():
+        page = request.args.get("page", 1, type=int) or 1
+        per_page = request.args.get("per_page", 20, type=int) or 20
+        business_id = request.args.get("business_id", type=int)
+        action_filter = (request.args.get("action") or "").strip().lower()
+        module_filter = (request.args.get("module") or "").strip().lower()
+        actor_filter = (request.args.get("actor") or "").strip().lower()
+
+        query = AuditLog.query.options(joinedload(AuditLog.user))
+        if business_id:
+            query = query.filter(AuditLog.business_id == business_id)
+        if action_filter:
+            query = query.filter(func.lower(AuditLog.action) == action_filter)
+        if module_filter:
+            query = query.filter(func.lower(func.coalesce(AuditLog.module, "")) == module_filter)
+        if actor_filter:
+            actor_pattern = f"%{actor_filter}%"
+            query = query.outerjoin(User, AuditLog.user_id == User.id).filter(
+                or_(
+                    func.lower(func.coalesce(AuditLog.actor_name, "")).like(actor_pattern),
+                    func.lower(func.coalesce(User.email, "")).like(actor_pattern),
+                    func.lower(func.coalesce(AuditLog.actor_role, "")).like(actor_pattern),
+                )
+            )
+
+        pagination = query.order_by(AuditLog.timestamp.desc()).paginate(page=page, per_page=per_page, error_out=False)
+        business_names = {
+            business.id: business.name
+            for business in Business.query.filter(Business.id.in_([log.business_id for log in pagination.items if log.business_id])).all()
+        } if pagination.items else {}
+
+        action_counts = db.session.query(
+            AuditLog.action,
+            func.count(AuditLog.id),
+        ).group_by(AuditLog.action).order_by(func.count(AuditLog.id).desc()).limit(20).all()
+        module_counts = db.session.query(
+            AuditLog.module,
+            func.count(AuditLog.id),
+        ).filter(AuditLog.module != None).group_by(AuditLog.module).order_by(func.count(AuditLog.id).desc()).limit(20).all()
+
+        return jsonify({
+            "logs": [
+                {
+                    "id": log.id,
+                    "business_id": log.business_id,
+                    "business_name": business_names.get(log.business_id),
+                    "user_email": log.user.email if log.user else None,
+                    "actor_name": log.actor_name or (log.user.name if log.user else None),
+                    "actor_role": log.actor_role,
+                    "action": log.action,
+                    "entity": log.entity,
+                    "entity_type": log.entity_type or log.entity,
+                    "entity_id": log.entity_id,
+                    "module": log.module,
+                    "summary": log.summary,
+                    "details": log.to_dict().get("details"),
+                    "timestamp": log.timestamp.isoformat() if log.timestamp else None,
+                }
+                for log in pagination.items
+            ],
+            "total": pagination.total,
+            "page": page,
+            "per_page": per_page,
+            "pages": pagination.pages,
+            "filters": {
+                "business_filter_available": True,
+                "module_filter_available": True,
+                "actor_filter_available": True,
+                "actions": [{"value": value, "count": int(count or 0)} for value, count in action_counts if value],
+                "modules": [{"value": value, "count": int(count or 0)} for value, count in module_counts if value],
+            },
+        })
+
+    @app.route("/api/admin/system-health", methods=["GET"])
+    @token_required
+    @permission_required('admin.*')
+    def get_admin_system_health():
+        now = datetime.utcnow()
+        rows = _build_owner_admin_rows(range_days=30)
+        unread_feedback, pending_invitations = _build_admin_support_metrics(rows, now=now)
+        failed_logins_30d = AuditLog.query.filter(AuditLog.action == "failed_login", AuditLog.timestamp >= now - timedelta(days=30)).count()
+        access_denied_30d = AuditLog.query.filter(AuditLog.action == "access_denied", AuditLog.timestamp >= now - timedelta(days=30)).count()
+        unread_feedback_total = sum(unread_feedback.values())
+        pending_invitations_total = sum(pending_invitations.values())
+
+        support_issues = []
+        for row in rows:
+            feedback_count = int(unread_feedback.get(row["business_id"], 0) or 0)
+            invite_count = int(pending_invitations.get(row["business_id"], 0) or 0)
+            if feedback_count <= 0 and invite_count <= 0 and not row["risk_flags"]:
+                continue
+            support_issues.append({
+                "business_id": row["business_id"],
+                "business_name": row["business_name"],
+                "owner_email": row["owner_email"],
+                "health_score": row["health_score"],
+                "risk_flags": row["risk_flags"],
+                "unread_feedback": feedback_count,
+                "pending_invitations": invite_count,
+                "events_30d": row["events_30d"],
+                "last_activity_at": row["last_activity_at"],
+                "route": f"/admin/businesses?business_id={row['business_id']}",
+            })
+
+        if failed_logins_30d > 10 or access_denied_30d > 10:
+            status = "critical"
+        elif support_issues or unread_feedback_total > 0 or pending_invitations_total > 0:
+            status = "attention"
+        else:
+            status = "healthy"
+
+        return jsonify({
+            "summary": {
+                "status": status,
+                "failed_logins_30d": failed_logins_30d,
+                "access_denied_30d": access_denied_30d,
+                "unread_feedback_total": unread_feedback_total,
+                "pending_invitations_total": pending_invitations_total,
+                "accounts_with_recurring_issues": len(support_issues),
+                "report_export_telemetry_available": False,
+            },
+            "support_issues": sorted(support_issues, key=lambda item: (item["health_score"], -item["unread_feedback"], -item["pending_invitations"]))[:12],
+            "signals": {
+                "security": [
+                    {"id": "failed-logins", "label": "Logins fallidos 30d", "value": failed_logins_30d, "severity": "high" if failed_logins_30d > 10 else "medium" if failed_logins_30d > 0 else "low", "route": "/admin/activity?action=failed_login"},
+                    {"id": "access-denied", "label": "Accesos denegados 30d", "value": access_denied_30d, "severity": "medium" if access_denied_30d > 0 else "low", "route": "/admin/activity?action=access_denied"},
+                ],
+                "support": [
+                    {"id": "feedback-unread", "label": "Feedback sin leer", "value": unread_feedback_total, "severity": "medium" if unread_feedback_total > 0 else "low", "route": "/admin/alerts?kind=support"},
+                    {"id": "pending-invitations", "label": "Invitaciones pendientes", "value": pending_invitations_total, "severity": "medium" if pending_invitations_total > 0 else "low", "route": "/admin/businesses"},
+                ],
+            },
+            "limitations": {
+                "exports": "La plataforma aún no expone telemetría histórica detallada de exportaciones; este centro usa señales persistidas reales.",
+                "sync": "No se inventan estados de sincronización. Solo se usan auditoría, feedback, invitaciones y señales reales de billing.",
+            },
+        })
+
+    @app.route("/api/admin/businesses/<int:business_id>/owner-detail", methods=["GET"])
+    @token_required
+    @permission_required('admin.*')
+    def get_admin_business_owner_detail(business_id):
+        business = Business.query.options(joinedload(Business.user)).get(business_id)
+        if not business:
+            return jsonify({"error": "Negocio no encontrado"}), 404
+
+        row = next((item for item in _build_owner_admin_rows(range_days=30) if item["business_id"] == business_id), None)
+        if not row:
+            return jsonify({"error": "No se encontró contexto owner para este negocio"}), 404
+
+        owner = business.user
+        unread_feedback, pending_invitations = _build_admin_support_metrics([row])
+        owner_control = _get_owner_control_settings(business)
+        feedback_rows = TeamFeedback.query.filter_by(business_id=business_id).order_by(TeamFeedback.created_at.desc()).limit(6).all()
+        team_rows = TeamMember.query.filter_by(business_id=business_id).order_by(TeamMember.created_at.desc()).limit(12).all()
+        recent_activity_rows = AuditLog.query.filter(AuditLog.business_id == business_id).order_by(AuditLog.timestamp.desc()).limit(8).all()
+        intervention_logs = AuditLog.query.filter(
+            AuditLog.business_id == business_id,
+            AuditLog.module == "owner_control",
+        ).order_by(AuditLog.timestamp.desc()).limit(12).all()
+        recent_payments = SubscriptionPayment.query.filter(
+            SubscriptionPayment.user_id == owner.id
+        ).order_by(SubscriptionPayment.payment_date.desc(), SubscriptionPayment.created_at.desc()).limit(6).all() if owner else []
+        quick_notes = QuickNote.query.filter_by(business_id=business_id).order_by(QuickNote.created_at.desc()).limit(10).all()
+
+        sales_count = Sale.query.filter_by(business_id=business_id).count()
+        sales_total = float(db.session.query(func.coalesce(func.sum(Sale.total), 0)).filter_by(business_id=business_id).scalar() or 0)
+        expenses_total = float(db.session.query(func.coalesce(func.sum(Expense.amount), 0)).filter_by(business_id=business_id).scalar() or 0)
+        customers_count = Customer.query.filter_by(business_id=business_id).count()
+        products_count = Product.query.filter_by(business_id=business_id).count()
+        payments_count_30d = Payment.query.filter(Payment.business_id == business_id, Payment.payment_date >= datetime.utcnow().date() - timedelta(days=30)).count()
+
+        risk_level = "high" if any(flag in {"plan_expired", "failed_payment"} for flag in row["risk_flags"]) else "medium" if row["risk_flags"] else "low"
+
+        return jsonify({
+            "business": {
+                "id": business.id,
+                "name": business.name,
+                "currency": business.currency,
+                "timezone": business.timezone,
+                "created_at": business.created_at.isoformat() if business.created_at else None,
+                "updated_at": business.updated_at.isoformat() if business.updated_at else None,
+                "monthly_sales_goal": business.monthly_sales_goal,
+            },
+            "owner": {
+                "id": owner.id if owner else None,
+                "name": owner.name if owner else None,
+                "email": owner.email if owner else None,
+                "plan": row["plan"],
+                "membership_plan": row["membership_plan"],
+                "membership_start": row["membership_start"],
+                "membership_end": row["membership_end"],
+                "membership_auto_renew": bool(owner.membership_auto_renew) if owner else False,
+                "lifecycle_status": row["lifecycle_status"],
+                "last_login": owner.last_login.isoformat() if owner and owner.last_login else None,
+                "is_active": bool(owner.is_active) if owner else False,
+            },
+            "revenue": {
+                "monthly_equivalent": row["monthly_equivalent"],
+                "arr_equivalent": row["arr_equivalent"],
+                "latest_payment": row["latest_payment"],
+                "failed_payment_at": row["failed_payment_at"],
+            },
+            "metrics": {
+                "sales_count": sales_count,
+                "sales_total": round(sales_total, 2),
+                "sales_count_30d": row["sales_count_30d"],
+                "sales_total_30d": row["sales_total_30d"],
+                "expenses_total": round(expenses_total, 2),
+                "payments_count_30d": payments_count_30d,
+                "customers_count": customers_count,
+                "products_count": products_count,
+                "team_members_count": len(team_rows),
+                "pending_invitations": int(pending_invitations.get(business_id, 0) or 0),
+                "unread_feedback": int(unread_feedback.get(business_id, 0) or 0),
+                "active_modules_count": len([module for module in get_business_modules(business_id) if module.get("enabled")]),
+            },
+            "risk": {
+                "level": risk_level,
+                "flags": row["risk_flags"],
+                "last_activity_at": row["last_activity_at"],
+                "health_score": row["health_score"],
+            },
+            "quick_actions": [
+                {"label": "Abrir Activity", "to": f"/admin/activity?business_id={business_id}", "kind": "activity"},
+                {"label": "Abrir Revenue", "to": f"/admin/revenue?search={business.name}", "kind": "revenue"},
+                {"label": "Ver alertas", "to": f"/admin/alerts?business_id={business_id}", "kind": "alerts"},
+            ],
+            "owner_control": owner_control,
+            "notes": [note.to_dict() for note in quick_notes],
+            "feedback": [item.to_dict() for item in feedback_rows],
+            "interventions": [
+                {
+                    "id": log.id,
+                    "timestamp": log.timestamp.isoformat() if log.timestamp else None,
+                    "actor_name": log.actor_name or (log.user.name if log.user else None),
+                    "actor_email": log.user.email if log.user else None,
+                    "summary": log.summary,
+                    "reason": (log.metadata_json or {}).get("reason") if isinstance(log.metadata_json, dict) else None,
+                    "intervention_type": (log.metadata_json or {}).get("action") if isinstance(log.metadata_json, dict) else None,
+                    "before": log.before_json or log.old_value,
+                    "after": log.after_json or log.new_value,
+                    "metadata": log.metadata_json,
+                }
+                for log in intervention_logs
+            ],
+            "team_members": [member.to_dict() for member in team_rows],
+            "modules": get_business_modules(business_id),
+            "recent_activity": [
+                {
+                    "id": log.id,
+                    "action": log.action,
+                    "entity": log.entity_type or log.entity,
+                    "summary": log.summary,
+                    "timestamp": log.timestamp.isoformat() if log.timestamp else None,
+                }
+                for log in recent_activity_rows
+            ],
+            "recent_subscription_payments": [payment.to_dict() for payment in recent_payments],
+        })
+
+    @app.route("/api/admin/businesses/<int:business_id>/notes", methods=["POST"])
+    @token_required
+    @permission_required('admin.*')
+    def create_admin_business_note(business_id):
+        business = Business.query.get(business_id)
+        if not business:
+            return jsonify({"error": "Negocio no encontrado"}), 404
+        data = request.get_json() or {}
+        note_text = str(data.get("note") or "").strip()
+        if not note_text:
+            return jsonify({"error": "La nota es requerida"}), 400
+        if len(note_text) > 280:
+            return jsonify({"error": "La nota no puede superar 280 caracteres"}), 400
+        note = QuickNote(business_id=business_id, note=note_text)
+        db.session.add(note)
+        db.session.commit()
+        return jsonify({"note": note.to_dict()}), 201
+
+    @app.route("/api/admin/businesses/<int:business_id>/notes/<int:note_id>", methods=["DELETE"])
+    @token_required
+    @permission_required('admin.*')
+    def delete_admin_business_note(business_id, note_id):
+        note = QuickNote.query.filter_by(id=note_id, business_id=business_id).first()
+        if not note:
+            return jsonify({"error": "Nota no encontrada"}), 404
+        db.session.delete(note)
+        db.session.commit()
+        return jsonify({"success": True})
+
+    @app.route("/api/admin/businesses/<int:business_id>/interventions", methods=["POST"])
+    @token_required
+    @permission_required('admin.*')
+    def create_admin_business_intervention(business_id):
+        business = Business.query.options(joinedload(Business.user)).get(business_id)
+        if not business:
+            return jsonify({"error": "Negocio no encontrado"}), 404
+        owner = business.user
+        if not owner:
+            return jsonify({"error": "Owner no encontrado"}), 404
+
+        data = request.get_json() or {}
+        action = str(data.get("action") or "").strip()
+        reason = str(data.get("reason") or "").strip()
+        if not action:
+            return jsonify({"error": "La acción es requerida"}), 400
+        if len(reason) < 5:
+            return jsonify({"error": "Debes registrar un motivo claro"}), 400
+
+        owner_control = _get_owner_control_settings(business)
+        before_snapshot = {
+            "membership_end": owner.membership_end.isoformat() if owner.membership_end else None,
+            "membership_auto_renew": bool(owner.membership_auto_renew),
+            "owner_is_active": bool(owner.is_active),
+            "owner_control": owner_control,
+        }
+
+        now = datetime.utcnow()
+        if action == "extend_membership":
+            days = max(int(data.get("days") or 0), 1)
+            base_date = owner.membership_end if owner.membership_end and owner.membership_end > now else now
+            owner.membership_start = owner.membership_start or now
+            owner.membership_end = base_date + timedelta(days=days)
+        elif action == "toggle_auto_renew":
+            owner.membership_auto_renew = bool(data.get("enabled"))
+        elif action == "set_owner_active":
+            owner.is_active = bool(data.get("is_active"))
+        elif action == "set_priority":
+            owner_control["high_priority"] = bool(data.get("high_priority"))
+            owner_control["follow_up"] = bool(data.get("follow_up", owner_control.get("follow_up")))
+            owner_control["admin_status"] = "priority" if owner_control["high_priority"] else owner_control.get("admin_status") or "normal"
+        elif action == "add_structured_note":
+            title = str(data.get("title") or "").strip()
+            body = str(data.get("body") or "").strip()
+            category = str(data.get("category") or "general").strip() or "general"
+            if not body:
+                return jsonify({"error": "La nota estructurada necesita contenido"}), 400
+            notes = list(owner_control.get("structured_notes") or [])
+            notes.insert(0, {
+                "id": hashlib.sha1(f"{business_id}:{g.current_user.id}:{now.isoformat()}".encode("utf-8")).hexdigest()[:12],
+                "title": title or "Nota",
+                "body": body,
+                "category": category,
+                "created_at": now.isoformat(),
+                "actor": {"name": g.current_user.name, "email": g.current_user.email},
+            })
+            owner_control["structured_notes"] = notes[:25]
+        else:
+            return jsonify({"error": "Acción de intervención no soportada"}), 400
+
+        owner_control["last_reason"] = reason
+        owner_control["updated_at"] = now.isoformat()
+        _save_owner_control_settings(business, owner_control)
+
+        after_snapshot = {
+            "membership_end": owner.membership_end.isoformat() if owner.membership_end else None,
+            "membership_auto_renew": bool(owner.membership_auto_renew),
+            "owner_is_active": bool(owner.is_active),
+            "owner_control": owner_control,
+        }
+
+        audit_log = AuditLog(
+            business_id=business_id,
+            user_id=g.current_user.id,
+            actor_user_id=g.current_user.id,
+            actor_name=g.current_user.name,
+            actor_role="admin",
+            module="owner_control",
+            action="update",
+            entity="business",
+            entity_type="business",
+            entity_id=business_id,
+            summary=_build_owner_intervention_summary(action, business.name),
+            metadata_json={
+                "action": action,
+                "reason": reason,
+                "payload": {key: value for key, value in data.items() if key != "reason"},
+            },
+            before_json=before_snapshot,
+            after_json=after_snapshot,
+            ip_address=request.remote_addr,
+            user_agent=request.headers.get("User-Agent"),
+        )
+        db.session.add(audit_log)
+        db.session.commit()
+        return jsonify({
+            "success": True,
+            "intervention": {
+                "id": audit_log.id,
+                "timestamp": audit_log.timestamp.isoformat() if audit_log.timestamp else now.isoformat(),
+                "actor_name": g.current_user.name,
+                "actor_email": g.current_user.email,
+                "summary": audit_log.summary,
+                "reason": reason,
+                "intervention_type": action,
+            },
+        }), 201
 
     @app.route("/api/admin/businesses", methods=["GET"])
     @token_required
     @permission_required('admin.*')
     def get_all_businesses_admin():
-        """Get all businesses (admin view)"""
+        """Get all businesses (admin view) with pagination"""
+        page = request.args.get('page', type=int)
+        per_page = request.args.get('per_page', 20, type=int)
+        search = request.args.get('search', '').strip()
+
+        query = Business.query
+
+        if search:
+            query = query.filter(Business.name.ilike(f"%{search}%"))
+
         # Admin should see ALL businesses, not just their own
-        businesses = Business.query.all()
+        if page:
+            pagination = query.paginate(page=page, per_page=per_page, error_out=False)
+            businesses = pagination.items
+            total = pagination.total
+            pages = pagination.pages
+        else:
+            businesses = query.all()
+            total = len(businesses)
+            pages = 1
+            page = 1
+
         result = []
         for b in businesses:
             sales_count = Sale.query.filter_by(business_id=b.id).count()
@@ -4355,15 +8462,23 @@ def create_app(config_class=None):
             # Get owner name
             owner = User.query.get(b.user_id)
             user_name = owner.name if owner else "Desconocido"
+            owner_email = owner.email if owner else ""
             
             result.append({
                 "id": b.id, "name": b.name, "currency": b.currency,
                 "sales_count": sales_count, "sales_total": sales_total,
                 "expenses_total": expenses_total, "customers_count": customers_count,
                 "created_at": b.created_at.isoformat() if b.created_at else None,
-                "user_name": user_name
+                "user_name": user_name,
+                "owner_email": owner_email
             })
-        return jsonify({"businesses": result})
+            
+        return jsonify({
+            "businesses": result,
+            "total": total,
+            "pages": pages,
+            "current_page": page
+        })
 
     # ========== ADMIN GLOBAL DATA ==========
     @app.route("/api/admin/all-customers", methods=["GET"])
@@ -4648,18 +8763,66 @@ def create_app(config_class=None):
     @token_required
     @permission_required('admin.users')
     def get_all_users_admin():
-        """Get all users for admin management"""
-        print(f"[DEBUG] GET /api/admin/users - Loading users from DB")
-        print(f"[DB PATH] {app.config.get('SQLALCHEMY_DATABASE_URI', 'unknown')}")
-        users = User.query.order_by(User.created_at.desc()).all()
+        """Get all users for admin management with pagination"""
+        page = request.args.get('page', type=int)
+        per_page = request.args.get('per_page', 20, type=int)
+        search = request.args.get('search', '').strip()
+        account_type = request.args.get('account_type', '').strip()
+
+        query = User.query
+
+        if account_type:
+            query = query.filter(User.account_type == account_type)
+
+        if search:
+            query = query.filter(
+                db.or_(
+                    User.name.ilike(f"%{search}%"),
+                    User.email.ilike(f"%{search}%")
+                )
+            )
+
+        query = query.order_by(User.created_at.desc())
+
+        if page:
+            pagination = query.paginate(page=page, per_page=per_page, error_out=False)
+            users = pagination.items
+            total = pagination.total
+            pages = pagination.pages
+        else:
+            users = query.all()
+            total = len(users)
+            pages = 1
+            page = 1
+
         result = []
         for u in users:
             user_data = u.to_dict()
-            # Get roles
-            user_data['roles'] = [ur.role.to_dict() for ur in u.roles]
+            user_data['account_type'] = u.account_type
+            
+            # Enrich with Business info if team member
+            if u.account_type == 'team_member' and u.linked_business_id:
+                business = Business.query.get(u.linked_business_id)
+                user_data['business_name'] = business.name if business else "Unknown"
+                
+                # Get Team Member Role
+                tm = TeamMember.query.filter_by(user_id=u.id, business_id=u.linked_business_id).first()
+                if tm and tm.role:
+                    user_data['roles'] = [{'id': tm.role.id, 'name': tm.role.name}]
+                else:
+                    user_data['roles'] = []
+            else:
+                # Get system roles for personal accounts
+                user_data['roles'] = [ur.role.to_dict() for ur in u.roles]
+                
             result.append(user_data)
-        print(f"[DEBUG] GET /api/admin/users - Found {len(result)} users")
-        return jsonify({"users": result})
+        
+        return jsonify({
+            "users": result,
+            "total": total,
+            "pages": pages,
+            "current_page": page
+        })
 
     @app.route("/api/admin/users", methods=["POST"])
     @token_required
@@ -4671,61 +8834,81 @@ def create_app(config_class=None):
             email = data.get("email", "").strip().lower()
             password = data.get("password", "")
             name = data.get("name", "").strip()
+            account_type = data.get("account_type", "personal")
+            linked_business_id = data.get("linked_business_id")
             
-            print(f"[DEBUG] Creating user - name: {name}, email: {email}, data: {data}")
-            print(f"[DB PATH] {app.config.get('SQLALCHEMY_DATABASE_URI', 'unknown')}")
+            print(f"[DEBUG] Creating user - name: {name}, email: {email}, type: {account_type}")
             
             if not email or not password or not name:
                 return jsonify({"error": "Email, password y nombre son requeridos"}), 400
             
-            # Check if email exists
-            if User.query.filter_by(email=email).first():
-                return jsonify({"error": "El email ya está en uso"}), 400
+            # Check for duplicates based on context
+            if account_type == 'personal':
+                if User.query.filter_by(email=email, account_type='personal').first():
+                    return jsonify({"error": "El email ya está en uso como cuenta personal"}), 400
+            elif account_type == 'team_member':
+                if not linked_business_id:
+                    return jsonify({"error": "ID de negocio requerido para cuentas de equipo"}), 400
+                if User.query.filter_by(email=email, account_type='team_member', linked_business_id=linked_business_id).first():
+                    return jsonify({"error": "El usuario ya existe en este equipo"}), 400
             
             user = User(
                 email=email,
                 name=name,
                 is_admin=data.get("is_admin", False),
                 is_active=data.get("is_active", True),
-                plan=data.get("plan", "free")
+                plan=data.get("plan", "free"),
+                account_type=account_type,
+                linked_business_id=linked_business_id if account_type == 'team_member' else None,
+                email_verified=True # Admin created users are verified
             )
             user.set_password(password)
             db.session.add(user)
-            db.session.flush()  # Flush to get the user ID
+            db.session.flush()
             
-            print(f"[DEBUG] User created with ID: {user.id}")
-            
-            # Assign roles if provided - accept both role_ids (array) and role_id (single)
+            # Roles / Team Membership
             role_ids = data.get("role_ids", [])
-            single_role_id = data.get("role_id")
-            if single_role_id:
-                # Convert to int for comparison
+            # Handle single role_id
+            if data.get("role_id"):
                 try:
-                    single_role_id = int(single_role_id)
-                    if single_role_id not in role_ids:
-                        role_ids.append(single_role_id)
-                except (ValueError, TypeError):
-                    pass
-            
-            for role_id in role_ids:
-                try:
-                    role = Role.query.get(int(role_id))
-                    if role:
-                        user_role = UserRole(user_id=user.id, role_id=int(role_id))
-                        db.session.add(user_role)
-                except (ValueError, TypeError) as e:
-                    print(f"[DEBUG] Error assigning role: {e}")
-                    pass
+                    rid = int(data.get("role_id"))
+                    if rid not in role_ids:
+                        role_ids.append(rid)
+                except: pass
+
+            if account_type == 'team_member' and linked_business_id:
+                # Create TeamMember entry
+                # Assuming first role in list is the primary role for team member
+                role_id = role_ids[0] if role_ids else None
+                if not role_id:
+                     return jsonify({"error": "Rol requerido para miembro de equipo"}), 400
+                
+                tm = TeamMember(
+                    business_id=linked_business_id,
+                    user_id=user.id,
+                    role_id=role_id,
+                    status="active"
+                )
+                db.session.add(tm)
+            else:
+                # Personal account roles (System roles)
+                for role_id in role_ids:
+                    try:
+                        role = Role.query.get(int(role_id))
+                        if role:
+                            user_role = UserRole(user_id=user.id, role_id=int(role_id))
+                            db.session.add(user_role)
+                    except (ValueError, TypeError) as e:
+                        print(f"[DEBUG] Error assigning role: {e}")
             
             db.session.commit()
-            print(f"[DEBUG] User committed successfully: {user.email}")
-            return jsonify({"ok": True, "user": user.to_dict()}), 201
+            
+            return jsonify({"user": user.to_dict()}), 201
+            
         except Exception as e:
             db.session.rollback()
             print(f"[ERROR] Error creating user: {e}")
-            import traceback
-            traceback.print_exc()
-            return jsonify({"error": str(e)}), 500
+            return jsonify({"error": "Error al crear usuario", "details": str(e)}), 500
 
     @app.route("/api/admin/users/<int:user_id>", methods=["GET"])
     @token_required
@@ -4845,6 +9028,62 @@ def create_app(config_class=None):
         user.set_password(new_password)
         db.session.commit()
         return jsonify({"ok": True, "message": "Contraseña actualizada"})
+
+    @app.route("/api/admin/users/<int:user_id>/grant-access", methods=["POST"])
+    @token_required
+    @permission_required('admin.users')
+    def grant_user_account_access_admin(user_id):
+        user = User.query.get(user_id)
+        if not user:
+            return jsonify({"error": "Usuario no encontrado"}), 404
+
+        data = request.get_json() or {}
+        plan = data.get("plan")
+        duration_days = data.get("duration_days", 30)
+        reason = (data.get("reason") or "").strip()
+
+        if not plan:
+            return jsonify({"error": "Plan requerido"}), 400
+        if not reason or len(reason) < 5:
+            return jsonify({"error": "Debes registrar un motivo claro"}), 400
+
+        try:
+            previous_snapshot = {
+                "plan": user.plan,
+                "membership_plan": user.membership_plan,
+                "membership_end": user.membership_end.isoformat() if user.membership_end else None,
+            }
+            grant_payload = grant_manual_account_access(
+                user=user,
+                plan=plan,
+                duration_days=int(duration_days or 0),
+                actor_user=g.current_user,
+                reason=reason,
+            )
+            _log_audit(
+                g.current_user,
+                "grant_account_access",
+                "user",
+                user.id,
+                previous_snapshot,
+                {
+                    "plan": grant_payload["plan"],
+                    "membership_plan": grant_payload["membership_plan"],
+                    "membership_end": grant_payload["membership_end"],
+                    "reason": reason,
+                },
+            )
+            return jsonify({
+                "ok": True,
+                "user": user.to_dict(),
+                "account_access": build_account_access_payload(user, resolve_account_access(user)),
+            })
+        except ValueError as exc:
+            db.session.rollback()
+            return jsonify({"error": str(exc)}), 400
+        except Exception as exc:
+            db.session.rollback()
+            return jsonify({"error": "No se pudo otorgar acceso manual", "details": str(exc)}), 500
 
     @app.route("/api/admin/users/<int:user_id>/roles", methods=["GET"])
     @token_required
@@ -5711,6 +9950,23 @@ def create_app(config_class=None):
                 active=True
             )
             db.session.add(customer)
+            db.session.flush()
+            _record_business_audit(
+                business_id=business.id,
+                actor_user=None,
+                module="customers",
+                entity_type="customer",
+                entity_id=customer.id,
+                action="create",
+                summary=f"Se registró el cliente {customer.name}",
+                detail="Un cliente fue creado desde el registro público.",
+                metadata=_build_audit_metadata(
+                    source_path="/customers",
+                    origin="public_register",
+                    phone=customer.phone,
+                ),
+                after=_audit_snapshot("customer", customer),
+            )
             db.session.commit()
             
             return jsonify({"success": True, "message": "Registro exitoso", "customer_id": customer.id})
@@ -5781,51 +10037,7 @@ def create_app(config_class=None):
     # The duplicate serve_static at the end of create_app seems redundant or legacy.
     # I will remove it to avoid conflicts with the one defined earlier.
 
-    with app.app_context():
-        db.create_all()
-        try:
-            try:
-                from backend.seeds import seed_rbac
-                seed_rbac()
-            except ImportError as e:
-                print(f"Warning: Could not run RBAC seed: {e}")
-            
-            admin_email = os.getenv("ADMIN_EMAIL", "admin@cuaderno.app")
-            admin_password = os.getenv("ADMIN_PASSWORD", "admin123")
-            admin_name = os.getenv("ADMIN_NAME", "Administrador")
-            
-            admin_user = User.query.filter_by(email=admin_email.lower()).first()
-            if not admin_user:
-                admin_user = User(
-                    email=admin_email.lower(),
-                    name=admin_name,
-                    plan="pro",
-                    is_admin=True,
-                    email_verified=True
-                )
-                admin_user.set_password(admin_password)
-                db.session.add(admin_user)
-                db.session.flush()
-                print(f"[INIT] Admin user created: {admin_email}")
-            else:
-                admin_user.is_admin = True
-                admin_user.email_verified = True
-                admin_user.plan = "pro"
-                admin_user.set_password(admin_password)
-                print(f"[INIT] Existing user promoted to admin: {admin_email}")
-            
-            superadmin_role = Role.query.filter_by(name="SUPERADMIN").first()
-            if superadmin_role and admin_user.id:
-                existing_role = UserRole.query.filter_by(user_id=admin_user.id, role_id=superadmin_role.id).first()
-                if not existing_role:
-                    user_role = UserRole(user_id=admin_user.id, role_id=superadmin_role.id)
-                    db.session.add(user_role)
-                    print(f"[INIT] Assigned SUPERADMIN role to {admin_email}")
-            
-            db.session.commit()
-        except Exception as e:
-            db.session.rollback()
-            print(f"[INIT] Skipping seed due to error: {e}")
+    log_startup_bootstrap_status(app)
 
     return app
 
@@ -6161,6 +10373,44 @@ app = create_app()
 # Register additional routes
 register_receipt_routes(app)
 
+register_financial_restore_routes(
+    app,
+    token_required=token_required,
+    permission_required=permission_required,
+)
+register_raw_inventory_restore_routes(
+    app,
+    token_required=token_required,
+    module_required=module_required,
+    permission_required=permission_required,
+    get_current_role_snapshot=get_current_role_snapshot,
+    refresh_summary_materialized_days=refresh_summary_materialized_days,
+)
+register_commercial_core_restore_routes(
+    app,
+    token_required=token_required,
+    module_required=module_required,
+    commercial_section_required=commercial_section_required,
+    permission_required=permission_required,
+    has_permission=has_permission,
+    get_current_role_snapshot=get_current_role_snapshot,
+    refresh_summary_materialized_days=refresh_summary_materialized_days,
+)
+register_commercial_quotes_restore_routes(
+    app,
+    token_required=token_required,
+    module_required=module_required,
+    permission_required=permission_required,
+    refresh_summary_materialized_days=refresh_summary_materialized_days,
+)
+register_commercial_invoices_restore_routes(
+    app,
+    token_required=token_required,
+    module_required=module_required,
+    commercial_section_required=commercial_section_required,
+    permission_required=permission_required,
+)
+
 # Additional route for WhatsApp sharing - get sale by ID
 @app.route("/api/sales", methods=["GET"])
 def get_sale_for_whatsapp():
@@ -6189,6 +10439,9 @@ def get_sale_for_whatsapp():
 @app.route("/api/businesses/<int:business_id>/debts", methods=["GET", "POST"])
 @token_required
 def handle_debts(business_id):
+    required_permission = "debts.manage" if request.method == "POST" else "debts.view"
+    if not has_permission(g.current_user, required_permission, business_id):
+        return jsonify({"error": f"Permiso requerido: {required_permission}"}), 403
     business = Business.query.filter_by(id=business_id, user_id=g.current_user.id).first()
     if not business:
         return jsonify({"error": "Negocio no encontrado"}), 404
@@ -6256,6 +10509,8 @@ def handle_debts(business_id):
 @app.route("/api/businesses/<int:business_id>/debts/<int:debt_id>", methods=["PUT"])
 @token_required
 def update_debt(business_id, debt_id):
+    if not has_permission(g.current_user, "debts.manage", business_id):
+        return jsonify({"error": "Permiso requerido: debts.manage"}), 403
     debt = Debt.query.filter_by(id=debt_id, business_id=business_id).first()
     if not debt:
         return jsonify({"error": "Deuda no encontrada"}), 404
@@ -6291,6 +10546,8 @@ def update_debt(business_id, debt_id):
 @app.route("/api/businesses/<int:business_id>/debts/<int:debt_id>", methods=["DELETE"])
 @token_required
 def delete_debt(business_id, debt_id):
+    if not has_permission(g.current_user, "debts.manage", business_id):
+        return jsonify({"error": "Permiso requerido: debts.manage"}), 403
     debt = Debt.query.filter_by(id=debt_id, business_id=business_id).first()
     if not debt:
         return jsonify({"error": "Deuda no encontrada"}), 404
@@ -6302,6 +10559,9 @@ def delete_debt(business_id, debt_id):
 @app.route("/api/businesses/<int:business_id>/debts/<int:debt_id>/payments", methods=["GET", "POST"])
 @token_required
 def handle_debt_payments(business_id, debt_id):
+    required_permission = "debts.manage" if request.method == "POST" else "debts.view"
+    if not has_permission(g.current_user, required_permission, business_id):
+        return jsonify({"error": f"Permiso requerido: {required_permission}"}), 403
     debt = Debt.query.filter_by(id=debt_id, business_id=business_id).first()
     if not debt:
         return jsonify({"error": "Deuda no encontrada"}), 404
@@ -6348,6 +10608,8 @@ def handle_debt_payments(business_id, debt_id):
 @app.route("/api/businesses/<int:business_id>/debts/<int:debt_id>/payments/<int:payment_id>", methods=["DELETE"])
 @token_required
 def delete_debt_payment(business_id, debt_id, payment_id):
+    if not has_permission(g.current_user, "debts.manage", business_id):
+        return jsonify({"error": "Permiso requerido: debts.manage"}), 403
     debt = Debt.query.filter_by(id=debt_id, business_id=business_id).first()
     if not debt:
         return jsonify({"error": "Deuda no encontrada"}), 404
@@ -6368,6 +10630,8 @@ def delete_debt_payment(business_id, debt_id, payment_id):
 @app.route("/api/businesses/<int:business_id>/debts/summary", methods=["GET"])
 @token_required
 def get_debts_summary(business_id):
+    if not has_permission(g.current_user, "debts.view", business_id):
+        return jsonify({"error": "Permiso requerido: debts.view"}), 403
     business = Business.query.filter_by(id=business_id, user_id=g.current_user.id).first()
     if not business:
         return jsonify({"error": "Negocio no encontrado"}), 404
@@ -6415,10 +10679,207 @@ def serve_static(path):
     # 3. SPA Fallback: Serve index.html for non-API routes
     return send_from_directory(app.static_folder, "index.html")
 
+@app.route("/api/webhooks/brevo", methods=["POST"])
+def brevo_webhook():
+    """Handle Brevo webhooks for email delivery status"""
+    data = request.get_json() or {}
+    print(f"[WEBHOOK] Brevo event received: {data}")
+    
+    event = data.get("event")
+    message_id = data.get("message-id")
+    
+    if not event or not message_id:
+        return jsonify({"ignored": True}), 200
+        
+    # Find invitation by message_id
+    # Note: Brevo might send message-id with angle brackets <...>, so we might need to strip them or search with LIKE
+    # stored message_id usually comes from API response which might be without brackets.
+    # Let's try exact match first.
+    invite = TeamInvitation.query.filter_by(message_id=message_id).first()
+    
+    if not invite:
+        # Try stripping brackets if present
+        clean_id = message_id.strip("<>")
+        invite = TeamInvitation.query.filter_by(message_id=clean_id).first()
+        
+    if invite:
+        print(f"[WEBHOOK] Updating invite {invite.id} status to {event}")
+        invite.delivery_status = event
+        db.session.commit()
+        return jsonify({"success": True})
+        
+    return jsonify({"ignored": True, "reason": "Invitation not found"}), 200
+
+# ========== TEAM FEEDBACK ROUTES ==========
+@app.route("/api/businesses/<int:business_id>/feedback", methods=["POST"])
+@token_required
+def create_team_feedback(business_id):
+    # Allow any team member (even without permissions) to send feedback
+    # But must be member of THIS business
+    if g.current_user.account_type == 'team_member':
+         # Verify link
+         if g.current_user.linked_business_id != business_id:
+             return jsonify({"error": "No perteneces a este negocio"}), 403
+    elif g.current_user.account_type == 'personal':
+         # Owner can also create feedback (test)
+         business = Business.query.get(business_id)
+         if not business or business.user_id != g.current_user.id:
+             return jsonify({"error": "Acceso denegado"}), 403
+    
+    data = request.get_json() or {}
+    subject = data.get("subject", "").strip()
+    message = data.get("message", "").strip()
+    type_ = data.get("type", "suggestion")
+    
+    if not subject or not message:
+        return jsonify({"error": "Asunto y mensaje requeridos"}), 400
+        
+    feedback = TeamFeedback(
+        business_id=business_id,
+        user_id=g.current_user.id,
+        type=type_,
+        subject=subject,
+        message=message
+    )
+    
+    db.session.add(feedback)
+    db.session.commit()
+    
+    # Optional: Notify Owner via Email
+    try:
+        business = Business.query.get(business_id)
+        owner = business.user
+        if owner and owner.email:
+            AuthManager.send_plain_email(
+                owner.email,
+                f"Nuevo mensaje de equipo: {subject}",
+                f"Has recibido un nuevo mensaje de {g.current_user.name}:\n\n{message}\n\nPuedes verlo en la sección de Equipo."
+            )
+    except Exception as e:
+        print(f"Error sending feedback notification: {e}")
+        
+    return jsonify(feedback.to_dict()), 201
+
+@app.route("/api/businesses/<int:business_id>/feedback", methods=["GET"])
+@token_required
+@permission_required('team.read')
+def get_team_feedback(business_id):
+    feedbacks = TeamFeedback.query.filter_by(business_id=business_id).order_by(TeamFeedback.created_at.desc()).all()
+    return jsonify({"feedback": [f.to_dict() for f in feedbacks]})
+
+@app.route("/api/businesses/<int:business_id>/analytics/team", methods=["GET"])
+@token_required
+@module_required("reports")
+def team_analytics(business_id):
+    business = Business.query.get(business_id)
+    if not business: return jsonify({"error": "Negocio no encontrado"}), 404
+    
+    # Permission Check (Clean RBAC)
+    is_authorized = False
+    if business.user_id == g.current_user.id or g.current_user.is_admin:
+        is_authorized = True
+    else:
+        member = TeamMember.query.filter_by(user_id=g.current_user.id, business_id=business_id, status='active').first()
+        if member:
+            perm_names = [rp.permission.name for rp in member.role.permissions if rp.permission]
+            if 'analytics.view_team' in perm_names:
+                is_authorized = True
+    
+    if not is_authorized:
+            return jsonify({"error": "No tiene permisos para ver reportes de equipo"}), 403
+
+    start_date_str = request.args.get("start_date")
+    end_date_str = request.args.get("end_date")
+    
+    start_date = None
+    end_date = None
+    
+    try:
+        if start_date_str: start_date = datetime.strptime(start_date_str, "%Y-%m-%d").date()
+        if end_date_str: end_date = datetime.strptime(end_date_str, "%Y-%m-%d").date()
+    except: return jsonify({"error": "Fecha inválida"}), 400
+
+    from backend.services.analytics_layer import AnalyticsLayer
+    analytics = AnalyticsLayer(business_id)
+    summary = analytics.get_team_performance_summary(start_date, end_date)
+    # Obtener detalle para mostrar en UI (limitado a recientes para performance)
+    all_activity = analytics.get_team_activity_detail(start_date, end_date)
+    recent_activity = all_activity[:200] # Mostrar últimos 200 en pantalla
+    
+    return jsonify({
+        "summary": summary,
+        "recent_activity": recent_activity
+    })
+
+@app.route("/api/businesses/<int:business_id>/export/team", methods=["GET"])
+@token_required
+@module_required("reports")
+def export_team_report(business_id):
+    business = Business.query.get(business_id)
+    if not business: return jsonify({"error": "Negocio no encontrado"}), 404
+    
+    # Permission Check (Clean RBAC)
+    is_authorized = False
+    if business.user_id == g.current_user.id or g.current_user.is_admin:
+        is_authorized = True
+    else:
+        member = TeamMember.query.filter_by(user_id=g.current_user.id, business_id=business_id, status='active').first()
+        if member:
+            perm_names = [rp.permission.name for rp in member.role.permissions if rp.permission]
+            if 'analytics.view_team' in perm_names:
+                is_authorized = True
+    
+    if not is_authorized:
+            return jsonify({"error": "No tiene permisos"}), 403
+
+    start_date_str = request.args.get("start_date")
+    end_date_str = request.args.get("end_date")
+    
+    start_date = None
+    end_date = None
+    
+    try:
+        if start_date_str: start_date = datetime.strptime(start_date_str, "%Y-%m-%d").date()
+        if end_date_str: end_date = datetime.strptime(end_date_str, "%Y-%m-%d").date()
+    except: return jsonify({"error": "Fecha inválida"}), 400
+
+    from backend.services.export import ExcelReportGenerator
+    from backend.services.analytics_layer import AnalyticsLayer
+    
+    exporter = ExcelReportGenerator(business_id)
+    analytics = AnalyticsLayer(business_id)
+    
+    summary_data = analytics.get_team_performance_summary(start_date, end_date)
+    detail_data = analytics.get_team_activity_detail(start_date, end_date)
+    
+    wb = exporter.generate_team_report(summary_data, detail_data, start_date, end_date)
+    
+    from io import BytesIO
+    output = BytesIO()
+    wb.save(output)
+    output.seek(0)
+    
+    filename = f"Reporte_Equipo_{date.today()}.xlsx"
+    
+    return send_file(
+        output,
+        mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        as_attachment=True,
+        download_name=filename
+    )
+
+
 if __name__ == "__main__":
-    port = int(os.getenv("PORT", "8001"))
-    debug = os.getenv("FLASK_ENV", "development") != "production"
-    app.run(host="127.0.0.1", port=port, debug=debug)
+    port = int(os.getenv("PORT", str(app.config.get("PORT", 5000))))
+    runtime_env = str(
+        os.getenv("APP_ENV")
+        or os.getenv("FLASK_ENV")
+        or app.config.get("RUNTIME_ENV")
+        or "development"
+    ).strip().lower()
+    debug = bool(app.config.get("DEBUG", runtime_env != "production"))
+    use_reloader = str(os.getenv("FLASK_USE_RELOADER", "0")).strip().lower() in {"1", "true", "yes", "on"}
+    app.run(host="0.0.0.0", port=port, debug=debug, use_reloader=use_reloader)
 
 # Cómo correr en desarrollo para servir frontend y API desde 127.0.0.1:5000
 # Windows PowerShell:

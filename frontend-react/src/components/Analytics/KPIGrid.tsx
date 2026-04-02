@@ -16,13 +16,13 @@ const KPICard: React.FC<KPICardProps> = ({ kpi }) => {
     'text-green-500': 'text-green-600 dark:text-green-400 bg-green-50 dark:bg-green-900/20',
     'text-red-500': 'text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/20',
     'text-blue-500': 'text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/20',
-    'text-gray-500': 'text-gray-600 dark:text-gray-400 bg-gray-50 dark:bg-gray-900/20',
+    'text-gray-500': 'text-gray-600 dark:text-gray-400 bg-gray-100 dark:bg-gray-700/60',
   };
 
   const trendColorClass = trend === 'up' ? 'text-green-600 dark:text-green-400' : trend === 'down' ? 'text-red-600 dark:text-red-400' : 'text-gray-500';
 
   return (
-    <div className="bg-white dark:bg-gray-800 rounded-xl p-6 border border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-md transition-all duration-300 group">
+    <div className="app-surface group rounded-xl p-6 shadow-sm transition-all duration-300 hover:shadow-md">
       <div className="flex justify-between items-start mb-4">
         <div>
           <p className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">{label}</p>
@@ -49,9 +49,9 @@ const KPICard: React.FC<KPICardProps> = ({ kpi }) => {
 
 export const KPIGrid: React.FC<{ kpis: KPI[] }> = ({ kpis }) => {
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-      {kpis.map((kpi, idx) => (
-        <KPICard key={idx} kpi={kpi} />
+    <div className="dashboard-kpi-grid grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4 lg:gap-6">
+      {kpis.map((kpi) => (
+        <KPICard key={kpi.id} kpi={kpi} />
       ))}
     </div>
   );

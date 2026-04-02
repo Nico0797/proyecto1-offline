@@ -1,0 +1,1198 @@
+{
+  "base_url": "http://127.0.0.1:18000",
+  "business_id": 16,
+  "users": [
+    20,
+    30,
+    40,
+    60
+  ],
+  "scenarios": [
+    "D"
+  ],
+  "run_time": "1m",
+  "spawn_rate": 5.0,
+  "fixture": null,
+  "runs": [
+    {
+      "scenario": "D",
+      "users": 20,
+      "started_at": "2026-03-25T21:39:58.351807+00:00",
+      "finished_at": "2026-03-25T21:40:59.477166+00:00",
+      "command": [
+        "C:\\Users\\harae\\Desktop\\ui migration\\proyecto1\\.venv\\Scripts\\locust.exe",
+        "-f",
+        "C:\\Users\\harae\\Desktop\\ui migration\\proyecto1\\load-tests\\locustfile.py",
+        "--host",
+        "http://127.0.0.1:18000",
+        "--users",
+        "20",
+        "--spawn-rate",
+        "5.0",
+        "--run-time",
+        "1m",
+        "--csv",
+        "load-tests\\results\\phase1b-prodlike-gunicorn\\scenario_d_u20",
+        "--html",
+        "load-tests\\results\\phase1b-prodlike-gunicorn\\scenario_d_u20.html",
+        "--headless",
+        "--only-summary"
+      ],
+      "exit_code": 0,
+      "stdout_tail": "",
+      "stderr_tail": "   108    3008    160 |    1.65        0.00\nGET      read.payments                                                                     22     0(0.00%) |    236     131     755    180 |    0.37        0.00\nGET      read.products                                                                     14     0(0.00%) |    209     102     543    170 |    0.24        0.00\nGET      read.sales                                                                        54     0(0.00%) |    289     122    3537    190 |    0.91        0.00\nGET      read.summary                                                                      73     0(0.00%) |     75      31     693     46 |    1.23        0.00\nPOST     write.expense                                                                     50     0(0.00%) |    158      80     599    120 |    0.84        0.00\nPOST     write.payment                                                                     28     0(0.00%) |    239      98    1011    160 |    0.47        0.00\nPOST     write.sale                                                                       100     0(0.00%) |    259      84    3124    150 |    1.69        0.00\n--------|----------------------------------------------------------------------------|-------|-------------|-------|-------|-------|-------|--------|-----------\n         Aggregated                                                                       491     0(0.00%) |    216       7    3537    140 |    8.28        0.00\n\nResponse time percentiles (approximated)\nType     Name                                                                                  50%    66%    75%    80%    90%    95%    98%    99%  99.9% 99.99%   100% # reqs\n--------|--------------------------------------------------------------------------------|--------|------|------|------|------|------|------|------|------|------|------|------\nGET      read.business_profile                                                                  10     11     14     14     32     35     35     35     35     35     35     16\nGET      read.customers                                                                        140    160    230    280    800   2000   3500   3500   3500   3500   3500     36\nGET      read.dashboard                                                                        160    190    250    270    390    600   1100   3000   3000   3000   3000     98\nGET      read.payments                                                                         190    210    240    270    370    520    760    760    760    760    760     22\nGET      read.products                                                                         190    220    270    290    290    540    540    540    540    540    540     14\nGET      read.sales                                                                            190    220    260    270    340    660   1000   3500   3500   3500   3500     54\nGET      read.summary                                                                           46     55     62     79    120    160    510    690    690    690    690     73\nPOST     write.expense                                                                         130    150    180    200    290    330    600    600    600    600    600     50\nPOST     write.payment                                                                         160    190    200    210    640    890   1000   1000   1000   1000   1000     28\nPOST     write.sale                                                                            150    210    250    260    370    600   3100   3100   3100   3100   3100    100\n--------|--------------------------------------------------------------------------------|--------|------|------|------|------|------|------|------|------|------|------|------\n         Aggregated                                                                            140    180    210    240    330    520   1000   3000   3500   3500   3500    491\n\n",
+      "stats_summary": {
+        "requests": 491,
+        "failures": 0,
+        "median_ms": 140.0,
+        "avg_ms": 216.67999246437645,
+        "min_ms": 7.029600001260405,
+        "max_ms": 3537.191700001131,
+        "avg_size": 38744.967413441955,
+        "rps": 8.27677794154158,
+        "failures_per_sec": 0.0,
+        "p50_ms": 140.0,
+        "p95_ms": 520.0,
+        "p99_ms": 3000.0,
+        "slowest_endpoint": {
+          "name": "read.customers",
+          "method": "GET",
+          "avg_ms": 338.4959666668187,
+          "p95_ms": 2000.0,
+          "p99_ms": 3500.0,
+          "rps": 0.6068513358360426
+        }
+      },
+      "distribution": {
+        "p50_estimated_ms": 249.33876984739996,
+        "p95_estimated_ms": 890.0561277778756,
+        "p99_estimated_ms": 1583.017899999994,
+        "avg_rps_window": 6.773214285714285,
+        "max_rps_window": 10.5,
+        "final_failure_count": 0.0
+      },
+      "failures_rows": 1,
+      "error_rate": 0.0,
+      "metrics_samples": [
+        {
+          "ts": "2026-03-25T21:39:58.411204+00:00",
+          "db_total_connections": 22,
+          "db_active_connections": 1,
+          "db_waiting_connections": 21,
+          "db_longest_active_seconds": 0.004742
+        },
+        {
+          "ts": "2026-03-25T21:40:00.416877+00:00",
+          "db_total_connections": 23,
+          "db_active_connections": 1,
+          "db_waiting_connections": 22,
+          "db_longest_active_seconds": 0.001029
+        },
+        {
+          "ts": "2026-03-25T21:40:02.418504+00:00",
+          "db_total_connections": 25,
+          "db_active_connections": 1,
+          "db_waiting_connections": 24,
+          "db_longest_active_seconds": 0.000988
+        },
+        {
+          "ts": "2026-03-25T21:40:04.420376+00:00",
+          "db_total_connections": 25,
+          "db_active_connections": 1,
+          "db_waiting_connections": 24,
+          "db_longest_active_seconds": 0.001875
+        },
+        {
+          "ts": "2026-03-25T21:40:06.422382+00:00",
+          "db_total_connections": 25,
+          "db_active_connections": 1,
+          "db_waiting_connections": 24,
+          "db_longest_active_seconds": 0.000943
+        },
+        {
+          "ts": "2026-03-25T21:40:08.424047+00:00",
+          "db_total_connections": 25,
+          "db_active_connections": 1,
+          "db_waiting_connections": 24,
+          "db_longest_active_seconds": 0.000945
+        },
+        {
+          "ts": "2026-03-25T21:40:10.425816+00:00",
+          "db_total_connections": 25,
+          "db_active_connections": 1,
+          "db_waiting_connections": 24,
+          "db_longest_active_seconds": 0.000964
+        },
+        {
+          "ts": "2026-03-25T21:40:12.427022+00:00",
+          "db_total_connections": 25,
+          "db_active_connections": 1,
+          "db_waiting_connections": 24,
+          "db_longest_active_seconds": 0.000951
+        },
+        {
+          "ts": "2026-03-25T21:40:14.428848+00:00",
+          "db_total_connections": 25,
+          "db_active_connections": 1,
+          "db_waiting_connections": 24,
+          "db_longest_active_seconds": 0.000931
+        },
+        {
+          "ts": "2026-03-25T21:40:16.429865+00:00",
+          "db_total_connections": 25,
+          "db_active_connections": 1,
+          "db_waiting_connections": 24,
+          "db_longest_active_seconds": 0.000929
+        },
+        {
+          "ts": "2026-03-25T21:40:18.431309+00:00",
+          "db_total_connections": 25,
+          "db_active_connections": 1,
+          "db_waiting_connections": 24,
+          "db_longest_active_seconds": 0.000944
+        },
+        {
+          "ts": "2026-03-25T21:40:20.432955+00:00",
+          "db_total_connections": 25,
+          "db_active_connections": 1,
+          "db_waiting_connections": 24,
+          "db_longest_active_seconds": 0.000945
+        },
+        {
+          "ts": "2026-03-25T21:40:22.434164+00:00",
+          "db_total_connections": 25,
+          "db_active_connections": 1,
+          "db_waiting_connections": 23,
+          "db_longest_active_seconds": 0.000935
+        },
+        {
+          "ts": "2026-03-25T21:40:24.435187+00:00",
+          "db_total_connections": 25,
+          "db_active_connections": 1,
+          "db_waiting_connections": 24,
+          "db_longest_active_seconds": 0.000895
+        },
+        {
+          "ts": "2026-03-25T21:40:26.436882+00:00",
+          "db_total_connections": 25,
+          "db_active_connections": 1,
+          "db_waiting_connections": 24,
+          "db_longest_active_seconds": 0.000922
+        },
+        {
+          "ts": "2026-03-25T21:40:28.438558+00:00",
+          "db_total_connections": 25,
+          "db_active_connections": 1,
+          "db_waiting_connections": 24,
+          "db_longest_active_seconds": 0.000972
+        },
+        {
+          "ts": "2026-03-25T21:40:30.439867+00:00",
+          "db_total_connections": 25,
+          "db_active_connections": 1,
+          "db_waiting_connections": 24,
+          "db_longest_active_seconds": 0.000921
+        },
+        {
+          "ts": "2026-03-25T21:40:32.440881+00:00",
+          "db_total_connections": 25,
+          "db_active_connections": 1,
+          "db_waiting_connections": 24,
+          "db_longest_active_seconds": 0.000868
+        },
+        {
+          "ts": "2026-03-25T21:40:34.442847+00:00",
+          "db_total_connections": 25,
+          "db_active_connections": 2,
+          "db_waiting_connections": 23,
+          "db_longest_active_seconds": 0.00096
+        },
+        {
+          "ts": "2026-03-25T21:40:36.444031+00:00",
+          "db_total_connections": 25,
+          "db_active_connections": 1,
+          "db_waiting_connections": 24,
+          "db_longest_active_seconds": 0.000863
+        },
+        {
+          "ts": "2026-03-25T21:40:38.445544+00:00",
+          "db_total_connections": 25,
+          "db_active_connections": 1,
+          "db_waiting_connections": 24,
+          "db_longest_active_seconds": 0.001024
+        },
+        {
+          "ts": "2026-03-25T21:40:40.447598+00:00",
+          "db_total_connections": 25,
+          "db_active_connections": 1,
+          "db_waiting_connections": 24,
+          "db_longest_active_seconds": 0.000938
+        },
+        {
+          "ts": "2026-03-25T21:40:42.448708+00:00",
+          "db_total_connections": 25,
+          "db_active_connections": 1,
+          "db_waiting_connections": 24,
+          "db_longest_active_seconds": 0.001345
+        },
+        {
+          "ts": "2026-03-25T21:40:44.451059+00:00",
+          "db_total_connections": 25,
+          "db_active_connections": 2,
+          "db_waiting_connections": 23,
+          "db_longest_active_seconds": 0.000993
+        },
+        {
+          "ts": "2026-03-25T21:40:46.453125+00:00",
+          "db_total_connections": 25,
+          "db_active_connections": 1,
+          "db_waiting_connections": 24,
+          "db_longest_active_seconds": 0.001029
+        },
+        {
+          "ts": "2026-03-25T21:40:48.454417+00:00",
+          "db_total_connections": 25,
+          "db_active_connections": 1,
+          "db_waiting_connections": 24,
+          "db_longest_active_seconds": 0.000928
+        },
+        {
+          "ts": "2026-03-25T21:40:50.455677+00:00",
+          "db_total_connections": 25,
+          "db_active_connections": 1,
+          "db_waiting_connections": 24,
+          "db_longest_active_seconds": 0.000913
+        },
+        {
+          "ts": "2026-03-25T21:40:52.456995+00:00",
+          "db_total_connections": 25,
+          "db_active_connections": 1,
+          "db_waiting_connections": 24,
+          "db_longest_active_seconds": 0.000912
+        },
+        {
+          "ts": "2026-03-25T21:40:54.458997+00:00",
+          "db_total_connections": 25,
+          "db_active_connections": 1,
+          "db_waiting_connections": 24,
+          "db_longest_active_seconds": 0.000869
+        },
+        {
+          "ts": "2026-03-25T21:40:56.460063+00:00",
+          "db_total_connections": 25,
+          "db_active_connections": 1,
+          "db_waiting_connections": 24,
+          "db_longest_active_seconds": 0.000864
+        },
+        {
+          "ts": "2026-03-25T21:40:58.461652+00:00",
+          "db_total_connections": 25,
+          "db_active_connections": 1,
+          "db_waiting_connections": 24,
+          "db_longest_active_seconds": 0.000915
+        }
+      ],
+      "metrics_summary": {
+        "backend_cpu_peak_percent": 0.0,
+        "backend_rss_peak_mb": 0.0,
+        "backend_threads_peak": 0.0,
+        "db_total_connections_peak": 25,
+        "db_active_connections_peak": 2,
+        "db_waiting_connections_peak": 24,
+        "db_longest_active_seconds_peak": 0.004742
+      },
+      "artifacts": {
+        "stats_csv": "load-tests\\results\\phase1b-prodlike-gunicorn\\scenario_d_u20_stats.csv",
+        "stats_history_csv": "load-tests\\results\\phase1b-prodlike-gunicorn\\scenario_d_u20_stats_history.csv",
+        "failures_csv": "load-tests\\results\\phase1b-prodlike-gunicorn\\scenario_d_u20_failures.csv",
+        "report_html": "load-tests\\results\\phase1b-prodlike-gunicorn\\scenario_d_u20.html"
+      },
+      "capacity_pass": false
+    },
+    {
+      "scenario": "D",
+      "users": 30,
+      "started_at": "2026-03-25T21:40:59.479634+00:00",
+      "finished_at": "2026-03-25T21:42:00.569188+00:00",
+      "command": [
+        "C:\\Users\\harae\\Desktop\\ui migration\\proyecto1\\.venv\\Scripts\\locust.exe",
+        "-f",
+        "C:\\Users\\harae\\Desktop\\ui migration\\proyecto1\\load-tests\\locustfile.py",
+        "--host",
+        "http://127.0.0.1:18000",
+        "--users",
+        "30",
+        "--spawn-rate",
+        "5.0",
+        "--run-time",
+        "1m",
+        "--csv",
+        "load-tests\\results\\phase1b-prodlike-gunicorn\\scenario_d_u30",
+        "--html",
+        "load-tests\\results\\phase1b-prodlike-gunicorn\\scenario_d_u30.html",
+        "--headless",
+        "--only-summary"
+      ],
+      "exit_code": 0,
+      "stdout_tail": "",
+      "stderr_tail": "   104    1075    260 |    2.02        0.00\nGET      read.payments                                                                     32     0(0.00%) |    350     187     895    280 |    0.54        0.00\nGET      read.products                                                                     12     0(0.00%) |    299      98    1168    200 |    0.20        0.00\nGET      read.sales                                                                        67     0(0.00%) |    434     139    5373    260 |    1.13        0.00\nGET      read.summary                                                                      83     0(0.00%) |    351      37    7320     76 |    1.40        0.00\nPOST     write.expense                                                                     65     0(0.00%) |    430      84    6141    220 |    1.09        0.00\nPOST     write.payment                                                                     36     0(0.00%) |    359     121    1031    260 |    0.61        0.00\nPOST     write.sale                                                                       143     0(0.00%) |    354      91    3774    230 |    2.41        0.00\n--------|----------------------------------------------------------------------------|-------|-------------|-------|-------|-------|-------|--------|-----------\n         Aggregated                                                                       655     0(0.00%) |    365       6    9693    230 |   11.03        0.00\n\nResponse time percentiles (approximated)\nType     Name                                                                                  50%    66%    75%    80%    90%    95%    98%    99%  99.9% 99.99%   100% # reqs\n--------|--------------------------------------------------------------------------------|--------|------|------|------|------|------|------|------|------|------|------|------\nGET      read.business_profile                                                                  16     34    130    180    240   1100   1100   1100   1100   1100   1100     15\nGET      read.customers                                                                        190    240    300    350    720   1000   2100   9700   9700   9700   9700     82\nGET      read.dashboard                                                                        260    310    360    450    610    730   1000   1100   1100   1100   1100    120\nGET      read.payments                                                                         290    350    370    400    620    830    900    900    900    900    900     32\nGET      read.products                                                                         210    220    280    280    500   1200   1200   1200   1200   1200   1200     12\nGET      read.sales                                                                            260    350    400    440    800    920   1500   5400   5400   5400   5400     67\nGET      read.summary                                                                           76    160    230    250    610    660   7200   7300   7300   7300   7300     83\nPOST     write.expense                                                                         220    330    410    500    720   1100   1900   6100   6100   6100   6100     65\nPOST     write.payment                                                                         280    420    460    470    710    990   1000   1000   1000   1000   1000     36\nPOST     write.sale                                                                            230    300    380    460    730    970   1700   2300   3800   3800   3800    143\n--------|--------------------------------------------------------------------------------|--------|------|------|------|------|------|------|------|------|------|------|------\n         Aggregated                                                                            230    290    360    430    680    970   1300   2300   9700   9700   9700    655\n\n",
+      "stats_summary": {
+        "requests": 653,
+        "failures": 0,
+        "median_ms": 230.0,
+        "avg_ms": 366.0740848392373,
+        "min_ms": 6.97059999947669,
+        "max_ms": 9693.476300000839,
+        "avg_size": 37709.78407350689,
+        "rps": 11.047903601508684,
+        "failures_per_sec": 0.0,
+        "p50_ms": 230.0,
+        "p95_ms": 970.0,
+        "p99_ms": 2300.0,
+        "slowest_endpoint": {
+          "name": "write.expense",
+          "method": "POST",
+          "avg_ms": 435.00944062503777,
+          "p95_ms": 1100.0,
+          "p99_ms": 6100.0,
+          "rps": 1.0827960650789523
+        }
+      },
+      "distribution": {
+        "p50_estimated_ms": 495.2912995868622,
+        "p95_estimated_ms": 1230.0859345456543,
+        "p99_estimated_ms": 1369.3868116280883,
+        "avg_rps_window": 8.785501714285715,
+        "max_rps_window": 15.8,
+        "final_failure_count": 0.0
+      },
+      "failures_rows": 1,
+      "error_rate": 0.0,
+      "metrics_samples": [
+        {
+          "ts": "2026-03-25T21:40:59.534819+00:00",
+          "db_total_connections": 25,
+          "db_active_connections": 1,
+          "db_waiting_connections": 24,
+          "db_longest_active_seconds": 0.005027
+        },
+        {
+          "ts": "2026-03-25T21:41:01.542988+00:00",
+          "db_total_connections": 25,
+          "db_active_connections": 1,
+          "db_waiting_connections": 24,
+          "db_longest_active_seconds": 0.001037
+        },
+        {
+          "ts": "2026-03-25T21:41:03.543773+00:00",
+          "db_total_connections": 25,
+          "db_active_connections": 1,
+          "db_waiting_connections": 24,
+          "db_longest_active_seconds": 0.000919
+        },
+        {
+          "ts": "2026-03-25T21:41:05.545560+00:00",
+          "db_total_connections": 25,
+          "db_active_connections": 1,
+          "db_waiting_connections": 24,
+          "db_longest_active_seconds": 0.000961
+        },
+        {
+          "ts": "2026-03-25T21:41:07.546683+00:00",
+          "db_total_connections": 25,
+          "db_active_connections": 1,
+          "db_waiting_connections": 24,
+          "db_longest_active_seconds": 0.001171
+        },
+        {
+          "ts": "2026-03-25T21:41:09.547814+00:00",
+          "db_total_connections": 25,
+          "db_active_connections": 1,
+          "db_waiting_connections": 24,
+          "db_longest_active_seconds": 0.000984
+        },
+        {
+          "ts": "2026-03-25T21:41:11.549294+00:00",
+          "db_total_connections": 25,
+          "db_active_connections": 1,
+          "db_waiting_connections": 23,
+          "db_longest_active_seconds": 0.001446
+        },
+        {
+          "ts": "2026-03-25T21:41:13.551828+00:00",
+          "db_total_connections": 25,
+          "db_active_connections": 1,
+          "db_waiting_connections": 24,
+          "db_longest_active_seconds": 0.000955
+        },
+        {
+          "ts": "2026-03-25T21:41:15.552770+00:00",
+          "db_total_connections": 25,
+          "db_active_connections": 1,
+          "db_waiting_connections": 24,
+          "db_longest_active_seconds": 0.001
+        },
+        {
+          "ts": "2026-03-25T21:41:17.554127+00:00",
+          "db_total_connections": 25,
+          "db_active_connections": 1,
+          "db_waiting_connections": 24,
+          "db_longest_active_seconds": 0.000902
+        },
+        {
+          "ts": "2026-03-25T21:41:19.555815+00:00",
+          "db_total_connections": 25,
+          "db_active_connections": 1,
+          "db_waiting_connections": 24,
+          "db_longest_active_seconds": 0.000868
+        },
+        {
+          "ts": "2026-03-25T21:41:21.557396+00:00",
+          "db_total_connections": 25,
+          "db_active_connections": 1,
+          "db_waiting_connections": 24,
+          "db_longest_active_seconds": 0.000918
+        },
+        {
+          "ts": "2026-03-25T21:41:23.559040+00:00",
+          "db_total_connections": 25,
+          "db_active_connections": 1,
+          "db_waiting_connections": 24,
+          "db_longest_active_seconds": 0.001053
+        },
+        {
+          "ts": "2026-03-25T21:41:25.560643+00:00",
+          "db_total_connections": 25,
+          "db_active_connections": 1,
+          "db_waiting_connections": 24,
+          "db_longest_active_seconds": 0.000938
+        },
+        {
+          "ts": "2026-03-25T21:41:27.562226+00:00",
+          "db_total_connections": 25,
+          "db_active_connections": 1,
+          "db_waiting_connections": 24,
+          "db_longest_active_seconds": 0.000872
+        },
+        {
+          "ts": "2026-03-25T21:41:29.564127+00:00",
+          "db_total_connections": 25,
+          "db_active_connections": 1,
+          "db_waiting_connections": 24,
+          "db_longest_active_seconds": 0.00116
+        },
+        {
+          "ts": "2026-03-25T21:41:31.565987+00:00",
+          "db_total_connections": 25,
+          "db_active_connections": 1,
+          "db_waiting_connections": 24,
+          "db_longest_active_seconds": 0.000989
+        },
+        {
+          "ts": "2026-03-25T21:41:33.567771+00:00",
+          "db_total_connections": 25,
+          "db_active_connections": 1,
+          "db_waiting_connections": 24,
+          "db_longest_active_seconds": 0.001005
+        },
+        {
+          "ts": "2026-03-25T21:41:35.569107+00:00",
+          "db_total_connections": 25,
+          "db_active_connections": 1,
+          "db_waiting_connections": 24,
+          "db_longest_active_seconds": 0.000978
+        },
+        {
+          "ts": "2026-03-25T21:41:37.570602+00:00",
+          "db_total_connections": 25,
+          "db_active_connections": 1,
+          "db_waiting_connections": 24,
+          "db_longest_active_seconds": 0.001056
+        },
+        {
+          "ts": "2026-03-25T21:41:39.572058+00:00",
+          "db_total_connections": 25,
+          "db_active_connections": 1,
+          "db_waiting_connections": 24,
+          "db_longest_active_seconds": 0.000892
+        },
+        {
+          "ts": "2026-03-25T21:41:41.573332+00:00",
+          "db_total_connections": 25,
+          "db_active_connections": 1,
+          "db_waiting_connections": 24,
+          "db_longest_active_seconds": 0.000938
+        },
+        {
+          "ts": "2026-03-25T21:41:43.574691+00:00",
+          "db_total_connections": 25,
+          "db_active_connections": 1,
+          "db_waiting_connections": 24,
+          "db_longest_active_seconds": 0.001006
+        },
+        {
+          "ts": "2026-03-25T21:41:45.577129+00:00",
+          "db_total_connections": 25,
+          "db_active_connections": 1,
+          "db_waiting_connections": 24,
+          "db_longest_active_seconds": 0.000891
+        },
+        {
+          "ts": "2026-03-25T21:41:47.578385+00:00",
+          "db_total_connections": 25,
+          "db_active_connections": 1,
+          "db_waiting_connections": 24,
+          "db_longest_active_seconds": 0.001
+        },
+        {
+          "ts": "2026-03-25T21:41:49.579602+00:00",
+          "db_total_connections": 25,
+          "db_active_connections": 1,
+          "db_waiting_connections": 24,
+          "db_longest_active_seconds": 0.001024
+        },
+        {
+          "ts": "2026-03-25T21:41:51.580922+00:00",
+          "db_total_connections": 25,
+          "db_active_connections": 1,
+          "db_waiting_connections": 24,
+          "db_longest_active_seconds": 0.001039
+        },
+        {
+          "ts": "2026-03-25T21:41:53.582202+00:00",
+          "db_total_connections": 25,
+          "db_active_connections": 1,
+          "db_waiting_connections": 24,
+          "db_longest_active_seconds": 0.001013
+        },
+        {
+          "ts": "2026-03-25T21:41:55.583362+00:00",
+          "db_total_connections": 25,
+          "db_active_connections": 1,
+          "db_waiting_connections": 23,
+          "db_longest_active_seconds": 0.000994
+        },
+        {
+          "ts": "2026-03-25T21:41:57.584424+00:00",
+          "db_total_connections": 25,
+          "db_active_connections": 1,
+          "db_waiting_connections": 24,
+          "db_longest_active_seconds": 0.001014
+        },
+        {
+          "ts": "2026-03-25T21:41:59.585763+00:00",
+          "db_total_connections": 25,
+          "db_active_connections": 1,
+          "db_waiting_connections": 24,
+          "db_longest_active_seconds": 0.000905
+        }
+      ],
+      "metrics_summary": {
+        "backend_cpu_peak_percent": 0.0,
+        "backend_rss_peak_mb": 0.0,
+        "backend_threads_peak": 0.0,
+        "db_total_connections_peak": 25,
+        "db_active_connections_peak": 1,
+        "db_waiting_connections_peak": 24,
+        "db_longest_active_seconds_peak": 0.005027
+      },
+      "artifacts": {
+        "stats_csv": "load-tests\\results\\phase1b-prodlike-gunicorn\\scenario_d_u30_stats.csv",
+        "stats_history_csv": "load-tests\\results\\phase1b-prodlike-gunicorn\\scenario_d_u30_stats_history.csv",
+        "failures_csv": "load-tests\\results\\phase1b-prodlike-gunicorn\\scenario_d_u30_failures.csv",
+        "report_html": "load-tests\\results\\phase1b-prodlike-gunicorn\\scenario_d_u30.html"
+      },
+      "capacity_pass": false
+    },
+    {
+      "scenario": "D",
+      "users": 40,
+      "started_at": "2026-03-25T21:42:00.571629+00:00",
+      "finished_at": "2026-03-25T21:43:01.762699+00:00",
+      "command": [
+        "C:\\Users\\harae\\Desktop\\ui migration\\proyecto1\\.venv\\Scripts\\locust.exe",
+        "-f",
+        "C:\\Users\\harae\\Desktop\\ui migration\\proyecto1\\load-tests\\locustfile.py",
+        "--host",
+        "http://127.0.0.1:18000",
+        "--users",
+        "40",
+        "--spawn-rate",
+        "5.0",
+        "--run-time",
+        "1m",
+        "--csv",
+        "load-tests\\results\\phase1b-prodlike-gunicorn\\scenario_d_u40",
+        "--html",
+        "load-tests\\results\\phase1b-prodlike-gunicorn\\scenario_d_u40.html",
+        "--headless",
+        "--only-summary"
+      ],
+      "exit_code": 0,
+      "stdout_tail": "",
+      "stderr_tail": "   132   12877    950 |    1.78        0.00\nGET      read.payments                                                                     30     0(0.00%) |   1788     294   12051   1400 |    0.51        0.00\nGET      read.products                                                                     11     0(0.00%) |   1189     243    2011   1200 |    0.19        0.00\nGET      read.sales                                                                        51     0(0.00%) |   1302     173   11703    910 |    0.86        0.00\nGET      read.summary                                                                      87     0(0.00%) |    923      36    5622    680 |    1.46        0.00\nPOST     write.expense                                                                     60     0(0.00%) |   1308     104   11759    740 |    1.01        0.00\nPOST     write.payment                                                                     27     0(0.00%) |   1293     154    2831   1500 |    0.45        0.00\nPOST     write.sale                                                                       103     0(0.00%) |   1538      95   13473    960 |    1.73        0.00\n--------|----------------------------------------------------------------------------|-------|-------------|-------|-------|-------|-------|--------|-----------\n         Aggregated                                                                       549     0(0.00%) |   1315      12   13473    910 |    9.24        0.00\n\nResponse time percentiles (approximated)\nType     Name                                                                                  50%    66%    75%    80%    90%    95%    98%    99%  99.9% 99.99%   100% # reqs\n--------|--------------------------------------------------------------------------------|--------|------|------|------|------|------|------|------|------|------|------|------\nGET      read.business_profile                                                                 750    950   1100   1500   1800   1800   1800   1800   1800   1800   1800     13\nGET      read.customers                                                                        850   1200   1400   1600   2000   2700   2800   2900   2900   2900   2900     61\nGET      read.dashboard                                                                        980   1400   1900   2100   2800   2900  12000  13000  13000  13000  13000    106\nGET      read.payments                                                                        1500   1800   2300   2700   2800   2900  12000  12000  12000  12000  12000     30\nGET      read.products                                                                        1200   1800   1800   1800   2000   2000   2000   2000   2000   2000   2000     11\nGET      read.sales                                                                            910   1400   1900   2000   2300   2300   2700  12000  12000  12000  12000     51\nGET      read.summary                                                                          680   1200   1400   1500   2000   2600   2800   5600   5600   5600   5600     87\nPOST     write.expense                                                                         750   1300   1600   1900   2800   2900   9300  12000  12000  12000  12000     60\nPOST     write.payment                                                                        1500   1800   2200   2200   2700   2700   2800   2800   2800   2800   2800     27\nPOST     write.sale                                                                            960   1400   1700   1900   2800   4200  13000  13000  13000  13000  13000    103\n--------|--------------------------------------------------------------------------------|--------|------|------|------|------|------|------|------|------|------|------|------\n         Aggregated                                                                            910   1400   1700   1900   2700   2800   8000  12000  13000  13000  13000    549\n\n",
+      "stats_summary": {
+        "requests": 549,
+        "failures": 0,
+        "median_ms": 910.0,
+        "avg_ms": 1315.2708672131012,
+        "min_ms": 12.082400000508642,
+        "max_ms": 13473.655800000415,
+        "avg_size": 35565.043715846994,
+        "rps": 9.242986950123209,
+        "failures_per_sec": 0.0,
+        "p50_ms": 910.0,
+        "p95_ms": 2800.0,
+        "p99_ms": 12000.0,
+        "slowest_endpoint": {
+          "name": "read.payments",
+          "method": "GET",
+          "avg_ms": 1788.944896666726,
+          "p95_ms": 2900.0,
+          "p99_ms": 12000.0,
+          "rps": 0.5050812541050934
+        }
+      },
+      "distribution": {
+        "p50_estimated_ms": 1481.5389125000706,
+        "p95_estimated_ms": 2361.7123096774635,
+        "p99_estimated_ms": 2528.9218588235976,
+        "avg_rps_window": 7.320238089285715,
+        "max_rps_window": 15.6,
+        "final_failure_count": 0.0
+      },
+      "failures_rows": 1,
+      "error_rate": 0.0,
+      "metrics_samples": [
+        {
+          "ts": "2026-03-25T21:42:00.711141+00:00",
+          "db_total_connections": 25,
+          "db_active_connections": 1,
+          "db_waiting_connections": 24,
+          "db_longest_active_seconds": 0.004896
+        },
+        {
+          "ts": "2026-03-25T21:42:02.716659+00:00",
+          "db_total_connections": 25,
+          "db_active_connections": 1,
+          "db_waiting_connections": 24,
+          "db_longest_active_seconds": 0.000988
+        },
+        {
+          "ts": "2026-03-25T21:42:04.717971+00:00",
+          "db_total_connections": 25,
+          "db_active_connections": 1,
+          "db_waiting_connections": 24,
+          "db_longest_active_seconds": 0.00089
+        },
+        {
+          "ts": "2026-03-25T21:42:06.723620+00:00",
+          "db_total_connections": 25,
+          "db_active_connections": 1,
+          "db_waiting_connections": 24,
+          "db_longest_active_seconds": 0.000995
+        },
+        {
+          "ts": "2026-03-25T21:42:08.724498+00:00",
+          "db_total_connections": 25,
+          "db_active_connections": 1,
+          "db_waiting_connections": 24,
+          "db_longest_active_seconds": 0.000896
+        },
+        {
+          "ts": "2026-03-25T21:42:10.725682+00:00",
+          "db_total_connections": 25,
+          "db_active_connections": 1,
+          "db_waiting_connections": 24,
+          "db_longest_active_seconds": 0.000818
+        },
+        {
+          "ts": "2026-03-25T21:42:12.727852+00:00",
+          "db_total_connections": 25,
+          "db_active_connections": 1,
+          "db_waiting_connections": 24,
+          "db_longest_active_seconds": 0.000927
+        },
+        {
+          "ts": "2026-03-25T21:42:14.729405+00:00",
+          "db_total_connections": 25,
+          "db_active_connections": 1,
+          "db_waiting_connections": 24,
+          "db_longest_active_seconds": 0.001045
+        },
+        {
+          "ts": "2026-03-25T21:42:16.730580+00:00",
+          "db_total_connections": 25,
+          "db_active_connections": 1,
+          "db_waiting_connections": 24,
+          "db_longest_active_seconds": 0.000911
+        },
+        {
+          "ts": "2026-03-25T21:42:18.732331+00:00",
+          "db_total_connections": 25,
+          "db_active_connections": 1,
+          "db_waiting_connections": 24,
+          "db_longest_active_seconds": 0.001238
+        },
+        {
+          "ts": "2026-03-25T21:42:20.734694+00:00",
+          "db_total_connections": 25,
+          "db_active_connections": 1,
+          "db_waiting_connections": 24,
+          "db_longest_active_seconds": 0.000997
+        },
+        {
+          "ts": "2026-03-25T21:42:22.742038+00:00",
+          "db_total_connections": 25,
+          "db_active_connections": 1,
+          "db_waiting_connections": 24,
+          "db_longest_active_seconds": 0.000909
+        },
+        {
+          "ts": "2026-03-25T21:42:24.743540+00:00",
+          "db_total_connections": 25,
+          "db_active_connections": 2,
+          "db_waiting_connections": 23,
+          "db_longest_active_seconds": 0.000965
+        },
+        {
+          "ts": "2026-03-25T21:42:26.745017+00:00",
+          "db_total_connections": 25,
+          "db_active_connections": 1,
+          "db_waiting_connections": 24,
+          "db_longest_active_seconds": 0.00098
+        },
+        {
+          "ts": "2026-03-25T21:42:28.746895+00:00",
+          "db_total_connections": 25,
+          "db_active_connections": 1,
+          "db_waiting_connections": 24,
+          "db_longest_active_seconds": 0.00101
+        },
+        {
+          "ts": "2026-03-25T21:42:30.748548+00:00",
+          "db_total_connections": 25,
+          "db_active_connections": 1,
+          "db_waiting_connections": 24,
+          "db_longest_active_seconds": 0.001035
+        },
+        {
+          "ts": "2026-03-25T21:42:32.749679+00:00",
+          "db_total_connections": 25,
+          "db_active_connections": 1,
+          "db_waiting_connections": 22,
+          "db_longest_active_seconds": 0.000862
+        },
+        {
+          "ts": "2026-03-25T21:42:34.752286+00:00",
+          "db_total_connections": 25,
+          "db_active_connections": 1,
+          "db_waiting_connections": 24,
+          "db_longest_active_seconds": 0.001108
+        },
+        {
+          "ts": "2026-03-25T21:42:36.754103+00:00",
+          "db_total_connections": 25,
+          "db_active_connections": 1,
+          "db_waiting_connections": 24,
+          "db_longest_active_seconds": 0.001061
+        },
+        {
+          "ts": "2026-03-25T21:42:38.756270+00:00",
+          "db_total_connections": 25,
+          "db_active_connections": 1,
+          "db_waiting_connections": 24,
+          "db_longest_active_seconds": 0.000969
+        },
+        {
+          "ts": "2026-03-25T21:42:40.758221+00:00",
+          "db_total_connections": 25,
+          "db_active_connections": 1,
+          "db_waiting_connections": 24,
+          "db_longest_active_seconds": 0.001003
+        },
+        {
+          "ts": "2026-03-25T21:42:42.760092+00:00",
+          "db_total_connections": 25,
+          "db_active_connections": 1,
+          "db_waiting_connections": 24,
+          "db_longest_active_seconds": 0.000971
+        },
+        {
+          "ts": "2026-03-25T21:42:44.762020+00:00",
+          "db_total_connections": 25,
+          "db_active_connections": 1,
+          "db_waiting_connections": 24,
+          "db_longest_active_seconds": 0.000916
+        },
+        {
+          "ts": "2026-03-25T21:42:46.763811+00:00",
+          "db_total_connections": 25,
+          "db_active_connections": 2,
+          "db_waiting_connections": 23,
+          "db_longest_active_seconds": 0.000991
+        },
+        {
+          "ts": "2026-03-25T21:42:48.764992+00:00",
+          "db_total_connections": 25,
+          "db_active_connections": 1,
+          "db_waiting_connections": 24,
+          "db_longest_active_seconds": 0.000909
+        },
+        {
+          "ts": "2026-03-25T21:42:50.767113+00:00",
+          "db_total_connections": 25,
+          "db_active_connections": 1,
+          "db_waiting_connections": 24,
+          "db_longest_active_seconds": 0.001064
+        },
+        {
+          "ts": "2026-03-25T21:42:52.781795+00:00",
+          "db_total_connections": 25,
+          "db_active_connections": 1,
+          "db_waiting_connections": 24,
+          "db_longest_active_seconds": 0.000999
+        },
+        {
+          "ts": "2026-03-25T21:42:54.783574+00:00",
+          "db_total_connections": 23,
+          "db_active_connections": 1,
+          "db_waiting_connections": 22,
+          "db_longest_active_seconds": 0.000971
+        },
+        {
+          "ts": "2026-03-25T21:42:56.785238+00:00",
+          "db_total_connections": 23,
+          "db_active_connections": 1,
+          "db_waiting_connections": 22,
+          "db_longest_active_seconds": 0.000897
+        },
+        {
+          "ts": "2026-03-25T21:42:58.786596+00:00",
+          "db_total_connections": 23,
+          "db_active_connections": 1,
+          "db_waiting_connections": 22,
+          "db_longest_active_seconds": 0.000872
+        },
+        {
+          "ts": "2026-03-25T21:43:00.788068+00:00",
+          "db_total_connections": 23,
+          "db_active_connections": 1,
+          "db_waiting_connections": 22,
+          "db_longest_active_seconds": 0.000955
+        }
+      ],
+      "metrics_summary": {
+        "backend_cpu_peak_percent": 0.0,
+        "backend_rss_peak_mb": 0.0,
+        "backend_threads_peak": 0.0,
+        "db_total_connections_peak": 25,
+        "db_active_connections_peak": 2,
+        "db_waiting_connections_peak": 24,
+        "db_longest_active_seconds_peak": 0.004896
+      },
+      "artifacts": {
+        "stats_csv": "load-tests\\results\\phase1b-prodlike-gunicorn\\scenario_d_u40_stats.csv",
+        "stats_history_csv": "load-tests\\results\\phase1b-prodlike-gunicorn\\scenario_d_u40_stats_history.csv",
+        "failures_csv": "load-tests\\results\\phase1b-prodlike-gunicorn\\scenario_d_u40_failures.csv",
+        "report_html": "load-tests\\results\\phase1b-prodlike-gunicorn\\scenario_d_u40.html"
+      },
+      "capacity_pass": false
+    },
+    {
+      "scenario": "D",
+      "users": 60,
+      "started_at": "2026-03-25T21:43:01.766061+00:00",
+      "finished_at": "2026-03-25T21:44:03.213728+00:00",
+      "command": [
+        "C:\\Users\\harae\\Desktop\\ui migration\\proyecto1\\.venv\\Scripts\\locust.exe",
+        "-f",
+        "C:\\Users\\harae\\Desktop\\ui migration\\proyecto1\\load-tests\\locustfile.py",
+        "--host",
+        "http://127.0.0.1:18000",
+        "--users",
+        "60",
+        "--spawn-rate",
+        "5.0",
+        "--run-time",
+        "1m",
+        "--csv",
+        "load-tests\\results\\phase1b-prodlike-gunicorn\\scenario_d_u60",
+        "--html",
+        "load-tests\\results\\phase1b-prodlike-gunicorn\\scenario_d_u60.html",
+        "--headless",
+        "--only-summary"
+      ],
+      "exit_code": 0,
+      "stdout_tail": "",
+      "stderr_tail": "   175   14656   2100 |    1.72        0.00\nGET      read.payments                                                                     21     0(0.00%) |   2817     302    4941   3300 |    0.35        0.00\nGET      read.products                                                                      7     0(0.00%) |   2239     293    3982   2100 |    0.12        0.00\nGET      read.sales                                                                        64     0(0.00%) |   2820     191   12790   2100 |    1.08        0.00\nGET      read.summary                                                                      71     0(0.00%) |   2386      55   12079   2000 |    1.20        0.00\nPOST     write.expense                                                                     47     0(0.00%) |   2273     171   13804   1800 |    0.79        0.00\nPOST     write.payment                                                                     25     0(0.00%) |   2355     200    4925   2600 |    0.42        0.00\nPOST     write.sale                                                                        93     0(0.00%) |   2566     148   14146   1800 |    1.57        0.00\n--------|----------------------------------------------------------------------------|-------|-------------|-------|-------|-------|-------|--------|-----------\n         Aggregated                                                                       485     0(0.00%) |   2550      10   14656   2000 |    8.17        0.00\n\nResponse time percentiles (approximated)\nType     Name                                                                                  50%    66%    75%    80%    90%    95%    98%    99%  99.9% 99.99%   100% # reqs\n--------|--------------------------------------------------------------------------------|--------|------|------|------|------|------|------|------|------|------|------|------\nGET      read.business_profile                                                                1500   3000   3300   3400   7800  13000  13000  13000  13000  13000  13000     14\nGET      read.customers                                                                       1600   3100   3500   3600   4200   4300   5600   5600   5600   5600   5600     41\nGET      read.dashboard                                                                       2100   3200   3700   3800   4800   7800  11000  12000  15000  15000  15000    102\nGET      read.payments                                                                        3300   3600   3800   3900   4200   4600   4900   4900   4900   4900   4900     21\nGET      read.products                                                                        2100   3500   3700   3700   4000   4000   4000   4000   4000   4000   4000      7\nGET      read.sales                                                                           2100   3200   3800   3800   4300  11000  13000  13000  13000  13000  13000     64\nGET      read.summary                                                                         2000   2800   3200   3600   4100   8200  11000  12000  12000  12000  12000     71\nPOST     write.expense                                                                        1800   2900   3500   3600   3900   4200  14000  14000  14000  14000  14000     47\nPOST     write.payment                                                                        2600   3300   3700   4000   4300   4700   4900   4900   4900   4900   4900     25\nPOST     write.sale                                                                           1800   3100   3300   3700   4400   8900  14000  14000  14000  14000  14000     93\n--------|--------------------------------------------------------------------------------|--------|------|------|------|------|------|------|------|------|------|------|------\n         Aggregated                                                                           2000   3100   3500   3800   4300   6100  12000  14000  15000  15000  15000    485\n\n",
+      "stats_summary": {
+        "requests": 485,
+        "failures": 0,
+        "median_ms": 2000.0,
+        "avg_ms": 2550.4805037113238,
+        "min_ms": 10.540700001001824,
+        "max_ms": 14656.60520000165,
+        "avg_size": 47255.278350515466,
+        "rps": 8.173879281201433,
+        "failures_per_sec": 0.0,
+        "p50_ms": 2000.0,
+        "p95_ms": 6100.0,
+        "p99_ms": 14000.0,
+        "slowest_endpoint": {
+          "name": "read.sales",
+          "method": "GET",
+          "avg_ms": 2820.1147234373707,
+          "p95_ms": 11000.0,
+          "p99_ms": 13000.0,
+          "rps": 1.0786149979317357
+        }
+      },
+      "distribution": {
+        "p50_estimated_ms": 2927.4252573333324,
+        "p95_estimated_ms": 5160.997183333241,
+        "p99_estimated_ms": 5397.5120394738215,
+        "avg_rps_window": 5.461160714285715,
+        "max_rps_window": 15.2,
+        "final_failure_count": 0.0
+      },
+      "failures_rows": 1,
+      "error_rate": 0.0,
+      "metrics_samples": [
+        {
+          "ts": "2026-03-25T21:43:01.832337+00:00",
+          "db_total_connections": 23,
+          "db_active_connections": 2,
+          "db_waiting_connections": 22,
+          "db_longest_active_seconds": 0.004762
+        },
+        {
+          "ts": "2026-03-25T21:43:03.837973+00:00",
+          "db_total_connections": 25,
+          "db_active_connections": 1,
+          "db_waiting_connections": 24,
+          "db_longest_active_seconds": 0.000997
+        },
+        {
+          "ts": "2026-03-25T21:43:05.839882+00:00",
+          "db_total_connections": 25,
+          "db_active_connections": 1,
+          "db_waiting_connections": 24,
+          "db_longest_active_seconds": 0.000917
+        },
+        {
+          "ts": "2026-03-25T21:43:07.841751+00:00",
+          "db_total_connections": 25,
+          "db_active_connections": 1,
+          "db_waiting_connections": 24,
+          "db_longest_active_seconds": 0.00086
+        },
+        {
+          "ts": "2026-03-25T21:43:09.843474+00:00",
+          "db_total_connections": 25,
+          "db_active_connections": 1,
+          "db_waiting_connections": 24,
+          "db_longest_active_seconds": 0.000872
+        },
+        {
+          "ts": "2026-03-25T21:43:11.845033+00:00",
+          "db_total_connections": 25,
+          "db_active_connections": 1,
+          "db_waiting_connections": 24,
+          "db_longest_active_seconds": 0.000977
+        },
+        {
+          "ts": "2026-03-25T21:43:13.846655+00:00",
+          "db_total_connections": 25,
+          "db_active_connections": 2,
+          "db_waiting_connections": 23,
+          "db_longest_active_seconds": 0.004481
+        },
+        {
+          "ts": "2026-03-25T21:43:15.849290+00:00",
+          "db_total_connections": 25,
+          "db_active_connections": 1,
+          "db_waiting_connections": 24,
+          "db_longest_active_seconds": 0.000974
+        },
+        {
+          "ts": "2026-03-25T21:43:17.850989+00:00",
+          "db_total_connections": 25,
+          "db_active_connections": 1,
+          "db_waiting_connections": 24,
+          "db_longest_active_seconds": 0.001006
+        },
+        {
+          "ts": "2026-03-25T21:43:19.852561+00:00",
+          "db_total_connections": 25,
+          "db_active_connections": 1,
+          "db_waiting_connections": 24,
+          "db_longest_active_seconds": 0.000928
+        },
+        {
+          "ts": "2026-03-25T21:43:21.854589+00:00",
+          "db_total_connections": 25,
+          "db_active_connections": 1,
+          "db_waiting_connections": 24,
+          "db_longest_active_seconds": 0.000935
+        },
+        {
+          "ts": "2026-03-25T21:43:23.855082+00:00",
+          "db_total_connections": 23,
+          "db_active_connections": 1,
+          "db_waiting_connections": 22,
+          "db_longest_active_seconds": 0.000986
+        },
+        {
+          "ts": "2026-03-25T21:43:25.855873+00:00",
+          "db_total_connections": 23,
+          "db_active_connections": 1,
+          "db_waiting_connections": 22,
+          "db_longest_active_seconds": 0.000928
+        },
+        {
+          "ts": "2026-03-25T21:43:27.865467+00:00",
+          "db_total_connections": 25,
+          "db_active_connections": 1,
+          "db_waiting_connections": 24,
+          "db_longest_active_seconds": 0.000912
+        },
+        {
+          "ts": "2026-03-25T21:43:29.866859+00:00",
+          "db_total_connections": 25,
+          "db_active_connections": 1,
+          "db_waiting_connections": 24,
+          "db_longest_active_seconds": 0.000935
+        },
+        {
+          "ts": "2026-03-25T21:43:31.868129+00:00",
+          "db_total_connections": 25,
+          "db_active_connections": 1,
+          "db_waiting_connections": 24,
+          "db_longest_active_seconds": 0.000866
+        },
+        {
+          "ts": "2026-03-25T21:43:33.869735+00:00",
+          "db_total_connections": 25,
+          "db_active_connections": 1,
+          "db_waiting_connections": 24,
+          "db_longest_active_seconds": 0.001592
+        },
+        {
+          "ts": "2026-03-25T21:43:35.872248+00:00",
+          "db_total_connections": 25,
+          "db_active_connections": 1,
+          "db_waiting_connections": 24,
+          "db_longest_active_seconds": 0.001192
+        },
+        {
+          "ts": "2026-03-25T21:43:37.873636+00:00",
+          "db_total_connections": 25,
+          "db_active_connections": 1,
+          "db_waiting_connections": 24,
+          "db_longest_active_seconds": 0.000877
+        },
+        {
+          "ts": "2026-03-25T21:43:39.874830+00:00",
+          "db_total_connections": 25,
+          "db_active_connections": 1,
+          "db_waiting_connections": 24,
+          "db_longest_active_seconds": 0.000944
+        },
+        {
+          "ts": "2026-03-25T21:43:41.876060+00:00",
+          "db_total_connections": 25,
+          "db_active_connections": 1,
+          "db_waiting_connections": 23,
+          "db_longest_active_seconds": 0.000988
+        },
+        {
+          "ts": "2026-03-25T21:43:43.877230+00:00",
+          "db_total_connections": 25,
+          "db_active_connections": 1,
+          "db_waiting_connections": 24,
+          "db_longest_active_seconds": 0.000947
+        },
+        {
+          "ts": "2026-03-25T21:43:45.879060+00:00",
+          "db_total_connections": 25,
+          "db_active_connections": 1,
+          "db_waiting_connections": 24,
+          "db_longest_active_seconds": 0.001196
+        },
+        {
+          "ts": "2026-03-25T21:43:47.880034+00:00",
+          "db_total_connections": 25,
+          "db_active_connections": 1,
+          "db_waiting_connections": 24,
+          "db_longest_active_seconds": 0.000946
+        },
+        {
+          "ts": "2026-03-25T21:43:49.881215+00:00",
+          "db_total_connections": 25,
+          "db_active_connections": 1,
+          "db_waiting_connections": 24,
+          "db_longest_active_seconds": 0.001009
+        },
+        {
+          "ts": "2026-03-25T21:43:51.882942+00:00",
+          "db_total_connections": 25,
+          "db_active_connections": 1,
+          "db_waiting_connections": 24,
+          "db_longest_active_seconds": 0.000885
+        },
+        {
+          "ts": "2026-03-25T21:43:53.884760+00:00",
+          "db_total_connections": 25,
+          "db_active_connections": 1,
+          "db_waiting_connections": 24,
+          "db_longest_active_seconds": 0.000935
+        },
+        {
+          "ts": "2026-03-25T21:43:55.885863+00:00",
+          "db_total_connections": 25,
+          "db_active_connections": 1,
+          "db_waiting_connections": 24,
+          "db_longest_active_seconds": 0.000859
+        },
+        {
+          "ts": "2026-03-25T21:43:57.887576+00:00",
+          "db_total_connections": 25,
+          "db_active_connections": 1,
+          "db_waiting_connections": 24,
+          "db_longest_active_seconds": 0.000907
+        },
+        {
+          "ts": "2026-03-25T21:43:59.889475+00:00",
+          "db_total_connections": 25,
+          "db_active_connections": 1,
+          "db_waiting_connections": 24,
+          "db_longest_active_seconds": 0.000899
+        },
+        {
+          "ts": "2026-03-25T21:44:01.891133+00:00",
+          "db_total_connections": 25,
+          "db_active_connections": 1,
+          "db_waiting_connections": 23,
+          "db_longest_active_seconds": 0.001047
+        }
+      ],
+      "metrics_summary": {
+        "backend_cpu_peak_percent": 0.0,
+        "backend_rss_peak_mb": 0.0,
+        "backend_threads_peak": 0.0,
+        "db_total_connections_peak": 25,
+        "db_active_connections_peak": 2,
+        "db_waiting_connections_peak": 24,
+        "db_longest_active_seconds_peak": 0.004762
+      },
+      "artifacts": {
+        "stats_csv": "load-tests\\results\\phase1b-prodlike-gunicorn\\scenario_d_u60_stats.csv",
+        "stats_history_csv": "load-tests\\results\\phase1b-prodlike-gunicorn\\scenario_d_u60_stats_history.csv",
+        "failures_csv": "load-tests\\results\\phase1b-prodlike-gunicorn\\scenario_d_u60_failures.csv",
+        "report_html": "load-tests\\results\\phase1b-prodlike-gunicorn\\scenario_d_u60.html"
+      },
+      "capacity_pass": false
+    }
+  ]
+}

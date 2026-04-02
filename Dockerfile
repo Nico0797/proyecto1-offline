@@ -44,6 +44,7 @@ RUN pip install --no-cache-dir -r requirements.txt
 COPY backend/ ./backend/
 COPY assets/ ./assets/
 COPY scripts/ ./scripts/
+COPY gunicorn.conf.py ./gunicorn.conf.py
 COPY wsgi.py .
 # Ensure instance folder exists for SQLite fallback or other needs
 RUN mkdir -p instance exports backups
@@ -55,12 +56,22 @@ COPY --from=frontend-builder /app/dist ./backend/static_dist
 # Environment Configuration
 ENV PYTHONDONTWRITEBYTECODE=1
 ENV PYTHONUNBUFFERED=1
+ENV APP_ENV=production
 ENV FLASK_APP=backend.main
 ENV APP_STATIC_DIR=/app/backend/static_dist
 ENV PORT=8000
+ENV GUNICORN_WORKERS=2
+ENV GUNICORN_THREADS=2
+ENV GUNICORN_TIMEOUT=120
+ENV GUNICORN_GRACEFUL_TIMEOUT=30
+ENV GUNICORN_KEEPALIVE=5
+ENV GUNICORN_MAX_REQUESTS=1000
+ENV GUNICORN_MAX_REQUESTS_JITTER=100
 
 # Expose Port
 EXPOSE 8000
 
+HEALTHCHECK --interval=30s --timeout=5s --start-period=30s --retries=3 CMD python -c "import os, sys, urllib.request; port = os.getenv('PORT', '8000'); urllib.request.urlopen(f'http://127.0.0.1:{port}/api/health', timeout=3); sys.exit(0)"
+
 # Run with Gunicorn
-CMD ["gunicorn", "-w", "4", "-b", "0.0.0.0:8000", "--access-logfile", "-", "--error-logfile", "-", "wsgi:app"]
+CMD ["gunicorn", "--config", "gunicorn.conf.py", "wsgi:app"]

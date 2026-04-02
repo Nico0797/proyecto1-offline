@@ -69,6 +69,13 @@ docker build -t encaja-app .
 docker run -p 8000:8000 -e DATABASE_URL="..." encaja-app
 ```
 
+### Operacional Hardening
+
+Para asegurar la seguridad y estabilidad de la aplicación en producción, se recomienda seguir los siguientes pasos:
+
+*   **Pruebas de humo**: Después de desplegar la aplicación, ejecutar pruebas de humo para asegurarse de que la aplicación esté funcionando correctamente.
+*   **Verificación de Alembic**: Verificar que las migraciones de la base de datos se hayan aplicado correctamente utilizando Alembic.
+
 ## Limpieza
 
 El frontend legacy (HTML/Bootstrap) ha sido eliminado completamente en favor de la nueva arquitectura React.

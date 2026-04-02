@@ -1,6 +1,14 @@
 import React from 'react';
 import { Product } from '../../types';
-import { moneyCOP, calcMargin, getStockStatus } from './helpers';
+import {
+  moneyCOP,
+  calcMargin,
+  getFulfillmentModeHint,
+  getFulfillmentModeLabel,
+  getFulfillmentModeTone,
+  getStockStatus,
+  productTracksFinishedGoodsStock,
+} from './helpers';
 import { Copy, Trash2, Package, ShoppingBag } from 'lucide-react';
 import { useCategoryStore } from './categoryStore';
 
@@ -12,6 +20,8 @@ interface ProductListProps {
   onEdit: (product: Product) => void;
   onDuplicate: (product: Product) => void;
   onDelete: (product: Product) => void;
+  canUpdate?: boolean;
+  canDelete?: boolean;
 }
 
 export const ProductList: React.FC<ProductListProps> = ({
@@ -21,12 +31,14 @@ export const ProductList: React.FC<ProductListProps> = ({
   onEdit,
   onDuplicate,
   onDelete,
+  canUpdate = true,
+  canDelete = true,
 }) => {
   const { getCategory } = useCategoryStore();
 
   if (products.length === 0) {
     return (
-      <div className="flex flex-col items-center justify-center p-12 text-center bg-white dark:bg-gray-800 rounded-xl border border-dashed border-gray-300 dark:border-gray-700">
+      <div className="app-empty-state flex flex-col items-center justify-center p-12 text-center">
         <div className="w-16 h-16 bg-gray-100 dark:bg-gray-900 rounded-full flex items-center justify-center mb-4">
           <Package className="w-8 h-8 text-gray-400" />
         </div>
@@ -43,18 +55,19 @@ export const ProductList: React.FC<ProductListProps> = ({
         const stockStatus = getStockStatus(product);
         const category = getCategory(product.id);
         const isSelected = selectedIds.includes(product.id);
+        const tracksFinishedGoodsStock = productTracksFinishedGoodsStock(product);
 
         return (
           <div 
             key={product.id}
             className={`
-              relative overflow-hidden bg-white dark:bg-gray-800 rounded-xl shadow-sm border transition-all duration-200 cursor-pointer
-              ${isSelected ? 'border-blue-500 ring-1 ring-blue-500' : 'border-gray-200 dark:border-gray-700 hover:border-blue-300 dark:hover:border-blue-700 hover:shadow-md'}
+              relative overflow-hidden app-surface rounded-xl shadow-sm border transition-all duration-200 cursor-pointer
+              ${isSelected ? 'border-blue-500 ring-1 ring-blue-500' : 'hover:border-blue-300 dark:hover:border-blue-700 hover:shadow-md'}
             `}
-            onClick={() => onEdit(product)}
+            onClick={() => canUpdate && onEdit(product)}
           >
-            {/* Selection Checkbox */}
-            <div className="absolute top-3 left-3 z-10 hidden md:block">
+            {/* Selection Checkbox - Hidden by request */}
+            <div className="absolute top-3 left-3 z-10 hidden">
                <input
                 type="checkbox"
                 className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 h-5 w-5 cursor-pointer"
@@ -64,15 +77,34 @@ export const ProductList: React.FC<ProductListProps> = ({
               />
             </div>
 
-
             {/* Mobile compact view */}
             <div className="md:hidden p-3 relative z-10 flex gap-3 items-center">
+              {/* Product Image for Mobile */}
+              <div className="shrink-0">
+                <div className={`w-12 h-12 rounded-lg overflow-hidden flex items-center justify-center ${product.image ? 'border border-gray-200 dark:border-gray-700' : (product.type === 'service' ? 'bg-purple-100 text-purple-600 dark:bg-purple-900/30 dark:text-purple-400' : 'bg-blue-100 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400')}`}>
+                    {product.image ? (
+                        <img src={product.image} alt={product.name} className="w-full h-full object-cover" />
+                    ) : (
+                        product.type === 'service' ? <ShoppingBag className="w-5 h-5" /> : <Package className="w-5 h-5" />
+                    )}
+                </div>
+              </div>
+
               <div className="flex-1 min-w-0">
                   <div className="font-semibold text-gray-900 dark:text-white text-sm leading-snug truncate" title={product.name}>
                     {product.name}
                   </div>
+                  <div className="mt-1 flex flex-wrap items-center gap-1.5">
+                    <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-semibold ${getFulfillmentModeTone(product)}`}>
+                      {getFulfillmentModeLabel(product)}
+                    </span>
+                  </div>
                   <div className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
-                    {product.type === 'service' ? 'Servicio' : `Stock: ${product.stock} ${product.unit}`}
+                    {product.type === 'service'
+                      ? 'Servicio'
+                      : tracksFinishedGoodsStock
+                        ? `Stock: ${product.stock} ${product.unit}`
+                        : 'Se cumple por pedido'}
                   </div>
                   <div className="text-sm font-bold text-gray-900 dark:text-white mt-1">
                     {moneyCOP(product.price)}
@@ -84,30 +116,38 @@ export const ProductList: React.FC<ProductListProps> = ({
                     <span className="px-1.5 py-0.5 text-[10px] rounded bg-yellow-500/20 text-yellow-700 dark:text-yellow-300 border border-yellow-500/30">Bajo</span>
                   )}
                   <div className="flex gap-1">
-                    <button 
-                      onClick={(e) => { e.stopPropagation(); onDuplicate(product); }}
-                      className="p-1.5 text-gray-400 hover:text-purple-600 hover:bg-purple-50 dark:hover:bg-purple-900/20 rounded-lg transition-colors"
-                      title="Duplicar"
-                    >
-                      <Copy className="w-4 h-4" />
-                    </button>
-                    <button 
-                      onClick={(e) => { e.stopPropagation(); onDelete(product); }}
-                      className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
-                      title="Archivar/Eliminar"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </button>
+                    {canUpdate && (
+                      <button 
+                        onClick={(e) => { e.stopPropagation(); onDuplicate(product); }}
+                        className="app-icon-button rounded-lg p-1.5 text-gray-400 transition-colors hover:text-purple-600 hover:bg-purple-50 dark:hover:bg-purple-900/20"
+                        title="Duplicar"
+                      >
+                        <Copy className="w-4 h-4" />
+                      </button>
+                    )}
+                    {canDelete && (
+                      <button 
+                        onClick={(e) => { e.stopPropagation(); onDelete(product); }}
+                        className="app-icon-button rounded-lg p-1.5 text-gray-400 transition-colors hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20"
+                        title="Archivar/Eliminar"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    )}
                   </div>
                 </div>
             </div>
 
             {/* Desktop detailed view */}
             <div className="hidden md:block p-5 pt-10 relative z-10">
-              {/* Icon & Category Badge */}
+              {/* Image, Icon & Category Badge */}
               <div className="flex justify-between items-start mb-4">
-                 <div className={`p-3 rounded-xl ${product.type === 'service' ? 'bg-purple-100 text-purple-600 dark:bg-purple-900/30 dark:text-purple-400' : 'bg-blue-100 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400'}`}>
-                    {product.type === 'service' ? <ShoppingBag className="w-6 h-6" /> : <Package className="w-6 h-6" />}
+                 <div className={`p-0 rounded-xl overflow-hidden w-20 h-20 flex items-center justify-center ${product.image ? 'border border-gray-200 dark:border-gray-700' : (product.type === 'service' ? 'bg-purple-100 text-purple-600 dark:bg-purple-900/30 dark:text-purple-400' : 'bg-blue-100 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400')}`}>
+                    {product.image ? (
+                        <img src={product.image} alt={product.name} className="w-full h-full object-cover" />
+                    ) : (
+                        product.type === 'service' ? <ShoppingBag className="w-8 h-8" /> : <Package className="w-8 h-8" />
+                    )}
                  </div>
                  {category && (
                     <span className={`px-2.5 py-1 rounded-full text-xs font-medium ${category.color} text-white opacity-90`}>
@@ -124,18 +164,28 @@ export const ProductList: React.FC<ProductListProps> = ({
                 <p className="text-sm text-gray-500 dark:text-gray-400">
                     {product.sku || 'Sin SKU'}
                 </p>
+                <div className="mt-2 flex flex-wrap items-center gap-2">
+                  <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold ${getFulfillmentModeTone(product)}`}>
+                    {getFulfillmentModeLabel(product)}
+                  </span>
+                </div>
+                <p className="mt-2 text-xs text-gray-500 dark:text-gray-400">
+                  {getFulfillmentModeHint(product)}
+                </p>
               </div>
 
               {/* Stats Grid */}
               <div className="grid grid-cols-2 gap-3 mb-4 text-sm">
-                 <div className="bg-gray-50 dark:bg-gray-700/50 p-2 rounded-lg">
+                 <div className="app-soft-surface p-2 rounded-lg">
                     <p className="text-xs text-gray-500 dark:text-gray-400 mb-0.5">Precio</p>
                     <p className="font-bold text-gray-900 dark:text-white">{moneyCOP(product.price)}</p>
                  </div>
-                 <div className="bg-gray-50 dark:bg-gray-700/50 p-2 rounded-lg">
+                 <div className="app-soft-surface p-2 rounded-lg">
                     <p className="text-xs text-gray-500 dark:text-gray-400 mb-0.5">Stock</p>
                     {product.type === 'service' ? (
                        <span className="text-blue-600 dark:text-blue-400 font-medium">∞</span>
+                    ) : !tracksFinishedGoodsStock ? (
+                       <span className="text-amber-600 dark:text-amber-400 font-medium">Por pedido</span>
                     ) : (
                        <span className={`font-bold ${
                            stockStatus === 'out_of_stock' ? 'text-red-600' : 
@@ -175,21 +225,25 @@ export const ProductList: React.FC<ProductListProps> = ({
               )}
 
               {/* Actions Footer */}
-              <div className="flex justify-end gap-1 pt-4 border-t border-gray-100 dark:border-gray-700">
-                  <button 
-                    onClick={(e) => { e.stopPropagation(); onDuplicate(product); }}
-                    className="p-2 text-gray-400 hover:text-purple-600 hover:bg-purple-50 dark:hover:bg-purple-900/20 rounded-lg transition-colors"
-                    title="Duplicar"
-                  >
-                    <Copy className="w-4 h-4" />
-                  </button>
-                  <button 
-                    onClick={(e) => { e.stopPropagation(); onDelete(product); }}
-                    className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
-                    title="Archivar/Eliminar"
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </button>
+              <div className="app-divider flex justify-end gap-1 border-t pt-4">
+                  {canUpdate && (
+                    <button 
+                      onClick={(e) => { e.stopPropagation(); onDuplicate(product); }}
+                      className="app-icon-button rounded-lg p-2 text-gray-400 transition-colors hover:text-purple-600 hover:bg-purple-50 dark:hover:bg-purple-900/20"
+                      title="Duplicar"
+                    >
+                      <Copy className="w-4 h-4" />
+                    </button>
+                  )}
+                  {canDelete && (
+                    <button 
+                      onClick={(e) => { e.stopPropagation(); onDelete(product); }}
+                      className="app-icon-button rounded-lg p-2 text-gray-400 transition-colors hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20"
+                      title="Archivar/Eliminar"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  )}
               </div>
             </div>
           </div>

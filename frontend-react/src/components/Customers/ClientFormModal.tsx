@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Modal } from '../ui/Modal';
 import { Button } from '../ui/Button';
+import { FormAlert } from '../ui/FormAlert';
 import { Input } from '../ui/Input';
 import { useBusinessStore } from '../../store/businessStore';
 import { useCustomerStore } from '../../store/customerStore';
@@ -30,6 +31,7 @@ export const ClientFormModal: React.FC<ClientFormModalProps> = ({
     notes: '',
   });
   const [loading, setLoading] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
 
   useEffect(() => {
     if (editingCustomer) {
@@ -49,6 +51,7 @@ export const ClientFormModal: React.FC<ClientFormModalProps> = ({
         notes: '',
       });
     }
+    setSubmitError(null);
   }, [editingCustomer, isOpen]);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -56,6 +59,7 @@ export const ClientFormModal: React.FC<ClientFormModalProps> = ({
     if (!activeBusiness) return;
 
     setLoading(true);
+    setSubmitError(null);
     try {
       if (editingCustomer) {
         await updateCustomer(activeBusiness.id, editingCustomer.id, formData);
@@ -64,8 +68,9 @@ export const ClientFormModal: React.FC<ClientFormModalProps> = ({
       }
       onSuccess();
       onClose();
-    } catch (error) {
+    } catch (error: any) {
       console.error(error);
+      setSubmitError(error?.response?.data?.error || 'No se pudo guardar el cliente. Revisa la información e inténtalo nuevamente.');
     } finally {
       setLoading(false);
     }
@@ -73,14 +78,22 @@ export const ClientFormModal: React.FC<ClientFormModalProps> = ({
 
   return (
     <Modal isOpen={isOpen} onClose={onClose} title={editingCustomer ? 'Editar Cliente' : 'Nuevo Cliente'}>
-      <form onSubmit={handleSubmit} className="space-y-4">
+      <form onSubmit={handleSubmit} className="space-y-5">
+        {submitError ? (
+          <FormAlert
+            tone="error"
+            title="No fue posible guardar el cliente"
+            message={submitError}
+          />
+        ) : null}
+
         <Input
           label="Nombre Completo"
           value={formData.name}
           onChange={(e) => setFormData({ ...formData, name: e.target.value })}
           required
         />
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <Input
             label="Teléfono"
             value={formData.phone}
@@ -102,18 +115,18 @@ export const ClientFormModal: React.FC<ClientFormModalProps> = ({
           placeholder="Calle 123 # 45-67"
         />
         <div>
-          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Notas Internas</label>
+          <label className="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-300">Notas Internas</label>
           <textarea
-            className="w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-3 py-2 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 outline-none resize-none h-20"
+            className="min-h-[112px] w-full resize-none rounded-2xl border border-gray-300 bg-white px-3.5 py-3 text-sm text-gray-900 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 dark:border-gray-600 dark:bg-gray-700 dark:text-white"
             value={formData.notes}
             onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
             placeholder="Preferencias, detalles adicionales..."
           />
         </div>
 
-        <div className="flex justify-end gap-3 pt-4">
-          <Button type="button" variant="ghost" onClick={onClose}>Cancelar</Button>
-          <Button type="submit" isLoading={loading}>{editingCustomer ? 'Guardar Cambios' : 'Crear Cliente'}</Button>
+        <div className="flex flex-col-reverse gap-2 border-t border-gray-200 pt-4 dark:border-gray-800 sm:flex-row sm:justify-end sm:gap-3">
+          <Button type="button" variant="ghost" onClick={onClose} className="w-full sm:w-auto">Cancelar</Button>
+          <Button type="submit" isLoading={loading} className="w-full sm:w-auto">{editingCustomer ? 'Guardar Cambios' : 'Crear Cliente'}</Button>
         </div>
       </form>
     </Modal>

@@ -16,6 +16,7 @@
     "@capacitor/local-notifications": "^8.0.2",
     "@capacitor/push-notifications": "^8.0.2",
     "@capacitor/share": "^8.0.1",
+    "@headlessui/react": "^2.2.9",
     "axios": "^1.13.6",
     "chart.js": "^4.5.1",
     "clsx": "^2.1.1",

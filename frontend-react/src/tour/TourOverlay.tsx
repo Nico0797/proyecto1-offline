@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useTourStore } from './tourStore';
-import { TourStep, getTourById } from './tourRegistry';
+import { TourStep } from './tourRegistry';
 import { useVisualViewport } from './useVisualViewport';
 import { useTourPositioning } from './useTourPositioning';
 import { TourSheetMobile } from './TourSheetMobile';
@@ -39,7 +39,7 @@ const getScrollParent = (node: HTMLElement | null): HTMLElement | null => {
 export const TourOverlay = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  const { activeTourId, stepIndex, isActive, next, prev, stop, markSkipped } = useTourStore();
+  const { activeSession, stepIndex, isActive, next, prev, stop, dismissActiveTour, completeActiveTour } = useTourStore();
   
   const [rect, setRect] = useState<DOMRect | null>(null);
   const [popoverRect, setPopoverRect] = useState<DOMRect | null>(null);
@@ -55,7 +55,7 @@ export const TourOverlay = () => {
   const { isMobile } = useBreakpoint();
 
   // We use getTourById to support the new registry structure
-  const tour = useMemo(() => (activeTourId ? getTourById(activeTourId) : null), [activeTourId]);
+  const tour = useMemo(() => activeSession, [activeSession]);
 
   // Resolve current step properties based on breakpoint
   const resolvedStep: TourStep | null = useMemo(() => {
@@ -305,13 +305,13 @@ export const TourOverlay = () => {
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (!isActive) return;
-      if (e.key === 'Escape') markSkipped(activeTourId || '');
+      if (e.key === 'Escape') dismissActiveTour();
       if (e.key === 'ArrowRight' && !waitingAction) next();
       if (e.key === 'ArrowLeft') prev();
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [isActive, waitingAction, activeTourId, next, prev, markSkipped]);
+  }, [dismissActiveTour, isActive, next, prev, waitingAction]);
 
   if (!isActive || !tour || !step || !resolvedStep) return null;
 
@@ -371,8 +371,8 @@ export const TourOverlay = () => {
           totalSteps={total}
           onNext={next}
           onPrev={prev}
-          onSkip={() => markSkipped(activeTourId || '')}
-          onStop={stop}
+          onSkip={dismissActiveTour}
+          onStop={completeActiveTour}
           waitingAction={waitingAction}
           isFallback={targetNotFound}
         />
@@ -384,8 +384,8 @@ export const TourOverlay = () => {
           totalSteps={total}
           onNext={next}
           onPrev={prev}
-          onSkip={() => markSkipped(activeTourId || '')}
-          onStop={stop}
+          onSkip={dismissActiveTour}
+          onStop={completeActiveTour}
           waitingAction={waitingAction}
           position={position}
           isFallback={targetNotFound}

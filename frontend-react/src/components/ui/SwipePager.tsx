@@ -1,10 +1,12 @@
-import React, { useEffect, useState, useCallback, ReactNode } from 'react';
+import React, { useEffect, useState, useCallback, ReactNode, useMemo } from 'react';
 import useEmblaCarousel from 'embla-carousel-react';
 import { cn } from '../../utils/cn';
+import { MobileInlineTabs, MobileUtilityBar, MobileViewSwitcher } from '../mobile/MobileContentFirst';
 
 interface Page {
   id: string;
   title: string;
+  mobileTitle?: string;
   icon?: React.ElementType;
   content: ReactNode;
   badge?: number | string; // For notifications/counts
@@ -17,24 +19,89 @@ interface SwipePagerProps {
   activePageId: string;
   onPageChange: (id: string) => void;
   className?: string;
+  desktopNavClassName?: string;
+  desktopContentClassName?: string;
   mobileBreakpoint?: number; // px, default 768
   contentScroll?: 'auto' | 'visible';
+  enableSwipe?: boolean;
+  mobileSwitcherLabel?: string;
+  mobileSwitcherTitle?: string;
 }
+
+interface MobileInternalNavProps {
+  pages: Page[];
+  activePageId: string;
+  onPageChange: (id: string) => void;
+  switcherLabel?: string;
+  switcherTitle?: string;
+}
+
+const getMobileLabel = (page: Page) => page.mobileTitle || page.title;
+
+export const MobileInternalNav: React.FC<MobileInternalNavProps> = ({
+  pages,
+  activePageId,
+  onPageChange,
+  switcherLabel = 'Vista',
+  switcherTitle = 'Cambiar vista',
+}) => {
+  const options = useMemo(
+    () => pages.map((page) => ({
+      id: page.id,
+      label: page.title,
+      shortLabel: getMobileLabel(page),
+      icon: page.icon,
+      badge: page.badge,
+    })),
+    [pages]
+  );
+
+  const activePage = useMemo(
+    () => pages.find((page) => page.id === activePageId) || pages[0],
+    [pages, activePageId]
+  );
+
+  if (!activePage) return null;
+
+  return (
+    <div className="app-page-header shrink-0 z-20 transition-all">
+      <MobileUtilityBar>
+        {options.length <= 3 ? (
+          <MobileInlineTabs options={options} activeId={activePageId} onChange={onPageChange} className="w-full" />
+        ) : (
+          <MobileViewSwitcher
+            options={options}
+            activeId={activePageId}
+            onChange={onPageChange}
+            label={switcherLabel}
+            title={switcherTitle}
+            buttonClassName="w-full justify-between"
+          />
+        )}
+      </MobileUtilityBar>
+    </div>
+  );
+};
 
 export const SwipePager: React.FC<SwipePagerProps> = ({
   pages,
   activePageId,
   onPageChange,
   className,
+  desktopNavClassName,
+  desktopContentClassName,
   mobileBreakpoint = 1024, // Increased to cover tablets/small laptops for better touch experience
   contentScroll = 'auto',
+  enableSwipe = true,
+  mobileSwitcherLabel,
+  mobileSwitcherTitle,
 }) => {
   const [isMobile, setIsMobile] = useState(() => typeof window !== 'undefined' ? window.innerWidth < mobileBreakpoint : false);
 
   // We only enable drag on mobile.
   const [emblaRef, emblaApi] = useEmblaCarousel({ 
     loop: false, 
-    watchDrag: isMobile,
+    watchDrag: isMobile && enableSwipe,
     duration: 25 // Fast snap
   });
 
@@ -84,61 +151,56 @@ export const SwipePager: React.FC<SwipePagerProps> = ({
   }, [isMobile, emblaApi]);
 
   return (
-    <div className={cn("flex flex-col h-full w-full overflow-hidden", className)}>
-      {/* Tabs Header */}
-      <div className="shrink-0 z-20 bg-white/90 dark:bg-gray-900/90 backdrop-blur border-b border-gray-200 dark:border-gray-800 transition-all">
-         <div className="flex overflow-x-auto no-scrollbar px-3 md:px-4 py-2.5 gap-2 md:gap-4 touch-pan-x after:content-[''] after:block after:w-12 after:shrink-0">
+    <div className={cn("flex min-h-0 w-full flex-col overflow-hidden", className)}>
+      {isMobile ? (
+        <MobileInternalNav
+          pages={pages}
+          activePageId={activePageId}
+          onPageChange={onPageChange}
+          switcherLabel={mobileSwitcherLabel}
+          switcherTitle={mobileSwitcherTitle}
+        />
+      ) : (
+        <div className={cn("app-page-header shrink-0 z-20 transition-all", desktopNavClassName)}>
+          <div className="flex gap-3 px-4 py-2.5 sm:px-6 lg:gap-4 lg:px-8 lg:py-3.5 xl:px-10 xl:py-4">
             {pages.map((page) => {
               const isActive = page.id === activePageId;
               const Icon = page.icon;
-              const variant = page.variant || 'default';
-              
-              const activeStyles = {
-                default: "bg-blue-50 text-blue-700 dark:bg-blue-500/15 dark:text-blue-400 border border-blue-200/70 dark:border-blue-500/20",
-                success: "bg-green-50 text-green-700 dark:bg-green-500/15 dark:text-green-400 border border-green-200/70 dark:border-green-500/20",
-                warning: "bg-yellow-50 text-yellow-700 dark:bg-yellow-500/15 dark:text-yellow-400 border border-yellow-200/70 dark:border-yellow-500/20",
-                danger: "bg-red-50 text-red-700 dark:bg-red-500/15 dark:text-red-400 border border-red-200/70 dark:border-red-500/20",
-                info: "bg-cyan-50 text-cyan-700 dark:bg-cyan-500/15 dark:text-cyan-400 border border-cyan-200/70 dark:border-cyan-500/20",
-              };
 
               return (
                 <button
                   key={page.id}
+                  type="button"
                   onClick={() => onPageChange(page.id)}
+                  aria-current={isActive ? 'page' : undefined}
                   data-tour={page['data-tour']}
                   className={cn(
-                    "flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium transition-all whitespace-nowrap select-none relative shrink-0",
-                    // Mobile: Segmented/Pill style
-                    isMobile && isActive 
-                      ? `${activeStyles[variant]} shadow-sm` 
-                      : isMobile 
-                        ? "text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800 border border-gray-200 dark:border-gray-700/70 bg-white dark:bg-gray-800"
-                        : "",
-                    // Desktop: Tab style
-                    !isMobile && isActive 
-                      ? "bg-transparent border-b-2 border-blue-600 rounded-none px-1 py-3 text-sm text-blue-600 dark:text-blue-400" 
-                      : !isMobile
-                        ? "bg-transparent border-b-2 border-transparent hover:bg-transparent px-1 py-3 text-sm text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300"
-                        : ""
+                    'relative flex select-none items-center gap-1.5 whitespace-nowrap rounded-none bg-transparent px-1 py-2.5 text-sm transition-all',
+                    'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 focus-visible:ring-offset-white dark:focus-visible:ring-offset-gray-900',
+                    isActive ? 'app-tab-line-active font-semibold' : 'app-tab-line-idle'
                   )}
                 >
-                  {Icon && <Icon className="w-4 h-4" />}
-                  <span className="truncate max-w-[10rem] md:max-w-none">{page.title}</span>
-                  {page.badge && (
-                     <span className="ml-1 px-1.5 py-0.5 text-[10px] bg-red-500 text-white rounded-full">
-                       {page.badge}
-                     </span>
-                  )}
+                  {Icon ? <Icon className="h-4 w-4 shrink-0" /> : null}
+                  <span>{page.title}</span>
+                  {page.badge ? (
+                    <span className={cn(
+                      'ml-0.5 rounded-full px-1.5 py-0.5 text-[10px] font-bold',
+                      isActive
+                        ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300'
+                        : 'bg-red-500 text-white'
+                    )}>
+                      {page.badge}
+                    </span>
+                  ) : null}
                 </button>
               );
             })}
-         </div>
-      </div>
+          </div>
+        </div>
+      )}
 
-      {/* Content Area */}
-      <div className="flex-1 min-h-0 relative overflow-hidden bg-gray-50 dark:bg-gray-900">
+      <div className="app-canvas flex-1 min-h-0 relative overflow-hidden">
         {isMobile ? (
-          /* Mobile: Embla Carousel */
           <div className="h-full" ref={emblaRef}>
             <div className="flex h-full touch-pan-y"> 
               {pages.map((page) => (
@@ -146,8 +208,7 @@ export const SwipePager: React.FC<SwipePagerProps> = ({
                   key={page.id} 
                   className="flex-[0_0_100%] min-w-0 h-full relative"
                 >
-                  {/* Internal Scroll Container */}
-                  <div className={`h-full w-full ${contentScroll === 'visible' ? 'overflow-y-visible' : 'overflow-y-auto'} overflow-x-hidden p-4 pb-24`}>
+                  <div className={`app-canvas h-full w-full ${contentScroll === 'visible' ? 'overflow-y-visible' : 'overflow-y-auto'} overflow-x-hidden px-3.5 py-3.5 pb-28 sm:px-6 sm:py-6`}>
                       {page.content}
                   </div>
                 </div>
@@ -155,8 +216,10 @@ export const SwipePager: React.FC<SwipePagerProps> = ({
             </div>
           </div>
         ) : (
-          /* Desktop: Standard Render (only active page) */
-          <div className={`h-full w-full ${contentScroll === 'visible' ? 'overflow-y-visible' : 'overflow-y-auto'} overflow-x-hidden p-6`}>
+          <div className={cn(
+            `app-canvas h-full w-full ${contentScroll === 'visible' ? 'overflow-y-visible' : 'overflow-y-auto'} overflow-x-hidden px-4 py-5 sm:px-6 lg:px-8 lg:py-7 xl:px-10 xl:py-8`,
+            desktopContentClassName
+          )}>
              {pages.find(p => p.id === activePageId)?.content}
           </div>
         )}

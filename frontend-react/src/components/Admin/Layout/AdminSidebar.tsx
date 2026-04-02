@@ -1,25 +1,26 @@
-import React from 'react';
-import { NavLink } from 'react-router-dom';
-import { 
-  PieChart, 
-  LineChart, 
-  Users, 
-  UserCircle, 
-  Package, 
-  Store, 
-  Database, 
-  ShieldCheck, 
-  Key, 
-  Lock, 
-  FileText, 
-  Globe, 
-  Plug, 
+﻿import React from 'react';
+import { NavLink, useLocation } from 'react-router-dom';
+import {
+  Activity,
+  HeartPulse,
+  PieChart,
+  LineChart,
+  Users,
+  Store,
+  BellRing,
+  ShieldCheck,
   Settings,
-  Search,
-  X
+  X,
+  FileText,
+  Database,
+  ShoppingBag,
+  UserCircle,
+  LogOut,
+  Briefcase,
 } from 'lucide-react';
 import logo from '../../../assets/logo.png';
 import { cn } from '../../../utils/cn';
+import { useAuthStore } from '../../../store/authStore';
 
 interface AdminSidebarProps {
   isOpen: boolean;
@@ -27,150 +28,121 @@ interface AdminSidebarProps {
 }
 
 export const AdminSidebar: React.FC<AdminSidebarProps> = ({ isOpen, onClose }) => {
+  const { user, logout } = useAuthStore();
+  const location = useLocation();
+
   const sidebarClasses = cn(
-    "fixed inset-y-0 left-0 z-50 w-64 bg-slate-900 border-r border-white/10 transition-transform duration-300 ease-in-out transform",
-    isOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0"
+    'app-sidebar fixed inset-y-0 left-0 z-50 w-72 rounded-none border-r app-divider shadow-2xl backdrop-blur-xl transition-transform duration-300 ease-in-out transform',
+    isOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'
   );
 
-  const navItemClasses = ({ isActive }: { isActive: boolean }) => cn(
-    "flex items-center gap-3 px-4 py-3 text-sm font-medium rounded-lg transition-colors",
-    isActive 
-      ? "bg-blue-500/10 text-blue-400" 
-      : "text-slate-400 hover:bg-white/5 hover:text-slate-200"
+  const NavItem = ({ to, icon: Icon, label, end = false }: { to: string; icon: any; label: string; end?: boolean }) => (
+    <NavLink
+      to={to}
+      end={end}
+      className={({ isActive }) =>
+        cn(
+          'group mx-3 flex items-center justify-between rounded-xl px-4 py-3 transition-all duration-200',
+          isActive
+            ? 'app-tab-active'
+            : 'app-tab-idle hover:bg-[color:var(--app-surface-soft)]'
+        )
+      }
+    >
+      <div className="flex items-center gap-3">
+        <Icon size={20} className={cn('transition-colors', location.pathname === to ? 'text-blue-500' : 'group-hover:text-gray-900 dark:group-hover:text-white')} />
+        <span className="text-sm font-medium">{label}</span>
+      </div>
+      {location.pathname === to && (
+        <div className="h-1.5 w-1.5 rounded-full bg-blue-400 shadow-[0_0_8px_rgba(96,165,250,0.6)]" />
+      )}
+    </NavLink>
+  );
+
+  const NavSection = ({ title, children }: { title: string; children: React.ReactNode }) => (
+    <div className="mb-6">
+      <div className="mb-3 px-7 text-[10px] font-bold uppercase tracking-widest app-text-muted">
+        {title}
+      </div>
+      <div className="space-y-1">{children}</div>
+    </div>
   );
 
   return (
     <>
-      {/* Overlay for mobile */}
       {isOpen && (
-        <div 
-          className="fixed inset-0 bg-black/50 z-40 md:hidden"
+        <div
+          className="fixed inset-0 z-40 bg-black/60 backdrop-blur-sm transition-opacity md:hidden"
           onClick={onClose}
         />
       )}
 
       <aside className={sidebarClasses}>
-        <div className="flex items-center justify-between p-4 border-b border-white/10">
+        <div className="flex h-24 items-center justify-between p-6">
           <div className="flex items-center gap-3">
-            <div className="w-8 h-8 rounded-lg flex items-center justify-center">
-              <img src={logo} alt="Logo" className="w-full h-full object-contain" />
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 shadow-lg shadow-blue-500/20">
+              <img src={logo} alt="Logo" className="h-6 w-6 object-contain brightness-0 invert" />
             </div>
-            <span className="font-bold text-lg text-white">Admin Panel</span>
+            <div>
+              <h1 className="text-lg font-bold leading-tight tracking-tight text-gray-900 dark:text-white">Admin<span className="text-blue-400">Pro</span></h1>
+              <p className="text-[10px] font-medium tracking-wider text-gray-500 dark:text-slate-400">PLATFORM MANAGER</p>
+            </div>
           </div>
-          <button onClick={onClose} className="md:hidden text-slate-400 hover:text-white">
-            <X size={20} />
+          <button onClick={onClose} className="text-gray-500 transition-colors hover:text-gray-900 dark:text-slate-400 dark:hover:text-white md:hidden">
+            <X size={24} />
           </button>
         </div>
 
-        <div className="p-4">
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" size={16} />
-            <input 
-              type="text" 
-              placeholder="Buscar..." 
-              className="w-full bg-white/5 border border-white/10 rounded-lg pl-9 pr-3 py-2 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-blue-500"
-            />
-          </div>
-        </div>
+        <nav className="custom-scrollbar flex-1 overflow-y-auto px-0 py-4">
+          <NavSection title="Dashboard">
+            <NavItem to="/admin" end icon={PieChart} label="Resumen General" />
+            <NavItem to="/admin/revenue" icon={LineChart} label="Revenue Center" />
+            <NavItem to="/admin/health" icon={HeartPulse} label="System Health" />
+            <NavItem to="/admin/activity" icon={Activity} label="Activity Center" />
+            <NavItem to="/admin/alerts" icon={BellRing} label="Alerts Center" />
+          </NavSection>
 
-        <nav className="flex-1 overflow-y-auto px-2 py-2 space-y-6">
-          <div>
-            <div className="px-4 mb-2 text-xs font-semibold text-slate-500 uppercase tracking-wider">
-              Principal
-            </div>
-            <div className="space-y-1">
-              <NavLink to="/admin" end className={navItemClasses}>
-                <PieChart size={18} />
-                <span>Resumen</span>
-              </NavLink>
-              <NavLink to="/admin/analytics" className={navItemClasses}>
-                <LineChart size={18} />
-                <span>Analíticas</span>
-              </NavLink>
-            </div>
-          </div>
+          <NavSection title="Gestion">
+            <NavItem to="/admin/users" icon={Users} label="Usuarios (Duenos)" />
+            <NavItem to="/admin/employees" icon={Briefcase} label="Empleados" />
+            <NavItem to="/admin/businesses" icon={Store} label="Negocios" />
+            <NavItem to="/admin/customers" icon={UserCircle} label="Clientes Globales" />
+            <NavItem to="/admin/products" icon={ShoppingBag} label="Productos Globales" />
+          </NavSection>
 
-          <div>
-            <div className="px-4 mb-2 text-xs font-semibold text-slate-500 uppercase tracking-wider">
-              Gestión
-            </div>
-            <div className="space-y-1">
-              <NavLink to="/admin/users" className={navItemClasses}>
-                <Users size={18} />
-                <span>Usuarios</span>
-              </NavLink>
-              <NavLink to="/admin/customers" className={navItemClasses}>
-                <UserCircle size={18} />
-                <span>Clientes</span>
-              </NavLink>
-              <NavLink to="/admin/products" className={navItemClasses}>
-                <Package size={18} />
-                <span>Productos</span>
-              </NavLink>
-            </div>
-          </div>
+          <NavSection title="Sistema">
+            <NavItem to="/admin/roles" icon={ShieldCheck} label="Roles y Permisos" />
+            <NavItem to="/admin/data" icon={Database} label="Base de Datos" />
+            <NavItem to="/admin/audit" icon={FileText} label="Auditoria" />
+          </NavSection>
 
-          <div>
-            <div className="px-4 mb-2 text-xs font-semibold text-slate-500 uppercase tracking-wider">
-              Negocios
-            </div>
-            <div className="space-y-1">
-              <NavLink to="/admin/businesses" className={navItemClasses}>
-                <Store size={18} />
-                <span>Negocios</span>
-              </NavLink>
-              <NavLink to="/admin/data" className={navItemClasses}>
-                <Database size={18} />
-                <span>Datos</span>
-              </NavLink>
-            </div>
-          </div>
-
-          <div>
-            <div className="px-4 mb-2 text-xs font-semibold text-slate-500 uppercase tracking-wider">
-              Sistema
-            </div>
-            <div className="space-y-1">
-              <NavLink to="/admin/roles" className={navItemClasses}>
-                <ShieldCheck size={18} />
-                <span>Roles</span>
-              </NavLink>
-              <NavLink to="/admin/permissions" className={navItemClasses}>
-                <Key size={18} />
-                <span>Permisos</span>
-              </NavLink>
-              <NavLink to="/admin/security" className={navItemClasses}>
-                <Lock size={18} />
-                <span>Seguridad</span>
-              </NavLink>
-              <NavLink to="/admin/audit" className={navItemClasses}>
-                <FileText size={18} />
-                <span>Auditoría</span>
-              </NavLink>
-            </div>
-          </div>
-
-          <div>
-            <div className="px-4 mb-2 text-xs font-semibold text-slate-500 uppercase tracking-wider">
-              Configuración
-            </div>
-            <div className="space-y-1">
-              <NavLink to="/admin/domains" className={navItemClasses}>
-                <Globe size={18} />
-                <span>Dominios</span>
-              </NavLink>
-              <NavLink to="/admin/integrations" className={navItemClasses}>
-                <Plug size={18} />
-                <span>Integraciones</span>
-              </NavLink>
-              <NavLink to="/admin/settings" className={navItemClasses}>
-                <Settings size={18} />
-                <span>Ajustes</span>
-              </NavLink>
-            </div>
-          </div>
+          <NavSection title="Configuracion">
+            <NavItem to="/admin/settings" icon={Settings} label="Ajustes Generales" />
+          </NavSection>
         </nav>
+
+        <div className="app-soft-surface m-4 mt-0 rounded-2xl p-4">
+          <div className="mb-3 flex items-center gap-3">
+            <div className="flex h-10 w-10 items-center justify-center rounded-full border border-[color:var(--app-border)] bg-gradient-to-r from-[color:var(--app-surface-muted)] to-[color:var(--app-surface-soft)] font-bold app-text">
+              {user?.name?.charAt(0) || 'A'}
+            </div>
+            <div className="overflow-hidden">
+              <p className="truncate text-sm font-bold text-gray-900 dark:text-white">{user?.name}</p>
+              <p className="truncate text-xs text-gray-500 dark:text-slate-400">{user?.email}</p>
+            </div>
+          </div>
+          <button
+            onClick={logout}
+            className="w-full rounded-lg border border-[color:var(--app-border)] bg-[color:var(--app-surface-elevated)] px-4 py-2 text-xs font-medium app-text-secondary transition-all duration-200 hover:border-red-500/20 hover:bg-red-500/10 hover:text-red-500"
+          >
+            <span className="flex items-center justify-center gap-2">
+              <LogOut size={14} />
+              Cerrar sesión
+            </span>
+          </button>
+        </div>
       </aside>
     </>
   );
 };
+

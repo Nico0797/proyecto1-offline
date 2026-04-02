@@ -1,30 +1,41 @@
 import React, { useState, useEffect } from 'react';
 import { useProductStore } from '../../store/productStore';
 import { useBusinessStore } from '../../store/businessStore';
-import { useAuthStore } from '../../store/authStore';
 import { ProductKpiStrip } from './ProductKpiStrip';
 import { ProductFilters } from './ProductFilters';
 import { ProductList } from './ProductList';
 import { InventoryTab } from './InventoryTab';
+import { AdvancedInventoryTab } from './AdvancedInventoryTab';
 import { PricingToolsTab } from './PricingToolsTab';
 import { CategoriesTab } from './CategoriesTab';
 import { ProductModal } from './ProductModal';
-import { UpgradeModal } from '../ui/UpgradeModal';
 import { Button } from '../ui/Button';
-import { Plus, Archive } from 'lucide-react';
+import { Plus, Archive, Package, ClipboardList, BarChart2, Calculator, Tags } from 'lucide-react';
 import { Product } from '../../types';
 import { getStockStatus } from './helpers';
 import { useCategoryStore } from './categoryStore';
-import { FEATURES, FREE_LIMITS } from '../../auth/plan';
 import { SwipePager } from '../ui/SwipePager';
+import { usePermission } from '../../hooks/usePermission';
+import { PageHeader, PageLayout, PageNotice, PageStack, PageSummary, PageToolbarCard } from '../Layout/PageLayout';
+import {
+  MobileFilterDrawer,
+  MobileHelpDisclosure,
+  MobileSummaryDrawer,
+  MobileUnifiedPageShell,
+  MobileUtilityBar,
+  useMobileFilterDraft,
+} from '../mobile/MobileContentFirst';
 
 export const ProductCatalog: React.FC = () => {
   const { activeBusiness } = useBusinessStore();
   const { products, fetchProducts, deleteProduct, updateProduct } = useProductStore();
-  const { user } = useAuthStore();
   const { getCategory } = useCategoryStore();
   
-  const [activeTab, setActiveTab] = useState<'catalog' | 'inventory' | 'pricing' | 'categories'>('catalog');
+  const canCreate = usePermission('products.create');
+  const canUpdate = usePermission('products.update');
+  const canDelete = usePermission('products.delete');
+  
+  const [activeTab, setActiveTab] = useState<'catalog' | 'inventory' | 'advanced_inventory' | 'pricing' | 'categories'>('catalog');
   const [search, setSearch] = useState('');
   const [typeFilter, setTypeFilter] = useState<'all' | 'product' | 'service'>('all');
   const [statusFilter, setStatusFilter] = useState<'active' | 'archived'>('active');
@@ -35,7 +46,6 @@ export const ProductCatalog: React.FC = () => {
   const [selectedIds, setSelectedIds] = useState<number[]>([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | undefined>(undefined);
-  const [showUpgradeModal, setShowUpgradeModal] = useState(false);
 
   useEffect(() => {
     if (activeBusiness) {
@@ -90,6 +100,8 @@ export const ProductCatalog: React.FC = () => {
 
   const handleDelete = async (product: Product) => {
     if (!activeBusiness) return;
+    if (!canDelete) return;
+    
     if (window.confirm(`¿Estás seguro de que deseas ${product.active ? 'archivar' : 'eliminar'} este producto?`)) {
       if (product.active) {
           await updateProduct(activeBusiness.id, product.id, { active: false });
@@ -114,98 +126,160 @@ export const ProductCatalog: React.FC = () => {
   };
 
   const handleNewProduct = () => {
-    if (user?.plan === 'free' && products.length >= FREE_LIMITS.PRODUCTS) {
-      setShowUpgradeModal(true);
-      return;
-    }
+    if (!canCreate) return;
     setEditingProduct(undefined);
     setIsModalOpen(true);
   };
 
+  const hasCatalogFilters =
+    search.trim().length > 0 ||
+    typeFilter !== 'all' ||
+    statusFilter !== 'active' ||
+    stockFilter !== 'all' ||
+    categoryFilter !== '';
+  const catalogFilterSummary = hasCatalogFilters ? 'Con filtros activos' : 'Buscar y filtrar';
+  const catalogSummaryLabel = `${filteredProducts.length} elemento(s)`;
+  const mobileCatalogFilters = useMobileFilterDraft({
+    value: { search, typeFilter, statusFilter, stockFilter, categoryFilter },
+    onApply: (nextValue) => {
+      setSearch(nextValue.search);
+      setTypeFilter(nextValue.typeFilter);
+      setStatusFilter(nextValue.statusFilter);
+      setStockFilter(nextValue.stockFilter);
+      setCategoryFilter(nextValue.categoryFilter);
+    },
+    createEmptyValue: () => ({
+      search: '',
+      typeFilter: 'all' as 'all' | 'product' | 'service',
+      statusFilter: 'active' as 'active' | 'archived',
+      stockFilter: 'all' as 'all' | 'low' | 'out' | 'ok',
+      categoryFilter: '',
+    }),
+  });
+
   return (
-    <div className="space-y-6 h-full flex flex-col px-4 sm:px-6 lg:px-8 py-4">
-      <UpgradeModal
-        isOpen={showUpgradeModal}
-        onClose={() => setShowUpgradeModal(false)}
-        feature={FEATURES.LIMIT_PRODUCTS}
+    <PageLayout>
+      <PageHeader
+        title="Productos y Servicios"
+        description="Gestiona tu catálogo, inventario y precios."
+        action={canCreate ? (
+          <Button onClick={handleNewProduct} className="w-full sm:w-auto" data-tour="products.primaryAction">
+            <Plus className="w-4 h-4 mr-2" />
+            <span className="hidden sm:inline">Nuevo</span>
+            <span className="sm:hidden">Crear</span>
+          </Button>
+        ) : undefined}
       />
-      {/* Header & KPIs */}
-      <div className="flex flex-row justify-between items-center gap-4 flex-shrink-0">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Productos y Servicios</h1>
-          <p className="text-gray-500 dark:text-gray-400 text-sm">Gestiona tu catálogo, inventario y precios.</p>
-        </div>
-        <div className="flex gap-2">
-           {/* Actions Dropdown could go here */}
-           <Button onClick={handleNewProduct} data-tour="products.primaryAction">
-             <Plus className="w-4 h-4 mr-2" />
-             <span className="hidden sm:inline">Nuevo</span>
-             <span className="sm:hidden">Crear</span>
-           </Button>
-        </div>
-      </div>
 
       <SwipePager
         activePageId={activeTab}
-        onPageChange={(id) => setActiveTab(id as 'catalog'|'inventory'|'pricing'|'categories')}
+        onPageChange={(id) => setActiveTab(id as 'catalog'|'inventory'|'advanced_inventory'|'pricing'|'categories')}
         className="flex-1"
         contentScroll="visible"
         pages={[
           {
             id: 'catalog',
             title: 'Catálogo',
+            mobileTitle: 'Catálogo',
+            icon: Package,
             content: (
-              <div className="flex flex-col gap-4">
-                <div data-tour="products.kpis" className="flex-shrink-0">
-                  <ProductKpiStrip products={products} />
+              <>
+                <div className="hidden lg:block">
+                  <PageStack>
+                    <PageNotice
+                      description="Mantén aquí tu catálogo activo y usa las demás pestañas para profundizar en inventario, precios y categorías."
+                      dismissible
+                    />
+                    <PageSummary title="Resumen rápido" description="Una lectura corta antes de editar o filtrar productos.">
+                      <div className="flex-shrink-0">
+                        <ProductKpiStrip products={products} />
+                      </div>
+                    </PageSummary>
+                    <PageToolbarCard className="app-toolbar" data-tour="products.filters">
+                      <ProductFilters
+                        search={search}
+                        onSearchChange={setSearch}
+                        typeFilter={typeFilter}
+                        onTypeFilterChange={setTypeFilter}
+                        statusFilter={statusFilter}
+                        onStatusFilterChange={setStatusFilter}
+                        stockFilter={stockFilter}
+                        onStockFilterChange={setStockFilter}
+                        categoryFilter={categoryFilter}
+                        onCategoryFilterChange={setCategoryFilter}
+                      />
+                    </PageToolbarCard>
+                  </PageStack>
                 </div>
-                <div className="flex-shrink-0" data-tour="products.filters">
-                  <ProductFilters
-                    search={search}
-                    onSearchChange={setSearch}
-                    typeFilter={typeFilter}
-                    onTypeFilterChange={setTypeFilter}
-                    statusFilter={statusFilter}
-                    onStatusFilterChange={setStatusFilter}
-                    stockFilter={stockFilter}
-                    onStockFilterChange={setStockFilter}
-                    categoryFilter={categoryFilter}
-                    onCategoryFilterChange={setCategoryFilter}
-                  />
-                </div>
-                {selectedIds.length > 0 && (
-                  <div className="bg-blue-50 dark:bg-blue-900/20 p-3 rounded-lg flex items-center justify-between border border-blue-100 dark:border-blue-800 flex-shrink-0">
-                    <span className="text-sm font-medium text-blue-900 dark:text-blue-100 ml-2">
-                      {selectedIds.length} seleccionados
-                    </span>
-                    <div className="flex gap-2">
-                      <Button size="sm" variant="secondary" onClick={handleBulkArchive} className="text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-900/20 border-red-200 dark:border-red-900/30">
-                        <Archive className="w-4 h-4 mr-2" /> Archivar
-                      </Button>
+
+                <MobileUnifiedPageShell
+                  className="mt-4 lg:mt-5"
+                  utilityBar={(
+                    <MobileUtilityBar>
+                      <MobileFilterDrawer summary={catalogFilterSummary} {...mobileCatalogFilters.sheetProps}>
+                        <ProductFilters
+                          search={mobileCatalogFilters.draft.search}
+                          onSearchChange={(value) => mobileCatalogFilters.setDraft((current) => ({ ...current, search: value }))}
+                          typeFilter={mobileCatalogFilters.draft.typeFilter}
+                          onTypeFilterChange={(value) => mobileCatalogFilters.setDraft((current) => ({ ...current, typeFilter: value }))}
+                          statusFilter={mobileCatalogFilters.draft.statusFilter}
+                          onStatusFilterChange={(value) => mobileCatalogFilters.setDraft((current) => ({ ...current, statusFilter: value }))}
+                          stockFilter={mobileCatalogFilters.draft.stockFilter}
+                          onStockFilterChange={(value) => mobileCatalogFilters.setDraft((current) => ({ ...current, stockFilter: value }))}
+                          categoryFilter={mobileCatalogFilters.draft.categoryFilter}
+                          onCategoryFilterChange={(value) => mobileCatalogFilters.setDraft((current) => ({ ...current, categoryFilter: value }))}
+                        />
+                      </MobileFilterDrawer>
+                      <MobileSummaryDrawer summary={catalogSummaryLabel}>
+                        <ProductKpiStrip products={products} />
+                      </MobileSummaryDrawer>
+                      <MobileHelpDisclosure summary="Cómo usar catálogo">
+                        <p className="text-sm text-gray-600 dark:text-gray-300">
+                          Usa esta vista para crear, buscar y editar productos. Inventario, precios y categorías quedan como vistas separadas para no empujar el catálogo hacia abajo.
+                        </p>
+                      </MobileHelpDisclosure>
+                    </MobileUtilityBar>
+                  )}
+                >
+                  {selectedIds.length > 0 && (
+                    <div className="mb-3 bg-blue-50 dark:bg-blue-900/20 p-3 rounded-lg flex items-center justify-between border border-blue-100 dark:border-blue-800 flex-shrink-0">
+                      <span className="text-sm font-medium text-blue-900 dark:text-blue-100 ml-2">
+                        {selectedIds.length} seleccionados
+                      </span>
+                      <div className="flex gap-2">
+                        <Button size="sm" variant="secondary" onClick={handleBulkArchive} className="text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-900/20 border-red-200 dark:border-red-900/30">
+                          <Archive className="w-4 h-4 mr-2" /> Archivar
+                        </Button>
+                      </div>
                     </div>
+                  )}
+                  <div className="min-h-0">
+                    <ProductList
+                      products={filteredProducts}
+                      selectedIds={selectedIds}
+                      onSelect={handleSelect}
+                      onSelectAll={handleSelectAll}
+                      onEdit={(p) => { setEditingProduct(p); setIsModalOpen(true); }}
+                      onDuplicate={(p) => {
+                        void p;
+                        setEditingProduct(undefined);
+                        setIsModalOpen(true);
+                      }}
+                      onDelete={handleDelete}
+                      canUpdate={canUpdate}
+                      canDelete={canDelete}
+                    />
                   </div>
-                )}
-                <div className="min-h-0">
-                  <ProductList
-                    products={filteredProducts}
-                    selectedIds={selectedIds}
-                    onSelect={handleSelect}
-                    onSelectAll={handleSelectAll}
-                    onEdit={(p) => { setEditingProduct(p); setIsModalOpen(true); }}
-                    onDuplicate={(p) => {
-                      void p;
-                      setEditingProduct(undefined);
-                      setIsModalOpen(true);
-                    }}
-                    onDelete={handleDelete}
-                  />
-                </div>
-              </div>
+                </MobileUnifiedPageShell>
+              </>
             )
           },
           {
             id: 'inventory',
             title: 'Inventario',
+            mobileTitle: 'Inventario',
+            icon: ClipboardList,
+            'data-tour': 'products.tabs.inventory',
             content: (
               <div className="min-h-0">
                 <InventoryTab products={filteredProducts} />
@@ -213,8 +287,22 @@ export const ProductCatalog: React.FC = () => {
             )
           },
           {
+            id: 'advanced_inventory',
+            title: 'Inventario Avanzado',
+            mobileTitle: 'Avanzado',
+            icon: BarChart2,
+            content: (
+              <div className="min-h-0">
+                <AdvancedInventoryTab products={filteredProducts} />
+              </div>
+            )
+          },
+          {
             id: 'pricing',
             title: 'Herramientas de Precios',
+            mobileTitle: 'Precios',
+            icon: Calculator,
+            'data-tour': 'products.tabs.pricing',
             content: (
               <div className="min-h-0">
                 <PricingToolsTab 
@@ -228,6 +316,8 @@ export const ProductCatalog: React.FC = () => {
           {
             id: 'categories',
             title: 'Categorías',
+            mobileTitle: 'Categorías',
+            icon: Tags,
             content: (
               <div className="min-h-0">
                 <CategoriesTab />
@@ -243,6 +333,6 @@ export const ProductCatalog: React.FC = () => {
         product={editingProduct}
         onSuccess={() => activeBusiness && fetchProducts(activeBusiness.id)}
       />
-    </div>
+    </PageLayout>
   );
 };

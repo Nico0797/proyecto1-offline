@@ -20,56 +20,73 @@ export const RemindersTab = () => {
   const [priorityFilter, setPriorityFilter] = useState<Priority | 'all'>('all');
 
   useEffect(() => {
+    // Only fetch if we have a business
     if (activeBusiness) {
       loadReminders();
     }
-  }, [activeBusiness]);
+  }, [activeBusiness]); // Remove loadReminders from dependency array to avoid loop
 
   const loadReminders = async () => {
     if (!activeBusiness) return;
     setLoading(true);
     
-    // Load from local storage
-    let localReminders = reminderService.list(activeBusiness.id);
+    try {
+      // Load from API
+      let fetchedReminders = await reminderService.list(activeBusiness.id);
 
-    // Import legacy quick-notes if local storage is empty
-    if (localReminders.length === 0) {
-      try {
-        const res = await api.get(`/businesses/${activeBusiness.id}/quick-notes`);
-        const legacyNotes = res.data.notes || [];
-        
-        if (legacyNotes.length > 0) {
-          legacyNotes.forEach((note: any) => {
-            reminderService.create(activeBusiness.id, {
-              title: 'Nota importada',
-              content: note.note,
-              priority: 'medium',
-              tags: ['importado']
-            });
-          });
-          // Reload from local storage after import
-          localReminders = reminderService.list(activeBusiness.id);
+      // Legacy import logic:
+      // If we have NO reminders in the new system, check for old quick-notes
+      if (fetchedReminders.length === 0) {
+        try {
+          const res = await api.get(`/businesses/${activeBusiness.id}/quick-notes`);
+          const legacyNotes = res.data.notes || [];
+          
+          if (legacyNotes.length > 0) {
+            // Import them one by one to the new API
+            for (const note of legacyNotes) {
+              try {
+                await reminderService.create(activeBusiness.id, {
+                  title: 'Nota importada',
+                  content: note.note,
+                  priority: 'medium',
+                  tags: ['importado']
+                });
+              } catch (importErr) {
+                console.warn("Failed to import note", note, importErr);
+              }
+            }
+            // Re-fetch
+            fetchedReminders = await reminderService.list(activeBusiness.id);
+          }
+        } catch (err) {
+          // Ignore 404 or errors during migration check
+          console.log("No legacy notes to import or error checking", err);
         }
-      } catch (err) {
-        console.error("Error importing legacy notes", err);
       }
-    }
 
-    setReminders(localReminders);
-    setLoading(false);
+      setReminders(fetchedReminders);
+    } catch (error) {
+      console.error("Failed to load reminders", error);
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const handleSave = (data: CreateReminderDTO) => {
+  const handleSave = async (data: CreateReminderDTO) => {
     if (!activeBusiness) return;
     
-    if (editingReminder) {
-      reminderService.update(activeBusiness.id, editingReminder.id, data);
-    } else {
-      reminderService.create(activeBusiness.id, data);
+    try {
+      if (editingReminder) {
+        await reminderService.update(activeBusiness.id, editingReminder.id, data);
+      } else {
+        await reminderService.create(activeBusiness.id, data);
+      }
+      
+      setEditingReminder(null);
+      loadReminders(); // Refresh list
+    } catch (error) {
+      console.error("Error saving reminder", error);
     }
-    
-    setEditingReminder(null);
-    loadReminders(); // Refresh list
   };
 
   const handleEdit = (reminder: Reminder) => {
@@ -124,7 +141,7 @@ export const RemindersTab = () => {
               value={searchText}
               onChange={(e) => setSearchText(e.target.value)}
               placeholder="Buscar por título, contenido o etiqueta..."
-              className="w-full pl-10 pr-4 py-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm text-gray-900 dark:text-white"
+              className="app-field-surface w-full rounded-xl py-2 pl-10 pr-4 text-sm text-gray-900 dark:text-white"
             />
           </div>
 
@@ -134,7 +151,7 @@ export const RemindersTab = () => {
             <select
               value={priorityFilter}
               onChange={(e) => setPriorityFilter(e.target.value as Priority | 'all')}
-              className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg py-2 px-3 text-sm text-gray-700 dark:text-gray-300 focus:outline-none"
+              className="app-select"
             >
               <option value="all">Todas las prioridades</option>
               <option value="high">Alta</option>
@@ -168,7 +185,7 @@ export const RemindersTab = () => {
           >
             <tab.icon className="w-4 h-4" />
             {tab.label}
-            <span className="ml-1 px-2 py-0.5 rounded-full bg-gray-100 dark:bg-gray-800 text-xs">
+            <span className="app-chip ml-1 rounded-full px-2 py-0.5 text-xs">
               {reminders.filter(r => r.status === tab.id).length}
             </span>
           </button>
@@ -190,7 +207,7 @@ export const RemindersTab = () => {
       {/* Empty State */}
       {filteredReminders.length === 0 && (
         <div className="flex flex-col items-center justify-center py-16 text-center">
-          <div className="bg-gray-100 dark:bg-gray-800 p-4 rounded-full mb-4">
+          <div className="app-muted-panel mb-4 rounded-full p-4">
             <Bell className="w-8 h-8 text-gray-400" />
           </div>
           <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-1">

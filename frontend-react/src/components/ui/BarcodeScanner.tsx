@@ -31,8 +31,9 @@ export const BarcodeScanner: React.FC<BarcodeScannerProps> = ({ onScan, onClose 
         
         const config = {
           fps: 10,
-          qrbox: { width: 250, height: 250 },
-          aspectRatio: 1.0,
+          // No fijar qrbox para usar toda la pantalla
+          // qrbox: { width: 250, height: 250 }, 
+          // aspectRatio: 1.0, // Dejar que la cámara decida
           formatsToSupport: [
               Html5QrcodeSupportedFormats.EAN_13,
               Html5QrcodeSupportedFormats.EAN_8,
@@ -41,7 +42,10 @@ export const BarcodeScanner: React.FC<BarcodeScannerProps> = ({ onScan, onClose 
               Html5QrcodeSupportedFormats.UPC_A,
               Html5QrcodeSupportedFormats.UPC_E,
               Html5QrcodeSupportedFormats.QR_CODE
-          ]
+          ],
+          experimentalFeatures: {
+               useBarCodeDetectorIfSupported: true
+          }
         };
 
         // Intentar usar la cámara trasera por defecto
@@ -56,7 +60,7 @@ export const BarcodeScanner: React.FC<BarcodeScannerProps> = ({ onScan, onClose 
                 stopScanner();
             }
           },
-          (errorMessage) => {
+          (_errorMessage) => {
             // Ignore frame errors
           }
         );
@@ -105,17 +109,15 @@ export const BarcodeScanner: React.FC<BarcodeScannerProps> = ({ onScan, onClose 
   };
 
   return (
-    <div className="fixed inset-0 z-[60] bg-black flex flex-col items-center justify-center">
+    <div className="fixed inset-0 z-[60] bg-black flex flex-col">
       <div className="absolute top-4 right-4 z-[70]">
-        <button onClick={onClose} className="p-2 bg-white/20 rounded-full text-white hover:bg-white/40">
-          <X className="w-6 h-6" />
+        <button onClick={onClose} className="p-2 bg-black/50 rounded-full text-white hover:bg-black/70 backdrop-blur-sm">
+          <X className="w-8 h-8" />
         </button>
       </div>
       
-      <div className="w-full max-w-md px-4 relative flex flex-col items-center">
-        <h3 className="text-white text-center mb-4 text-lg font-medium">Escanea el código</h3>
-        
-        <div id="reader" className="w-full rounded-lg overflow-hidden bg-black border-2 border-white/30 aspect-square relative">
+      <div className="flex-1 w-full h-full relative bg-black flex items-center justify-center">
+        <div id="reader" className="w-full h-full object-cover">
             {/* Placeholder visual mientras carga */}
             {!error && !scannerRef.current && (
                 <div className="absolute inset-0 flex items-center justify-center text-white/50">
@@ -124,18 +126,28 @@ export const BarcodeScanner: React.FC<BarcodeScannerProps> = ({ onScan, onClose 
             )}
         </div>
         
+        {/* Overlay de guía de escaneo */}
+        <div className="absolute inset-0 pointer-events-none flex items-center justify-center">
+            <div className="w-64 h-64 border-2 border-white/50 rounded-lg relative">
+                <div className="absolute top-0 left-0 w-8 h-8 border-t-4 border-l-4 border-blue-500 -mt-1 -ml-1 rounded-tl-lg"></div>
+                <div className="absolute top-0 right-0 w-8 h-8 border-t-4 border-r-4 border-blue-500 -mt-1 -mr-1 rounded-tr-lg"></div>
+                <div className="absolute bottom-0 left-0 w-8 h-8 border-b-4 border-l-4 border-blue-500 -mb-1 -ml-1 rounded-bl-lg"></div>
+                <div className="absolute bottom-0 right-0 w-8 h-8 border-b-4 border-r-4 border-blue-500 -mb-1 -mr-1 rounded-br-lg"></div>
+            </div>
+        </div>
+        
         {error && (
-          <div className="mt-4 p-3 bg-red-500/90 text-white rounded-lg text-center text-sm w-full">
-            {error}
-            <div className="mt-2 text-xs opacity-80">
-                Si persiste, verifica permisos de cámara en Android.
+          <div className="absolute bottom-20 left-4 right-4 p-4 bg-red-500/90 text-white rounded-xl text-center shadow-lg backdrop-blur-md z-[70]">
+            <p className="font-medium">{error}</p>
+            <div className="mt-1 text-xs opacity-90">
+                Verifica permisos en: Ajustes {'>'} Aplicaciones {'>'} Permisos
             </div>
           </div>
         )}
         
-        <div className="mt-6 flex justify-center">
-             <p className="text-gray-400 text-xs text-center">
-                Apunta al código de barras.
+        <div className="absolute bottom-8 left-0 right-0 flex justify-center z-[60]">
+             <p className="px-4 py-2 bg-black/60 text-white text-sm rounded-full backdrop-blur-md">
+                Apunta al código de barras
              </p>
         </div>
       </div>

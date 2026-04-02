@@ -1,0 +1,467 @@
+{
+  "base_url": "http://127.0.0.1:8000",
+  "business_id": 2,
+  "users": [
+    5,
+    10,
+    20
+  ],
+  "scenarios": [
+    "A"
+  ],
+  "run_time": "1m",
+  "spawn_rate": 5.0,
+  "fixture": null,
+  "runs": [
+    {
+      "scenario": "A",
+      "users": 5,
+      "started_at": "2026-03-25T12:02:13.929551+00:00",
+      "finished_at": "2026-03-25T12:03:15.703757+00:00",
+      "command": [
+        "C:\\Users\\harae\\Desktop\\ui migration\\proyecto1\\.venv\\Scripts\\locust.exe",
+        "-f",
+        "C:\\Users\\harae\\Desktop\\ui migration\\proyecto1\\load-tests\\locustfile.py",
+        "--host",
+        "http://127.0.0.1:8000",
+        "--users",
+        "5",
+        "--spawn-rate",
+        "5.0",
+        "--run-time",
+        "1m",
+        "--csv",
+        "load-tests\\results\\docker-baseline-a\\scenario_a_u5",
+        "--html",
+        "load-tests\\results\\docker-baseline-a\\scenario_a_u5.html",
+        "--headless",
+        "--only-summary"
+      ],
+      "exit_code": 0,
+      "stdout_tail": "",
+      "stderr_tail": ", line 87, in on_start\n    raise RuntimeError(\"LOADTEST_EMAIL y LOADTEST_PASSWORD son requeridos para locust.\")\nRuntimeError: LOADTEST_EMAIL y LOADTEST_PASSWORD son requeridos para locust.\n\nTraceback (most recent call last):\n  File \"src/gevent/greenlet.py\", line 900, in gevent._gevent_cgreenlet.Greenlet.run\n  File \"C:\\Users\\harae\\Desktop\\ui migration\\proyecto1\\.venv\\Lib\\site-packages\\locust\\user\\users.py\", line 198, in run_user\n    user.run()\n    ~~~~~~~~^^\n  File \"C:\\Users\\harae\\Desktop\\ui migration\\proyecto1\\.venv\\Lib\\site-packages\\locust\\user\\users.py\", line 160, in run\n    self.on_start()\n    ~~~~~~~~~~~~~^^\n  File \"C:\\Users\\harae\\Desktop\\ui migration\\proyecto1\\load-tests\\locustfile.py\", line 87, in on_start\n    raise RuntimeError(\"LOADTEST_EMAIL y LOADTEST_PASSWORD son requeridos para locust.\")\nRuntimeError: LOADTEST_EMAIL y LOADTEST_PASSWORD son requeridos para locust.\n2026-03-25T12:02:16Z <Greenlet at 0x1b8ebccbce0: run_user(<locustfile.CuadernoUser object at 0x000001B8EBD04)> failed with RuntimeError\n\n[2026-03-25 07:02:16,579] DESKTOP-9DI2UJR/ERROR/locust.user.users: LOADTEST_EMAIL y LOADTEST_PASSWORD son requeridos para locust.\nTraceback (most recent call last):\n  File \"C:\\Users\\harae\\Desktop\\ui migration\\proyecto1\\.venv\\Lib\\site-packages\\locust\\user\\users.py\", line 160, in run\n    self.on_start()\n    ~~~~~~~~~~~~~^^\n  File \"C:\\Users\\harae\\Desktop\\ui migration\\proyecto1\\load-tests\\locustfile.py\", line 87, in on_start\n    raise RuntimeError(\"LOADTEST_EMAIL y LOADTEST_PASSWORD son requeridos para locust.\")\nRuntimeError: LOADTEST_EMAIL y LOADTEST_PASSWORD son requeridos para locust.\n\nTraceback (most recent call last):\n  File \"src/gevent/greenlet.py\", line 900, in gevent._gevent_cgreenlet.Greenlet.run\n  File \"C:\\Users\\harae\\Desktop\\ui migration\\proyecto1\\.venv\\Lib\\site-packages\\locust\\user\\users.py\", line 198, in run_user\n    user.run()\n    ~~~~~~~~^^\n  File \"C:\\Users\\harae\\Desktop\\ui migration\\proyecto1\\.venv\\Lib\\site-packages\\locust\\user\\users.py\", line 160, in run\n    self.on_start()\n    ~~~~~~~~~~~~~^^\n  File \"C:\\Users\\harae\\Desktop\\ui migration\\proyecto1\\load-tests\\locustfile.py\", line 87, in on_start\n    raise RuntimeError(\"LOADTEST_EMAIL y LOADTEST_PASSWORD son requeridos para locust.\")\nRuntimeError: LOADTEST_EMAIL y LOADTEST_PASSWORD son requeridos para locust.\n2026-03-25T12:02:16Z <Greenlet at 0x1b8ebccbf60: run_user(<locustfile.CuadernoUser object at 0x000001B8EBD06)> failed with RuntimeError\n\n[2026-03-25 07:03:15,396] DESKTOP-9DI2UJR/INFO/locust.main: --run-time limit reached, shutting down\n[2026-03-25 07:03:15,578] DESKTOP-9DI2UJR/INFO/locust.main: writing html report to file: load-tests\\results\\docker-baseline-a\\scenario_a_u5.html\n[2026-03-25 07:03:15,582] DESKTOP-9DI2UJR/INFO/locust.main: Shutting down (exit code 0)\nType     Name                                                                          # reqs      # fails |    Avg     Min     Max    Med |   req/s  failures/s\n--------|----------------------------------------------------------------------------|-------|-------------|-------|-------|-------|-------|--------|-----------\n--------|----------------------------------------------------------------------------|-------|-------------|-------|-------|-------|-------|--------|-----------\n         Aggregated                                                                         0     0(0.00%) |      0       0       0      0 |    0.00        0.00\n\nResponse time percentiles (approximated)\nType     Name                                                                                  50%    66%    75%    80%    90%    95%    98%    99%  99.9% 99.99%   100% # reqs\n--------|--------------------------------------------------------------------------------|--------|------|------|------|------|------|------|------|------|------|------|------\n--------|--------------------------------------------------------------------------------|--------|------|------|------|------|------|------|------|------|------|------|------\n\n",
+      "stats_summary": {},
+      "distribution": {
+        "p50_estimated_ms": 0.0,
+        "p95_estimated_ms": 0.0,
+        "p99_estimated_ms": 0.0,
+        "avg_rps_window": 0.0,
+        "max_rps_window": 0.0,
+        "final_failure_count": 0.0
+      },
+      "failures_rows": 1,
+      "error_rate": 0.0,
+      "metrics_samples": [
+        {
+          "ts": "2026-03-25T12:02:13.930920+00:00"
+        },
+        {
+          "ts": "2026-03-25T12:02:15.931863+00:00"
+        },
+        {
+          "ts": "2026-03-25T12:02:17.931883+00:00"
+        },
+        {
+          "ts": "2026-03-25T12:02:19.932267+00:00"
+        },
+        {
+          "ts": "2026-03-25T12:02:21.944190+00:00"
+        },
+        {
+          "ts": "2026-03-25T12:02:23.965510+00:00"
+        },
+        {
+          "ts": "2026-03-25T12:02:25.966654+00:00"
+        },
+        {
+          "ts": "2026-03-25T12:02:27.969192+00:00"
+        },
+        {
+          "ts": "2026-03-25T12:02:29.969250+00:00"
+        },
+        {
+          "ts": "2026-03-25T12:02:31.969564+00:00"
+        },
+        {
+          "ts": "2026-03-25T12:02:33.969740+00:00"
+        },
+        {
+          "ts": "2026-03-25T12:02:35.970713+00:00"
+        },
+        {
+          "ts": "2026-03-25T12:02:37.971042+00:00"
+        },
+        {
+          "ts": "2026-03-25T12:02:39.971495+00:00"
+        },
+        {
+          "ts": "2026-03-25T12:02:41.971526+00:00"
+        },
+        {
+          "ts": "2026-03-25T12:02:43.971621+00:00"
+        },
+        {
+          "ts": "2026-03-25T12:02:45.971930+00:00"
+        },
+        {
+          "ts": "2026-03-25T12:02:47.972597+00:00"
+        },
+        {
+          "ts": "2026-03-25T12:02:49.972750+00:00"
+        },
+        {
+          "ts": "2026-03-25T12:02:51.973071+00:00"
+        },
+        {
+          "ts": "2026-03-25T12:02:53.973173+00:00"
+        },
+        {
+          "ts": "2026-03-25T12:02:55.973872+00:00"
+        },
+        {
+          "ts": "2026-03-25T12:02:57.974337+00:00"
+        },
+        {
+          "ts": "2026-03-25T12:02:59.975015+00:00"
+        },
+        {
+          "ts": "2026-03-25T12:03:01.975523+00:00"
+        },
+        {
+          "ts": "2026-03-25T12:03:03.975717+00:00"
+        },
+        {
+          "ts": "2026-03-25T12:03:05.976584+00:00"
+        },
+        {
+          "ts": "2026-03-25T12:03:07.977120+00:00"
+        },
+        {
+          "ts": "2026-03-25T12:03:09.977243+00:00"
+        },
+        {
+          "ts": "2026-03-25T12:03:11.977966+00:00"
+        },
+        {
+          "ts": "2026-03-25T12:03:13.978753+00:00"
+        }
+      ],
+      "metrics_summary": {
+        "backend_cpu_peak_percent": 0.0,
+        "backend_rss_peak_mb": 0.0,
+        "backend_threads_peak": 0.0,
+        "db_total_connections_peak": 0.0,
+        "db_active_connections_peak": 0.0,
+        "db_waiting_connections_peak": 0.0,
+        "db_longest_active_seconds_peak": 0.0
+      },
+      "artifacts": {
+        "stats_csv": "load-tests\\results\\docker-baseline-a\\scenario_a_u5_stats.csv",
+        "stats_history_csv": "load-tests\\results\\docker-baseline-a\\scenario_a_u5_stats_history.csv",
+        "failures_csv": "load-tests\\results\\docker-baseline-a\\scenario_a_u5_failures.csv",
+        "report_html": "load-tests\\results\\docker-baseline-a\\scenario_a_u5.html"
+      },
+      "capacity_pass": true
+    },
+    {
+      "scenario": "A",
+      "users": 10,
+      "started_at": "2026-03-25T12:03:15.706120+00:00",
+      "finished_at": "2026-03-25T12:04:16.796191+00:00",
+      "command": [
+        "C:\\Users\\harae\\Desktop\\ui migration\\proyecto1\\.venv\\Scripts\\locust.exe",
+        "-f",
+        "C:\\Users\\harae\\Desktop\\ui migration\\proyecto1\\load-tests\\locustfile.py",
+        "--host",
+        "http://127.0.0.1:8000",
+        "--users",
+        "10",
+        "--spawn-rate",
+        "5.0",
+        "--run-time",
+        "1m",
+        "--csv",
+        "load-tests\\results\\docker-baseline-a\\scenario_a_u10",
+        "--html",
+        "load-tests\\results\\docker-baseline-a\\scenario_a_u10.html",
+        "--headless",
+        "--only-summary"
+      ],
+      "exit_code": 0,
+      "stdout_tail": "",
+      "stderr_tail": " line 87, in on_start\n    raise RuntimeError(\"LOADTEST_EMAIL y LOADTEST_PASSWORD son requeridos para locust.\")\nRuntimeError: LOADTEST_EMAIL y LOADTEST_PASSWORD son requeridos para locust.\n\nTraceback (most recent call last):\n  File \"src/gevent/greenlet.py\", line 900, in gevent._gevent_cgreenlet.Greenlet.run\n  File \"C:\\Users\\harae\\Desktop\\ui migration\\proyecto1\\.venv\\Lib\\site-packages\\locust\\user\\users.py\", line 198, in run_user\n    user.run()\n    ~~~~~~~~^^\n  File \"C:\\Users\\harae\\Desktop\\ui migration\\proyecto1\\.venv\\Lib\\site-packages\\locust\\user\\users.py\", line 160, in run\n    self.on_start()\n    ~~~~~~~~~~~~~^^\n  File \"C:\\Users\\harae\\Desktop\\ui migration\\proyecto1\\load-tests\\locustfile.py\", line 87, in on_start\n    raise RuntimeError(\"LOADTEST_EMAIL y LOADTEST_PASSWORD son requeridos para locust.\")\nRuntimeError: LOADTEST_EMAIL y LOADTEST_PASSWORD son requeridos para locust.\n2026-03-25T12:03:18Z <Greenlet at 0x22957519120: run_user(<locustfile.CuadernoUser object at 0x000002295752E)> failed with RuntimeError\n\n[2026-03-25 07:03:18,359] DESKTOP-9DI2UJR/ERROR/locust.user.users: LOADTEST_EMAIL y LOADTEST_PASSWORD son requeridos para locust.\nTraceback (most recent call last):\n  File \"C:\\Users\\harae\\Desktop\\ui migration\\proyecto1\\.venv\\Lib\\site-packages\\locust\\user\\users.py\", line 160, in run\n    self.on_start()\n    ~~~~~~~~~~~~~^^\n  File \"C:\\Users\\harae\\Desktop\\ui migration\\proyecto1\\load-tests\\locustfile.py\", line 87, in on_start\n    raise RuntimeError(\"LOADTEST_EMAIL y LOADTEST_PASSWORD son requeridos para locust.\")\nRuntimeError: LOADTEST_EMAIL y LOADTEST_PASSWORD son requeridos para locust.\n\nTraceback (most recent call last):\n  File \"src/gevent/greenlet.py\", line 900, in gevent._gevent_cgreenlet.Greenlet.run\n  File \"C:\\Users\\harae\\Desktop\\ui migration\\proyecto1\\.venv\\Lib\\site-packages\\locust\\user\\users.py\", line 198, in run_user\n    user.run()\n    ~~~~~~~~^^\n  File \"C:\\Users\\harae\\Desktop\\ui migration\\proyecto1\\.venv\\Lib\\site-packages\\locust\\user\\users.py\", line 160, in run\n    self.on_start()\n    ~~~~~~~~~~~~~^^\n  File \"C:\\Users\\harae\\Desktop\\ui migration\\proyecto1\\load-tests\\locustfile.py\", line 87, in on_start\n    raise RuntimeError(\"LOADTEST_EMAIL y LOADTEST_PASSWORD son requeridos para locust.\")\nRuntimeError: LOADTEST_EMAIL y LOADTEST_PASSWORD son requeridos para locust.\n2026-03-25T12:03:18Z <Greenlet at 0x229575191c0: run_user(<locustfile.CuadernoUser object at 0x0000022957505)> failed with RuntimeError\n\n[2026-03-25 07:04:16,427] DESKTOP-9DI2UJR/INFO/locust.main: --run-time limit reached, shutting down\n[2026-03-25 07:04:16,681] DESKTOP-9DI2UJR/INFO/locust.main: writing html report to file: load-tests\\results\\docker-baseline-a\\scenario_a_u10.html\n[2026-03-25 07:04:16,685] DESKTOP-9DI2UJR/INFO/locust.main: Shutting down (exit code 0)\nType     Name                                                                          # reqs      # fails |    Avg     Min     Max    Med |   req/s  failures/s\n--------|----------------------------------------------------------------------------|-------|-------------|-------|-------|-------|-------|--------|-----------\n--------|----------------------------------------------------------------------------|-------|-------------|-------|-------|-------|-------|--------|-----------\n         Aggregated                                                                         0     0(0.00%) |      0       0       0      0 |    0.00        0.00\n\nResponse time percentiles (approximated)\nType     Name                                                                                  50%    66%    75%    80%    90%    95%    98%    99%  99.9% 99.99%   100% # reqs\n--------|--------------------------------------------------------------------------------|--------|------|------|------|------|------|------|------|------|------|------|------\n--------|--------------------------------------------------------------------------------|--------|------|------|------|------|------|------|------|------|------|------|------\n\n",
+      "stats_summary": {},
+      "distribution": {
+        "p50_estimated_ms": 0.0,
+        "p95_estimated_ms": 0.0,
+        "p99_estimated_ms": 0.0,
+        "avg_rps_window": 0.0,
+        "max_rps_window": 0.0,
+        "final_failure_count": 0.0
+      },
+      "failures_rows": 1,
+      "error_rate": 0.0,
+      "metrics_samples": [
+        {
+          "ts": "2026-03-25T12:03:15.706353+00:00"
+        },
+        {
+          "ts": "2026-03-25T12:03:17.706480+00:00"
+        },
+        {
+          "ts": "2026-03-25T12:03:19.706716+00:00"
+        },
+        {
+          "ts": "2026-03-25T12:03:21.707520+00:00"
+        },
+        {
+          "ts": "2026-03-25T12:03:23.707537+00:00"
+        },
+        {
+          "ts": "2026-03-25T12:03:25.708036+00:00"
+        },
+        {
+          "ts": "2026-03-25T12:03:27.708826+00:00"
+        },
+        {
+          "ts": "2026-03-25T12:03:29.709378+00:00"
+        },
+        {
+          "ts": "2026-03-25T12:03:31.710006+00:00"
+        },
+        {
+          "ts": "2026-03-25T12:03:33.710105+00:00"
+        },
+        {
+          "ts": "2026-03-25T12:03:35.710601+00:00"
+        },
+        {
+          "ts": "2026-03-25T12:03:37.710864+00:00"
+        },
+        {
+          "ts": "2026-03-25T12:03:39.711547+00:00"
+        },
+        {
+          "ts": "2026-03-25T12:03:41.711647+00:00"
+        },
+        {
+          "ts": "2026-03-25T12:03:43.712174+00:00"
+        },
+        {
+          "ts": "2026-03-25T12:03:45.712932+00:00"
+        },
+        {
+          "ts": "2026-03-25T12:03:47.713605+00:00"
+        },
+        {
+          "ts": "2026-03-25T12:03:49.714195+00:00"
+        },
+        {
+          "ts": "2026-03-25T12:03:51.715027+00:00"
+        },
+        {
+          "ts": "2026-03-25T12:03:53.715191+00:00"
+        },
+        {
+          "ts": "2026-03-25T12:03:55.715204+00:00"
+        },
+        {
+          "ts": "2026-03-25T12:03:57.716219+00:00"
+        },
+        {
+          "ts": "2026-03-25T12:03:59.717006+00:00"
+        },
+        {
+          "ts": "2026-03-25T12:04:01.717645+00:00"
+        },
+        {
+          "ts": "2026-03-25T12:04:03.718043+00:00"
+        },
+        {
+          "ts": "2026-03-25T12:04:05.718657+00:00"
+        },
+        {
+          "ts": "2026-03-25T12:04:07.718863+00:00"
+        },
+        {
+          "ts": "2026-03-25T12:04:09.719056+00:00"
+        },
+        {
+          "ts": "2026-03-25T12:04:11.719748+00:00"
+        },
+        {
+          "ts": "2026-03-25T12:04:13.720638+00:00"
+        },
+        {
+          "ts": "2026-03-25T12:04:15.720918+00:00"
+        }
+      ],
+      "metrics_summary": {
+        "backend_cpu_peak_percent": 0.0,
+        "backend_rss_peak_mb": 0.0,
+        "backend_threads_peak": 0.0,
+        "db_total_connections_peak": 0.0,
+        "db_active_connections_peak": 0.0,
+        "db_waiting_connections_peak": 0.0,
+        "db_longest_active_seconds_peak": 0.0
+      },
+      "artifacts": {
+        "stats_csv": "load-tests\\results\\docker-baseline-a\\scenario_a_u10_stats.csv",
+        "stats_history_csv": "load-tests\\results\\docker-baseline-a\\scenario_a_u10_stats_history.csv",
+        "failures_csv": "load-tests\\results\\docker-baseline-a\\scenario_a_u10_failures.csv",
+        "report_html": "load-tests\\results\\docker-baseline-a\\scenario_a_u10.html"
+      },
+      "capacity_pass": true
+    },
+    {
+      "scenario": "A",
+      "users": 20,
+      "started_at": "2026-03-25T12:04:16.798192+00:00",
+      "finished_at": "2026-03-25T12:05:17.768331+00:00",
+      "command": [
+        "C:\\Users\\harae\\Desktop\\ui migration\\proyecto1\\.venv\\Scripts\\locust.exe",
+        "-f",
+        "C:\\Users\\harae\\Desktop\\ui migration\\proyecto1\\load-tests\\locustfile.py",
+        "--host",
+        "http://127.0.0.1:8000",
+        "--users",
+        "20",
+        "--spawn-rate",
+        "5.0",
+        "--run-time",
+        "1m",
+        "--csv",
+        "load-tests\\results\\docker-baseline-a\\scenario_a_u20",
+        "--html",
+        "load-tests\\results\\docker-baseline-a\\scenario_a_u20.html",
+        "--headless",
+        "--only-summary"
+      ],
+      "exit_code": 0,
+      "stdout_tail": "",
+      "stderr_tail": " line 87, in on_start\n    raise RuntimeError(\"LOADTEST_EMAIL y LOADTEST_PASSWORD son requeridos para locust.\")\nRuntimeError: LOADTEST_EMAIL y LOADTEST_PASSWORD son requeridos para locust.\n\nTraceback (most recent call last):\n  File \"src/gevent/greenlet.py\", line 900, in gevent._gevent_cgreenlet.Greenlet.run\n  File \"C:\\Users\\harae\\Desktop\\ui migration\\proyecto1\\.venv\\Lib\\site-packages\\locust\\user\\users.py\", line 198, in run_user\n    user.run()\n    ~~~~~~~~^^\n  File \"C:\\Users\\harae\\Desktop\\ui migration\\proyecto1\\.venv\\Lib\\site-packages\\locust\\user\\users.py\", line 160, in run\n    self.on_start()\n    ~~~~~~~~~~~~~^^\n  File \"C:\\Users\\harae\\Desktop\\ui migration\\proyecto1\\load-tests\\locustfile.py\", line 87, in on_start\n    raise RuntimeError(\"LOADTEST_EMAIL y LOADTEST_PASSWORD son requeridos para locust.\")\nRuntimeError: LOADTEST_EMAIL y LOADTEST_PASSWORD son requeridos para locust.\n2026-03-25T12:04:21Z <Greenlet at 0x26e5713a340: run_user(<locustfile.CuadernoUser object at 0x0000026E5716E)> failed with RuntimeError\n\n[2026-03-25 07:04:21,329] DESKTOP-9DI2UJR/ERROR/locust.user.users: LOADTEST_EMAIL y LOADTEST_PASSWORD son requeridos para locust.\nTraceback (most recent call last):\n  File \"C:\\Users\\harae\\Desktop\\ui migration\\proyecto1\\.venv\\Lib\\site-packages\\locust\\user\\users.py\", line 160, in run\n    self.on_start()\n    ~~~~~~~~~~~~~^^\n  File \"C:\\Users\\harae\\Desktop\\ui migration\\proyecto1\\load-tests\\locustfile.py\", line 87, in on_start\n    raise RuntimeError(\"LOADTEST_EMAIL y LOADTEST_PASSWORD son requeridos para locust.\")\nRuntimeError: LOADTEST_EMAIL y LOADTEST_PASSWORD son requeridos para locust.\n\nTraceback (most recent call last):\n  File \"src/gevent/greenlet.py\", line 900, in gevent._gevent_cgreenlet.Greenlet.run\n  File \"C:\\Users\\harae\\Desktop\\ui migration\\proyecto1\\.venv\\Lib\\site-packages\\locust\\user\\users.py\", line 198, in run_user\n    user.run()\n    ~~~~~~~~^^\n  File \"C:\\Users\\harae\\Desktop\\ui migration\\proyecto1\\.venv\\Lib\\site-packages\\locust\\user\\users.py\", line 160, in run\n    self.on_start()\n    ~~~~~~~~~~~~~^^\n  File \"C:\\Users\\harae\\Desktop\\ui migration\\proyecto1\\load-tests\\locustfile.py\", line 87, in on_start\n    raise RuntimeError(\"LOADTEST_EMAIL y LOADTEST_PASSWORD son requeridos para locust.\")\nRuntimeError: LOADTEST_EMAIL y LOADTEST_PASSWORD son requeridos para locust.\n2026-03-25T12:04:21Z <Greenlet at 0x26e5713a3e0: run_user(<locustfile.CuadernoUser object at 0x0000026E5716E)> failed with RuntimeError\n\n[2026-03-25 07:05:17,452] DESKTOP-9DI2UJR/INFO/locust.main: --run-time limit reached, shutting down\n[2026-03-25 07:05:17,646] DESKTOP-9DI2UJR/INFO/locust.main: writing html report to file: load-tests\\results\\docker-baseline-a\\scenario_a_u20.html\n[2026-03-25 07:05:17,650] DESKTOP-9DI2UJR/INFO/locust.main: Shutting down (exit code 0)\nType     Name                                                                          # reqs      # fails |    Avg     Min     Max    Med |   req/s  failures/s\n--------|----------------------------------------------------------------------------|-------|-------------|-------|-------|-------|-------|--------|-----------\n--------|----------------------------------------------------------------------------|-------|-------------|-------|-------|-------|-------|--------|-----------\n         Aggregated                                                                         0     0(0.00%) |      0       0       0      0 |    0.00        0.00\n\nResponse time percentiles (approximated)\nType     Name                                                                                  50%    66%    75%    80%    90%    95%    98%    99%  99.9% 99.99%   100% # reqs\n--------|--------------------------------------------------------------------------------|--------|------|------|------|------|------|------|------|------|------|------|------\n--------|--------------------------------------------------------------------------------|--------|------|------|------|------|------|------|------|------|------|------|------\n\n",
+      "stats_summary": {},
+      "distribution": {
+        "p50_estimated_ms": 0.0,
+        "p95_estimated_ms": 0.0,
+        "p99_estimated_ms": 0.0,
+        "avg_rps_window": 0.0,
+        "max_rps_window": 0.0,
+        "final_failure_count": 0.0
+      },
+      "failures_rows": 1,
+      "error_rate": 0.0,
+      "metrics_samples": [
+        {
+          "ts": "2026-03-25T12:04:16.798395+00:00"
+        },
+        {
+          "ts": "2026-03-25T12:04:18.800818+00:00"
+        },
+        {
+          "ts": "2026-03-25T12:04:20.800926+00:00"
+        },
+        {
+          "ts": "2026-03-25T12:04:22.801412+00:00"
+        },
+        {
+          "ts": "2026-03-25T12:04:24.801994+00:00"
+        },
+        {
+          "ts": "2026-03-25T12:04:26.802928+00:00"
+        },
+        {
+          "ts": "2026-03-25T12:04:28.803432+00:00"
+        },
+        {
+          "ts": "2026-03-25T12:04:30.804296+00:00"
+        },
+        {
+          "ts": "2026-03-25T12:04:32.804666+00:00"
+        },
+        {
+          "ts": "2026-03-25T12:04:34.804960+00:00"
+        },
+        {
+          "ts": "2026-03-25T12:04:36.805805+00:00"
+        },
+        {
+          "ts": "2026-03-25T12:04:38.806218+00:00"
+        },
+        {
+          "ts": "2026-03-25T12:04:40.807191+00:00"
+        },
+        {
+          "ts": "2026-03-25T12:04:42.807752+00:00"
+        },
+        {
+          "ts": "2026-03-25T12:04:44.808252+00:00"
+        },
+        {
+          "ts": "2026-03-25T12:04:46.809048+00:00"
+        },
+        {
+          "ts": "2026-03-25T12:04:48.809397+00:00"
+        },
+        {
+          "ts": "2026-03-25T12:04:50.809853+00:00"
+        },
+        {
+          "ts": "2026-03-25T12:04:52.810732+00:00"
+        },
+        {
+          "ts": "2026-03-25T12:04:54.810795+00:00"
+        },
+        {
+          "ts": "2026-03-25T12:04:56.811421+00:00"
+        },
+        {
+          "ts": "2026-03-25T12:04:58.811571+00:00"
+        },
+        {
+          "ts": "2026-03-25T12:05:00.812232+00:00"
+        },
+        {
+          "ts": "2026-03-25T12:05:02.812388+00:00"
+        },
+        {
+          "ts": "2026-03-25T12:05:04.813088+00:00"
+        },
+        {
+          "ts": "2026-03-25T12:05:06.813127+00:00"
+        },
+        {
+          "ts": "2026-03-25T12:05:08.813933+00:00"
+        },
+        {
+          "ts": "2026-03-25T12:05:10.814305+00:00"
+        },
+        {
+          "ts": "2026-03-25T12:05:12.814731+00:00"
+        },
+        {
+          "ts": "2026-03-25T12:05:14.815154+00:00"
+        },
+        {
+          "ts": "2026-03-25T12:05:16.816053+00:00"
+        }
+      ],
+      "metrics_summary": {
+        "backend_cpu_peak_percent": 0.0,
+        "backend_rss_peak_mb": 0.0,
+        "backend_threads_peak": 0.0,
+        "db_total_connections_peak": 0.0,
+        "db_active_connections_peak": 0.0,
+        "db_waiting_connections_peak": 0.0,
+        "db_longest_active_seconds_peak": 0.0
+      },
+      "artifacts": {
+        "stats_csv": "load-tests\\results\\docker-baseline-a\\scenario_a_u20_stats.csv",
+        "stats_history_csv": "load-tests\\results\\docker-baseline-a\\scenario_a_u20_stats_history.csv",
+        "failures_csv": "load-tests\\results\\docker-baseline-a\\scenario_a_u20_failures.csv",
+        "report_html": "load-tests\\results\\docker-baseline-a\\scenario_a_u20.html"
+      },
+      "capacity_pass": true
+    }
+  ]
+}

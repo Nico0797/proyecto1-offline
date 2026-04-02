@@ -9,9 +9,23 @@ export interface RecurringExpense {
   due_day: number;
   frequency: 'monthly' | 'weekly' | 'biweekly' | 'annual';
   category: string;
+  payment_flow?: 'cash' | 'payable';
+  creditor_name?: string | null;
   is_active: boolean;
   next_due_date?: string;
   created_at: string;
+}
+
+export interface RecurringExpensePayload {
+  name: string;
+  amount: number;
+  due_day: number;
+  frequency: RecurringExpense['frequency'];
+  category: string;
+  payment_flow?: RecurringExpense['payment_flow'];
+  creditor_name?: string | null;
+  is_active: boolean;
+  next_due_date?: string;
 }
 
 interface RecurringExpenseState {
@@ -19,9 +33,11 @@ interface RecurringExpenseState {
   loading: boolean;
   error: string | null;
   fetchRecurringExpenses: (businessId: number) => Promise<void>;
-  addRecurringExpense: (businessId: number, expense: Omit<RecurringExpense, 'id' | 'business_id' | 'created_at' | 'next_due_date'>) => Promise<void>;
+  addRecurringExpense: (businessId: number, expense: RecurringExpensePayload) => Promise<void>;
   updateRecurringExpense: (businessId: number, id: number, updates: Partial<RecurringExpense>) => Promise<void>;
   deleteRecurringExpense: (businessId: number, id: number) => Promise<void>;
+  markRecurringAsPaid: (businessId: number, id: number, payload?: { expense_date?: string; payment_method?: string; treasury_account_id?: number | null; description?: string }) => Promise<void>;
+  generateRecurringDebt: (businessId: number, id: number, payload?: { note?: string }) => Promise<any>;
 }
 
 export const useRecurringExpenseStore = create<RecurringExpenseState>((set) => ({
@@ -37,7 +53,7 @@ export const useRecurringExpenseStore = create<RecurringExpenseState>((set) => (
     set({ loading: true, error: null });
     try {
       const response = await api.get(`/businesses/${businessId}/recurring-expenses`);
-      set({ recurringExpenses: response.data.recurring_expenses });
+      set({ recurringExpenses: Array.isArray(response.data?.recurring_expenses) ? response.data.recurring_expenses : [] });
     } catch (error: any) {
       set({ error: error.message });
     } finally {
@@ -61,7 +77,7 @@ export const useRecurringExpenseStore = create<RecurringExpenseState>((set) => (
     try {
       const response = await api.put(`/businesses/${businessId}/recurring-expenses/${id}`, updates);
       set((state) => ({
-        recurringExpenses: state.recurringExpenses.map((e) => (e.id === id ? response.data.recurring_expense : e)),
+        recurringExpenses: state.recurringExpenses.map((item) => (item.id === id ? response.data.recurring_expense : item)),
       }));
     } catch (error: any) {
       set({ error: error.message });
@@ -75,8 +91,37 @@ export const useRecurringExpenseStore = create<RecurringExpenseState>((set) => (
     try {
       await api.delete(`/businesses/${businessId}/recurring-expenses/${id}`);
       set((state) => ({
-        recurringExpenses: state.recurringExpenses.filter((e) => e.id !== id),
+        recurringExpenses: state.recurringExpenses.filter((item) => item.id !== id),
       }));
+    } catch (error: any) {
+      set({ error: error.message });
+      throw error;
+    } finally {
+      set({ loading: false });
+    }
+  },
+  markRecurringAsPaid: async (businessId, id, payload) => {
+    set({ loading: true, error: null });
+    try {
+      const response = await api.post(`/businesses/${businessId}/recurring-expenses/${id}/mark-paid`, payload || {});
+      set((state) => ({
+        recurringExpenses: state.recurringExpenses.map((item) => (item.id === id ? response.data.recurring_expense : item)),
+      }));
+    } catch (error: any) {
+      set({ error: error.message });
+      throw error;
+    } finally {
+      set({ loading: false });
+    }
+  },
+  generateRecurringDebt: async (businessId, id, payload) => {
+    set({ loading: true, error: null });
+    try {
+      const response = await api.post(`/businesses/${businessId}/recurring-expenses/${id}/generate-debt`, payload || {});
+      set((state) => ({
+        recurringExpenses: state.recurringExpenses.map((item) => (item.id === id ? response.data.recurring_expense : item)),
+      }));
+      return response.data;
     } catch (error: any) {
       set({ error: error.message });
       throw error;

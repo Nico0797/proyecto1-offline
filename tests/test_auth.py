@@ -6,26 +6,34 @@ Tests de autenticación
 import pytest
 import sys
 import os
+from sqlalchemy.pool import StaticPool
 
 # Add parent directory to path
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
+from backend.config import TestingConfig
 from backend.main import create_app
 from backend.database import db
 from backend.models import User
 
 
+class TestAuthConfig(TestingConfig):
+    SQLALCHEMY_DATABASE_URI = "sqlite:///:memory:"
+    SQLALCHEMY_ENGINE_OPTIONS = {
+        "connect_args": {"check_same_thread": False},
+        "poolclass": StaticPool,
+    }
+
+
 @pytest.fixture
 def app():
     """Create application for testing"""
-    app = create_app()
-    app.config["TESTING"] = True
-    app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///:memory:"
+    app = create_app(TestAuthConfig)
     
     with app.app_context():
         db.create_all()
         yield app
-        db.drop_all()
+        db.session.remove()
 
 
 @pytest.fixture
@@ -54,7 +62,7 @@ def test_register_user(client):
     """Test user registration"""
     response = client.post("/api/auth/register", json={
         "email": "test@example.com",
-        "password": "password123",
+        "password": "Password123!",
         "name": "Test User"
     })
     
@@ -71,14 +79,14 @@ def test_register_duplicate_email(client):
     # First registration
     client.post("/api/auth/register", json={
         "email": "test@example.com",
-        "password": "password123",
+        "password": "Password123!",
         "name": "Test User"
     })
     
     # Second registration (should fail)
     response = client.post("/api/auth/register", json={
         "email": "test@example.com",
-        "password": "password123",
+        "password": "Password123!",
         "name": "Test User 2"
     })
     
@@ -109,14 +117,14 @@ def test_login_success(client):
     # Register first
     client.post("/api/auth/register", json={
         "email": "test@example.com",
-        "password": "password123",
+        "password": "Password123!",
         "name": "Test User"
     })
     
     # Login
     response = client.post("/api/auth/login", json={
         "email": "test@example.com",
-        "password": "password123"
+        "password": "Password123!"
     })
     
     assert response.status_code == 200
@@ -130,7 +138,7 @@ def test_login_invalid_credentials(client):
     # Register first
     client.post("/api/auth/register", json={
         "email": "test@example.com",
-        "password": "password123",
+        "password": "Password123!",
         "name": "Test User"
     })
     
@@ -144,7 +152,7 @@ def test_login_invalid_credentials(client):
     # Non-existent user
     response = client.post("/api/auth/login", json={
         "email": "nonexistent@example.com",
-        "password": "password123"
+        "password": "Password123!"
     })
     assert response.status_code == 401
 
@@ -154,13 +162,13 @@ def test_refresh_token(client):
     # Register and login
     client.post("/api/auth/register", json={
         "email": "test@example.com",
-        "password": "password123",
+        "password": "Password123!",
         "name": "Test User"
     })
     
     login_response = client.post("/api/auth/login", json={
         "email": "test@example.com",
-        "password": "password123"
+        "password": "Password123!"
     })
     refresh_token = login_response.get_json()["refresh_token"]
     

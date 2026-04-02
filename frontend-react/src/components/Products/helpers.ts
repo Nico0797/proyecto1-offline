@@ -40,3 +40,59 @@ export const getStockStatusColor = (status: string) => {
     default: return 'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-300';
   }
 };
+
+export const getFulfillmentMode = (product: Pick<Product, 'type' | 'fulfillment_mode'>) => {
+  if (product.type === 'service') return 'service';
+  return product.fulfillment_mode || 'resale_stock';
+};
+
+export const getFulfillmentModeLabel = (product: Pick<Product, 'type' | 'fulfillment_mode'>) => {
+  switch (getFulfillmentMode(product)) {
+    case 'make_to_stock':
+      return 'Producción a stock';
+    case 'make_to_order':
+      return 'Por pedido';
+    case 'service':
+      return 'Servicio';
+    case 'resale_stock':
+    default:
+      return 'Stock terminado';
+  }
+};
+
+export const getFulfillmentModeHint = (product: Pick<Product, 'type' | 'fulfillment_mode'>) => {
+  switch (getFulfillmentMode(product)) {
+    case 'make_to_stock':
+      return 'Primero produces y luego vendes desde stock terminado.';
+    case 'make_to_order':
+      return 'Se cumple al producir por pedido; no depende de stock fijo terminado.';
+    case 'service':
+      return 'No usa inventario de producto terminado.';
+    case 'resale_stock':
+    default:
+      return 'Compras o cargas producto terminado y lo descuentas al vender.';
+  }
+};
+
+export const getFulfillmentModeTone = (product: Pick<Product, 'type' | 'fulfillment_mode'>) => {
+  switch (getFulfillmentMode(product)) {
+    case 'make_to_stock':
+      return 'bg-indigo-100 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-300';
+    case 'make_to_order':
+      return 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300';
+    case 'service':
+      return 'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300';
+    case 'resale_stock':
+    default:
+      return 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300';
+  }
+};
+
+export const productTracksFinishedGoodsStock = (product: Pick<Product, 'type' | 'fulfillment_mode'>) => {
+  const fulfillmentMode = getFulfillmentMode(product);
+  return fulfillmentMode === 'make_to_stock' || fulfillmentMode === 'resale_stock';
+};
+
+export const productCanRegisterProduction = (product: Pick<Product, 'type' | 'fulfillment_mode'>) => {
+  return getFulfillmentMode(product) === 'make_to_stock';
+};

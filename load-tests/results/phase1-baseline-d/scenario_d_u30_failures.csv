@@ -1,0 +1,11 @@
+Method,Name,Error,Occurrences
+GET,setup.products,HTTPError('500 Server Error: Internal Server Error for url: setup.products'),239
+POST,auth.select_context,"CatchResponseError(""select-context failed status=403 payload={'error': 'No tienes acceso a este negocio'}"")",30
+GET,read.products,HTTPError('500 Server Error: Internal Server Error for url: read.products'),20
+GET,read.sales,HTTPError('500 Server Error: Internal Server Error for url: read.sales'),78
+GET,read.payments,HTTPError('500 Server Error: Internal Server Error for url: read.payments'),48
+POST,write.expense,"CatchResponseError('create expense failed status=403 body={\n  ""error"": ""Permiso requerido: expenses.create""\n}\n')",83
+GET,read.financial_dashboard,HTTPError('404 Client Error: NOT FOUND for url: read.financial_dashboard'),132
+GET,read.customers,HTTPError('500 Server Error: Internal Server Error for url: read.customers'),74
+GET,setup.customers,HTTPError('500 Server Error: Internal Server Error for url: setup.customers'),239
+GET,read.dashboard,HTTPError('403 Client Error: FORBIDDEN for url: read.dashboard'),171

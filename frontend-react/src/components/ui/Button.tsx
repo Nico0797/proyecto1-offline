@@ -18,30 +18,33 @@ export const Button: React.FC<ButtonProps> = ({
   ...props
 }) => {
   const variants = {
-    primary: 'bg-blue-600 hover:bg-blue-700 text-white shadow-lg shadow-blue-500/30',
-    secondary: 'bg-gray-100 hover:bg-gray-200 dark:bg-white/10 dark:hover:bg-white/20 text-gray-900 dark:text-white border border-gray-200 dark:border-white/20',
-    danger: 'bg-red-600 hover:bg-red-700 text-white shadow-lg shadow-red-500/30',
-    ghost: 'hover:bg-gray-100 dark:hover:bg-white/10 text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white',
-    outline: 'border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800',
+    primary: 'app-button-primary hover:-translate-y-[1px] focus-visible:ring-blue-500',
+    secondary: 'app-button-secondary focus-visible:ring-blue-500',
+    danger: 'border border-transparent bg-red-600 text-white shadow-[0_10px_24px_-18px_rgba(220,38,38,0.55)] hover:-translate-y-[1px] hover:bg-red-500 hover:shadow-[0_16px_32px_-20px_rgba(220,38,38,0.52)] focus-visible:ring-red-500',
+    ghost: 'app-button-ghost focus-visible:ring-blue-500',
+    outline: 'app-button-outline focus-visible:ring-blue-500',
   };
 
   const sizes = {
-    sm: 'px-3 py-1.5 text-sm',
-    md: 'px-4 py-2',
-    lg: 'px-6 py-3 text-lg',
-    icon: 'p-2',
+    sm: 'min-h-10 px-3.5 text-sm',
+    md: 'min-h-11 px-4 text-sm',
+    lg: 'min-h-12 px-5 text-base',
+    icon: 'h-11 w-11 p-0',
   };
 
   return (
     <button
       className={cn(
-        'rounded-lg font-medium transition-all duration-200 flex items-center justify-center gap-2',
-        'disabled:opacity-50 disabled:cursor-not-allowed',
+        'inline-flex min-w-0 max-w-full items-center justify-center gap-2 rounded-2xl font-medium leading-none transition-all duration-200',
+        '[&_svg]:pointer-events-none [&_svg]:shrink-0',
+        'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-offset-[color:var(--app-surface-elevated)]',
+        'active:scale-[0.99] disabled:pointer-events-none disabled:opacity-50 disabled:shadow-none disabled:hover:translate-y-0 disabled:active:scale-100',
         variants[variant],
         sizes[size],
         className
       )}
       disabled={disabled || isLoading}
+      aria-busy={isLoading || undefined}
       {...props}
     >
       {isLoading && <Loader2 className="w-4 h-4 animate-spin" />}

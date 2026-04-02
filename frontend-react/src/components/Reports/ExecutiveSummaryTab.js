@@ -1,1 +1,2 @@
-export { ExecutiveSummaryTab } from './ExecutiveSummaryTab.tsx';
+﻿export * from './ExecutiveSummaryTab.tsx';
+

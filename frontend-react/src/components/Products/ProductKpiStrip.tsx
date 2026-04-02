@@ -21,7 +21,7 @@ export const ProductKpiStrip: React.FC<ProductKpiStripProps> = ({ products }) =>
       <div className="md:hidden mb-2">
         <button
           onClick={() => setOpen(o => !o)}
-          className="w-full flex items-center justify-between px-3 py-2 rounded-xl bg-white/70 dark:bg-gray-800/70 backdrop-blur border border-gray-200 dark:border-gray-700 text-left shadow-sm"
+          className="app-soft-surface w-full flex items-center justify-between px-3 py-2 text-left shadow-sm"
         >
           <div className="flex items-center gap-2">
             <div className="p-1 bg-blue-100 dark:bg-blue-900/30 rounded-lg text-blue-600 dark:text-blue-400">
@@ -39,7 +39,7 @@ export const ProductKpiStrip: React.FC<ProductKpiStripProps> = ({ products }) =>
       {/* Mobile: revealed KPIs */}
       {open && (
         <div className="grid grid-cols-2 gap-2 mb-2 md:hidden">
-           <div className="bg-white/70 dark:bg-gray-800/70 backdrop-blur p-2 rounded-lg border border-gray-200 dark:border-gray-700 flex items-center justify-between">
+           <div className="app-soft-surface flex items-center justify-between rounded-lg p-2">
             <div className="flex items-center gap-2">
               <div className="p-1 bg-purple-100 dark:bg-purple-900/30 rounded-lg text-purple-600 dark:text-purple-400">
                 <ShoppingBag className="w-3 h-3" />
@@ -49,7 +49,7 @@ export const ProductKpiStrip: React.FC<ProductKpiStripProps> = ({ products }) =>
             <div className="text-xs font-bold text-gray-900 dark:text-white">{activeServices.length}</div>
           </div>
 
-          <div className="bg-white/70 dark:bg-gray-800/70 backdrop-blur p-2 rounded-lg border border-gray-200 dark:border-gray-700 flex items-center justify-between">
+          <div className="app-soft-surface flex items-center justify-between rounded-lg p-2">
             <div className="flex items-center gap-2">
               <div className="p-1 bg-green-100 dark:bg-green-900/30 rounded-lg text-green-600 dark:text-green-400">
                 <TrendingUp className="w-3 h-3" />
@@ -59,7 +59,7 @@ export const ProductKpiStrip: React.FC<ProductKpiStripProps> = ({ products }) =>
             <div className="text-xs font-bold text-gray-900 dark:text-white truncate" title={`$${inventoryValue.toLocaleString()}`}>${inventoryValue.toLocaleString()}</div>
           </div>
 
-          <div className="bg-white/70 dark:bg-gray-800/70 backdrop-blur p-2 rounded-lg border border-gray-200 dark:border-gray-700 flex items-center justify-between">
+          <div className="app-soft-surface flex items-center justify-between rounded-lg p-2">
              <div className="flex items-center gap-2">
               <div className="p-1 bg-yellow-100 dark:bg-yellow-900/30 rounded-lg text-yellow-600 dark:text-yellow-400">
                 <Archive className="w-3 h-3" />
@@ -69,7 +69,7 @@ export const ProductKpiStrip: React.FC<ProductKpiStripProps> = ({ products }) =>
             <div className="text-xs font-bold text-gray-900 dark:text-white">{totalStock}</div>
           </div>
 
-           <div className="bg-white/70 dark:bg-gray-800/70 backdrop-blur p-2 rounded-lg border border-gray-200 dark:border-gray-700 flex items-center justify-between">
+           <div className="app-soft-surface flex items-center justify-between rounded-lg p-2">
              <div className="flex items-center gap-2">
               <div className="p-1 bg-red-100 dark:bg-red-900/30 rounded-lg text-red-600 dark:text-red-400">
                 <AlertTriangle className="w-3 h-3" />
@@ -83,7 +83,7 @@ export const ProductKpiStrip: React.FC<ProductKpiStripProps> = ({ products }) =>
 
       {/* Desktop View - Cards */}
       <div className="hidden md:grid grid-cols-3 md:grid-cols-5 gap-2 md:gap-3 mb-2 md:mb-6">
-        <div className="bg-white dark:bg-gray-800 p-3 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700">
+        <div className="app-surface p-3 rounded-xl shadow-sm">
           <div className="flex items-center gap-2 mb-1">
             <div className="p-1.5 bg-blue-100 dark:bg-blue-900/30 rounded-lg text-blue-600 dark:text-blue-400">
               <Package className="w-4 h-4" />
@@ -93,7 +93,7 @@ export const ProductKpiStrip: React.FC<ProductKpiStripProps> = ({ products }) =>
           <div className="text-lg font-bold text-gray-900 dark:text-white">{activeProducts.length}</div>
         </div>
 
-        <div className="bg-white dark:bg-gray-800 p-3 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700">
+        <div className="app-surface p-3 rounded-xl shadow-sm">
           <div className="flex items-center gap-2 mb-1">
             <div className="p-1.5 bg-purple-100 dark:bg-purple-900/30 rounded-lg text-purple-600 dark:text-purple-400">
               <ShoppingBag className="w-4 h-4" />
@@ -103,7 +103,7 @@ export const ProductKpiStrip: React.FC<ProductKpiStripProps> = ({ products }) =>
           <div className="text-lg font-bold text-gray-900 dark:text-white">{activeServices.length}</div>
         </div>
 
-        <div className="bg-white dark:bg-gray-800 p-3 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700">
+        <div className="app-surface p-3 rounded-xl shadow-sm">
           <div className="flex items-center gap-2 mb-1">
             <div className="p-1.5 bg-green-100 dark:bg-green-900/30 rounded-lg text-green-600 dark:text-green-400">
               <TrendingUp className="w-4 h-4" />
@@ -115,7 +115,7 @@ export const ProductKpiStrip: React.FC<ProductKpiStripProps> = ({ products }) =>
           </div>
         </div>
 
-        <div className="bg-white dark:bg-gray-800 p-3 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700">
+        <div className="app-surface p-3 rounded-xl shadow-sm">
           <div className="flex items-center gap-2 mb-1">
             <div className="p-1.5 bg-yellow-100 dark:bg-yellow-900/30 rounded-lg text-yellow-600 dark:text-yellow-400">
               <Archive className="w-4 h-4" />
@@ -125,7 +125,7 @@ export const ProductKpiStrip: React.FC<ProductKpiStripProps> = ({ products }) =>
           <div className="text-lg font-bold text-gray-900 dark:text-white">{totalStock}</div>
         </div>
 
-        <div className="bg-white dark:bg-gray-800 p-3 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700">
+        <div className="app-surface p-3 rounded-xl shadow-sm">
           <div className="flex items-center gap-2 mb-1">
             <div className="p-1.5 bg-red-100 dark:bg-red-900/30 rounded-lg text-red-600 dark:text-red-400">
               <AlertTriangle className="w-4 h-4" />

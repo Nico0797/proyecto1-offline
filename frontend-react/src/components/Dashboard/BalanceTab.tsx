@@ -1,24 +1,70 @@
 import React from 'react';
+import { format, startOfMonth, endOfMonth } from 'date-fns';
 import { useBusinessStore } from '../../store/businessStore';
-import { balanceService, BalanceSummary, BalanceMovement, PeriodType } from '../../services/balanceService';
+import { Button } from '../ui/Button';
+import {
+  balanceService,
+  BalanceSummary,
+  BalanceMovement,
+  BalanceExpenseCategory,
+  BalanceBreakdownItem,
+  PeriodType,
+} from '../../services/balanceService';
 import { PeriodSelector } from '../Balance/PeriodSelector';
 import { MovementsTable } from '../Balance/MovementsTable';
 import { SummaryCard } from '../Dashboard/SummaryCard';
-import { TrendingUp, TrendingDown, Wallet, Lightbulb, AlertTriangle } from 'lucide-react';
+import { TrendingUp, TrendingDown, Wallet, Lightbulb, AlertTriangle, CreditCard, ArrowRight } from 'lucide-react';
 import { Bar, Doughnut } from 'react-chartjs-2';
 import { Chart as ChartJS, CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend, ArcElement } from 'chart.js';
+import { getBusinessBaseState, getBusinessPersonalizationSettings } from '../../config/businessPersonalization';
+import {
+  MobileFilterDrawer,
+  MobileHelpDisclosure,
+  MobileSummaryDrawer,
+  MobileUnifiedPageShell,
+  MobileUtilityBar,
+  useMobileFilterDraft,
+} from '../mobile/MobileContentFirst';
 
 ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend, ArcElement);
 
-export const BalanceTab = () => {
+interface BalanceTabProps {
+  onOpenAnalytics?: () => void;
+}
+
+export const BalanceTab: React.FC<BalanceTabProps> = ({ onOpenAnalytics }) => {
   const { activeBusiness } = useBusinessStore();
   const [period, setPeriod] = React.useState<PeriodType>('monthly');
-  const [startDate, setStartDate] = React.useState(new Date());
-  const [endDate, setEndDate] = React.useState(new Date());
-  
+  const [startDate, setStartDate] = React.useState(() => startOfMonth(new Date()));
+  const [endDate, setEndDate] = React.useState(() => endOfMonth(new Date()));
+
   const [summary, setSummary] = React.useState<BalanceSummary | null>(null);
   const [movements, setMovements] = React.useState<BalanceMovement[]>([]);
+  const [expenseCategories, setExpenseCategories] = React.useState<BalanceExpenseCategory[]>([]);
+  const [cashOutBreakdown, setCashOutBreakdown] = React.useState<BalanceBreakdownItem[]>([]);
   const [loading, setLoading] = React.useState(false);
+  const [showAdvanced, setShowAdvanced] = React.useState(false);
+  const [showMovements, setShowMovements] = React.useState(false);
+
+  const currency = activeBusiness?.currency || 'COP';
+  const businessBaseState = getBusinessBaseState(activeBusiness);
+  const personalizationSettings = getBusinessPersonalizationSettings(activeBusiness);
+  const prefersAdvancedVisibility = personalizationSettings.visibility_mode === 'advanced';
+  const simplifyByDefault = !prefersAdvancedVisibility && businessBaseState.effectiveBusinessType !== 'production';
+
+  const formatCurrency = React.useCallback((value?: number | null) => {
+    return new Intl.NumberFormat('es-CO', {
+      style: 'currency',
+      currency,
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 2,
+    }).format(Number(value || 0));
+  }, [currency]);
+
+  const calculateVariation = React.useCallback((current: number, previous: number) => {
+    if (!previous) return current > 0 ? 100 : 0;
+    return ((current - previous) / Math.abs(previous)) * 100;
+  }, []);
 
   React.useEffect(() => {
     if (activeBusiness && startDate && endDate) {
@@ -26,256 +72,630 @@ export const BalanceTab = () => {
     }
   }, [activeBusiness, startDate, endDate]);
 
+  React.useEffect(() => {
+    setShowAdvanced(!simplifyByDefault);
+    setShowMovements(!simplifyByDefault);
+  }, [activeBusiness?.id, simplifyByDefault]);
+
   const loadData = async () => {
     if (!activeBusiness) return;
     setLoading(true);
-    
-    const startStr = startDate.toISOString().split('T')[0];
-    const endStr = endDate.toISOString().split('T')[0];
+
+    const startStr = format(startDate, 'yyyy-MM-dd');
+    const endStr = format(endDate, 'yyyy-MM-dd');
 
     try {
-        const [sum, movs] = await Promise.all([
-            balanceService.getSummary(activeBusiness.id, startStr, endStr),
-            balanceService.getMovements(activeBusiness.id, startStr, endStr)
-        ]);
-        setSummary(sum);
-        setMovements(movs);
+      const dashboard = await balanceService.getDashboard(activeBusiness.id, startStr, endStr);
+      setSummary(dashboard.summary);
+      setMovements(dashboard.movements);
+      setExpenseCategories(dashboard.expenseCategories);
+      setCashOutBreakdown(dashboard.cashOutBreakdown);
     } catch (err) {
-        console.error("Error loading balance data", err);
+      console.error('Error loading balance data', err);
     } finally {
-        setLoading(false);
+      setLoading(false);
     }
   };
 
-  // Insights Logic
   const getInsights = () => {
-      if (!summary) return [];
-      const insights = [];
+    if (!summary) return [];
+    const insights = [];
 
-      if (summary.expenses > summary.income) {
-          insights.push({
-              type: 'warning',
-              icon: AlertTriangle,
-              title: 'Gastos Superiores',
-              text: 'Tus gastos superan tus ingresos en este periodo. Revisa categorías no esenciales.'
-          });
-      }
+    if (summary.cashOut > summary.cashIn) {
+      insights.push({
+        type: 'warning',
+        icon: AlertTriangle,
+        title: 'Caja real negativa',
+        text: 'Las salidas reales superan las entradas reales del periodo. Revisa ejecución operativa, pagos pendientes y recaudo.',
+      });
+    }
 
-      const expenseChange = summary.previousExpenses > 0 ? ((summary.expenses - summary.previousExpenses) / summary.previousExpenses) * 100 : 0;
-      if (expenseChange > 10) {
-           insights.push({
-              type: 'warning', // Changed to warning for visibility
-              icon: TrendingDown,
-              title: 'Aumento de Gastos',
-              text: `Tus gastos han subido un ${expenseChange.toFixed(1)}% respecto al periodo anterior.`
-          });
-      } else if (summary.income > summary.previousIncome && summary.previousIncome > 0) {
-           insights.push({
-              type: 'success',
-              icon: TrendingUp,
-              title: 'Crecimiento de Ingresos',
-              text: `¡Bien hecho! Tus ingresos han aumentado un ${((summary.income - summary.previousIncome) / summary.previousIncome * 100).toFixed(1)}%.`
-          });
-      }
+    const operationalExpenseChange = summary.previousOperationalExpensesExecutedTotal > 0
+      ? ((summary.operationalExpensesExecutedTotal - summary.previousOperationalExpensesExecutedTotal) / summary.previousOperationalExpensesExecutedTotal) * 100
+      : 0;
 
-      if (summary.margin > 20) {
-          insights.push({
-              type: 'success',
-              icon: Lightbulb,
-              title: 'Margen Saludable',
-              text: `¡Excelente! Mantienes un margen de utilidad del ${summary.margin.toFixed(1)}%.`
-          });
-      }
-      
-      return insights.slice(0, 3); // Max 3 insights
+    if (operationalExpenseChange > 10) {
+      insights.push({
+        type: 'warning',
+        icon: TrendingDown,
+        title: 'Mayor ejecución operativa',
+        text: `Las salidas operativas ejecutadas subieron ${operationalExpenseChange.toFixed(1)}% frente al periodo anterior.`,
+      });
+    } else if (summary.salesTotal > summary.previousSalesTotal && summary.previousSalesTotal > 0) {
+      insights.push({
+        type: 'success',
+        icon: TrendingUp,
+        title: 'Crecimiento de Ventas',
+        text: `¡Bien hecho! Tus ventas han aumentado un ${((summary.salesTotal - summary.previousSalesTotal) / summary.previousSalesTotal * 100).toFixed(1)}%.`,
+      });
+    }
+
+    if (summary.operationalPayablesOverdueTotal > 0) {
+      insights.push({
+        type: 'warning',
+        icon: AlertTriangle,
+        title: 'Por pagar operativo vencido',
+        text: `Tienes ${formatCurrency(summary.operationalPayablesOverdueTotal)} vencido en obligaciones operativas.`,
+      });
+    }
+
+    if (summary.financialDebtOverdueTotal > 0) {
+      insights.push({
+        type: 'warning',
+        icon: CreditCard,
+        title: 'Deuda financiera vencida',
+        text: `Tienes ${formatCurrency(summary.financialDebtOverdueTotal)} vencido en tarjetas, préstamos o créditos.`,
+      });
+    } else if (summary.margin > 20) {
+      insights.push({
+        type: 'success',
+        icon: Lightbulb,
+        title: 'Margen Saludable',
+        text: `¡Excelente! Mantienes un margen de utilidad del ${summary.margin.toFixed(1)}%.`,
+      });
+    }
+
+    return insights.slice(0, 3);
   };
 
   const insights = getInsights();
+  const operationalPaymentsTotal = (summary?.supplierPaymentsTotal || 0) + (summary?.operationalObligationPaymentsTotal || 0);
+  const flowHighlights = [
+    {
+      label: 'Entradas reales',
+      value: formatCurrency(summary?.cashIn || 0),
+      tone: 'text-blue-700 dark:text-blue-300 bg-blue-50 dark:bg-blue-900/20',
+    },
+    {
+      label: 'Gasto operativo',
+      value: formatCurrency(summary?.operationalExpensesExecutedTotal || 0),
+      tone: 'text-red-700 dark:text-red-300 bg-red-50 dark:bg-red-900/20',
+    },
+    {
+      label: 'Pagos operativos',
+      value: formatCurrency(operationalPaymentsTotal),
+      tone: 'text-amber-700 dark:text-amber-300 bg-amber-50 dark:bg-amber-900/20',
+    },
+    {
+      label: 'Pagos deuda financiera',
+      value: formatCurrency(summary?.financialDebtPaymentsTotal || 0),
+      tone: 'text-violet-700 dark:text-violet-300 bg-violet-50 dark:bg-violet-900/20',
+    },
+  ];
+  const compactCurrency = React.useCallback((value?: number | null) => {
+    return new Intl.NumberFormat('es-CO', {
+      style: 'currency',
+      currency,
+      notation: 'compact',
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 1,
+    }).format(Number(value || 0));
+  }, [currency]);
 
-  // Chart Data Preparation
   const chartData = {
-      labels: ['Ingresos', 'Gastos'],
-      datasets: [
-          {
-              label: 'Total',
-              data: [summary?.income || 0, summary?.expenses || 0],
-              backgroundColor: ['#22c55e', '#ef4444'],
-              borderRadius: 8,
-          }
-      ]
+    labels: ['Entradas reales', 'Gasto operativo', 'Pagos operativos', 'Pagos deuda financiera', 'Flujo neto real'],
+    datasets: [
+      {
+        label: 'Monto',
+        data: [
+          summary?.cashIn || 0,
+          summary?.operationalExpensesExecutedTotal || 0,
+          operationalPaymentsTotal,
+          summary?.financialDebtPaymentsTotal || 0,
+          summary?.cashNet || 0,
+        ],
+        backgroundColor: ['#2563eb', '#ef4444', '#f59e0b', '#7c3aed', '#0f766e'],
+        borderRadius: 8,
+      },
+    ],
   };
-  
-  const expenseCategories = movements
-    .filter(m => m.type === 'expense')
-    .reduce((acc, curr) => {
-        acc[curr.category || 'Otros'] = (acc[curr.category || 'Otros'] || 0) + curr.amount;
-        return acc;
-    }, {} as Record<string, number>);
 
+  const visibleCashOutBreakdown = cashOutBreakdown.filter((item) => Number(item.total || 0) > 0.0001);
   const doughnutData = {
-      labels: Object.keys(expenseCategories),
-      datasets: [{
-          data: Object.values(expenseCategories),
-          backgroundColor: [
-              '#3b82f6', '#ef4444', '#eab308', '#a855f7', '#ec4899', '#64748b'
-          ],
-          borderWidth: 0
-      }]
+    labels: visibleCashOutBreakdown.map((item) => item.label),
+    datasets: [
+      {
+        data: visibleCashOutBreakdown.map((item) => item.total),
+        backgroundColor: ['#ef4444', '#f59e0b', '#0ea5e9', '#7c3aed', '#64748b'],
+        borderWidth: 0,
+      },
+    ],
   };
 
-  return (
-    <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-300 pb-10">
-      
-      <PeriodSelector 
-        period={period} 
-        onChangePeriod={setPeriod} 
-        startDate={startDate} 
-        endDate={endDate} 
-        onChangeDateRange={(s, e) => { setStartDate(s); setEndDate(e); }}
+  const hasUrgentOperationalDebt = (summary?.operationalPayablesOverdueTotal || 0) > 0;
+  const hasUrgentFinancialDebt = (summary?.financialDebtOverdueTotal || 0) > 0;
+  const receivablesDueSoonTotal =
+    (summary?.overdueReceivables || 0) +
+    (summary?.dueTodayReceivables || 0) +
+    (summary?.dueSoonReceivables || 0);
+  const movementPreview = movements.slice(0, 5);
+  const mobileBalanceControls = useMobileFilterDraft({
+    value: { period, startDate, endDate, showAdvanced, showMovements },
+    onApply: (nextValue) => {
+      setPeriod(nextValue.period);
+      setStartDate(nextValue.startDate);
+      setEndDate(nextValue.endDate);
+      setShowAdvanced(nextValue.showAdvanced);
+      setShowMovements(nextValue.showMovements);
+    },
+    createEmptyValue: () => ({
+      period: 'monthly' as PeriodType,
+      startDate: startOfMonth(new Date()),
+      endDate: endOfMonth(new Date()),
+      showAdvanced: !simplifyByDefault,
+      showMovements: !simplifyByDefault,
+    }),
+  });
+
+  const balanceControlsContent = (
+    <div className="app-toolbar-stack">
+      <PeriodSelector
+        period={period}
+        onChangePeriod={setPeriod}
+        startDate={startDate}
+        endDate={endDate}
+        onChangeDateRange={(s, e) => {
+          setStartDate(s);
+          setEndDate(e);
+        }}
       />
 
-      {/* KPIs */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        <SummaryCard 
-          title="Ingresos" 
-          value={`$${summary?.income?.toLocaleString() || 0}`} 
-          icon={TrendingUp} 
-          color="green"
-          trend={{
-              value: summary?.previousIncome ? ((summary.income - summary.previousIncome) / summary.previousIncome) * 100 : 0,
-              label: "vs periodo anterior"
-          }}
-        />
-        <SummaryCard 
-          title="Gastos" 
-          value={`$${summary?.expenses?.toLocaleString() || 0}`} 
-          icon={TrendingDown} 
-          color="red"
-          trend={{
-              value: summary?.previousExpenses ? ((summary.expenses - summary.previousExpenses) / summary.previousExpenses) * 100 : 0,
-              label: "vs periodo anterior"
-          }}
-        />
-        <SummaryCard 
-          title="Utilidad Neta" 
-          value={`$${summary?.profit?.toLocaleString() || 0}`} 
-          icon={Wallet} 
-          color={summary?.profit && summary.profit >= 0 ? 'blue' : 'red'} 
-        />
-         <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-6">
-            <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400">Margen de Utilidad</h3>
-            <div className="flex items-end gap-2 mt-2">
-                <span className={`text-2xl font-bold ${summary?.margin && summary.margin >= 0 ? 'text-blue-600 dark:text-blue-400' : 'text-red-500'}`}>
-                    {summary?.margin?.toFixed(1) || 0}%
-                </span>
+      <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 xl:grid-cols-3">
+        <Button variant="secondary" onClick={() => setShowMovements((current) => !current)} className="w-full">
+          {showMovements ? 'Ocultar movimientos' : 'Ver movimientos'}
+        </Button>
+        <Button variant="ghost" onClick={() => setShowAdvanced((current) => !current)} className="w-full">
+          {showAdvanced ? 'Ocultar detalle' : 'Ver detalle'}
+        </Button>
+        {onOpenAnalytics && (
+          <Button onClick={onOpenAnalytics} className="w-full">
+            Ir a análisis
+            <ArrowRight className="w-4 h-4" />
+          </Button>
+        )}
+      </div>
+    </div>
+  );
+
+  const balanceKpiContent = (
+    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+      <SummaryCard
+        title="Entró"
+        value={formatCurrency(summary?.cashIn || 0)}
+        icon={Wallet}
+        color="green"
+        trend={{
+          value: calculateVariation(summary?.cashIn || 0, summary?.previousCashIn || 0),
+          label: 'vs periodo anterior',
+        }}
+      />
+      <SummaryCard
+        title="Salió"
+        value={formatCurrency(summary?.cashOut || 0)}
+        icon={TrendingDown}
+        color="red"
+        trend={{
+          value: calculateVariation(summary?.cashOut || 0, summary?.previousCashOut || 0),
+          label: 'vs periodo anterior',
+        }}
+      />
+      <SummaryCard
+        title="Neto"
+        value={formatCurrency(summary?.cashNet || 0)}
+        icon={Wallet}
+        color={summary?.cashNet && summary.cashNet >= 0 ? 'green' : 'red'}
+        trend={{
+          value: calculateVariation(summary?.cashNet || 0, summary?.previousCashNet || 0),
+          label: 'vs periodo anterior',
+        }}
+      />
+      <SummaryCard
+        title="Te deben"
+        value={formatCurrency(summary?.accountsReceivable || 0)}
+        icon={CreditCard}
+        color="yellow"
+        trend={{
+          value: `${summary?.receivableCustomersCount || 0} cliente(s)`,
+          label: receivablesDueSoonTotal > 0 ? `${formatCurrency(receivablesDueSoonTotal)} por cobrar` : 'sin saldos urgentes',
+          isRaw: true,
+        }}
+      />
+    </div>
+  );
+
+  return (
+    <div className="app-content-stack animate-in fade-in slide-in-from-bottom-2 duration-300 pb-10">
+      <div className="dashboard-balance-desktop-stack hidden lg:flex lg:flex-col">
+        {balanceControlsContent}
+
+        <div className="app-toolbar">
+          <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+            <div className="max-w-2xl">
+              <div className="text-xs sm:text-sm font-semibold text-blue-600 dark:text-blue-400">Caja</div>
+              <h2 className="mt-1.5 text-xl sm:text-2xl font-bold text-gray-900 dark:text-white">Lo esencial del dinero del período</h2>
+              <p className="mt-1.5 text-sm text-gray-600 dark:text-gray-300">
+                Empieza por lo simple: cuánto entró, cuánto salió, cómo quedó el neto y cuánto te deben.
+              </p>
             </div>
-            <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2 mt-4">
-                <div 
-                    className={`h-2 rounded-full ${summary?.margin && summary.margin >= 0 ? 'bg-blue-500' : 'bg-red-500'}`} 
-                    style={{ width: `${Math.min(Math.abs(summary?.margin || 0), 100)}%` }}
-                ></div>
+            <div className="grid w-full grid-cols-1 gap-2 sm:w-auto sm:min-w-[280px]">
+              <Button variant="secondary" onClick={() => setShowMovements((current) => !current)} className="w-full sm:w-auto">
+                {showMovements ? 'Ocultar movimientos' : 'Ver movimientos'}
+              </Button>
+              <Button variant="ghost" onClick={() => setShowAdvanced((current) => !current)} className="w-full sm:w-auto">
+                {showAdvanced ? 'Ocultar detalle' : 'Ver detalle'}
+              </Button>
+              {onOpenAnalytics && (
+                <Button onClick={onOpenAnalytics} className="w-full sm:w-auto">
+                  Ir a análisis
+                  <ArrowRight className="w-4 h-4" />
+                </Button>
+              )}
             </div>
+          </div>
         </div>
+
+        {balanceKpiContent}
       </div>
 
-      {/* Insights */}
-      {insights.length > 0 && (
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              {insights.map((insight, idx) => (
-                  <div key={idx} className={`p-4 rounded-xl border flex gap-3 ${
-                      insight.type === 'warning' ? 'bg-red-50 border-red-100 dark:bg-red-900/20 dark:border-red-800' :
-                      insight.type === 'success' ? 'bg-green-50 border-green-100 dark:bg-green-900/20 dark:border-green-800' :
-                      'bg-blue-50 border-blue-100 dark:bg-blue-900/20 dark:border-blue-800'
-                  }`}>
-                      <div className={`p-2 rounded-lg h-fit ${
-                          insight.type === 'warning' ? 'bg-red-100 text-red-600 dark:bg-red-800 dark:text-red-200' :
-                          insight.type === 'success' ? 'bg-green-100 text-green-600 dark:bg-green-800 dark:text-green-200' :
-                          'bg-blue-100 text-blue-600 dark:bg-blue-800 dark:text-blue-200'
-                      }`}>
-                          <insight.icon className="w-5 h-5" />
-                      </div>
-                      <div>
-                          <h4 className={`font-bold text-sm ${
-                              insight.type === 'warning' ? 'text-red-800 dark:text-red-200' :
-                              insight.type === 'success' ? 'text-green-800 dark:text-green-200' :
-                              'text-blue-800 dark:text-blue-200'
-                          }`}>{insight.title}</h4>
-                          <p className={`text-xs mt-1 ${
-                               insight.type === 'warning' ? 'text-red-600 dark:text-red-300' :
-                               insight.type === 'success' ? 'text-green-600 dark:text-green-300' :
-                               'text-blue-600 dark:text-blue-300'
-                          }`}>
-                              {insight.text}
-                          </p>
-                      </div>
-                  </div>
-              ))}
+      <MobileUnifiedPageShell
+        utilityBar={(
+          <MobileUtilityBar>
+            <MobileFilterDrawer summary="Periodo y vista" {...mobileBalanceControls.sheetProps}>
+              <div className="app-toolbar-stack">
+                <PeriodSelector
+                  period={mobileBalanceControls.draft.period}
+                  onChangePeriod={(value) => mobileBalanceControls.setDraft((current) => ({ ...current, period: value }))}
+                  startDate={mobileBalanceControls.draft.startDate}
+                  endDate={mobileBalanceControls.draft.endDate}
+                  onChangeDateRange={(s, e) => {
+                    mobileBalanceControls.setDraft((current) => ({ ...current, startDate: s, endDate: e }));
+                  }}
+                />
+
+                <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 xl:grid-cols-3">
+                  <Button variant="secondary" onClick={() => mobileBalanceControls.setDraft((current) => ({ ...current, showMovements: !current.showMovements }))} className="w-full">
+                    {mobileBalanceControls.draft.showMovements ? 'Ocultar movimientos' : 'Ver movimientos'}
+                  </Button>
+                  <Button variant="ghost" onClick={() => mobileBalanceControls.setDraft((current) => ({ ...current, showAdvanced: !current.showAdvanced }))} className="w-full">
+                    {mobileBalanceControls.draft.showAdvanced ? 'Ocultar detalle' : 'Ver detalle'}
+                  </Button>
+                  {onOpenAnalytics && (
+                    <Button onClick={onOpenAnalytics} className="w-full">
+                      Ir a análisis
+                      <ArrowRight className="w-4 h-4" />
+                    </Button>
+                  )}
+                </div>
+              </div>
+            </MobileFilterDrawer>
+            <MobileSummaryDrawer summary="Resumen de caja">
+              {balanceKpiContent}
+            </MobileSummaryDrawer>
+            <MobileHelpDisclosure summary="Cómo leer caja">
+              <p className="text-sm text-gray-600 dark:text-gray-300">
+                Empieza por el flujo neto y el por cobrar. Los controles de período y el detalle completo quedan disponibles sin empujar el contenido principal.
+              </p>
+            </MobileHelpDisclosure>
+          </MobileUtilityBar>
+        )}
+      >
+        <>
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+            <div className="app-surface rounded-[28px] p-6 shadow-sm">
+              <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400">Flujo neto del período</h3>
+              <div className="mt-2 text-2xl font-bold text-gray-900 dark:text-white">
+                {formatCurrency(summary?.cashNet || 0)}
+              </div>
+              <div className="mt-4 space-y-2 text-sm text-gray-600 dark:text-gray-300">
+                <div className="flex items-center justify-between">
+                  <span>Entradas reales</span>
+                  <span className="font-semibold text-green-600 dark:text-green-400">{formatCurrency(summary?.cashIn || 0)}</span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span>Cobro neto de facturas</span>
+                  <span className="font-semibold text-blue-600 dark:text-blue-400">{formatCurrency(summary?.invoiceNetCollectionsTotal || summary?.invoicePaymentsTotal || 0)}</span>
+                </div>
+                <div className="flex items-center justify-between text-xs text-gray-500 dark:text-gray-400">
+                  <span>Reembolsos y reversiones</span>
+                  <span>{formatCurrency((summary?.invoiceRefundsTotal || 0) + (summary?.invoiceReversalsTotal || 0))}</span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span>Salidas reales</span>
+                  <span className="font-semibold text-red-600 dark:text-red-400">{formatCurrency(summary?.cashOut || 0)}</span>
+                </div>
+                <div className="flex items-center justify-between border-t border-gray-200 pt-2 text-gray-900 dark:border-gray-800 dark:text-white">
+                  <span className="font-medium">Neto</span>
+                  <span className="font-bold">{formatCurrency(summary?.cashNet || 0)}</span>
+                </div>
+              </div>
+            </div>
+
+            <div className="app-surface rounded-[28px] p-6 shadow-sm">
+              <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400">Por cobrar al cierre</h3>
+              <div className="mt-2 flex items-end gap-2">
+                <span className="text-2xl font-bold text-amber-600 dark:text-amber-400">
+                  {formatCurrency(summary?.accountsReceivable || 0)}
+                </span>
+              </div>
+              <div className="mt-4 space-y-2 text-sm text-gray-600 dark:text-gray-300">
+                <div className="flex items-center justify-between">
+                  <span>Vencido</span>
+                  <span className="font-semibold text-red-600 dark:text-red-400">{formatCurrency(summary?.overdueReceivables || 0)}</span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span>Vence hoy</span>
+                  <span className="font-semibold text-amber-600 dark:text-amber-400">{formatCurrency(summary?.dueTodayReceivables || 0)}</span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span>Por vencer</span>
+                  <span className="font-semibold text-blue-600 dark:text-blue-400">{formatCurrency(summary?.dueSoonReceivables || 0)}</span>
+                </div>
+                <div className="flex items-center justify-between text-xs text-gray-500 dark:text-gray-400">
+                  <span>Clientes con saldo</span>
+                  <span>{summary?.receivableCustomersCount || 0}</span>
+                </div>
+                <div className="flex items-center justify-between text-xs text-gray-500 dark:text-gray-400">
+                  <span>Ventas a crédito</span>
+                  <span>{formatCurrency(summary?.salesAccountsReceivable || 0)}</span>
+                </div>
+                <div className="flex items-center justify-between text-xs text-gray-500 dark:text-gray-400">
+                  <span>Facturas</span>
+                  <span>{formatCurrency(summary?.invoiceAccountsReceivable || 0)}</span>
+                </div>
+                <div className="flex items-center justify-between text-xs text-gray-500 dark:text-gray-400">
+                  <span>Recaudo de facturas</span>
+                  <span>{Number(summary?.invoiceCollectionRate || 0).toFixed(1)}%</span>
+                </div>
+                <div className="flex items-center justify-between text-xs text-gray-500 dark:text-gray-400">
+                  <span>Cobro bruto facturas</span>
+                  <span>{formatCurrency(summary?.invoiceGrossCollectionsTotal || 0)}</span>
+                </div>
+              </div>
+            </div>
           </div>
+
+          {(hasUrgentOperationalDebt || hasUrgentFinancialDebt || (summary?.dueTodayReceivables || 0) > 0) && (
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+              {hasUrgentOperationalDebt && (
+                <div className="rounded-xl border border-amber-200 bg-amber-50 p-4 dark:border-amber-900/30 dark:bg-amber-900/10">
+                  <div className="text-sm font-semibold text-amber-900 dark:text-amber-100">Por pagar operativo vencido</div>
+                  <div className="mt-1 text-lg font-bold text-amber-900 dark:text-white">{formatCurrency(summary?.operationalPayablesOverdueTotal || 0)}</div>
+                  <div className="mt-1 text-xs text-amber-700 dark:text-amber-200">Sigue existiendo, pero ya no domina la pantalla inicial.</div>
+                </div>
+              )}
+              {hasUrgentFinancialDebt && (
+                <div className="rounded-xl border border-red-200 bg-red-50 p-4 dark:border-red-900/30 dark:bg-red-900/10">
+                  <div className="text-sm font-semibold text-red-900 dark:text-red-100">Deuda financiera vencida</div>
+                  <div className="mt-1 text-lg font-bold text-red-900 dark:text-white">{formatCurrency(summary?.financialDebtOverdueTotal || 0)}</div>
+                  <div className="mt-1 text-xs text-red-700 dark:text-red-200">Puedes ver el detalle completo cuando lo necesites.</div>
+                </div>
+              )}
+              {(summary?.dueTodayReceivables || 0) > 0 && (
+                <div className="rounded-xl border border-blue-200 bg-blue-50 p-4 dark:border-blue-900/30 dark:bg-blue-900/10">
+                  <div className="text-sm font-semibold text-blue-900 dark:text-blue-100">Cobros que vencen hoy</div>
+                  <div className="mt-1 text-lg font-bold text-blue-900 dark:text-white">{formatCurrency(summary?.dueTodayReceivables || 0)}</div>
+                  <div className="mt-1 text-xs text-blue-700 dark:text-blue-200">Útil para priorizar recaudo sin abrir análisis.</div>
+                </div>
+              )}
+            </div>
+          )}
+        </>
+      </MobileUnifiedPageShell>
+
+      {showMovements && (
+        <div className="app-surface rounded-2xl p-5 shadow-sm sm:p-6">
+          <div className="flex flex-col gap-4">
+            <div className="flex flex-col gap-1">
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Movimientos del período</h3>
+              <p className="text-sm text-gray-500 dark:text-gray-400">
+                Primero te mostramos el historial porque suele ser lo más útil para revisar el día a día.
+              </p>
+            </div>
+            {movementPreview.length > 0 && (
+              <div className="space-y-2">
+                {movementPreview.map((movement) => (
+                  <div key={movement.id} className="app-muted-panel flex items-center justify-between rounded-xl px-3 py-3 text-sm">
+                    <div className="min-w-0">
+                      <div className="truncate font-medium text-gray-900 dark:text-white">{movement.description}</div>
+                      <div className="mt-0.5 text-xs text-gray-500 dark:text-gray-400">
+                        {movement.date} {movement.category ? `• ${movement.category}` : ''}
+                      </div>
+                    </div>
+                    <div className={movement.type === 'income' ? 'font-semibold text-green-600 dark:text-green-400' : 'font-semibold text-red-600 dark:text-red-400'}>
+                      {movement.type === 'income' ? '+' : '-'}{formatCurrency(movement.amount)}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+            <MovementsTable movements={movements} loading={loading} currency={currency} />
+          </div>
+        </div>
       )}
 
-      {/* Charts & Table */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6" data-tour="dashboard.balance.summary">
-        <div className="lg:col-span-2 space-y-6">
-            {/* Main Chart */}
-            <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-6 h-80">
-                <h3 className="font-semibold text-gray-900 dark:text-white mb-4">Resumen Financiero</h3>
-                <Bar 
-                    data={chartData} 
-                    options={{ 
-                        responsive: true, 
+      {showAdvanced && (
+        <>
+          {insights.length > 0 && (
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+              {insights.map((insight, idx) => (
+                <div
+                  key={`${insight.title}-${idx}`}
+                  className={`flex gap-3 rounded-xl border p-4 ${
+                    insight.type === 'warning'
+                      ? 'border-red-100 bg-red-50 dark:border-red-800 dark:bg-red-900/20'
+                      : insight.type === 'success'
+                        ? 'border-green-100 bg-green-50 dark:border-green-800 dark:bg-green-900/20'
+                        : 'border-blue-100 bg-blue-50 dark:border-blue-800 dark:bg-blue-900/20'
+                  }`}
+                >
+                  <div
+                    className={`h-fit rounded-lg p-2 ${
+                      insight.type === 'warning'
+                        ? 'bg-red-100 text-red-600 dark:bg-red-800 dark:text-red-200'
+                        : insight.type === 'success'
+                          ? 'bg-green-100 text-green-600 dark:bg-green-800 dark:text-green-200'
+                          : 'bg-blue-100 text-blue-600 dark:bg-blue-800 dark:text-blue-200'
+                    }`}
+                  >
+                    <insight.icon className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <h4
+                      className={`text-sm font-bold ${
+                        insight.type === 'warning'
+                          ? 'text-red-800 dark:text-red-200'
+                          : insight.type === 'success'
+                            ? 'text-green-800 dark:text-green-200'
+                            : 'text-blue-800 dark:text-blue-200'
+                      }`}
+                    >
+                      {insight.title}
+                    </h4>
+                    <p
+                      className={`mt-1 text-xs ${
+                        insight.type === 'warning'
+                          ? 'text-red-600 dark:text-red-300'
+                          : insight.type === 'success'
+                            ? 'text-green-600 dark:text-green-300'
+                            : 'text-blue-600 dark:text-blue-300'
+                      }`}
+                    >
+                      {insight.text}
+                    </p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+
+          <div className="grid grid-cols-1 items-start gap-6 lg:grid-cols-3" data-tour="dashboard.balance.summary">
+            <div className="min-w-0 space-y-6 lg:col-span-2">
+              <div className="app-surface overflow-hidden rounded-2xl p-5 shadow-sm sm:p-6">
+                <div className="flex flex-col gap-5">
+                  <div className="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
+                    <div className="max-w-2xl">
+                      <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Flujo real del período</h3>
+                      <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
+                        El gráfico y el historial usan el mismo corte: entradas reales, gasto operativo, pagos operativos y deuda financiera.
+                      </p>
+                    </div>
+                    <div className="app-chip inline-flex self-start rounded-full px-3 py-1 text-xs font-medium">
+                      Neto real: {formatCurrency(summary?.cashNet || 0)}
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-3 xl:grid-cols-4">
+                    {flowHighlights.map((item) => (
+                      <div key={item.label} className={`rounded-xl px-3 py-3 ${item.tone}`}>
+                        <div className="text-[11px] font-semibold uppercase tracking-wide opacity-80">{item.label}</div>
+                        <div className="mt-1 text-sm font-bold sm:text-base">{item.value}</div>
+                      </div>
+                    ))}
+                  </div>
+
+                  <div className="app-muted-panel rounded-2xl px-3 py-4 sm:px-4">
+                    <div className="h-[320px] sm:h-[360px]">
+                      <Bar
+                        data={chartData}
+                        options={{
+                          indexAxis: 'y',
+                          responsive: true,
+                          maintainAspectRatio: false,
+                          layout: { padding: { left: 4, right: 12, top: 4, bottom: 4 } },
+                          plugins: {
+                            legend: { display: false },
+                            tooltip: {
+                              callbacks: {
+                                label: (context) => compactCurrency(Number(context.parsed.x || 0)),
+                              },
+                            },
+                          },
+                          scales: {
+                            x: {
+                              grid: { color: 'rgba(148, 163, 184, 0.18)' },
+                              ticks: {
+                                maxTicksLimit: 5,
+                                callback: (value) => compactCurrency(Number(value)),
+                              },
+                            },
+                            y: {
+                              grid: { display: false },
+                              ticks: {
+                                font: { size: 11 },
+                              },
+                            },
+                          },
+                        }}
+                      />
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="space-y-6">
+              <div className="app-surface rounded-xl p-6">
+                <h3 className="mb-2 font-semibold text-gray-900 dark:text-white">Composición de salidas reales</h3>
+                <p className="mb-4 text-sm text-gray-500 dark:text-gray-400">
+                  No mezcla gasto operativo ejecutado con pagos a proveedores ni deuda financiera.
+                </p>
+                <div className="relative h-64">
+                  {visibleCashOutBreakdown.length > 0 ? (
+                    <Doughnut
+                      data={doughnutData}
+                      options={{
+                        responsive: true,
                         maintainAspectRatio: false,
-                        plugins: { legend: { display: false } },
-                        scales: { y: { grid: { color: '#374151' } }, x: { grid: { display: false } } }
-                    }} 
-                />
+                        cutout: '70%',
+                        plugins: { legend: { position: 'bottom', labels: { boxWidth: 10 } } },
+                      }}
+                    />
+                  ) : (
+                    <div className="flex h-full items-center justify-center text-sm text-gray-400">
+                      Sin salidas reales registradas
+                    </div>
+                  )}
+                </div>
+                {expenseCategories.length > 0 && (
+                  <div className="mt-4 space-y-2 border-t border-gray-200 pt-4 dark:border-gray-800">
+                    <div className="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">
+                      Categorías del gasto operativo ejecutado
+                    </div>
+                    <div className="space-y-2">
+                      {expenseCategories.slice(0, 5).map((item, index) => (
+                        <div key={`${item.key}-${index}`} className="flex items-center justify-between text-sm">
+                          <span className="text-gray-600 dark:text-gray-300">{item.category}</span>
+                          <span className="font-medium text-gray-900 dark:text-white">{formatCurrency(item.total)}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
             </div>
-
-            {/* Movements List */}
-            <MovementsTable movements={movements} loading={loading} />
-        </div>
-
-        <div className="space-y-6">
-            {/* Expense Breakdown */}
-             <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-6">
-                <h3 className="font-semibold text-gray-900 dark:text-white mb-4">Distribución de Gastos</h3>
-                <div className="h-64 relative">
-                    {Object.keys(expenseCategories).length > 0 ? (
-                        <Doughnut 
-                            data={doughnutData} 
-                            options={{ 
-                                responsive: true, 
-                                maintainAspectRatio: false, 
-                                cutout: '70%',
-                                plugins: { legend: { position: 'bottom', labels: { boxWidth: 10 } } }
-                            }} 
-                        />
-                    ) : (
-                         <div className="flex items-center justify-center h-full text-gray-400 text-sm">
-                             Sin gastos registrados
-                         </div>
-                    )}
-                </div>
-            </div>
-            
-             {/* Mini Goal (Example Creative Feature) */}
-             <div className="bg-indigo-600 rounded-xl p-6 text-white relative overflow-hidden">
-                <div className="absolute top-0 right-0 p-4 opacity-10">
-                    <TrendingUp className="w-24 h-24" />
-                </div>
-                <h3 className="font-bold text-lg mb-1">Meta de Utilidad</h3>
-                <p className="text-indigo-200 text-sm mb-4">Objetivo mensual sugerido</p>
-                
-                <div className="flex justify-between text-sm mb-1">
-                    <span>Progreso</span>
-                    <span>{Math.min(((summary?.profit || 0) / 1000000) * 100, 100).toFixed(0)}%</span>
-                </div>
-                <div className="w-full bg-black/20 rounded-full h-2 mb-2">
-                    <div className="bg-white h-2 rounded-full" style={{ width: `${Math.min(((summary?.profit || 0) / 1000000) * 100, 100)}%` }}></div>
-                </div>
-                <p className="text-xs text-indigo-200 text-right">Meta: $1,000,000</p>
-            </div>
-        </div>
-      </div>
+          </div>
+        </>
+      )}
     </div>
   );
 };

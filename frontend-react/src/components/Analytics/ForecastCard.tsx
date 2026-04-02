@@ -28,7 +28,7 @@ export const ForecastCard: React.FC<ForecastCardProps> = ({ forecast }) => {
         </div>
       </div>
 
-      <div className="bg-white/10 backdrop-blur-sm rounded-lg p-4 relative z-10">
+      <div className="rounded-lg border border-white/10 bg-black/10 p-4 backdrop-blur-sm relative z-10">
         <h4 className="text-sm font-semibold mb-2 flex items-center gap-2">
           <ArrowRight className="w-4 h-4" />
           ¿Cómo mejorar?

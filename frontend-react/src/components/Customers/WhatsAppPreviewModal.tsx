@@ -68,13 +68,13 @@ export const WhatsAppPreviewModal: React.FC<WhatsAppPreviewModalProps> = ({
           </label>
           <div className="relative">
              <textarea
-                className="w-full h-32 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 p-3 text-gray-900 dark:text-white focus:ring-2 focus:ring-green-500 outline-none resize-none"
+                className="app-textarea h-32 resize-none"
                 value={message}
                 onChange={(e) => setMessage(e.target.value)}
              />
              <button 
                 onClick={handleCopy}
-                className="absolute top-2 right-2 p-1.5 bg-gray-100 dark:bg-gray-600 rounded-md text-gray-500 dark:text-gray-300 hover:text-green-600 transition-colors"
+                className="app-chip absolute right-2 top-2 rounded-md p-1.5 text-gray-500 transition-colors hover:text-green-600 dark:text-gray-300"
                 title="Copiar texto"
              >
                 {copied ? <Check className="w-4 h-4 text-green-500" /> : <Copy className="w-4 h-4" />}

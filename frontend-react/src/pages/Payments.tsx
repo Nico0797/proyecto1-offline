@@ -2,9 +2,9 @@ import { useEffect, useState, useMemo } from 'react';
 import { useBusinessStore } from '../store/businessStore';
 import { usePaymentStore } from '../store/paymentStore';
 import { useCustomerStore } from '../store/customerStore';
-import { useSaleStore } from '../store/saleStore';
+import { useAccess } from '../hooks/useAccess';
 import { Button } from '../components/ui/Button';
-import { Plus, Settings } from 'lucide-react';
+import { Plus, Settings, Users, ArrowRightLeft, AlertOctagon } from 'lucide-react';
 import { PaymentsKpis } from '../components/Payments/PaymentsKpis';
 import { PaymentsToolbar } from '../components/Payments/PaymentsToolbar';
 import { ByClientTab } from '../components/Payments/ByClientTab';
@@ -17,16 +17,29 @@ import { computeClientReceivables, ClientReceivable } from '../utils/receivables
 import { CreditSettingsModal } from '../components/Customers/CreditSettingsModal';
 import { settingsService } from '../services/settingsService';
 import { DateRange, getPeriodPreference } from '../utils/dateRange.utils';
-import { PageHeader } from '../components/Layout/PageLayout';
+import { CompactActionGroup, PageHeader, PageLayout, PageNotice, PageStack, PageSummary, PageToolbarCard } from '../components/Layout/PageLayout';
 import { SwipePager } from '../components/ui/SwipePager';
 import { Payment } from '../store/paymentStore';
 import { PaymentFormModal } from '../components/Payments/PaymentFormModal';
+import { ReceivablesOverview } from '../types';
+import { receivablesService } from '../services/receivablesService';
+import {
+  MobileFilterDrawer,
+  MobileFilterSection,
+  MobileHelpDisclosure,
+  MobileSummaryDrawer,
+  MobileUnifiedPageShell,
+  MobileUtilityBar,
+  useMobileFilterDraft,
+} from '../components/mobile/MobileContentFirst';
 
 export const Payments = () => {
   const { activeBusiness } = useBusinessStore();
   const { payments, loading: loadingPayments, fetchPayments, deletePayment } = usePaymentStore();
-  const { customers, loading: loadingCustomers, fetchCustomers } = useCustomerStore();
-  const { sales, loading: loadingSales, fetchSales } = useSaleStore();
+  const { loading: loadingCustomers, fetchCustomers } = useCustomerStore();
+  const { hasPermission } = useAccess();
+  const [receivablesOverview, setReceivablesOverview] = useState<ReceivablesOverview | null>(null);
+  const [loadingReceivables, setLoadingReceivables] = useState(false);
 
   const [searchTerm, setSearchTerm] = useState('');
   const [currentTab, setCurrentTab] = useState('clients'); // clients, transactions, overdue
@@ -47,26 +60,54 @@ export const Payments = () => {
   const [selectedPayment, setSelectedPayment] = useState<Payment | null>(null);
   const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
   const [paymentModalMode, setPaymentModalMode] = useState<'view' | 'edit'>('view');
+  const canReadPayments = hasPermission('payments.read') || hasPermission('sales.read');
+  const canReadCustomers = hasPermission('customers.read');
+  const canCreatePayment = hasPermission('payments.create');
+  const canUpdatePayment = hasPermission('payments.update');
+  const canDeletePayment = hasPermission('payments.delete');
+  const canManageTerms = hasPermission('payments.update') || hasPermission('business.update');
+  const canConfigureTerms = hasPermission('business.update');
+  const canSendReminder = hasPermission('customers.read');
 
   // Load Data
   const refreshData = async () => {
     if (activeBusiness) {
-      await Promise.all([
-        fetchPayments(activeBusiness.id),
-        fetchCustomers(activeBusiness.id),
-        fetchSales(activeBusiness.id)
-      ]);
+      const promises = [];
+      
+      // Check permissions before fetching
+      if (canReadPayments) {
+          promises.push(fetchPayments(activeBusiness.id));
+      }
+      
+      if (canReadCustomers) {
+          promises.push(fetchCustomers(activeBusiness.id));
+      }
+
+      if (canReadPayments || canReadCustomers) {
+          setLoadingReceivables(true);
+          promises.push(
+            receivablesService.getOverview(activeBusiness.id)
+              .then((overview) => setReceivablesOverview(overview))
+              .finally(() => setLoadingReceivables(false))
+          );
+      } else {
+          setReceivablesOverview(null);
+      }
+      
+      if (promises.length > 0) {
+          await Promise.all(promises);
+      }
     }
   };
 
   useEffect(() => {
     refreshData();
-  }, [activeBusiness]);
+  }, [activeBusiness, canReadCustomers, canReadPayments]);
 
   // Compute Data
   const clientReceivables = useMemo(() => {
-    return computeClientReceivables(customers, sales, payments);
-  }, [customers, sales, payments]);
+    return computeClientReceivables(receivablesOverview);
+  }, [receivablesOverview]);
 
   const filteredClients = useMemo(() => {
     return clientReceivables.filter(c => 
@@ -96,8 +137,8 @@ export const Payments = () => {
 
   // KPIs
   const kpis = useMemo(() => {
-    const totalReceivable = clientReceivables.reduce((sum, c) => sum + c.totalDebt, 0);
-    const overdueDebt = clientReceivables.reduce((sum, c) => sum + c.overdueDebt, 0);
+    const totalReceivable = receivablesOverview?.summary.total_pending || 0;
+    const overdueDebt = receivablesOverview?.summary.overdue_total || 0;
     
     // Payments in current selected period
     const start = dateRange.start ? new Date(dateRange.start) : null;
@@ -117,7 +158,7 @@ export const Payments = () => {
       : 0;
 
     return { totalReceivable, overdueDebt, paymentsThisPeriod, averagePayment };
-  }, [clientReceivables, payments, dateRange]);
+  }, [receivablesOverview, payments, dateRange]);
 
   // Handlers
   const handleSelectClient = (client: ClientReceivable) => {
@@ -126,6 +167,7 @@ export const Payments = () => {
   };
 
   const handleQuickPay = (client: ClientReceivable) => {
+    if (!canCreatePayment) return;
     setQuickPayClient(client.customerId);
     setIsRegisterModalOpen(true);
     // Close drawer if open
@@ -133,14 +175,24 @@ export const Payments = () => {
   };
 
   const handleWhatsApp = (client: ClientReceivable) => {
+    if (!canSendReminder) return;
     const templates = activeBusiness ? settingsService.getTemplates(activeBusiness.id) : { debt: '' };
-    let msg = templates.debt || `Hola {cliente}, le recordamos que tiene un saldo pendiente de {saldo} con {negocio}. Agradecemos su pago.`;
+    const configuredTemplate = activeBusiness?.whatsapp_templates?.collection_message || templates.debt;
+    let msg = configuredTemplate || `Hola {cliente}, te escribimos de {negocio} por tu saldo pendiente de {saldo}.`;
+    const dueDateText = client.nearestDueDate ? new Date(client.nearestDueDate).toLocaleDateString() : '';
+    const statusText = client.status === 'overdue'
+      ? `Tu cuenta está vencida desde hace ${client.maxDaysOverdue} días.`
+      : client.status === 'due_today'
+        ? 'Tu cuenta vence hoy.'
+        : client.status === 'due_soon'
+          ? `Tu cuenta vence el ${dueDateText}.`
+          : 'Tu cuenta está al día, pero aún registra saldo pendiente.';
 
-    // Replace placeholders
     msg = msg.replace(/{cliente}/g, client.customerName);
     msg = msg.replace(/{negocio}/g, activeBusiness?.name || 'su negocio');
     msg = msg.replace(/{saldo}/g, `$${client.totalDebt.toLocaleString()}`);
-    msg = msg.replace(/{total}/g, `$${client.totalDebt.toLocaleString()}`); // Fallback if user used {total}
+    msg = msg.replace(/{total}/g, `$${client.totalDebt.toLocaleString()}`);
+    msg = `${msg}\n\n${statusText}${dueDateText ? `\nFecha de vencimiento: ${dueDateText}.` : ''}\n¿Nos confirmas por favor cuándo podrías realizar el pago?\n\nGracias.`;
 
     setWhatsAppClient(client);
     setWhatsAppMessage(msg);
@@ -149,6 +201,7 @@ export const Payments = () => {
 
   const handleDeletePayment = async (id: number) => {
     if (!activeBusiness) return;
+    if (!canDeletePayment) return;
     if (window.confirm('¿Estás seguro de que quieres eliminar este pago?')) {
       try {
         await deletePayment(activeBusiness.id, id);
@@ -160,34 +213,95 @@ export const Payments = () => {
     }
   };
 
-  const loading = loadingPayments || loadingCustomers || loadingSales;
+  const loading = loadingPayments || loadingCustomers || loadingReceivables;
+  const currentTabGuidance = useMemo(() => {
+    if (currentTab === 'transactions') {
+      return {
+        title: 'Aquí confirmas lo que ya entró',
+        description: 'Usa esta vista para revisar cobros registrados, corregir referencias y validar por dónde entró el dinero.',
+      };
+    }
+
+    if (currentTab === 'overdue') {
+      return {
+        title: 'Empieza por lo vencido o por vencer',
+        description: 'Este corte te ayuda a priorizar a quién escribir o cobrar hoy, sin revisar cliente por cliente.',
+      };
+    }
+
+    return {
+      title: 'Empieza por clientes con saldo',
+      description: 'Desde aquí ves quién debe, cuánto y quién conviene cobrar primero. Luego registras el abono en un paso guiado.',
+    };
+  }, [currentTab]);
+
+  const hasPaymentFilters = searchTerm.trim().length > 0 || dateRange.preset !== 'month';
+  const paymentFilterSummary = hasPaymentFilters ? 'Con filtros activos' : 'Buscar y periodo';
+  const paymentSummaryLabel = currentTab === 'clients'
+    ? `${filteredClients.length} cliente(s)`
+    : `${filteredPayments.length} movimiento(s)`;
+  const mobilePaymentFilters = useMobileFilterDraft({
+    value: { searchTerm, dateRange },
+    onApply: (nextValue) => {
+      setSearchTerm(nextValue.searchTerm);
+      setDateRange(nextValue.dateRange);
+    },
+    createEmptyValue: () => ({
+      searchTerm: '',
+      dateRange: getPeriodPreference('payments'),
+    }),
+  });
+
+  const mobilePaymentsUtilityBar = (
+    <MobileUtilityBar>
+      <MobileFilterDrawer summary={paymentFilterSummary} {...mobilePaymentFilters.sheetProps}>
+        <MobileFilterSection title="Filtrar cobros" description="Busca primero y ajusta el periodo solo cuando aporte contexto.">
+          <PaymentsToolbar
+            searchTerm={mobilePaymentFilters.draft.searchTerm}
+            onSearchChange={(value) => mobilePaymentFilters.setDraft((current) => ({ ...current, searchTerm: value }))}
+            dateRange={mobilePaymentFilters.draft.dateRange}
+            onDateRangeChange={(value) => mobilePaymentFilters.setDraft((current) => ({ ...current, dateRange: value }))}
+          />
+        </MobileFilterSection>
+      </MobileFilterDrawer>
+      {currentTab === 'clients' ? (
+        <MobileSummaryDrawer summary={paymentSummaryLabel}>
+          <div data-tour="payments.kpis">
+            <PaymentsKpis {...kpis} loading={loading} />
+          </div>
+        </MobileSummaryDrawer>
+      ) : null}
+      <MobileHelpDisclosure summary="Como usar cobros">
+        <p className="text-sm text-gray-600 dark:text-gray-300">
+          Mantén la pantalla limpia: usa Filtros para buscar o cambiar periodo y entra a cada pestaña solo para gestionar clientes, movimientos o vencimientos.
+        </p>
+      </MobileHelpDisclosure>
+    </MobileUtilityBar>
+  );
 
   return (
-    <div className="h-full flex flex-col overflow-hidden" data-tour="payments.panel">
+    <PageLayout data-tour="payments.panel">
       <PageHeader 
-        title="Cartera y Pagos" 
-        description="Gestiona cobros, abonos y estado de cuenta"
-        action={
-            <div className="flex gap-2">
-                <Button variant="secondary" onClick={() => setIsSettingsModalOpen(true)} className="hidden sm:flex">
-                    Config. Plazos
-                </Button>
-                <Button onClick={() => { setQuickPayClient(undefined); setIsRegisterModalOpen(true); }} className="hidden sm:flex" data-tour="payments.primaryAction.desktop">
-                    <Plus className="w-4 h-4 mr-2" />
-                    <span>Registrar Pago</span>
-                </Button>
-                {/* Mobile Actions */}
-                <div className="flex gap-2 sm:hidden">
-                    <Button variant="secondary" size="icon" onClick={() => setIsSettingsModalOpen(true)} title="Configurar Plazos">
-                        <Settings className="w-4 h-4" />
-                    </Button>
-                    <Button onClick={() => { setQuickPayClient(undefined); setIsRegisterModalOpen(true); }} data-tour="payments.primaryAction.mobile">
-                        <Plus className="w-4 h-4 mr-2" />
-                        <span>Pago</span>
-                    </Button>
-                </div>
-            </div>
-        }
+        title="Cobros y saldos" 
+        description="Revisa quién te debe, registra abonos y sigue los saldos pendientes."
+        action={(canCreatePayment || (canConfigureTerms && currentTab === 'clients')) ? (
+          <CompactActionGroup
+            collapseLabel="Mas"
+            primary={canCreatePayment ? (
+              <Button onClick={() => { setQuickPayClient(undefined); setIsRegisterModalOpen(true); }} className="w-full sm:w-auto" data-tour="payments.primaryAction.desktop">
+                <Plus className="w-4 h-4 mr-2" />
+                <span className="hidden sm:inline">Registrar cobro</span>
+                <span className="sm:hidden">Cobro</span>
+              </Button>
+            ) : undefined}
+            secondary={canConfigureTerms && currentTab === 'clients' ? (
+              <Button variant="secondary" onClick={() => setIsSettingsModalOpen(true)} className="w-full sm:w-auto">
+                <Settings className="w-4 h-4 mr-2" />
+                Configurar plazos
+              </Button>
+            ) : undefined}
+          />
+        ) : undefined}
       />
 
       <SwipePager
@@ -197,114 +311,146 @@ export const Payments = () => {
         pages={[
           {
             id: 'clients',
-            title: 'Por Cliente',
+            title: 'Clientes con saldo',
+            mobileTitle: 'Clientes',
+            icon: Users,
+            'data-tour': 'payments.tabs.all',
             content: (
-              <div className="space-y-6">
-                <div data-tour="payments.kpis">
-                    <PaymentsKpis {...kpis} loading={loading} />
-                </div>
-                
-                <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4 mb-4">
-                  <PaymentsToolbar 
-                    searchTerm={searchTerm}
-                    onSearchChange={setSearchTerm}
-                    dateRange={dateRange}
-                    onDateRangeChange={setDateRange}
+              <MobileUnifiedPageShell utilityBar={mobilePaymentsUtilityBar}>
+                <PageStack>
+                  <PageNotice
+                    className="hidden lg:block"
+                    title={currentTabGuidance.title}
+                    description={currentTabGuidance.description}
+                    dismissible
                   />
-                </div>
-
-                <ByClientTab 
-                  data={filteredClients}  
-                  loading={loading}
-                  onSelectClient={handleSelectClient}
-                  onQuickPay={handleQuickPay}
-                  onWhatsApp={handleWhatsApp}
-                />
-              </div>
+                  <PageSummary className="hidden lg:block" title="Resumen de cobros" description="Ten claro cuánto falta por recuperar antes de entrar al detalle.">
+                    <div data-tour="payments.kpis">
+                      <PaymentsKpis {...kpis} loading={loading} />
+                    </div>
+                  </PageSummary>
+                  <PageToolbarCard className="app-toolbar hidden lg:block">
+                    <PaymentsToolbar 
+                      searchTerm={searchTerm}
+                      onSearchChange={setSearchTerm}
+                      dateRange={dateRange}
+                      onDateRangeChange={setDateRange}
+                    />
+                  </PageToolbarCard>
+                  <ByClientTab 
+                    data={filteredClients}  
+                    loading={loading}
+                    onSelectClient={handleSelectClient}
+                    onQuickPay={handleQuickPay}
+                    onWhatsApp={handleWhatsApp}
+                    canQuickPay={canCreatePayment}
+                    canSendReminder={canSendReminder}
+                  />
+                </PageStack>
+              </MobileUnifiedPageShell>
             )
           },
           {
             id: 'transactions',
-            title: 'Transacciones',
+            title: 'Cobros registrados',
+            mobileTitle: 'Cobros',
+            icon: ArrowRightLeft,
             content: (
-              <div className="space-y-6">
-                 <div data-tour="payments.kpis">
-                    <PaymentsKpis {...kpis} loading={loading} />
-                </div>
-                
-                <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4 mb-4">
-                  <PaymentsToolbar 
-                    searchTerm={searchTerm}
-                    onSearchChange={setSearchTerm}
-                    dateRange={dateRange}
-                    onDateRangeChange={setDateRange}
+              <MobileUnifiedPageShell utilityBar={mobilePaymentsUtilityBar}>
+                <PageStack>
+                  <PageNotice
+                    className="hidden lg:block"
+                    title={currentTabGuidance.title}
+                    description={currentTabGuidance.description}
+                    dismissible
                   />
-                </div>
-
-                <TransactionsTab 
-                  payments={filteredPayments} 
-                  loading={loading}
-                  onView={(p) => { setSelectedPayment(p); setPaymentModalMode('view'); setIsPaymentModalOpen(true); }} 
-                  onEdit={(p) => { setSelectedPayment(p); setPaymentModalMode('edit'); setIsPaymentModalOpen(true); }} 
-                  onDelete={handleDeletePayment}
-                />
-              </div>
+                  <PageToolbarCard className="app-toolbar hidden lg:block">
+                    <PaymentsToolbar 
+                      searchTerm={searchTerm}
+                      onSearchChange={setSearchTerm}
+                      dateRange={dateRange}
+                      onDateRangeChange={setDateRange}
+                    />
+                  </PageToolbarCard>
+                  <TransactionsTab 
+                    payments={filteredPayments} 
+                    loading={loading}
+                    onView={(p) => { setSelectedPayment(p); setPaymentModalMode('view'); setIsPaymentModalOpen(true); }} 
+                    onEdit={(p) => { setSelectedPayment(p); setPaymentModalMode('edit'); setIsPaymentModalOpen(true); }} 
+                    onDelete={handleDeletePayment}
+                    canEdit={canUpdatePayment}
+                    canDelete={canDeletePayment}
+                  />
+                </PageStack>
+              </MobileUnifiedPageShell>
             )
           },
           {
             id: 'overdue',
-            title: 'Vencidas',
+            title: 'Por vencer',
+            mobileTitle: 'Por vencer',
+            icon: AlertOctagon,
+            'data-tour': 'payments.tabs.overdue',
             content: (
-              <div className="space-y-6">
-                 <div data-tour="payments.kpis">
-                    <PaymentsKpis {...kpis} loading={loading} />
-                </div>
-                
-                <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4 mb-4">
-                  <PaymentsToolbar 
-                    searchTerm={searchTerm}
-                    onSearchChange={setSearchTerm}
-                    dateRange={dateRange}
-                    onDateRangeChange={setDateRange}
+              <MobileUnifiedPageShell utilityBar={mobilePaymentsUtilityBar}>
+                <PageStack>
+                  <PageNotice
+                    className="hidden lg:block"
+                    title={currentTabGuidance.title}
+                    description={currentTabGuidance.description}
+                    dismissible
                   />
-                </div>
-
-                <OverdueTab 
-                  data={clientReceivables} 
-                  loading={loading}
-                  onSendReminder={handleWhatsApp}
-                />
-              </div>
+                  <PageToolbarCard className="app-toolbar hidden lg:block">
+                    <PaymentsToolbar 
+                      searchTerm={searchTerm}
+                      onSearchChange={setSearchTerm}
+                      dateRange={dateRange}
+                      onDateRangeChange={setDateRange}
+                    />
+                  </PageToolbarCard>
+                  <OverdueTab 
+                    data={clientReceivables} 
+                    loading={loading}
+                    onSendReminder={handleWhatsApp}
+                  />
+                </PageStack>
+              </MobileUnifiedPageShell>
             )
           }
         ]}
       />
-
+      
       {/* Modals & Drawers */}
       <RegisterPaymentModal 
         isOpen={isRegisterModalOpen} 
         onClose={() => setIsRegisterModalOpen(false)}
         onSuccess={refreshData}
         initialCustomerId={quickPayClient}
+        receivables={receivablesOverview?.receivables || []}
       />
 
       <ClientReceivableDrawer 
         isOpen={isDrawerOpen}
         onClose={() => setIsDrawerOpen(false)}
         client={selectedClient}
-        sales={sales}
         onQuickPay={handleQuickPay}
         onWhatsApp={handleWhatsApp}
+        onUpdated={refreshData}
+        canQuickPay={canCreatePayment}
+        canSendReminder={canSendReminder}
+        canManageTerms={canManageTerms}
       />
 
-      <CreditSettingsModal 
-        isOpen={isSettingsModalOpen}
-        onClose={() => setIsSettingsModalOpen(false)}
-        onSuccess={() => {
-          refreshData();
-          setIsSettingsModalOpen(false);
-        }}
-      />
+      {canConfigureTerms && (
+        <CreditSettingsModal 
+          isOpen={isSettingsModalOpen}
+          onClose={() => setIsSettingsModalOpen(false)}
+          onSuccess={() => {
+            refreshData();
+            setIsSettingsModalOpen(false);
+          }}
+        />
+      )}
       
       <WhatsAppPreviewModal 
         isOpen={isWhatsAppModalOpen}
@@ -317,9 +463,10 @@ export const Payments = () => {
         isOpen={isPaymentModalOpen}
         onClose={() => setIsPaymentModalOpen(false)}
         payment={selectedPayment}
-        mode={paymentModalMode}
+        mode={paymentModalMode === 'edit' && !canUpdatePayment ? 'view' : paymentModalMode}
         onSuccess={refreshData}
+        canEdit={canUpdatePayment}
       />
-    </div>
+    </PageLayout>
   );
 };

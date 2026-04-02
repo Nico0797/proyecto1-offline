@@ -1,0 +1,562 @@
+{
+  "base_url": "http://127.0.0.1:18010",
+  "business_id": 2,
+  "users": [
+    80,
+    100
+  ],
+  "scenarios": [
+    "D"
+  ],
+  "run_time": "2m",
+  "spawn_rate": 5.0,
+  "fixture": null,
+  "runs": [
+    {
+      "scenario": "D",
+      "users": 80,
+      "started_at": "2026-03-26T16:58:50.679424+00:00",
+      "finished_at": "2026-03-26T17:00:52.147737+00:00",
+      "command": [
+        "C:\\Users\\harae\\Desktop\\ui migration\\proyecto1\\.venv\\Scripts\\locust.exe",
+        "-f",
+        "C:\\Users\\harae\\Desktop\\ui migration\\proyecto1\\load-tests\\locustfile.py",
+        "--host",
+        "http://127.0.0.1:18010",
+        "--users",
+        "80",
+        "--spawn-rate",
+        "5.0",
+        "--run-time",
+        "2m",
+        "--csv",
+        "load-tests\\results\\slice10-dirty-lazy-stage2\\scenario_d_u80",
+        "--html",
+        "load-tests\\results\\slice10-dirty-lazy-stage2\\scenario_d_u80.html",
+        "--headless",
+        "--only-summary"
+      ],
+      "exit_code": 0,
+      "stdout_tail": "",
+      "stderr_tail": "ke_request\n    self._raise_timeout(err=e, url=url, timeout_value=read_timeout)\n    ~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"C:\\Users\\harae\\Desktop\\ui migration\\proyecto1\\.venv\\Lib\\site-packages\\urllib3\\connectionpool.py\", line 367, in _raise_timeout\n    raise ReadTimeoutError(\n        self, url, f\"Read timed out. (read timeout={timeout_value})\"\n    ) from err\nurllib3.exceptions.ReadTimeoutError: HTTPConnectionPool(host='127.0.0.1', port=18010): Read timed out. (read timeout=30)\n\nDuring handling of the above exception, another exception occurred:\n\nTraceback (most recent call last):\n  File \"src/gevent/greenlet.py\", line 900, in gevent._gevent_cgreenlet.Greenlet.run\n  File \"C:\\Users\\harae\\Desktop\\ui migration\\proyecto1\\.venv\\Lib\\site-packages\\locust\\user\\users.py\", line 198, in run_user\n    user.run()\n    ~~~~~~~~^^\n  File \"C:\\Users\\harae\\Desktop\\ui migration\\proyecto1\\.venv\\Lib\\site-packages\\locust\\user\\users.py\", line 160, in run\n    self.on_start()\n    ~~~~~~~~~~~~~^^\n  File \"C:\\Users\\harae\\Desktop\\ui migration\\proyecto1\\load-tests\\locustfile.py\", line 111, in on_start\n    self._bootstrap_login_cycle()\n    ~~~~~~~~~~~~~~~~~~~~~~~~~~~^^\n  File \"C:\\Users\\harae\\Desktop\\ui migration\\proyecto1\\load-tests\\locustfile.py\", line 124, in _bootstrap_login_cycle\n    response = session.post(\n        f\"{self.host}/api/auth/login\",\n        json={\"email\": EMAIL, \"password\": PASSWORD},\n        timeout=30,\n    )\n  File \"C:\\Users\\harae\\Desktop\\ui migration\\proyecto1\\.venv\\Lib\\site-packages\\requests\\sessions.py\", line 637, in post\n    return self.request(\"POST\", url, data=data, json=json, **kwargs)\n           ~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"C:\\Users\\harae\\Desktop\\ui migration\\proyecto1\\.venv\\Lib\\site-packages\\requests\\sessions.py\", line 589, in request\n    resp = self.send(prep, **send_kwargs)\n  File \"C:\\Users\\harae\\Desktop\\ui migration\\proyecto1\\.venv\\Lib\\site-packages\\requests\\sessions.py\", line 703, in send\n    r = adapter.send(request, **kwargs)\n  File \"C:\\Users\\harae\\Desktop\\ui migration\\proyecto1\\.venv\\Lib\\site-packages\\requests\\adapters.py\", line 690, in send\n    raise ReadTimeout(e, request=request)\nrequests.exceptions.ReadTimeout: HTTPConnectionPool(host='127.0.0.1', port=18010): Read timed out. (read timeout=30)\n2026-03-26T16:59:38Z <Greenlet at 0x252f6db28e0: run_user(<locustfile.CuadernoUser object at 0x00000252F6FE5)> failed with ReadTimeout\n\n[2026-03-26 12:00:51,789] DESKTOP-9DI2UJR/INFO/locust.main: --run-time limit reached, shutting down\n[2026-03-26 12:00:52,000] DESKTOP-9DI2UJR/INFO/locust.main: writing html report to file: load-tests\\results\\slice10-dirty-lazy-stage2\\scenario_d_u80.html\n[2026-03-26 12:00:52,007] DESKTOP-9DI2UJR/INFO/locust.main: Shutting down (exit code 0)\nType     Name                                                                          # reqs      # fails |    Avg     Min     Max    Med |   req/s  failures/s\n--------|----------------------------------------------------------------------------|-------|-------------|-------|-------|-------|-------|--------|-----------\n--------|----------------------------------------------------------------------------|-------|-------------|-------|-------|-------|-------|--------|-----------\n         Aggregated                                                                         0     0(0.00%) |      0       0       0      0 |    0.00        0.00\n\nResponse time percentiles (approximated)\nType     Name                                                                                  50%    66%    75%    80%    90%    95%    98%    99%  99.9% 99.99%   100% # reqs\n--------|--------------------------------------------------------------------------------|--------|------|------|------|------|------|------|------|------|------|------|------\n--------|--------------------------------------------------------------------------------|--------|------|------|------|------|------|------|------|------|------|------|------\n\n",
+      "stats_summary": {
+        "requests": 0,
+        "failures": 0,
+        "median_ms": 0.0,
+        "avg_ms": 0.0,
+        "min_ms": 0.0,
+        "max_ms": 0.0,
+        "avg_size": 0.0,
+        "rps": 0.0,
+        "failures_per_sec": 0.0,
+        "p50_ms": 0.0,
+        "p95_ms": 0.0,
+        "p99_ms": 0.0,
+        "endpoint_metrics": {
+          "read.dashboard": {
+            "avg_ms": 0.0,
+            "p95_ms": 0.0,
+            "rps": 0.0,
+            "failures": 0,
+            "requests": 0
+          },
+          "read.summary": {
+            "avg_ms": 0.0,
+            "p95_ms": 0.0,
+            "rps": 0.0,
+            "failures": 0,
+            "requests": 0
+          }
+        }
+      },
+      "distribution": {
+        "p50_estimated_ms": 0.0,
+        "p95_estimated_ms": 0.0,
+        "p99_estimated_ms": 0.0,
+        "avg_rps_window": 0.0,
+        "max_rps_window": 0.0,
+        "final_failure_count": 0.0
+      },
+      "failures_rows": 1,
+      "error_rate": 0.0,
+      "metrics_samples": [
+        {
+          "ts": "2026-03-26T16:58:50.680420+00:00"
+        },
+        {
+          "ts": "2026-03-26T16:58:52.680823+00:00"
+        },
+        {
+          "ts": "2026-03-26T16:58:54.680943+00:00"
+        },
+        {
+          "ts": "2026-03-26T16:58:56.695487+00:00"
+        },
+        {
+          "ts": "2026-03-26T16:58:58.695901+00:00"
+        },
+        {
+          "ts": "2026-03-26T16:59:00.696455+00:00"
+        },
+        {
+          "ts": "2026-03-26T16:59:02.697364+00:00"
+        },
+        {
+          "ts": "2026-03-26T16:59:04.697636+00:00"
+        },
+        {
+          "ts": "2026-03-26T16:59:06.698431+00:00"
+        },
+        {
+          "ts": "2026-03-26T16:59:08.698467+00:00"
+        },
+        {
+          "ts": "2026-03-26T16:59:10.698531+00:00"
+        },
+        {
+          "ts": "2026-03-26T16:59:12.699022+00:00"
+        },
+        {
+          "ts": "2026-03-26T16:59:14.699250+00:00"
+        },
+        {
+          "ts": "2026-03-26T16:59:16.699577+00:00"
+        },
+        {
+          "ts": "2026-03-26T16:59:18.700462+00:00"
+        },
+        {
+          "ts": "2026-03-26T16:59:20.701272+00:00"
+        },
+        {
+          "ts": "2026-03-26T16:59:22.702128+00:00"
+        },
+        {
+          "ts": "2026-03-26T16:59:24.703047+00:00"
+        },
+        {
+          "ts": "2026-03-26T16:59:26.703767+00:00"
+        },
+        {
+          "ts": "2026-03-26T16:59:28.704084+00:00"
+        },
+        {
+          "ts": "2026-03-26T16:59:30.704131+00:00"
+        },
+        {
+          "ts": "2026-03-26T16:59:32.704428+00:00"
+        },
+        {
+          "ts": "2026-03-26T16:59:34.704857+00:00"
+        },
+        {
+          "ts": "2026-03-26T16:59:36.710388+00:00"
+        },
+        {
+          "ts": "2026-03-26T16:59:38.711082+00:00"
+        },
+        {
+          "ts": "2026-03-26T16:59:40.711480+00:00"
+        },
+        {
+          "ts": "2026-03-26T16:59:42.711812+00:00"
+        },
+        {
+          "ts": "2026-03-26T16:59:44.712448+00:00"
+        },
+        {
+          "ts": "2026-03-26T16:59:46.712958+00:00"
+        },
+        {
+          "ts": "2026-03-26T16:59:48.713233+00:00"
+        },
+        {
+          "ts": "2026-03-26T16:59:50.713287+00:00"
+        },
+        {
+          "ts": "2026-03-26T16:59:52.713277+00:00"
+        },
+        {
+          "ts": "2026-03-26T16:59:54.713488+00:00"
+        },
+        {
+          "ts": "2026-03-26T16:59:56.714279+00:00"
+        },
+        {
+          "ts": "2026-03-26T16:59:58.715053+00:00"
+        },
+        {
+          "ts": "2026-03-26T17:00:00.718806+00:00"
+        },
+        {
+          "ts": "2026-03-26T17:00:02.721386+00:00"
+        },
+        {
+          "ts": "2026-03-26T17:00:04.727392+00:00"
+        },
+        {
+          "ts": "2026-03-26T17:00:06.727955+00:00"
+        },
+        {
+          "ts": "2026-03-26T17:00:08.759000+00:00"
+        },
+        {
+          "ts": "2026-03-26T17:00:10.763058+00:00"
+        },
+        {
+          "ts": "2026-03-26T17:00:12.762976+00:00"
+        },
+        {
+          "ts": "2026-03-26T17:00:14.763205+00:00"
+        },
+        {
+          "ts": "2026-03-26T17:00:16.763632+00:00"
+        },
+        {
+          "ts": "2026-03-26T17:00:18.763923+00:00"
+        },
+        {
+          "ts": "2026-03-26T17:00:20.764667+00:00"
+        },
+        {
+          "ts": "2026-03-26T17:00:22.764678+00:00"
+        },
+        {
+          "ts": "2026-03-26T17:00:24.765040+00:00"
+        },
+        {
+          "ts": "2026-03-26T17:00:26.765694+00:00"
+        },
+        {
+          "ts": "2026-03-26T17:00:28.781792+00:00"
+        },
+        {
+          "ts": "2026-03-26T17:00:30.782019+00:00"
+        },
+        {
+          "ts": "2026-03-26T17:00:32.782706+00:00"
+        },
+        {
+          "ts": "2026-03-26T17:00:34.782725+00:00"
+        },
+        {
+          "ts": "2026-03-26T17:00:36.782920+00:00"
+        },
+        {
+          "ts": "2026-03-26T17:00:38.782945+00:00"
+        },
+        {
+          "ts": "2026-03-26T17:00:40.783159+00:00"
+        },
+        {
+          "ts": "2026-03-26T17:00:42.783979+00:00"
+        },
+        {
+          "ts": "2026-03-26T17:00:44.784734+00:00"
+        },
+        {
+          "ts": "2026-03-26T17:00:46.785146+00:00"
+        },
+        {
+          "ts": "2026-03-26T17:00:48.785607+00:00"
+        },
+        {
+          "ts": "2026-03-26T17:00:50.785704+00:00"
+        }
+      ],
+      "metrics_summary": {
+        "backend_cpu_peak_percent": 0.0,
+        "backend_rss_peak_mb": 0.0,
+        "backend_threads_peak": 0.0,
+        "db_total_connections_peak": 0.0,
+        "db_active_connections_peak": 0.0,
+        "db_waiting_connections_peak": 0.0,
+        "db_longest_active_seconds_peak": 0.0
+      },
+      "artifacts": {
+        "stats_csv": "load-tests\\results\\slice10-dirty-lazy-stage2\\scenario_d_u80_stats.csv",
+        "stats_history_csv": "load-tests\\results\\slice10-dirty-lazy-stage2\\scenario_d_u80_stats_history.csv",
+        "failures_csv": "load-tests\\results\\slice10-dirty-lazy-stage2\\scenario_d_u80_failures.csv",
+        "report_html": "load-tests\\results\\slice10-dirty-lazy-stage2\\scenario_d_u80.html"
+      },
+      "capacity_pass": true
+    },
+    {
+      "scenario": "D",
+      "users": 100,
+      "started_at": "2026-03-26T17:00:52.150572+00:00",
+      "finished_at": "2026-03-26T17:02:53.187973+00:00",
+      "command": [
+        "C:\\Users\\harae\\Desktop\\ui migration\\proyecto1\\.venv\\Scripts\\locust.exe",
+        "-f",
+        "C:\\Users\\harae\\Desktop\\ui migration\\proyecto1\\load-tests\\locustfile.py",
+        "--host",
+        "http://127.0.0.1:18010",
+        "--users",
+        "100",
+        "--spawn-rate",
+        "5.0",
+        "--run-time",
+        "2m",
+        "--csv",
+        "load-tests\\results\\slice10-dirty-lazy-stage2\\scenario_d_u100",
+        "--html",
+        "load-tests\\results\\slice10-dirty-lazy-stage2\\scenario_d_u100.html",
+        "--headless",
+        "--only-summary"
+      ],
+      "exit_code": 0,
+      "stdout_tail": "",
+      "stderr_tail": "    20   13798     31 |    1.58        0.00\nGET      read.payments                                                                     37     0(0.00%) |    157      76    1226     90 |    0.33        0.00\nGET      read.products                                                                     20     0(0.00%) |     52      20     375     24 |    0.18        0.00\nGET      read.sales                                                                        84     0(0.00%) |    679      53   18962     64 |    0.75        0.00\nGET      read.summary                                                                     143     0(0.00%) |    680      14   18521     35 |    1.28        0.00\nPOST     write.expense                                                                     85     0(0.00%) |    205      15    7676     20 |    0.76        0.00\nPOST     write.payment                                                                     37     0(0.00%) |    222      19    4089     33 |    0.33        0.00\nPOST     write.sale                                                                       182     0(0.00%) |    468      18   16795     31 |    1.63        0.00\n--------|----------------------------------------------------------------------------|-------|-------------|-------|-------|-------|-------|--------|-----------\n         Aggregated                                                                       878     0(0.00%) |    417       4   19011     36 |    7.87        0.00\n\nResponse time percentiles (approximated)\nType     Name                                                                                  50%    66%    75%    80%    90%    95%    98%    99%  99.9% 99.99%   100% # reqs\n--------|--------------------------------------------------------------------------------|--------|------|------|------|------|------|------|------|------|------|------|------\nGET      read.business_profile                                                                   6     14     38     56    100    270  11000  11000  11000  11000  11000     23\nGET      read.customers                                                                         33     57     88    120    220    880  10000  19000  19000  19000  19000     91\nGET      read.dashboard                                                                         32     42     53     71    140    520   1800   8200  14000  14000  14000    176\nGET      read.payments                                                                          90    100    150    180    220    710   1200   1200   1200   1200   1200     37\nGET      read.products                                                                          24     32     39     62    140    380    380    380    380    380    380     20\nGET      read.sales                                                                             65     76    100    130    160    340  19000  19000  19000  19000  19000     84\nGET      read.summary                                                                           35     52     83    110    250   1200  13000  17000  19000  19000  19000    143\nPOST     write.expense                                                                          20     28     37     55    130    190   6100   7700   7700   7700   7700     85\nPOST     write.payment                                                                          33     52     66     91    240   1800   4100   4100   4100   4100   4100     37\nPOST     write.sale                                                                             31     51     74     99    170   1400  11000  12000  17000  17000  17000    182\n--------|--------------------------------------------------------------------------------|--------|------|------|------|------|------|------|------|------|------|------|------\n         Aggregated                                                                             36     58     79     95    190    540   8200  13000  19000  19000  19000    878\n\n",
+      "stats_summary": {
+        "requests": 878,
+        "failures": 0,
+        "median_ms": 36.0,
+        "avg_ms": 417.4987488608051,
+        "min_ms": 4.794699998456053,
+        "max_ms": 19011.380900003132,
+        "avg_size": 74784.87927107062,
+        "rps": 7.866911488772915,
+        "failures_per_sec": 0.0,
+        "p50_ms": 36.0,
+        "p95_ms": 540.0,
+        "p99_ms": 13000.0,
+        "slowest_endpoint": {
+          "name": "read.summary",
+          "method": "GET",
+          "avg_ms": 680.9999167830016,
+          "p95_ms": 1200.0,
+          "p99_ms": 17000.0,
+          "rps": 1.2812851285814657
+        },
+        "endpoint_metrics": {
+          "read.dashboard": {
+            "avg_ms": 217.26977443160484,
+            "p95_ms": 520.0,
+            "rps": 1.5769663121002653,
+            "failures": 0,
+            "requests": 176
+          },
+          "read.summary": {
+            "avg_ms": 680.9999167830016,
+            "p95_ms": 1200.0,
+            "rps": 1.2812851285814657,
+            "failures": 0,
+            "requests": 143
+          }
+        }
+      },
+      "distribution": {
+        "p50_estimated_ms": 899.7484652291465,
+        "p95_estimated_ms": 3720.4126151165924,
+        "p99_estimated_ms": 5761.972662790402,
+        "avg_rps_window": 7.323002172413793,
+        "max_rps_window": 12.7,
+        "final_failure_count": 0.0
+      },
+      "failures_rows": 1,
+      "error_rate": 0.0,
+      "metrics_samples": [
+        {
+          "ts": "2026-03-26T17:00:52.150959+00:00"
+        },
+        {
+          "ts": "2026-03-26T17:00:54.151191+00:00"
+        },
+        {
+          "ts": "2026-03-26T17:00:56.151248+00:00"
+        },
+        {
+          "ts": "2026-03-26T17:00:58.155563+00:00"
+        },
+        {
+          "ts": "2026-03-26T17:01:00.155708+00:00"
+        },
+        {
+          "ts": "2026-03-26T17:01:02.156673+00:00"
+        },
+        {
+          "ts": "2026-03-26T17:01:04.156714+00:00"
+        },
+        {
+          "ts": "2026-03-26T17:01:06.173072+00:00"
+        },
+        {
+          "ts": "2026-03-26T17:01:08.174696+00:00"
+        },
+        {
+          "ts": "2026-03-26T17:01:10.180646+00:00"
+        },
+        {
+          "ts": "2026-03-26T17:01:12.181020+00:00"
+        },
+        {
+          "ts": "2026-03-26T17:01:14.181182+00:00"
+        },
+        {
+          "ts": "2026-03-26T17:01:16.181534+00:00"
+        },
+        {
+          "ts": "2026-03-26T17:01:18.181802+00:00"
+        },
+        {
+          "ts": "2026-03-26T17:01:20.181829+00:00"
+        },
+        {
+          "ts": "2026-03-26T17:01:22.182330+00:00"
+        },
+        {
+          "ts": "2026-03-26T17:01:24.182814+00:00"
+        },
+        {
+          "ts": "2026-03-26T17:01:26.183232+00:00"
+        },
+        {
+          "ts": "2026-03-26T17:01:28.184024+00:00"
+        },
+        {
+          "ts": "2026-03-26T17:01:30.184913+00:00"
+        },
+        {
+          "ts": "2026-03-26T17:01:32.185608+00:00"
+        },
+        {
+          "ts": "2026-03-26T17:01:34.197096+00:00"
+        },
+        {
+          "ts": "2026-03-26T17:01:36.197580+00:00"
+        },
+        {
+          "ts": "2026-03-26T17:01:38.198002+00:00"
+        },
+        {
+          "ts": "2026-03-26T17:01:40.199004+00:00"
+        },
+        {
+          "ts": "2026-03-26T17:01:42.198874+00:00"
+        },
+        {
+          "ts": "2026-03-26T17:01:44.199424+00:00"
+        },
+        {
+          "ts": "2026-03-26T17:01:46.199684+00:00"
+        },
+        {
+          "ts": "2026-03-26T17:01:48.200386+00:00"
+        },
+        {
+          "ts": "2026-03-26T17:01:50.200574+00:00"
+        },
+        {
+          "ts": "2026-03-26T17:01:52.200612+00:00"
+        },
+        {
+          "ts": "2026-03-26T17:01:54.201029+00:00"
+        },
+        {
+          "ts": "2026-03-26T17:01:56.201794+00:00"
+        },
+        {
+          "ts": "2026-03-26T17:01:58.202383+00:00"
+        },
+        {
+          "ts": "2026-03-26T17:02:00.202718+00:00"
+        },
+        {
+          "ts": "2026-03-26T17:02:02.203552+00:00"
+        },
+        {
+          "ts": "2026-03-26T17:02:04.204457+00:00"
+        },
+        {
+          "ts": "2026-03-26T17:02:06.204440+00:00"
+        },
+        {
+          "ts": "2026-03-26T17:02:08.204876+00:00"
+        },
+        {
+          "ts": "2026-03-26T17:02:10.205970+00:00"
+        },
+        {
+          "ts": "2026-03-26T17:02:12.205704+00:00"
+        },
+        {
+          "ts": "2026-03-26T17:02:14.211546+00:00"
+        },
+        {
+          "ts": "2026-03-26T17:02:16.212017+00:00"
+        },
+        {
+          "ts": "2026-03-26T17:02:18.234273+00:00"
+        },
+        {
+          "ts": "2026-03-26T17:02:20.234763+00:00"
+        },
+        {
+          "ts": "2026-03-26T17:02:22.247956+00:00"
+        },
+        {
+          "ts": "2026-03-26T17:02:24.247326+00:00"
+        },
+        {
+          "ts": "2026-03-26T17:02:26.248576+00:00"
+        },
+        {
+          "ts": "2026-03-26T17:02:28.249371+00:00"
+        },
+        {
+          "ts": "2026-03-26T17:02:30.249855+00:00"
+        },
+        {
+          "ts": "2026-03-26T17:02:32.250539+00:00"
+        },
+        {
+          "ts": "2026-03-26T17:02:34.250782+00:00"
+        },
+        {
+          "ts": "2026-03-26T17:02:36.251067+00:00"
+        },
+        {
+          "ts": "2026-03-26T17:02:38.251900+00:00"
+        },
+        {
+          "ts": "2026-03-26T17:02:40.252774+00:00"
+        },
+        {
+          "ts": "2026-03-26T17:02:42.253394+00:00"
+        },
+        {
+          "ts": "2026-03-26T17:02:44.253703+00:00"
+        },
+        {
+          "ts": "2026-03-26T17:02:46.254105+00:00"
+        },
+        {
+          "ts": "2026-03-26T17:02:48.254344+00:00"
+        },
+        {
+          "ts": "2026-03-26T17:02:50.254888+00:00"
+        },
+        {
+          "ts": "2026-03-26T17:02:52.255867+00:00"
+        }
+      ],
+      "metrics_summary": {
+        "backend_cpu_peak_percent": 0.0,
+        "backend_rss_peak_mb": 0.0,
+        "backend_threads_peak": 0.0,
+        "db_total_connections_peak": 0.0,
+        "db_active_connections_peak": 0.0,
+        "db_waiting_connections_peak": 0.0,
+        "db_longest_active_seconds_peak": 0.0
+      },
+      "artifacts": {
+        "stats_csv": "load-tests\\results\\slice10-dirty-lazy-stage2\\scenario_d_u100_stats.csv",
+        "stats_history_csv": "load-tests\\results\\slice10-dirty-lazy-stage2\\scenario_d_u100_stats_history.csv",
+        "failures_csv": "load-tests\\results\\slice10-dirty-lazy-stage2\\scenario_d_u100_failures.csv",
+        "report_html": "load-tests\\results\\slice10-dirty-lazy-stage2\\scenario_d_u100.html"
+      },
+      "capacity_pass": true
+    }
+  ]
+}

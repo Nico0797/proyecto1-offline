@@ -21,14 +21,13 @@ export const DataTableContainer: React.FC<DataTableContainerProps> = ({
 
   return (
     <div className={cn(
-      "w-full overflow-hidden flex flex-col bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm",
+      "app-surface flex w-full flex-col overflow-hidden",
       className
     )}>
       <div className={cn(
-        "overflow-auto w-full",
+        "custom-scrollbar w-full overflow-auto overscroll-x-contain",
         heightClass
       )}>
-        {/* We inject styles to children tables to ensure sticky headers if they don't have them */}
         <div className="min-w-full inline-block align-middle">
           {children}
         </div>

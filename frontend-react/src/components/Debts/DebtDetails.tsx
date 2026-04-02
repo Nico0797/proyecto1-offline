@@ -13,6 +13,8 @@ interface DebtDetailsProps {
   onClose: () => void;
   debt: Debt;
   onEdit?: (debt: Debt) => void;
+  canEdit?: boolean;
+  canDeletePayments?: boolean;
 }
 
 export const DebtDetails: React.FC<DebtDetailsProps> = ({
@@ -20,6 +22,8 @@ export const DebtDetails: React.FC<DebtDetailsProps> = ({
   onClose,
   debt,
   onEdit,
+  canEdit = false,
+  canDeletePayments = false,
 }) => {
   const { activeBusiness } = useBusinessStore();
   const { deletePayment } = useDebtStore();
@@ -44,6 +48,7 @@ export const DebtDetails: React.FC<DebtDetailsProps> = ({
   }, [loadPayments]);
 
   const handleDeletePayment = async (paymentId: number) => {
+    if (!canDeletePayments) return;
     if (!activeBusiness) return;
     if (!window.confirm('¿Estás seguro de eliminar este pago? El saldo de la deuda aumentará.')) return;
     
@@ -66,7 +71,7 @@ export const DebtDetails: React.FC<DebtDetailsProps> = ({
       <div className="space-y-6 max-h-[70vh] overflow-y-auto pr-1">
         {/* Info Header */}
         <div className="bg-gray-50 dark:bg-gray-800/50 p-4 rounded-xl border border-gray-200 dark:border-gray-700 relative">
-            {onEdit && (
+            {onEdit && canEdit ? (
                 <button 
                     onClick={() => {
                         onClose();
@@ -77,7 +82,7 @@ export const DebtDetails: React.FC<DebtDetailsProps> = ({
                 >
                     <Edit2 className="w-4 h-4" />
                 </button>
-            )}
+            ) : null}
 
             <div className="grid grid-cols-2 gap-4 text-sm pr-8">
                 <div>
@@ -169,13 +174,15 @@ export const DebtDetails: React.FC<DebtDetailsProps> = ({
                                     {payment.note && <div className="text-xs text-gray-400 mt-0.5 italic max-w-[200px] truncate">{payment.note}</div>}
                                 </div>
                             </div>
-                            <button 
-                                onClick={() => handleDeletePayment(payment.id)}
-                                className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
-                                title="Eliminar pago"
-                            >
-                                <Trash2 className="w-4 h-4" />
-                            </button>
+                            {canDeletePayments ? (
+                              <button 
+                                  onClick={() => handleDeletePayment(payment.id)}
+                                  className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
+                                  title="Eliminar pago"
+                              >
+                                  <Trash2 className="w-4 h-4" />
+                              </button>
+                            ) : null}
                         </div>
                     ))}
                 </div>

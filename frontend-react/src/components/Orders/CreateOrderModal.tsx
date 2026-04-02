@@ -6,6 +6,7 @@ import { useOrderStore, OrderItem } from '../../store/orderStore';
 import { Modal } from '../ui/Modal';
 import { Button } from '../ui/Button';
 import { Input } from '../ui/Input';
+import { CurrencyInput } from '../ui/CurrencyInput';
 import { Search, ShoppingCart, ArrowRight, X, ScanLine } from 'lucide-react';
 import { Product } from '../../types';
 import { formatCOP } from './helpers';
@@ -315,12 +316,12 @@ export const CreateOrderModal: React.FC<CreateOrderModalProps> = ({
                                         <div className="flex items-center justify-between gap-4">
                                             <div className="flex items-center bg-gray-100 dark:bg-gray-700 rounded-lg shrink-0">
                                                 <button 
-                                                    className="w-8 h-8 flex items-center justify-center hover:bg-gray-200 dark:hover:bg-gray-600 rounded-l-lg touch-manipulation"
+                                                    className="w-8 h-8 flex items-center justify-center hover:bg-gray-200 dark:hover:bg-gray-600 rounded-l-lg touch-manipulation text-gray-900 dark:text-white"
                                                     onClick={() => handleUpdateItem(index, 'quantity', item.quantity - 1)}
                                                 >-</button>
-                                                <span className="w-8 text-center font-medium text-sm">{item.quantity}</span>
+                                                <span className="w-8 text-center font-medium text-sm text-gray-900 dark:text-white">{item.quantity}</span>
                                                 <button 
-                                                    className="w-8 h-8 flex items-center justify-center hover:bg-gray-200 dark:hover:bg-gray-600 rounded-r-lg touch-manipulation"
+                                                    className="w-8 h-8 flex items-center justify-center hover:bg-gray-200 dark:hover:bg-gray-600 rounded-r-lg touch-manipulation text-gray-900 dark:text-white"
                                                     onClick={() => handleUpdateItem(index, 'quantity', item.quantity + 1)}
                                                 >+</button>
                                             </div>
@@ -355,20 +356,19 @@ export const CreateOrderModal: React.FC<CreateOrderModalProps> = ({
                         <span className="text-gray-500 dark:text-gray-400">Descuento</span>
                         <div className="flex items-center gap-2">
                           <select
-                            className="h-9 px-2 text-xs rounded-lg bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            className="h-9 px-2 text-xs rounded-lg bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900 dark:text-white"
                             value={discountType}
                             onChange={(e) => setDiscountType(e.target.value as 'amount' | 'percent')}
                           >
                             <option value="amount">$</option>
                             <option value="percent">%</option>
                           </select>
-                          <input
-                            type="number"
-                            className="w-20 sm:w-28 h-9 px-2 sm:px-3 text-right rounded-lg bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500 min-w-0"
+                          <CurrencyInput
+                            className="w-20 sm:w-28 h-9 text-right"
                             value={discountValue}
-                            min={0}
-                            max={discountType === 'percent' ? 100 : calculateSubtotal()}
-                            onChange={(e) => setDiscountValue(parseFloat(e.target.value) || 0)}
+                            onChange={(val) => setDiscountValue(val || 0)}
+                            placeholder="0"
+                            startAdornment={discountType === 'percent' ? '%' : '$'}
                           />
                         </div>
                       </div>
@@ -430,7 +430,7 @@ export const CreateOrderModal: React.FC<CreateOrderModalProps> = ({
                                 Estado Inicial
                             </label>
                             <select
-                                className="w-full px-3 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                className="w-full px-3 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900 dark:text-white"
                                 value={status}
                                 onChange={(e) => setStatus(e.target.value as any)}
                             >
@@ -444,7 +444,7 @@ export const CreateOrderModal: React.FC<CreateOrderModalProps> = ({
                      <div>
                          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Notas</label>
                          <textarea 
-                            className="w-full px-3 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 h-24 resize-none text-sm"
+                            className="w-full px-3 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 h-24 resize-none text-sm text-gray-900 dark:text-white"
                             placeholder="Instrucciones especiales, fecha de entrega, etc..."
                             value={note}
                             onChange={(e) => setNote(e.target.value)}

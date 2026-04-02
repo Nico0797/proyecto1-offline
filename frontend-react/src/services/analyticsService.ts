@@ -2,84 +2,280 @@ import {
   KPI, 
   Insight, 
   Forecast, 
-  SalesTrendPoint
+  SalesTrendPoint,
+  HealthScore,
 } from '../types/analytics';
-import { Sale, Expense, Customer } from '../types';
+import { getAccessSnapshot } from '../hooks/useAccess';
+import { format } from 'date-fns';
+import type { Sale, Expense, Customer } from '../types';
 import api from './api';
+import { buildBusinessExpensesQueryParams, getBusinessExpensesPath } from './businessApiRoutes';
+import { balanceService } from './balanceService';
+
+type AnalyticsDatasetKey = 'sales' | 'expenses' | 'customers' | 'debtors';
+
+interface AnalyticsDegradationIssue {
+  dataset: AnalyticsDatasetKey;
+  message: string;
+}
+
+interface RawAnalyticsResult {
+  sales: Sale[];
+  expenses: Expense[];
+  customers: Customer[];
+  degraded: boolean;
+  issues: AnalyticsDegradationIssue[];
+}
+
+interface AnalyticsSummary {
+  sales: { total: number; count: number };
+  expenses: { total: number; count: number };
+  profit: { net: number; gross: number };
+  health?: {
+    overdueReceivables: number;
+    overdueReceivableCustomersCount: number;
+    dueSoonReceivables: number;
+    receivableCustomersCount: number;
+    marginPercent: number;
+    costedSalesTotal: number;
+    uncostedSalesTotal: number;
+    missingCostSalesCount: number;
+    previousSalesTotal: number;
+  };
+  degraded?: boolean;
+  issues?: AnalyticsDegradationIssue[];
+}
 
 class AnalyticsService {
+  private isOperationalExecutedExpense(expense: Expense) {
+    const sourceType = String(expense.source_type || 'manual').toLowerCase();
+    return sourceType !== 'supplier_payment' && sourceType !== 'debt_payment';
+  }
+
+  private buildIssue(dataset: AnalyticsDatasetKey, error: any): AnalyticsDegradationIssue {
+    return {
+      dataset,
+      message: error?.response?.data?.error || error?.message || `No fue posible cargar ${dataset}`,
+    };
+  }
+
+  private extractExpensesPayload(payload: any): Expense[] {
+    if (Array.isArray(payload?.expenses)) return payload.expenses;
+    if (Array.isArray(payload)) return payload;
+    if (Array.isArray(payload?.items)) return payload.items;
+    return [];
+  }
   
   // --- Data Fetching (Raw) ---
 
-  private async fetchRawData(businessId: number, startDate: string, endDate: string) {
+  private async fetchRawData(businessId: number, startDate: string, endDate: string): Promise<RawAnalyticsResult> {
     try {
-      const [salesRes, expensesRes, customersRes, debtorsRes] = await Promise.all([
-        api.get(`/businesses/${businessId}/sales`, { params: { start_date: startDate, end_date: endDate } }),
-        api.get(`/businesses/${businessId}/expenses`, { params: { start_date: startDate, end_date: endDate } }),
-        api.get(`/businesses/${businessId}/customers`),
-        api.get(`/businesses/${businessId}/customers/debtors`)
-      ]);
+      const access = getAccessSnapshot();
+      const canAccessSales = access.hasModule('sales') && access.hasPermission('sales.read');
+      const canAccessExpenses = access.hasPermission('expenses.read');
+      const canAccessCustomers = access.hasModule('customers') && access.hasPermission('customers.read');
+      const canAccessReceivables = access.hasModule('accounts_receivable') && access.hasPermission('payments.read');
 
-      const sales: Sale[] = salesRes.data.sales || [];
-      const expenses: Expense[] = expensesRes.data.expenses || [];
-      const customersRaw: Customer[] = customersRes.data.customers || [];
-      const debtors: any[] = debtorsRes.data.debtors || [];
+      const requests: Array<Promise<any>> = [
+        canAccessSales
+          ? api.get(`/businesses/${businessId}/sales`, { params: { start_date: startDate, end_date: endDate } })
+          : Promise.resolve({ data: { sales: [] } }),
+        canAccessExpenses
+          ? api.get(getBusinessExpensesPath(businessId), {
+              params: buildBusinessExpensesQueryParams({ start_date: startDate, end_date: endDate }),
+            })
+          : Promise.resolve({ data: { expenses: [] } }),
+        canAccessCustomers
+          ? api.get(`/businesses/${businessId}/customers`)
+          : Promise.resolve({ data: { customers: [] } }),
+        canAccessReceivables
+          ? api.get(`/businesses/${businessId}/customers/debtors`)
+          : Promise.resolve({ data: { debtors: [] } }),
+      ];
 
-      // Create map of debtors for O(1) access
+      const [salesResult, expensesResult, customersResult, debtorsResult] = await Promise.allSettled(requests);
+      const issues: AnalyticsDegradationIssue[] = [];
+
+      if (salesResult.status === 'rejected') {
+        console.warn('Could not fetch sales data:', salesResult.reason);
+        issues.push(this.buildIssue('sales', salesResult.reason));
+      }
+      if (expensesResult.status === 'rejected') {
+        console.warn('Could not fetch expenses data:', expensesResult.reason);
+        issues.push(this.buildIssue('expenses', expensesResult.reason));
+      }
+      if (customersResult.status === 'rejected') {
+        console.warn('Could not fetch customers data:', customersResult.reason);
+        issues.push(this.buildIssue('customers', customersResult.reason));
+      }
+      if (debtorsResult.status === 'rejected') {
+        console.warn('Could not fetch debtors data:', debtorsResult.reason);
+        issues.push(this.buildIssue('debtors', debtorsResult.reason));
+      }
+
+      const sales: Sale[] = salesResult.status === 'fulfilled' ? salesResult.value?.data?.sales || [] : [];
+      const expenses: Expense[] = expensesResult.status === 'fulfilled' ? this.extractExpensesPayload(expensesResult.value?.data) : [];
+      const customersRaw: Customer[] = customersResult.status === 'fulfilled' ? customersResult.value?.data?.customers || [] : [];
+      const debtors: any[] = debtorsResult.status === 'fulfilled' ? debtorsResult.value?.data?.debtors || [] : [];
+
       const debtorMap = new Map(debtors.map((d: any) => [d.id, d]));
-      const today = new Date();
 
-      // Merge balance info into customers
       const customers: Customer[] = customersRaw.map(c => {
         const debtor = debtorMap.get(c.id);
-        let isOverdue = false;
-        
-        if (debtor && debtor.since) {
-             const sinceDate = new Date(debtor.since);
-             const days = Math.floor((today.getTime() - sinceDate.getTime()) / (1000 * 60 * 60 * 24));
-             isOverdue = days > 30;
-        }
-
         return {
           ...c,
           balance: debtor ? debtor.balance : 0,
           oldest_due_date: debtor ? debtor.since : undefined,
-          is_overdue: isOverdue 
+          receivable_due_date: debtor ? debtor.due_date : undefined,
+          receivable_status: debtor ? debtor.status : undefined,
+          receivable_status_label: debtor ? debtor.status_label : undefined,
+          overdue_balance: debtor ? debtor.overdue_balance : 0,
+          receivable_invoice_count: debtor ? debtor.invoice_count : 0,
+          receivable_days_overdue: debtor ? debtor.max_days_overdue : 0,
+          is_overdue: debtor ? debtor.status === 'overdue' : false
         } as Customer;
       });
 
-      return { sales, expenses, customers };
+      return {
+        sales,
+        expenses,
+        customers,
+        degraded: issues.length > 0,
+        issues,
+      };
     } catch (error) {
       console.error('Error fetching raw data:', error);
-      return { sales: [], expenses: [], customers: [] };
+      return {
+        sales: [],
+        expenses: [],
+        customers: [],
+        degraded: true,
+        issues: [this.buildIssue('sales', error)],
+      };
     }
   }
 
   // --- Public Methods (Aggregators) ---
 
-  async getSummary(businessId: number, startDate: string, endDate: string) {
-    const { sales, expenses } = await this.fetchRawData(businessId, startDate, endDate);
-    
-    const totalSales = sales.reduce((sum, s) => sum + s.total, 0);
-    const countSales = sales.length;
-    const totalExpenses = expenses.reduce((sum, e) => sum + e.amount, 0);
-    const netProfit = totalSales - totalExpenses;
+  async getSummary(businessId: number, startDate: string, endDate: string): Promise<AnalyticsSummary> {
+    const [rawResult, financialResult] = await Promise.allSettled([
+      this.fetchRawData(businessId, startDate, endDate),
+      balanceService.getDashboard(businessId, startDate, endDate),
+    ]);
+
+    const issues: AnalyticsDegradationIssue[] = [];
+    const raw = rawResult.status === 'fulfilled'
+      ? rawResult.value
+      : { sales: [], expenses: [], customers: [], degraded: true, issues: [this.buildIssue('sales', rawResult.reason)] };
+
+    if (rawResult.status === 'rejected') {
+      issues.push(this.buildIssue('sales', rawResult.reason));
+      issues.push(this.buildIssue('expenses', rawResult.reason));
+    } else if (raw.issues?.length) {
+      issues.push(...raw.issues);
+    }
+
+    if (financialResult.status === 'rejected') {
+      issues.push(this.buildIssue('sales', financialResult.reason));
+    }
+
+    const financialSummary = financialResult.status === 'fulfilled' ? financialResult.value.summary : null;
+    const totalSales = financialSummary?.salesTotal ?? raw.sales.reduce((sum, s) => sum + s.total, 0);
+    const countSales = raw.sales.length;
+    const executedOperationalExpenses = raw.expenses.filter((expense) => this.isOperationalExecutedExpense(expense));
+    const totalExpenses = financialSummary?.expensesTotal ?? executedOperationalExpenses.reduce((sum, e) => sum + e.amount, 0);
+    const netProfit = financialSummary?.netProfit ?? (totalSales - totalExpenses);
+    const grossProfit = financialSummary?.grossProfit ?? totalSales;
 
     return {
       sales: { total: totalSales, count: countSales },
-      expenses: { total: totalExpenses, count: expenses.length },
-      profit: { net: netProfit, gross: totalSales } // Gross simplified as total sales for now
+      expenses: { total: totalExpenses, count: executedOperationalExpenses.length },
+      profit: { net: netProfit, gross: grossProfit },
+      health: financialSummary ? {
+        overdueReceivables: financialSummary.overdueReceivables,
+        overdueReceivableCustomersCount: financialSummary.receivableOverdueCustomersCount,
+        dueSoonReceivables: financialSummary.dueSoonReceivables,
+        receivableCustomersCount: financialSummary.receivableCustomersCount,
+        marginPercent: financialSummary.margin,
+        costedSalesTotal: financialSummary.costedSalesTotal,
+        uncostedSalesTotal: financialSummary.uncostedSalesTotal,
+        missingCostSalesCount: financialSummary.missingCostSalesCount,
+        previousSalesTotal: financialSummary.previousSalesTotal,
+      } : undefined,
+      degraded: raw.degraded || financialResult.status === 'rejected',
+      issues: issues.filter((issue, index, array) => index === array.findIndex((item) => item.dataset === issue.dataset && item.message === issue.message)),
     };
   }
 
-  async getSalesTrend(businessId: number, days: number = 30) {
-    // Calculate dates based on days
-    const end = new Date();
-    const start = new Date();
-    start.setDate(end.getDate() - days);
-    
-    const startDate = start.toISOString().split('T')[0];
-    const endDate = end.toISOString().split('T')[0];
+  buildHealthScore(summary: AnalyticsSummary): HealthScore {
+    const health = summary.health;
+    const indicators: HealthScore['indicators'] = [];
+    let score = 100;
+
+    const marginPercent = health?.marginPercent ?? 0;
+    if ((health?.overdueReceivableCustomersCount || 0) > 0 && (health?.overdueReceivables || 0) > 0) {
+      score -= 25;
+      indicators.push({
+        label: 'Cartera vencida',
+        status: 'warning',
+        message: `Tienes ${health?.overdueReceivableCustomersCount} cliente(s) con saldo vencido por ${Math.round(health?.overdueReceivables || 0).toLocaleString()}.`,
+      });
+    } else {
+      indicators.push({
+        label: 'Cartera vencida',
+        status: 'ok',
+        message: 'No hay cartera vencida real en el negocio activo.',
+      });
+    }
+
+    if ((health?.missingCostSalesCount || 0) > 0 || (health?.uncostedSalesTotal || 0) > 0.01) {
+      score -= 20;
+      indicators.push({
+        label: 'Costo de ventas',
+        status: 'warning',
+        message: `Hay ${health?.missingCostSalesCount || 0} venta(s) sin costo confiable. La utilidad se calcula solo sobre ventas costadas.`,
+      });
+    } else {
+      indicators.push({
+        label: 'Costo de ventas',
+        status: 'ok',
+        message: 'La utilidad usa costos reales de ventas costadas.',
+      });
+    }
+
+    if (summary.profit.net < 0) {
+      score -= 25;
+      indicators.push({
+        label: 'Utilidad neta',
+        status: 'critical',
+        message: 'La utilidad neta del periodo es negativa.',
+      });
+    } else if (marginPercent < 15) {
+      score -= 10;
+      indicators.push({
+        label: 'Margen neto',
+        status: 'warning',
+        message: `El margen neto está en ${marginPercent.toFixed(1)}%.`,
+      });
+    } else {
+      indicators.push({
+        label: 'Margen neto',
+        status: 'ok',
+        message: `El margen neto está en ${marginPercent.toFixed(1)}%.`,
+      });
+    }
+
+    score = Math.max(10, Math.min(100, score));
+    return {
+      score,
+      status: score >= 80 ? 'good' : score >= 60 ? 'warning' : 'critical',
+      indicators,
+    };
+  }
+
+  async getSalesTrend(businessId: number, startDate: string, endDate: string) {
+    const start = new Date(`${startDate}T00:00:00`);
+    const end = new Date(`${endDate}T00:00:00`);
 
     const { sales } = await this.fetchRawData(businessId, startDate, endDate);
 
@@ -88,12 +284,12 @@ class AnalyticsService {
     
     // Initialize map with 0s for all days
     for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
-        const dateStr = d.toISOString().split('T')[0];
+        const dateStr = format(d, 'yyyy-MM-dd');
         trendMap.set(dateStr, { amount: 0, count: 0 });
     }
 
     sales.forEach(s => {
-      const dateStr = new Date(s.sale_date).toISOString().split('T')[0];
+      const dateStr = format(new Date(`${s.sale_date}T00:00:00`), 'yyyy-MM-dd');
       const current = trendMap.get(dateStr) || { amount: 0, count: 0 };
       trendMap.set(dateStr, { 
         amount: current.amount + s.total, 
@@ -144,12 +340,14 @@ class AnalyticsService {
 
   async getExpensesByCategory(businessId: number, startDate: string, endDate: string) {
     const { expenses } = await this.fetchRawData(businessId, startDate, endDate);
+    const executedOperationalExpenses = expenses.filter((expense) => this.isOperationalExecutedExpense(expense));
     
     const categoryMap = new Map<string, number>();
 
-    expenses.forEach(e => {
-        const current = categoryMap.get(e.category) || 0;
-        categoryMap.set(e.category, current + e.amount);
+    executedOperationalExpenses.forEach(e => {
+        const category = e.category || 'Sin categoría';
+        const current = categoryMap.get(category) || 0;
+        categoryMap.set(category, current + e.amount);
     });
 
     const categories = Array.from(categoryMap.entries())
@@ -184,6 +382,31 @@ class AnalyticsService {
      return customerStats.sort((a, b) => b.total_spent - a.total_spent);
   }
 
+  async getTeamPerformance(businessId: number, startDate: string, endDate: string) {
+    try {
+      const response = await api.get(`/businesses/${businessId}/analytics/team`, {
+        params: { start_date: startDate, end_date: endDate }
+      });
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching team performance:', error);
+      throw error;
+    }
+  }
+
+  async getTeamExport(businessId: number, startDate: string, endDate: string) {
+      try {
+          const response = await api.get(`/businesses/${businessId}/export/team`, {
+              params: { start_date: startDate, end_date: endDate },
+              responseType: 'blob'
+          });
+          return response.data;
+      } catch (error) {
+          console.error('Error exporting team report:', error);
+          throw error;
+      }
+  }
+
   // --- KPI Calculation & Aggregation ---
 
   async getKPIs(
@@ -191,12 +414,28 @@ class AnalyticsService {
     currentPeriod: { startDate: string, endDate: string, label: string },
     prevPeriod: { startDate: string, endDate: string, label: string }
   ): Promise<KPI[]> {
-    
-    // Fetch both periods
-    const [current, prev] = await Promise.all([
+    const emptySummary: AnalyticsSummary = {
+      sales: { total: 0, count: 0 },
+      expenses: { total: 0, count: 0 },
+      profit: { net: 0, gross: 0 },
+      degraded: true,
+      issues: [],
+    };
+
+    const [currentResult, prevResult] = await Promise.allSettled([
       this.getSummary(businessId, currentPeriod.startDate, currentPeriod.endDate),
       this.getSummary(businessId, prevPeriod.startDate, prevPeriod.endDate)
     ]);
+
+    if (currentResult.status === 'rejected') {
+      console.warn('Could not fetch current KPI summary:', currentResult.reason);
+    }
+    if (prevResult.status === 'rejected') {
+      console.warn('Could not fetch previous KPI summary:', prevResult.reason);
+    }
+
+    const current = currentResult.status === 'fulfilled' ? currentResult.value : emptySummary;
+    const prev = prevResult.status === 'fulfilled' ? prevResult.value : emptySummary;
 
     const calculateChange = (curr: number, prev: number) => {
       // Safety check for inputs
@@ -219,7 +458,7 @@ class AnalyticsService {
       },
       {
         id: 'expenses',
-        label: 'Gastos Operativos',
+        label: 'Gasto Operativo Ejecutado',
         value: current.expenses.total,
         previousValue: prev.expenses.total,
         change: calculateChange(current.expenses.total, prev.expenses.total),
@@ -335,12 +574,12 @@ class AnalyticsService {
   // --- Export Methods ---
 
   /**
-   * Generates a report and returns the download URL.
-   * @param businessId 
+   * Genera un reporte y devuelve el archivo directamente como Blob.
+   * @param businessId
    * @param reportType 'sales' | 'expenses' | 'combined'
    * @param params Query parameters (startDate, endDate, type for combined)
    */
-  async getExportUrl(businessId: number, reportType: 'sales' | 'expenses' | 'combined', params: any = {}): Promise<string> {
+  async downloadExportReport(businessId: number, reportType: 'sales' | 'expenses' | 'combined', params: any = {}): Promise<Blob> {
     let endpoint = '';
     
     if (reportType === 'sales') {
@@ -352,40 +591,14 @@ class AnalyticsService {
     }
 
     try {
-        const response = await api.get(endpoint, { params });
-        // The backend returns { download_url: "/api/download/filename.xlsx" }
-        const downloadPath = response.data.download_url;
-        
-        // If the path is already absolute, return it
-        if (downloadPath.startsWith('http')) return downloadPath;
-        
-        // FIX: Ensure absolute URL for mobile downloads
-        // Get baseURL from the current axios instance
-        let baseURL = api.defaults.baseURL || '';
-        
-        // If baseURL is relative (e.g. '/api'), try to make it absolute using current window location
-        // or stored configuration
-        if (!baseURL.startsWith('http')) {
-            // Check if we have a stored base URL (from login screen configuration)
-            const storedBase = localStorage.getItem('API_BASE_URL');
-            if (storedBase) {
-                baseURL = storedBase;
-            } else if (typeof window !== 'undefined') {
-                 // Fallback to window origin if no config
-                 baseURL = window.location.origin + (baseURL.startsWith('/') ? baseURL : `/${baseURL}`);
-            }
-        }
-        
-        // Clean trailing slash from base and leading slash from path to avoid double slashes
-        const cleanBase = baseURL.replace(/\/$/, '');
-        const cleanPath = downloadPath.startsWith('/') ? downloadPath : `/${downloadPath}`;
-        
-        console.log('🔗 Generated Export URL:', `${cleanBase}${cleanPath}`);
-        
-        return `${cleanBase}${cleanPath}`;
+        const response = await api.get(endpoint, {
+          params: { ...params, direct: '1' },
+          responseType: 'blob'
+        });
+        return response.data;
 
     } catch (error) {
-        console.error('Error getting export URL:', error);
+        console.error('Error downloading export report:', error);
         throw error;
     }
   }
@@ -393,3 +606,4 @@ class AnalyticsService {
 
 export const analyticsService = new AnalyticsService();
 export type { KPI, Insight, Forecast, SalesTrendPoint, HealthScore, ExpenseCategory, TopProduct } from '../types/analytics';
+export type { AnalyticsDegradationIssue, AnalyticsSummary };

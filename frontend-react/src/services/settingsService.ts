@@ -1,4 +1,10 @@
-import { Business } from '../types';
+import { Business, BusinessModuleKey, BusinessModuleState } from '../types';
+import { 
+  AppearanceSettings, 
+  readAppearanceSettings, 
+  writeAppearanceSettings
+} from '../utils/theme';
+import api from './api';
 
 export interface ProfileSettings {
   name: string;
@@ -23,12 +29,6 @@ export interface NotificationSettings {
   reminders: boolean;
   showBadges: boolean;
   weeklySummary: boolean;
-}
-
-export interface AppearanceSettings {
-  theme: 'light' | 'dark' | 'auto';
-  fontSize: 'sm' | 'md' | 'lg';
-  density: 'compact' | 'normal';
 }
 
 export const settingsService = {
@@ -73,6 +73,19 @@ export const settingsService = {
     // Also update main business store if needed via API call
   },
 
+  getBusinessModules: async (businessId: number): Promise<BusinessModuleState[]> => {
+    const response = await api.get(`/businesses/${businessId}/modules`);
+    return response.data.modules || [];
+  },
+
+  updateBusinessModules: async (
+    businessId: number,
+    modules: Record<BusinessModuleKey, boolean>
+  ): Promise<BusinessModuleState[]> => {
+    const response = await api.put(`/businesses/${businessId}/modules`, { modules });
+    return response.data.modules || [];
+  },
+
   // Notifications
   getNotifications: (): NotificationSettings => {
     const defaults: NotificationSettings = {
@@ -92,23 +105,11 @@ export const settingsService = {
 
   // Appearance
   getAppearance: (): AppearanceSettings => {
-    const defaults: AppearanceSettings = {
-      theme: 'auto',
-      fontSize: 'md',
-      density: 'normal'
-    };
-    const local = JSON.parse(localStorage.getItem('appearance_settings') || 'null');
-    return local || defaults;
+    return readAppearanceSettings();
   },
 
   updateAppearance: (data: AppearanceSettings): void => {
-    localStorage.setItem('appearance_settings', JSON.stringify(data));
-    // Apply theme immediately if needed
-    if (data.theme === 'dark' || (data.theme === 'auto' && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
-        document.documentElement.classList.add('dark');
-    } else {
-        document.documentElement.classList.remove('dark');
-    }
+    writeAppearanceSettings(data);
   },
 
   // Templates (WhatsApp already exists in business, expanding here if needed)

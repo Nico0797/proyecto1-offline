@@ -77,31 +77,27 @@ export const usePushNotifications = () => {
         }
       }
 
-      // Lógica de navegación
-      // 1. Clientes / Deudas
-      if (payload.type === 'receivable' && payload.entityId) {
-        // Navegar a lista filtrada o detalle
+      if (payload.path) {
+        navigate(payload.path);
+      }
+      else if (payload.type === 'debt') {
+        navigate(payload.scope === 'financial' ? '/debts' : '/expenses?tab=payables');
+      }
+      else if (payload.type === 'supplier_payable') {
+        navigate('/expenses?tab=payables');
+      }
+      else if (payload.type === 'receivable' && payload.entityId) {
         navigate(`/customers`); 
-        // Idealmente: navigate(`/customers/${payload.entityId}`); si existiera la ruta de detalle directo
-        // O abrir un modal usando un estado global (Zustand)
         setTimeout(() => {
-             // Hack: Si usas query params o hash para abrir modales
-             // window.location.hash = `#customer-${payload.entityId}`;
              toast('Revisa el detalle del cliente en la lista', { icon: 'info' });
         }, 500);
       } 
-      // 2. Inventario
       else if (payload.type === 'inventory' && payload.entityId) {
         navigate(`/products`);
         setTimeout(() => toast('Producto con stock bajo', { icon: '📦' }), 500);
       } 
-      // 3. Recurrentes
       else if (payload.type === 'recurring') {
-        navigate('/expenses');
-      } 
-      // 4. Ruta directa explícita
-      else if (payload.path) {
-        navigate(payload.path);
+        navigate('/expenses?tab=recurring');
       }
     };
 

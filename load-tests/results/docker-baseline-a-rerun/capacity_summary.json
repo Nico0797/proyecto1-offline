@@ -1,0 +1,467 @@
+{
+  "base_url": "http://127.0.0.1:8000",
+  "business_id": 2,
+  "users": [
+    5,
+    10,
+    20
+  ],
+  "scenarios": [
+    "A"
+  ],
+  "run_time": "1m",
+  "spawn_rate": 5.0,
+  "fixture": null,
+  "runs": [
+    {
+      "scenario": "A",
+      "users": 5,
+      "started_at": "2026-03-25T12:06:05.192163+00:00",
+      "finished_at": "2026-03-25T12:07:06.231992+00:00",
+      "command": [
+        "C:\\Users\\harae\\Desktop\\ui migration\\proyecto1\\.venv\\Scripts\\locust.exe",
+        "-f",
+        "C:\\Users\\harae\\Desktop\\ui migration\\proyecto1\\load-tests\\locustfile.py",
+        "--host",
+        "http://127.0.0.1:8000",
+        "--users",
+        "5",
+        "--spawn-rate",
+        "5.0",
+        "--run-time",
+        "1m",
+        "--csv",
+        "load-tests\\results\\docker-baseline-a-rerun\\scenario_a_u5",
+        "--html",
+        "load-tests\\results\\docker-baseline-a-rerun\\scenario_a_u5.html",
+        "--headless",
+        "--only-summary"
+      ],
+      "exit_code": 0,
+      "stdout_tail": "",
+      "stderr_tail": "# reqs      # fails |    Avg     Min     Max    Med |   req/s  failures/s\n--------|----------------------------------------------------------------------------|-------|-------------|-------|-------|-------|-------|--------|-----------\nPOST     auth.login                                                                         5     0(0.00%) |   1506    1051    1934   1600 |    0.09        0.00\nGET      read.business_profile                                                              8     0(0.00%) |     11       5      37      5 |    0.14        0.00\nGET      read.customers                                                                    24     0(0.00%) |     16      11      76     13 |    0.42        0.00\nGET      read.dashboard                                                                    42     0(0.00%) |     39      28     142     32 |    0.73        0.00\nGET      read.products                                                                      6     0(0.00%) |     39      20     103     22 |    0.10        0.00\nGET      read.sales                                                                        22     0(0.00%) |    117      92     195    100 |    0.38        0.00\nGET      setup.customers                                                                    5     0(0.00%) |    379      37     886     49 |    0.09        0.00\nGET      setup.products                                                                     5     0(0.00%) |     70      43      85     70 |    0.09        0.00\n--------|----------------------------------------------------------------------------|-------|-------------|-------|-------|-------|-------|--------|-----------\n         Aggregated                                                                       117     0(0.00%) |    126       5    1934     33 |    2.04        0.00\n\nResponse time percentiles (approximated)\nType     Name                                                                                  50%    66%    75%    80%    90%    95%    98%    99%  99.9% 99.99%   100% # reqs\n--------|--------------------------------------------------------------------------------|--------|------|------|------|------|------|------|------|------|------|------|------\nPOST     auth.login                                                                           1600   1900   1900   1900   1900   1900   1900   1900   1900   1900   1900      5\nGET      read.business_profile                                                                   6      7     20     20     37     37     37     37     37     37     37      8\nGET      read.customers                                                                         13     13     15     15     16     25     76     76     76     76     76     24\nGET      read.dashboard                                                                         32     35     38     46     64     74    140    140    140    140    140     42\nGET      read.products                                                                          35     35     37     37    100    100    100    100    100    100    100      6\nGET      read.sales                                                                            100    110    120    140    180    180    200    200    200    200    200     22\nGET      setup.customers                                                                        49    880    880    890    890    890    890    890    890    890    890      5\nGET      setup.products                                                                         70     85     85     85     85     85     85     85     85     85     85      5\n--------|--------------------------------------------------------------------------------|--------|------|------|------|------|------|------|------|------|------|------|------\n         Aggregated                                                                             33     64     94     99    140    890   1600   1900   1900   1900   1900    117\n\n",
+      "stats_summary": {},
+      "distribution": {
+        "p50_estimated_ms": 192.4808812499883,
+        "p95_estimated_ms": 473.01858636363,
+        "p99_estimated_ms": 518.2237900000018,
+        "avg_rps_window": 0.0,
+        "max_rps_window": 0.0,
+        "final_failure_count": 0.0
+      },
+      "failures_rows": 1,
+      "error_rate": 0.0,
+      "metrics_samples": [
+        {
+          "ts": "2026-03-25T12:06:05.192725+00:00"
+        },
+        {
+          "ts": "2026-03-25T12:06:07.193201+00:00"
+        },
+        {
+          "ts": "2026-03-25T12:06:09.192422+00:00"
+        },
+        {
+          "ts": "2026-03-25T12:06:11.192452+00:00"
+        },
+        {
+          "ts": "2026-03-25T12:06:13.192576+00:00"
+        },
+        {
+          "ts": "2026-03-25T12:06:15.193115+00:00"
+        },
+        {
+          "ts": "2026-03-25T12:06:17.193413+00:00"
+        },
+        {
+          "ts": "2026-03-25T12:06:19.193798+00:00"
+        },
+        {
+          "ts": "2026-03-25T12:06:21.193877+00:00"
+        },
+        {
+          "ts": "2026-03-25T12:06:23.194000+00:00"
+        },
+        {
+          "ts": "2026-03-25T12:06:25.195691+00:00"
+        },
+        {
+          "ts": "2026-03-25T12:06:27.198613+00:00"
+        },
+        {
+          "ts": "2026-03-25T12:06:29.198428+00:00"
+        },
+        {
+          "ts": "2026-03-25T12:06:31.199154+00:00"
+        },
+        {
+          "ts": "2026-03-25T12:06:33.200057+00:00"
+        },
+        {
+          "ts": "2026-03-25T12:06:35.200849+00:00"
+        },
+        {
+          "ts": "2026-03-25T12:06:37.200866+00:00"
+        },
+        {
+          "ts": "2026-03-25T12:06:39.200966+00:00"
+        },
+        {
+          "ts": "2026-03-25T12:06:41.201021+00:00"
+        },
+        {
+          "ts": "2026-03-25T12:06:43.201608+00:00"
+        },
+        {
+          "ts": "2026-03-25T12:06:45.202185+00:00"
+        },
+        {
+          "ts": "2026-03-25T12:06:47.202389+00:00"
+        },
+        {
+          "ts": "2026-03-25T12:06:49.202949+00:00"
+        },
+        {
+          "ts": "2026-03-25T12:06:51.203512+00:00"
+        },
+        {
+          "ts": "2026-03-25T12:06:53.203616+00:00"
+        },
+        {
+          "ts": "2026-03-25T12:06:55.203544+00:00"
+        },
+        {
+          "ts": "2026-03-25T12:06:57.203571+00:00"
+        },
+        {
+          "ts": "2026-03-25T12:06:59.203665+00:00"
+        },
+        {
+          "ts": "2026-03-25T12:07:01.203708+00:00"
+        },
+        {
+          "ts": "2026-03-25T12:07:03.204657+00:00"
+        },
+        {
+          "ts": "2026-03-25T12:07:05.205598+00:00"
+        }
+      ],
+      "metrics_summary": {
+        "backend_cpu_peak_percent": 0.0,
+        "backend_rss_peak_mb": 0.0,
+        "backend_threads_peak": 0.0,
+        "db_total_connections_peak": 0.0,
+        "db_active_connections_peak": 0.0,
+        "db_waiting_connections_peak": 0.0,
+        "db_longest_active_seconds_peak": 0.0
+      },
+      "artifacts": {
+        "stats_csv": "load-tests\\results\\docker-baseline-a-rerun\\scenario_a_u5_stats.csv",
+        "stats_history_csv": "load-tests\\results\\docker-baseline-a-rerun\\scenario_a_u5_stats_history.csv",
+        "failures_csv": "load-tests\\results\\docker-baseline-a-rerun\\scenario_a_u5_failures.csv",
+        "report_html": "load-tests\\results\\docker-baseline-a-rerun\\scenario_a_u5.html"
+      },
+      "capacity_pass": true
+    },
+    {
+      "scenario": "A",
+      "users": 10,
+      "started_at": "2026-03-25T12:07:06.234136+00:00",
+      "finished_at": "2026-03-25T12:08:07.249493+00:00",
+      "command": [
+        "C:\\Users\\harae\\Desktop\\ui migration\\proyecto1\\.venv\\Scripts\\locust.exe",
+        "-f",
+        "C:\\Users\\harae\\Desktop\\ui migration\\proyecto1\\load-tests\\locustfile.py",
+        "--host",
+        "http://127.0.0.1:8000",
+        "--users",
+        "10",
+        "--spawn-rate",
+        "5.0",
+        "--run-time",
+        "1m",
+        "--csv",
+        "load-tests\\results\\docker-baseline-a-rerun\\scenario_a_u10",
+        "--html",
+        "load-tests\\results\\docker-baseline-a-rerun\\scenario_a_u10.html",
+        "--headless",
+        "--only-summary"
+      ],
+      "exit_code": 0,
+      "stdout_tail": "",
+      "stderr_tail": "# reqs      # fails |    Avg     Min     Max    Med |   req/s  failures/s\n--------|----------------------------------------------------------------------------|-------|-------------|-------|-------|-------|-------|--------|-----------\nPOST     auth.login                                                                        10     0(0.00%) |   1666    1126    2375   1400 |    0.17        0.00\nGET      read.business_profile                                                             26     0(0.00%) |      6       4      21      5 |    0.44        0.00\nGET      read.customers                                                                    51     0(0.00%) |     18      11     120     13 |    0.86        0.00\nGET      read.dashboard                                                                    76     0(0.00%) |     47      28     295     31 |    1.28        0.00\nGET      read.products                                                                     19     0(0.00%) |     23      19      59     21 |    0.32        0.00\nGET      read.sales                                                                        31     0(0.00%) |    119      90     265     98 |    0.52        0.00\nGET      setup.customers                                                                   10     0(0.00%) |    809      17    2004    620 |    0.17        0.00\nGET      setup.products                                                                    10     0(0.00%) |    104      31     139    110 |    0.17        0.00\n--------|----------------------------------------------------------------------------|-------|-------------|-------|-------|-------|-------|--------|-----------\n         Aggregated                                                                       233     0(0.00%) |    148       4    2375     30 |    3.94        0.00\n\nResponse time percentiles (approximated)\nType     Name                                                                                  50%    66%    75%    80%    90%    95%    98%    99%  99.9% 99.99%   100% # reqs\n--------|--------------------------------------------------------------------------------|--------|------|------|------|------|------|------|------|------|------|------|------\nPOST     auth.login                                                                           1700   1800   2000   2300   2400   2400   2400   2400   2400   2400   2400     10\nGET      read.business_profile                                                                   5      5      6      8     12     15     22     22     22     22     22     26\nGET      read.customers                                                                         13     14     14     14     19     42    120    120    120    120    120     51\nGET      read.dashboard                                                                         31     32     34     37     61    250    280    300    300    300    300     76\nGET      read.products                                                                          21     22     22     22     25     59     59     59     59     59     59     19\nGET      read.sales                                                                             98    110    140    140    170    230    270    270    270    270    270     31\nGET      setup.customers                                                                       670   1300   1400   2000   2000   2000   2000   2000   2000   2000   2000     10\nGET      setup.products                                                                        110    120    130    140    140    140    140    140    140    140    140     10\n--------|--------------------------------------------------------------------------------|--------|------|------|------|------|------|------|------|------|------|------|------\n         Aggregated                                                                             30     37     92     96    170   1300   2000   2000   2400   2400   2400    233\n\n",
+      "stats_summary": {},
+      "distribution": {
+        "p50_estimated_ms": 240.43539761904265,
+        "p95_estimated_ms": 620.9960888888872,
+        "p99_estimated_ms": 694.3476349999969,
+        "avg_rps_window": 0.0,
+        "max_rps_window": 0.0,
+        "final_failure_count": 0.0
+      },
+      "failures_rows": 1,
+      "error_rate": 0.0,
+      "metrics_samples": [
+        {
+          "ts": "2026-03-25T12:07:06.234350+00:00"
+        },
+        {
+          "ts": "2026-03-25T12:07:08.261952+00:00"
+        },
+        {
+          "ts": "2026-03-25T12:07:10.262800+00:00"
+        },
+        {
+          "ts": "2026-03-25T12:07:12.263362+00:00"
+        },
+        {
+          "ts": "2026-03-25T12:07:14.263851+00:00"
+        },
+        {
+          "ts": "2026-03-25T12:07:16.264159+00:00"
+        },
+        {
+          "ts": "2026-03-25T12:07:18.264886+00:00"
+        },
+        {
+          "ts": "2026-03-25T12:07:20.265684+00:00"
+        },
+        {
+          "ts": "2026-03-25T12:07:22.266480+00:00"
+        },
+        {
+          "ts": "2026-03-25T12:07:24.266850+00:00"
+        },
+        {
+          "ts": "2026-03-25T12:07:26.267078+00:00"
+        },
+        {
+          "ts": "2026-03-25T12:07:28.267880+00:00"
+        },
+        {
+          "ts": "2026-03-25T12:07:30.268372+00:00"
+        },
+        {
+          "ts": "2026-03-25T12:07:32.268784+00:00"
+        },
+        {
+          "ts": "2026-03-25T12:07:34.268801+00:00"
+        },
+        {
+          "ts": "2026-03-25T12:07:36.269406+00:00"
+        },
+        {
+          "ts": "2026-03-25T12:07:38.269809+00:00"
+        },
+        {
+          "ts": "2026-03-25T12:07:40.270822+00:00"
+        },
+        {
+          "ts": "2026-03-25T12:07:42.270880+00:00"
+        },
+        {
+          "ts": "2026-03-25T12:07:44.303449+00:00"
+        },
+        {
+          "ts": "2026-03-25T12:07:46.304362+00:00"
+        },
+        {
+          "ts": "2026-03-25T12:07:48.304769+00:00"
+        },
+        {
+          "ts": "2026-03-25T12:07:50.305314+00:00"
+        },
+        {
+          "ts": "2026-03-25T12:07:52.305641+00:00"
+        },
+        {
+          "ts": "2026-03-25T12:07:54.305662+00:00"
+        },
+        {
+          "ts": "2026-03-25T12:07:56.306476+00:00"
+        },
+        {
+          "ts": "2026-03-25T12:07:58.306889+00:00"
+        },
+        {
+          "ts": "2026-03-25T12:08:00.307322+00:00"
+        },
+        {
+          "ts": "2026-03-25T12:08:02.307306+00:00"
+        },
+        {
+          "ts": "2026-03-25T12:08:04.308069+00:00"
+        },
+        {
+          "ts": "2026-03-25T12:08:06.308160+00:00"
+        }
+      ],
+      "metrics_summary": {
+        "backend_cpu_peak_percent": 0.0,
+        "backend_rss_peak_mb": 0.0,
+        "backend_threads_peak": 0.0,
+        "db_total_connections_peak": 0.0,
+        "db_active_connections_peak": 0.0,
+        "db_waiting_connections_peak": 0.0,
+        "db_longest_active_seconds_peak": 0.0
+      },
+      "artifacts": {
+        "stats_csv": "load-tests\\results\\docker-baseline-a-rerun\\scenario_a_u10_stats.csv",
+        "stats_history_csv": "load-tests\\results\\docker-baseline-a-rerun\\scenario_a_u10_stats_history.csv",
+        "failures_csv": "load-tests\\results\\docker-baseline-a-rerun\\scenario_a_u10_failures.csv",
+        "report_html": "load-tests\\results\\docker-baseline-a-rerun\\scenario_a_u10.html"
+      },
+      "capacity_pass": true
+    },
+    {
+      "scenario": "A",
+      "users": 20,
+      "started_at": "2026-03-25T12:08:07.251574+00:00",
+      "finished_at": "2026-03-25T12:09:08.383850+00:00",
+      "command": [
+        "C:\\Users\\harae\\Desktop\\ui migration\\proyecto1\\.venv\\Scripts\\locust.exe",
+        "-f",
+        "C:\\Users\\harae\\Desktop\\ui migration\\proyecto1\\load-tests\\locustfile.py",
+        "--host",
+        "http://127.0.0.1:8000",
+        "--users",
+        "20",
+        "--spawn-rate",
+        "5.0",
+        "--run-time",
+        "1m",
+        "--csv",
+        "load-tests\\results\\docker-baseline-a-rerun\\scenario_a_u20",
+        "--html",
+        "load-tests\\results\\docker-baseline-a-rerun\\scenario_a_u20.html",
+        "--headless",
+        "--only-summary"
+      ],
+      "exit_code": 0,
+      "stdout_tail": "",
+      "stderr_tail": "# reqs      # fails |    Avg     Min     Max    Med |   req/s  failures/s\n--------|----------------------------------------------------------------------------|-------|-------------|-------|-------|-------|-------|--------|-----------\nPOST     auth.login                                                                        20     0(0.00%) |   1752     706    3267   1700 |    0.34        0.00\nGET      read.business_profile                                                             41     0(0.00%) |     63       4    1459      6 |    0.70        0.00\nGET      read.customers                                                                    98     0(0.00%) |     62      11    2291     14 |    1.67        0.00\nGET      read.dashboard                                                                   153     0(0.00%) |     58      28    1486     34 |    2.60        0.00\nGET      read.products                                                                     25     0(0.00%) |     49      20     293     23 |    0.42        0.00\nGET      read.sales                                                                        78     0(0.00%) |    145      90     412    110 |    1.33        0.00\nGET      setup.customers                                                                   20     0(0.00%) |   1057      14    2702   1000 |    0.34        0.00\nGET      setup.products                                                                    20     0(0.00%) |    530      22    1563    270 |    0.34        0.00\n--------|----------------------------------------------------------------------------|-------|-------------|-------|-------|-------|-------|--------|-----------\n         Aggregated                                                                       455     0(0.00%) |    213       4    3267     34 |    7.73        0.00\n\nResponse time percentiles (approximated)\nType     Name                                                                                  50%    66%    75%    80%    90%    95%    98%    99%  99.9% 99.99%   100% # reqs\n--------|--------------------------------------------------------------------------------|--------|------|------|------|------|------|------|------|------|------|------|------\nPOST     auth.login                                                                           1800   2200   2400   2600   3000   3300   3300   3300   3300   3300   3300     20\nGET      read.business_profile                                                                   6      7      9     19    170    190   1500   1500   1500   1500   1500     41\nGET      read.customers                                                                         14     15     19     20     47     84   1600   2300   2300   2300   2300     98\nGET      read.dashboard                                                                         34     39     47     52     78     94    280    350   1500   1500   1500    153\nGET      read.products                                                                          23     25     27     62     85    270    290    290    290    290    290     25\nGET      read.sales                                                                            120    140    160    190    230    330    410    410    410    410    410     78\nGET      setup.customers                                                                      1300   1500   2100   2100   2200   2700   2700   2700   2700   2700   2700     20\nGET      setup.products                                                                        280    320   1500   1500   1600   1600   1600   1600   1600   1600   1600     20\n--------|--------------------------------------------------------------------------------|--------|------|------|------|------|------|------|------|------|------|------|------\n         Aggregated                                                                             34     84    110    140    340   1500   2200   2600   3300   3300   3300    455\n\n",
+      "stats_summary": {},
+      "distribution": {
+        "p50_estimated_ms": 354.03026528925346,
+        "p95_estimated_ms": 903.0981574712613,
+        "p99_estimated_ms": 936.7150243902403,
+        "avg_rps_window": 0.0,
+        "max_rps_window": 0.0,
+        "final_failure_count": 0.0
+      },
+      "failures_rows": 1,
+      "error_rate": 0.0,
+      "metrics_samples": [
+        {
+          "ts": "2026-03-25T12:08:07.251780+00:00"
+        },
+        {
+          "ts": "2026-03-25T12:08:09.251962+00:00"
+        },
+        {
+          "ts": "2026-03-25T12:08:11.252048+00:00"
+        },
+        {
+          "ts": "2026-03-25T12:08:13.252313+00:00"
+        },
+        {
+          "ts": "2026-03-25T12:08:15.252538+00:00"
+        },
+        {
+          "ts": "2026-03-25T12:08:17.252895+00:00"
+        },
+        {
+          "ts": "2026-03-25T12:08:19.253982+00:00"
+        },
+        {
+          "ts": "2026-03-25T12:08:21.254947+00:00"
+        },
+        {
+          "ts": "2026-03-25T12:08:23.255657+00:00"
+        },
+        {
+          "ts": "2026-03-25T12:08:25.256489+00:00"
+        },
+        {
+          "ts": "2026-03-25T12:08:27.257264+00:00"
+        },
+        {
+          "ts": "2026-03-25T12:08:29.257527+00:00"
+        },
+        {
+          "ts": "2026-03-25T12:08:31.257932+00:00"
+        },
+        {
+          "ts": "2026-03-25T12:08:33.259000+00:00"
+        },
+        {
+          "ts": "2026-03-25T12:08:35.259012+00:00"
+        },
+        {
+          "ts": "2026-03-25T12:08:37.259506+00:00"
+        },
+        {
+          "ts": "2026-03-25T12:08:39.259940+00:00"
+        },
+        {
+          "ts": "2026-03-25T12:08:41.260822+00:00"
+        },
+        {
+          "ts": "2026-03-25T12:08:43.262759+00:00"
+        },
+        {
+          "ts": "2026-03-25T12:08:45.262523+00:00"
+        },
+        {
+          "ts": "2026-03-25T12:08:47.263394+00:00"
+        },
+        {
+          "ts": "2026-03-25T12:08:49.264063+00:00"
+        },
+        {
+          "ts": "2026-03-25T12:08:51.264979+00:00"
+        },
+        {
+          "ts": "2026-03-25T12:08:53.265576+00:00"
+        },
+        {
+          "ts": "2026-03-25T12:08:55.265958+00:00"
+        },
+        {
+          "ts": "2026-03-25T12:08:57.265965+00:00"
+        },
+        {
+          "ts": "2026-03-25T12:08:59.266954+00:00"
+        },
+        {
+          "ts": "2026-03-25T12:09:01.267699+00:00"
+        },
+        {
+          "ts": "2026-03-25T12:09:03.268371+00:00"
+        },
+        {
+          "ts": "2026-03-25T12:09:05.269182+00:00"
+        },
+        {
+          "ts": "2026-03-25T12:09:07.269234+00:00"
+        }
+      ],
+      "metrics_summary": {
+        "backend_cpu_peak_percent": 0.0,
+        "backend_rss_peak_mb": 0.0,
+        "backend_threads_peak": 0.0,
+        "db_total_connections_peak": 0.0,
+        "db_active_connections_peak": 0.0,
+        "db_waiting_connections_peak": 0.0,
+        "db_longest_active_seconds_peak": 0.0
+      },
+      "artifacts": {
+        "stats_csv": "load-tests\\results\\docker-baseline-a-rerun\\scenario_a_u20_stats.csv",
+        "stats_history_csv": "load-tests\\results\\docker-baseline-a-rerun\\scenario_a_u20_stats_history.csv",
+        "failures_csv": "load-tests\\results\\docker-baseline-a-rerun\\scenario_a_u20_failures.csv",
+        "report_html": "load-tests\\results\\docker-baseline-a-rerun\\scenario_a_u20.html"
+      },
+      "capacity_pass": true
+    }
+  ]
+}

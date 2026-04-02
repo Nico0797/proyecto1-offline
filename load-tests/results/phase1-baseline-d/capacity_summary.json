@@ -1,0 +1,1286 @@
+{
+  "base_url": "http://127.0.0.1:8000",
+  "business_id": 16,
+  "users": [
+    5,
+    10,
+    20,
+    30,
+    40,
+    50,
+    60
+  ],
+  "scenarios": [
+    "D"
+  ],
+  "run_time": "1m",
+  "spawn_rate": 5.0,
+  "fixture": {
+    "safety": {
+      "environment": "development",
+      "db_uri": "postgresql://postgres:Liana102816@localhost:5432/cuaderno",
+      "db_host": "localhost",
+      "is_local_db": true
+    },
+    "credentials": {
+      "email": "qa.loadtest@cuaderno.local",
+      "password": "qa-loadtest-123"
+    },
+    "user": {
+      "id": 44,
+      "email": "qa.loadtest@cuaderno.local",
+      "plan": "pro"
+    },
+    "business": {
+      "id": 16,
+      "name": "QA LOADTEST Business"
+    },
+    "dataset": {
+      "customers": 40,
+      "products": 12,
+      "paid_sales_per_customer": 4,
+      "pending_sales_per_customer": 12,
+      "default_cash_account_id": 7,
+      "default_transfer_account_id": 8,
+      "customer_ids": [
+        37,
+        38,
+        39,
+        40,
+        41,
+        42,
+        43,
+        44,
+        45,
+        46,
+        47,
+        48,
+        49,
+        50,
+        51,
+        52,
+        53,
+        54,
+        55,
+        56
+      ],
+      "product_ids": [
+        28,
+        29,
+        30,
+        31,
+        32,
+        33,
+        34,
+        35,
+        36,
+        37,
+        38,
+        39
+      ]
+    },
+    "created": {
+      "user": false,
+      "business": false
+    }
+  },
+  "runs": [
+    {
+      "scenario": "D",
+      "users": 5,
+      "started_at": "2026-03-25T12:36:23.346589+00:00",
+      "finished_at": "2026-03-25T12:37:24.523862+00:00",
+      "command": [
+        "C:\\Users\\harae\\Desktop\\ui migration\\proyecto1\\.venv\\Scripts\\locust.exe",
+        "-f",
+        "C:\\Users\\harae\\Desktop\\ui migration\\proyecto1\\load-tests\\locustfile.py",
+        "--host",
+        "http://127.0.0.1:8000",
+        "--users",
+        "5",
+        "--spawn-rate",
+        "5.0",
+        "--run-time",
+        "1m",
+        "--csv",
+        "load-tests\\results\\phase1-baseline-d\\scenario_d_u5",
+        "--html",
+        "load-tests\\results\\phase1-baseline-d\\scenario_d_u5.html",
+        "--headless",
+        "--only-summary"
+      ],
+      "exit_code": 1,
+      "stdout_tail": "",
+      "stderr_tail": "0   2100   2100   2100      5\nPOST     auth.select_context                                                                    57     70     70     87     87     87     87     87     87     87     87      5\nGET      read.business_profile                                                                   7      7      7      7      9      9      9      9      9      9      9      6\nGET      read.customers                                                                         14     15     16     17     25    170    170    170    170    170    170     19\nGET      read.dashboard                                                                         17     24     26     30     55    290    320    320    320    320    320     22\nGET      read.financial_dashboard                                                                5      5      6      6      6      7      8      8      8      8      8     22\nGET      read.payments                                                                          16     17     28     34     81     81     81     81     81     81     81      9\nGET      read.products                                                                          17     19     19     23     23     23     23     23     23     23     23      5\nGET      read.sales                                                                             14     15     20     27     72    150    150    150    150    150    150     19\nGET      setup.customers                                                                        15     17     20     22    310    330    460    460    460    460    460     44\nGET      setup.products                                                                         18     20     25     33     57     96    110    110    110    110    110     44\nPOST     write.expense                                                                          18     19     25     25     34     47     47     47     47     47     47     18\n--------|--------------------------------------------------------------------------------|--------|------|------|------|------|------|------|------|------|------|------|------\n         Aggregated                                                                             16     18     22     25     70    310    910   1000   2100   2100   2100    218\n\nError report\n# occurrences      Error                                                                                               \n------------------|---------------------------------------------------------------------------------------------------------------------------------------------\n5                  POST auth.select_context: select-context failed status=403 payload={'error': 'No tienes acceso a este negocio'}\n44                 GET setup.customers: HTTPError('500 Server Error: Internal Server Error for url: setup.customers')  \n44                 GET setup.products: HTTPError('500 Server Error: Internal Server Error for url: setup.products')    \n19                 GET read.sales: HTTPError('500 Server Error: Internal Server Error for url: read.sales')            \n22                 GET read.dashboard: HTTPError('403 Client Error: FORBIDDEN for url: read.dashboard')                \n18                 POST write.expense: create expense failed status=403 body={\n  \"error\": \"Permiso requerido: expenses.create\"\n}\n\n22                 GET read.financial_dashboard: HTTPError('404 Client Error: NOT FOUND for url: read.financial_dashboard')\n19                 GET read.customers: HTTPError('500 Server Error: Internal Server Error for url: read.customers')    \n5                  GET read.products: HTTPError('500 Server Error: Internal Server Error for url: read.products')      \n9                  GET read.payments: HTTPError('500 Server Error: Internal Server Error for url: read.payments')      \n------------------|---------------------------------------------------------------------------------------------------------------------------------------------\n\n",
+      "stats_summary": {
+        "requests": 215,
+        "failures": 204,
+        "median_ms": 16.0,
+        "avg_ms": 59.77142465117563,
+        "min_ms": 3.294999999980064,
+        "max_ms": 2079.1556000003766,
+        "avg_size": 134.84651162790698,
+        "rps": 3.691650166740609,
+        "failures_per_sec": 3.502775041930624,
+        "p50_ms": 16.0,
+        "p95_ms": 310.0,
+        "p99_ms": 1000.0,
+        "slowest_endpoint": {
+          "name": "auth.login",
+          "method": "POST",
+          "avg_ms": 1208.2418400000279,
+          "p95_ms": 2100.0,
+          "p99_ms": 2100.0,
+          "rps": 0.08585232945908393
+        }
+      },
+      "distribution": {
+        "p50_estimated_ms": 96.24539059828966,
+        "p95_estimated_ms": 239.56482750000987,
+        "p99_estimated_ms": 324.0353103448546,
+        "avg_rps_window": 3.5198129285714286,
+        "max_rps_window": 7.25,
+        "final_failure_count": 192.0
+      },
+      "failures_rows": 21,
+      "error_rate": 0.9488372093023256,
+      "metrics_samples": [
+        {
+          "ts": "2026-03-25T12:36:23.525412+00:00"
+        },
+        {
+          "ts": "2026-03-25T12:36:25.525604+00:00"
+        },
+        {
+          "ts": "2026-03-25T12:36:27.525750+00:00"
+        },
+        {
+          "ts": "2026-03-25T12:36:29.526295+00:00"
+        },
+        {
+          "ts": "2026-03-25T12:36:31.527805+00:00"
+        },
+        {
+          "ts": "2026-03-25T12:36:33.528198+00:00"
+        },
+        {
+          "ts": "2026-03-25T12:36:35.528481+00:00"
+        },
+        {
+          "ts": "2026-03-25T12:36:37.528602+00:00"
+        },
+        {
+          "ts": "2026-03-25T12:36:39.528949+00:00"
+        },
+        {
+          "ts": "2026-03-25T12:36:41.528980+00:00"
+        },
+        {
+          "ts": "2026-03-25T12:36:43.530035+00:00"
+        },
+        {
+          "ts": "2026-03-25T12:36:45.530578+00:00"
+        },
+        {
+          "ts": "2026-03-25T12:36:47.530583+00:00"
+        },
+        {
+          "ts": "2026-03-25T12:36:49.531484+00:00"
+        },
+        {
+          "ts": "2026-03-25T12:36:51.531885+00:00"
+        },
+        {
+          "ts": "2026-03-25T12:36:53.532504+00:00"
+        },
+        {
+          "ts": "2026-03-25T12:36:55.533020+00:00"
+        },
+        {
+          "ts": "2026-03-25T12:36:57.533820+00:00"
+        },
+        {
+          "ts": "2026-03-25T12:36:59.533913+00:00"
+        },
+        {
+          "ts": "2026-03-25T12:37:01.534268+00:00"
+        },
+        {
+          "ts": "2026-03-25T12:37:03.534549+00:00"
+        },
+        {
+          "ts": "2026-03-25T12:37:05.535442+00:00"
+        },
+        {
+          "ts": "2026-03-25T12:37:07.536016+00:00"
+        },
+        {
+          "ts": "2026-03-25T12:37:09.536875+00:00"
+        },
+        {
+          "ts": "2026-03-25T12:37:11.537123+00:00"
+        },
+        {
+          "ts": "2026-03-25T12:37:13.537179+00:00"
+        },
+        {
+          "ts": "2026-03-25T12:37:15.537438+00:00"
+        },
+        {
+          "ts": "2026-03-25T12:37:17.538322+00:00"
+        },
+        {
+          "ts": "2026-03-25T12:37:19.538779+00:00"
+        },
+        {
+          "ts": "2026-03-25T12:37:21.539039+00:00"
+        },
+        {
+          "ts": "2026-03-25T12:37:23.539486+00:00"
+        }
+      ],
+      "metrics_summary": {
+        "backend_cpu_peak_percent": 0.0,
+        "backend_rss_peak_mb": 0.0,
+        "backend_threads_peak": 0.0,
+        "db_total_connections_peak": 0.0,
+        "db_active_connections_peak": 0.0,
+        "db_waiting_connections_peak": 0.0,
+        "db_longest_active_seconds_peak": 0.0
+      },
+      "artifacts": {
+        "stats_csv": "load-tests\\results\\phase1-baseline-d\\scenario_d_u5_stats.csv",
+        "stats_history_csv": "load-tests\\results\\phase1-baseline-d\\scenario_d_u5_stats_history.csv",
+        "failures_csv": "load-tests\\results\\phase1-baseline-d\\scenario_d_u5_failures.csv",
+        "report_html": "load-tests\\results\\phase1-baseline-d\\scenario_d_u5.html"
+      },
+      "capacity_pass": false
+    },
+    {
+      "scenario": "D",
+      "users": 10,
+      "started_at": "2026-03-25T12:37:24.526287+00:00",
+      "finished_at": "2026-03-25T12:38:25.476980+00:00",
+      "command": [
+        "C:\\Users\\harae\\Desktop\\ui migration\\proyecto1\\.venv\\Scripts\\locust.exe",
+        "-f",
+        "C:\\Users\\harae\\Desktop\\ui migration\\proyecto1\\load-tests\\locustfile.py",
+        "--host",
+        "http://127.0.0.1:8000",
+        "--users",
+        "10",
+        "--spawn-rate",
+        "5.0",
+        "--run-time",
+        "1m",
+        "--csv",
+        "load-tests\\results\\phase1-baseline-d\\scenario_d_u10",
+        "--html",
+        "load-tests\\results\\phase1-baseline-d\\scenario_d_u10.html",
+        "--headless",
+        "--only-summary"
+      ],
+      "exit_code": 1,
+      "stdout_tail": "",
+      "stderr_tail": "0   1700   1700   1700     10\nPOST     auth.select_context                                                                   680    710    760   1300   1300   1300   1300   1300   1300   1300   1300     10\nGET      read.business_profile                                                                   6      7      7      7     38     38     38     38     38     38     38     10\nGET      read.customers                                                                         14     16     22     24     57     72    210    210    210    210    210     27\nGET      read.dashboard                                                                         16     18     20     24     38     43     68    130    130    130    130     69\nGET      read.financial_dashboard                                                                4      5      5      5      6      9     10     10     10     10     10     42\nGET      read.payments                                                                          16     17     24     24     41     47     47     47     47     47     47     16\nGET      read.products                                                                          14     19     26     33     76     76     76     76     76     76     76     10\nGET      read.sales                                                                             14     18     20     21     34     37     76     76     76     76     76     42\nGET      setup.customers                                                                        14     16     19     25    150    180   1300   1400   1400   1400   1400     74\nGET      setup.products                                                                         17     20     26     36     73    150    240   1000   1000   1000   1000     74\nPOST     write.expense                                                                          16     21     24     26     98    450    650    650    650    650    650     31\n--------|--------------------------------------------------------------------------------|--------|------|------|------|------|------|------|------|------|------|------|------\n         Aggregated                                                                             16     18     23     26     76    450   1000   1300   1700   1700   1700    415\n\nError report\n# occurrences      Error                                                                                               \n------------------|---------------------------------------------------------------------------------------------------------------------------------------------\n10                 POST auth.select_context: select-context failed status=403 payload={'error': 'No tienes acceso a este negocio'}\n74                 GET setup.customers: HTTPError('500 Server Error: Internal Server Error for url: setup.customers')  \n74                 GET setup.products: HTTPError('500 Server Error: Internal Server Error for url: setup.products')    \n31                 POST write.expense: create expense failed status=403 body={\n  \"error\": \"Permiso requerido: expenses.create\"\n}\n\n27                 GET read.customers: HTTPError('500 Server Error: Internal Server Error for url: read.customers')    \n69                 GET read.dashboard: HTTPError('403 Client Error: FORBIDDEN for url: read.dashboard')                \n42                 GET read.sales: HTTPError('500 Server Error: Internal Server Error for url: read.sales')            \n42                 GET read.financial_dashboard: HTTPError('404 Client Error: NOT FOUND for url: read.financial_dashboard')\n16                 GET read.payments: HTTPError('500 Server Error: Internal Server Error for url: read.payments')      \n10                 GET read.products: HTTPError('500 Server Error: Internal Server Error for url: read.products')      \n------------------|---------------------------------------------------------------------------------------------------------------------------------------------\n\n",
+      "stats_summary": {
+        "requests": 415,
+        "failures": 395,
+        "median_ms": 16.0,
+        "avg_ms": 73.4587257831411,
+        "min_ms": 3.396400000383437,
+        "max_ms": 1659.759899999699,
+        "avg_size": 130.79518072289156,
+        "rps": 7.024468108061937,
+        "failures_per_sec": 6.6859395245408795,
+        "p50_ms": 16.0,
+        "p95_ms": 450.0,
+        "p99_ms": 1300.0,
+        "slowest_endpoint": {
+          "name": "auth.login",
+          "method": "POST",
+          "avg_ms": 1057.7544099999614,
+          "p95_ms": 1700.0,
+          "p99_ms": 1700.0,
+          "rps": 0.1692642917605286
+        }
+      },
+      "distribution": {
+        "p50_estimated_ms": 128.1192907767018,
+        "p95_estimated_ms": 395.362066666659,
+        "p99_estimated_ms": 454.6067528301892,
+        "avg_rps_window": 6.527295910714286,
+        "max_rps_window": 12.5,
+        "final_failure_count": 368.0
+      },
+      "failures_rows": 21,
+      "error_rate": 0.9518072289156626,
+      "metrics_samples": [
+        {
+          "ts": "2026-03-25T12:37:24.572454+00:00"
+        },
+        {
+          "ts": "2026-03-25T12:37:26.573182+00:00"
+        },
+        {
+          "ts": "2026-03-25T12:37:28.577054+00:00"
+        },
+        {
+          "ts": "2026-03-25T12:37:30.576561+00:00"
+        },
+        {
+          "ts": "2026-03-25T12:37:32.576713+00:00"
+        },
+        {
+          "ts": "2026-03-25T12:37:34.577019+00:00"
+        },
+        {
+          "ts": "2026-03-25T12:37:36.577101+00:00"
+        },
+        {
+          "ts": "2026-03-25T12:37:38.577254+00:00"
+        },
+        {
+          "ts": "2026-03-25T12:37:40.577477+00:00"
+        },
+        {
+          "ts": "2026-03-25T12:37:42.578334+00:00"
+        },
+        {
+          "ts": "2026-03-25T12:37:44.578838+00:00"
+        },
+        {
+          "ts": "2026-03-25T12:37:46.578901+00:00"
+        },
+        {
+          "ts": "2026-03-25T12:37:48.579061+00:00"
+        },
+        {
+          "ts": "2026-03-25T12:37:50.579728+00:00"
+        },
+        {
+          "ts": "2026-03-25T12:37:52.579924+00:00"
+        },
+        {
+          "ts": "2026-03-25T12:37:54.586329+00:00"
+        },
+        {
+          "ts": "2026-03-25T12:37:56.600376+00:00"
+        },
+        {
+          "ts": "2026-03-25T12:37:58.600390+00:00"
+        },
+        {
+          "ts": "2026-03-25T12:38:00.600480+00:00"
+        },
+        {
+          "ts": "2026-03-25T12:38:02.601378+00:00"
+        },
+        {
+          "ts": "2026-03-25T12:38:04.601795+00:00"
+        },
+        {
+          "ts": "2026-03-25T12:38:06.602300+00:00"
+        },
+        {
+          "ts": "2026-03-25T12:38:08.602312+00:00"
+        },
+        {
+          "ts": "2026-03-25T12:38:10.602527+00:00"
+        },
+        {
+          "ts": "2026-03-25T12:38:12.602563+00:00"
+        },
+        {
+          "ts": "2026-03-25T12:38:14.602831+00:00"
+        },
+        {
+          "ts": "2026-03-25T12:38:16.603217+00:00"
+        },
+        {
+          "ts": "2026-03-25T12:38:18.603732+00:00"
+        },
+        {
+          "ts": "2026-03-25T12:38:20.604253+00:00"
+        },
+        {
+          "ts": "2026-03-25T12:38:22.604492+00:00"
+        },
+        {
+          "ts": "2026-03-25T12:38:24.604672+00:00"
+        }
+      ],
+      "metrics_summary": {
+        "backend_cpu_peak_percent": 0.0,
+        "backend_rss_peak_mb": 0.0,
+        "backend_threads_peak": 0.0,
+        "db_total_connections_peak": 0.0,
+        "db_active_connections_peak": 0.0,
+        "db_waiting_connections_peak": 0.0,
+        "db_longest_active_seconds_peak": 0.0
+      },
+      "artifacts": {
+        "stats_csv": "load-tests\\results\\phase1-baseline-d\\scenario_d_u10_stats.csv",
+        "stats_history_csv": "load-tests\\results\\phase1-baseline-d\\scenario_d_u10_stats_history.csv",
+        "failures_csv": "load-tests\\results\\phase1-baseline-d\\scenario_d_u10_failures.csv",
+        "report_html": "load-tests\\results\\phase1-baseline-d\\scenario_d_u10.html"
+      },
+      "capacity_pass": false
+    },
+    {
+      "scenario": "D",
+      "users": 20,
+      "started_at": "2026-03-25T12:38:25.479322+00:00",
+      "finished_at": "2026-03-25T12:39:26.460429+00:00",
+      "command": [
+        "C:\\Users\\harae\\Desktop\\ui migration\\proyecto1\\.venv\\Scripts\\locust.exe",
+        "-f",
+        "C:\\Users\\harae\\Desktop\\ui migration\\proyecto1\\load-tests\\locustfile.py",
+        "--host",
+        "http://127.0.0.1:8000",
+        "--users",
+        "20",
+        "--spawn-rate",
+        "5.0",
+        "--run-time",
+        "1m",
+        "--csv",
+        "load-tests\\results\\phase1-baseline-d\\scenario_d_u20",
+        "--html",
+        "load-tests\\results\\phase1-baseline-d\\scenario_d_u20.html",
+        "--headless",
+        "--only-summary"
+      ],
+      "exit_code": 1,
+      "stdout_tail": "",
+      "stderr_tail": "0   3100   3100   3100     20\nPOST     auth.select_context                                                                   730    770   1300   1600   1900   2000   2000   2000   2000   2000   2000     20\nGET      read.business_profile                                                                   7      8     12     12     38    250    250    250    250    250    250     19\nGET      read.customers                                                                         14     17     21     24     31     36     65     89     89     89     89     60\nGET      read.dashboard                                                                         16     19     22     24     44     55    230   1700   1800   1800   1800    128\nGET      read.financial_dashboard                                                                4      5      7      8     15     59    140    230   1300   1300   1300    105\nGET      read.payments                                                                          15     16     20     23     38    120    160    160    160    160    160     38\nGET      read.products                                                                          15     16     25     37     87     87     87     87     87     87     87      9\nGET      read.sales                                                                             14     16     17     18     23     35     64    220    220    220    220     61\nGET      setup.customers                                                                        16     21     26     33     65    240   1200   1600   1600   1600   1600    158\nGET      setup.products                                                                         21     28     35     41     81    970   1200   1300   1300   1300   1300    158\nPOST     write.expense                                                                          16     20     23     26     29     42    160   1200   1200   1200   1200     51\n--------|--------------------------------------------------------------------------------|--------|------|------|------|------|------|------|------|------|------|------|------\n         Aggregated                                                                             16     20     25     30     65    740   1400   1900   3100   3100   3100    827\n\nError report\n# occurrences      Error                                                                                               \n------------------|---------------------------------------------------------------------------------------------------------------------------------------------\n20                 POST auth.select_context: select-context failed status=403 payload={'error': 'No tienes acceso a este negocio'}\n158                GET setup.customers: HTTPError('500 Server Error: Internal Server Error for url: setup.customers')  \n158                GET setup.products: HTTPError('500 Server Error: Internal Server Error for url: setup.products')    \n60                 GET read.customers: HTTPError('500 Server Error: Internal Server Error for url: read.customers')    \n128                GET read.dashboard: HTTPError('403 Client Error: FORBIDDEN for url: read.dashboard')                \n105                GET read.financial_dashboard: HTTPError('404 Client Error: NOT FOUND for url: read.financial_dashboard')\n51                 POST write.expense: create expense failed status=403 body={\n  \"error\": \"Permiso requerido: expenses.create\"\n}\n\n61                 GET read.sales: HTTPError('500 Server Error: Internal Server Error for url: read.sales')            \n9                  GET read.products: HTTPError('500 Server Error: Internal Server Error for url: read.products')      \n38                 GET read.payments: HTTPError('500 Server Error: Internal Server Error for url: read.payments')      \n------------------|---------------------------------------------------------------------------------------------------------------------------------------------\n\n",
+      "stats_summary": {
+        "requests": 824,
+        "failures": 785,
+        "median_ms": 16.0,
+        "avg_ms": 99.88221116504135,
+        "min_ms": 3.2263999996757775,
+        "max_ms": 3052.550700000211,
+        "avg_size": 130.28155339805826,
+        "rps": 13.959137749466409,
+        "failures_per_sec": 13.298450404528072,
+        "p50_ms": 16.0,
+        "p95_ms": 740.0,
+        "p99_ms": 1900.0,
+        "slowest_endpoint": {
+          "name": "auth.login",
+          "method": "POST",
+          "avg_ms": 1463.4721600000375,
+          "p95_ms": 3100.0,
+          "p99_ms": 3100.0,
+          "rps": 0.3388140230453012
+        }
+      },
+      "distribution": {
+        "p50_estimated_ms": 181.03808345498055,
+        "p95_estimated_ms": 530.2208877862529,
+        "p99_estimated_ms": 582.1365512604896,
+        "avg_rps_window": 12.568551589285715,
+        "max_rps_window": 18.0,
+        "final_failure_count": 738.0
+      },
+      "failures_rows": 21,
+      "error_rate": 0.9526699029126213,
+      "metrics_samples": [
+        {
+          "ts": "2026-03-25T12:38:25.516382+00:00"
+        },
+        {
+          "ts": "2026-03-25T12:38:27.517966+00:00"
+        },
+        {
+          "ts": "2026-03-25T12:38:29.517253+00:00"
+        },
+        {
+          "ts": "2026-03-25T12:38:31.526488+00:00"
+        },
+        {
+          "ts": "2026-03-25T12:38:33.526167+00:00"
+        },
+        {
+          "ts": "2026-03-25T12:38:35.526399+00:00"
+        },
+        {
+          "ts": "2026-03-25T12:38:37.526592+00:00"
+        },
+        {
+          "ts": "2026-03-25T12:38:39.527114+00:00"
+        },
+        {
+          "ts": "2026-03-25T12:38:41.528031+00:00"
+        },
+        {
+          "ts": "2026-03-25T12:38:43.528191+00:00"
+        },
+        {
+          "ts": "2026-03-25T12:38:45.528222+00:00"
+        },
+        {
+          "ts": "2026-03-25T12:38:47.528302+00:00"
+        },
+        {
+          "ts": "2026-03-25T12:38:49.529089+00:00"
+        },
+        {
+          "ts": "2026-03-25T12:38:51.529392+00:00"
+        },
+        {
+          "ts": "2026-03-25T12:38:53.529947+00:00"
+        },
+        {
+          "ts": "2026-03-25T12:38:55.530217+00:00"
+        },
+        {
+          "ts": "2026-03-25T12:38:57.530637+00:00"
+        },
+        {
+          "ts": "2026-03-25T12:38:59.531496+00:00"
+        },
+        {
+          "ts": "2026-03-25T12:39:01.536852+00:00"
+        },
+        {
+          "ts": "2026-03-25T12:39:03.541774+00:00"
+        },
+        {
+          "ts": "2026-03-25T12:39:05.543640+00:00"
+        },
+        {
+          "ts": "2026-03-25T12:39:07.546233+00:00"
+        },
+        {
+          "ts": "2026-03-25T12:39:09.545906+00:00"
+        },
+        {
+          "ts": "2026-03-25T12:39:11.546752+00:00"
+        },
+        {
+          "ts": "2026-03-25T12:39:13.546947+00:00"
+        },
+        {
+          "ts": "2026-03-25T12:39:15.547367+00:00"
+        },
+        {
+          "ts": "2026-03-25T12:39:17.550769+00:00"
+        },
+        {
+          "ts": "2026-03-25T12:39:19.550925+00:00"
+        },
+        {
+          "ts": "2026-03-25T12:39:21.551135+00:00"
+        },
+        {
+          "ts": "2026-03-25T12:39:23.551938+00:00"
+        },
+        {
+          "ts": "2026-03-25T12:39:25.552010+00:00"
+        }
+      ],
+      "metrics_summary": {
+        "backend_cpu_peak_percent": 0.0,
+        "backend_rss_peak_mb": 0.0,
+        "backend_threads_peak": 0.0,
+        "db_total_connections_peak": 0.0,
+        "db_active_connections_peak": 0.0,
+        "db_waiting_connections_peak": 0.0,
+        "db_longest_active_seconds_peak": 0.0
+      },
+      "artifacts": {
+        "stats_csv": "load-tests\\results\\phase1-baseline-d\\scenario_d_u20_stats.csv",
+        "stats_history_csv": "load-tests\\results\\phase1-baseline-d\\scenario_d_u20_stats_history.csv",
+        "failures_csv": "load-tests\\results\\phase1-baseline-d\\scenario_d_u20_failures.csv",
+        "report_html": "load-tests\\results\\phase1-baseline-d\\scenario_d_u20.html"
+      },
+      "capacity_pass": false
+    },
+    {
+      "scenario": "D",
+      "users": 30,
+      "started_at": "2026-03-25T12:39:26.462738+00:00",
+      "finished_at": "2026-03-25T12:40:27.490942+00:00",
+      "command": [
+        "C:\\Users\\harae\\Desktop\\ui migration\\proyecto1\\.venv\\Scripts\\locust.exe",
+        "-f",
+        "C:\\Users\\harae\\Desktop\\ui migration\\proyecto1\\load-tests\\locustfile.py",
+        "--host",
+        "http://127.0.0.1:8000",
+        "--users",
+        "30",
+        "--spawn-rate",
+        "5.0",
+        "--run-time",
+        "1m",
+        "--csv",
+        "load-tests\\results\\phase1-baseline-d\\scenario_d_u30",
+        "--html",
+        "load-tests\\results\\phase1-baseline-d\\scenario_d_u30.html",
+        "--headless",
+        "--only-summary"
+      ],
+      "exit_code": 1,
+      "stdout_tail": "",
+      "stderr_tail": "0   5100   5100   5100     30\nPOST     auth.select_context                                                                   830   1400   2400   2700   3200   3600   3900   3900   3900   3900   3900     30\nGET      read.business_profile                                                                   8     12     32     34     56     83   3700   3700   3700   3700   3700     21\nGET      read.customers                                                                         18     23     31     36     52     72    230    710    710    710    710     74\nGET      read.dashboard                                                                         22     30     36     40     96    150   1400   2600   2600   2600   2600    171\nGET      read.financial_dashboard                                                                6     10     13     16     30     57    170    220   3600   3600   3600    132\nGET      read.payments                                                                          16     21     34     36     54    130    300    300    300    300    300     48\nGET      read.products                                                                          19     33     35     36     52     70     70     70     70     70     70     20\nGET      read.sales                                                                             20     26     32     36     52     86    140   1200   1200   1200   1200     78\nGET      setup.customers                                                                        21     29     45     66    350   2000   3200   3300   4100   4100   4100    240\nGET      setup.products                                                                         32     40     57     71    160    680   2500   2600   3200   3200   3200    240\nPOST     write.expense                                                                          26     32     39     49     85    150   2600   3200   3200   3200   3200     84\n--------|--------------------------------------------------------------------------------|--------|------|------|------|------|------|------|------|------|------|------|------\n         Aggregated                                                                             22     33     43     58    220   1400   2700   3500   4300   5100   5100   1168\n\nError report\n# occurrences      Error                                                                                               \n------------------|---------------------------------------------------------------------------------------------------------------------------------------------\n30                 POST auth.select_context: select-context failed status=403 payload={'error': 'No tienes acceso a este negocio'}\n240                GET setup.customers: HTTPError('500 Server Error: Internal Server Error for url: setup.customers')  \n240                GET setup.products: HTTPError('500 Server Error: Internal Server Error for url: setup.products')    \n84                 POST write.expense: create expense failed status=403 body={\n  \"error\": \"Permiso requerido: expenses.create\"\n}\n\n171                GET read.dashboard: HTTPError('403 Client Error: FORBIDDEN for url: read.dashboard')                \n132                GET read.financial_dashboard: HTTPError('404 Client Error: NOT FOUND for url: read.financial_dashboard')\n78                 GET read.sales: HTTPError('500 Server Error: Internal Server Error for url: read.sales')            \n48                 GET read.payments: HTTPError('500 Server Error: Internal Server Error for url: read.payments')      \n74                 GET read.customers: HTTPError('500 Server Error: Internal Server Error for url: read.customers')    \n20                 GET read.products: HTTPError('500 Server Error: Internal Server Error for url: read.products')      \n------------------|---------------------------------------------------------------------------------------------------------------------------------------------\n\n",
+      "stats_summary": {
+        "requests": 1165,
+        "failures": 1114,
+        "median_ms": 22.0,
+        "avg_ms": 195.40250592274734,
+        "min_ms": 3.0553000001418695,
+        "max_ms": 5139.107800000147,
+        "avg_size": 133.2609442060086,
+        "rps": 19.698611135332765,
+        "failures_per_sec": 18.836268501940516,
+        "p50_ms": 22.0,
+        "p95_ms": 1400.0,
+        "p99_ms": 3500.0,
+        "slowest_endpoint": {
+          "name": "auth.login",
+          "method": "POST",
+          "avg_ms": 2138.9541666666746,
+          "p95_ms": 4300.0,
+          "p99_ms": 5100.0,
+          "rps": 0.5072603725836764
+        }
+      },
+      "distribution": {
+        "p50_estimated_ms": 372.68090578947016,
+        "p95_estimated_ms": 954.5606354838851,
+        "p99_estimated_ms": 1071.743295161291,
+        "avg_rps_window": 17.399312642857144,
+        "max_rps_window": 25.1,
+        "final_failure_count": 1036.0
+      },
+      "failures_rows": 21,
+      "error_rate": 0.9562231759656652,
+      "metrics_samples": [
+        {
+          "ts": "2026-03-25T12:39:26.503365+00:00"
+        },
+        {
+          "ts": "2026-03-25T12:39:28.503288+00:00"
+        },
+        {
+          "ts": "2026-03-25T12:39:30.504152+00:00"
+        },
+        {
+          "ts": "2026-03-25T12:39:32.529025+00:00"
+        },
+        {
+          "ts": "2026-03-25T12:39:34.529841+00:00"
+        },
+        {
+          "ts": "2026-03-25T12:39:36.530309+00:00"
+        },
+        {
+          "ts": "2026-03-25T12:39:38.531161+00:00"
+        },
+        {
+          "ts": "2026-03-25T12:39:40.531765+00:00"
+        },
+        {
+          "ts": "2026-03-25T12:39:42.544323+00:00"
+        },
+        {
+          "ts": "2026-03-25T12:39:44.545092+00:00"
+        },
+        {
+          "ts": "2026-03-25T12:39:46.545768+00:00"
+        },
+        {
+          "ts": "2026-03-25T12:39:48.546695+00:00"
+        },
+        {
+          "ts": "2026-03-25T12:39:50.549975+00:00"
+        },
+        {
+          "ts": "2026-03-25T12:39:52.550334+00:00"
+        },
+        {
+          "ts": "2026-03-25T12:39:54.570393+00:00"
+        },
+        {
+          "ts": "2026-03-25T12:39:56.573351+00:00"
+        },
+        {
+          "ts": "2026-03-25T12:39:58.573745+00:00"
+        },
+        {
+          "ts": "2026-03-25T12:40:00.573399+00:00"
+        },
+        {
+          "ts": "2026-03-25T12:40:02.573933+00:00"
+        },
+        {
+          "ts": "2026-03-25T12:40:04.574492+00:00"
+        },
+        {
+          "ts": "2026-03-25T12:40:06.574813+00:00"
+        },
+        {
+          "ts": "2026-03-25T12:40:08.575604+00:00"
+        },
+        {
+          "ts": "2026-03-25T12:40:10.575746+00:00"
+        },
+        {
+          "ts": "2026-03-25T12:40:12.577334+00:00"
+        },
+        {
+          "ts": "2026-03-25T12:40:14.577218+00:00"
+        },
+        {
+          "ts": "2026-03-25T12:40:16.578277+00:00"
+        },
+        {
+          "ts": "2026-03-25T12:40:18.579033+00:00"
+        },
+        {
+          "ts": "2026-03-25T12:40:20.579640+00:00"
+        },
+        {
+          "ts": "2026-03-25T12:40:22.580435+00:00"
+        },
+        {
+          "ts": "2026-03-25T12:40:24.580485+00:00"
+        },
+        {
+          "ts": "2026-03-25T12:40:26.620584+00:00"
+        }
+      ],
+      "metrics_summary": {
+        "backend_cpu_peak_percent": 0.0,
+        "backend_rss_peak_mb": 0.0,
+        "backend_threads_peak": 0.0,
+        "db_total_connections_peak": 0.0,
+        "db_active_connections_peak": 0.0,
+        "db_waiting_connections_peak": 0.0,
+        "db_longest_active_seconds_peak": 0.0
+      },
+      "artifacts": {
+        "stats_csv": "load-tests\\results\\phase1-baseline-d\\scenario_d_u30_stats.csv",
+        "stats_history_csv": "load-tests\\results\\phase1-baseline-d\\scenario_d_u30_stats_history.csv",
+        "failures_csv": "load-tests\\results\\phase1-baseline-d\\scenario_d_u30_failures.csv",
+        "report_html": "load-tests\\results\\phase1-baseline-d\\scenario_d_u30.html"
+      },
+      "capacity_pass": false
+    },
+    {
+      "scenario": "D",
+      "users": 40,
+      "started_at": "2026-03-25T12:40:27.493355+00:00",
+      "finished_at": "2026-03-25T12:41:28.761478+00:00",
+      "command": [
+        "C:\\Users\\harae\\Desktop\\ui migration\\proyecto1\\.venv\\Scripts\\locust.exe",
+        "-f",
+        "C:\\Users\\harae\\Desktop\\ui migration\\proyecto1\\load-tests\\locustfile.py",
+        "--host",
+        "http://127.0.0.1:8000",
+        "--users",
+        "40",
+        "--spawn-rate",
+        "5.0",
+        "--run-time",
+        "1m",
+        "--csv",
+        "load-tests\\results\\phase1-baseline-d\\scenario_d_u40",
+        "--html",
+        "load-tests\\results\\phase1-baseline-d\\scenario_d_u40.html",
+        "--headless",
+        "--only-summary"
+      ],
+      "exit_code": 1,
+      "stdout_tail": "",
+      "stderr_tail": "0   9400   9400   9400     40\nPOST     auth.select_context                                                                  3700   4500   6700   7300   7500   9000   9100   9100   9100   9100   9100     40\nGET      read.business_profile                                                                  14     28     48     71    250    330    380    380    380    380    380     30\nGET      read.customers                                                                         27     38     54     57    140    300    750    860    860    860    860     71\nGET      read.dashboard                                                                         37     48     61     73    170    310    390    830    840    840    840    185\nGET      read.financial_dashboard                                                                9     18     28     41    210    390   4100   7200   9000   9000   9000    141\nGET      read.payments                                                                          26     46     57     83    200    380    420    420    420    420    420     46\nGET      read.products                                                                          46     62     63     78    100    270    270    270    270    270    270     17\nGET      read.sales                                                                             24     35     53     76    270    340    430    650    650    650    650     88\nGET      setup.customers                                                                        30     56     94    170    700    790   3700   3800   7500   7500   7500    296\nGET      setup.products                                                                         36     56     79     97    330    540   4800   4800   5700   5700   5700    294\nPOST     write.expense                                                                          33     43     63     82    240    370    790    810    810    810    810     86\n--------|--------------------------------------------------------------------------------|--------|------|------|------|------|------|------|------|------|------|------|------\n         Aggregated                                                                             32     53     86    130    680   3600   7300   8000   9300   9400   9400   1334\n\nError report\n# occurrences      Error                                                                                               \n------------------|---------------------------------------------------------------------------------------------------------------------------------------------\n40                 POST auth.select_context: select-context failed status=403 payload={'error': 'No tienes acceso a este negocio'}\n296                GET setup.customers: HTTPError('500 Server Error: Internal Server Error for url: setup.customers')  \n294                GET setup.products: HTTPError('500 Server Error: Internal Server Error for url: setup.products')    \n141                GET read.financial_dashboard: HTTPError('404 Client Error: NOT FOUND for url: read.financial_dashboard')\n185                GET read.dashboard: HTTPError('403 Client Error: FORBIDDEN for url: read.dashboard')                \n88                 GET read.sales: HTTPError('500 Server Error: Internal Server Error for url: read.sales')            \n71                 GET read.customers: HTTPError('500 Server Error: Internal Server Error for url: read.customers')    \n86                 POST write.expense: create expense failed status=403 body={\n  \"error\": \"Permiso requerido: expenses.create\"\n}\n\n46                 GET read.payments: HTTPError('500 Server Error: Internal Server Error for url: read.payments')      \n17                 GET read.products: HTTPError('500 Server Error: Internal Server Error for url: read.products')      \n------------------|---------------------------------------------------------------------------------------------------------------------------------------------\n\n",
+      "stats_summary": {
+        "requests": 1334,
+        "failures": 1264,
+        "median_ms": 32.0,
+        "avg_ms": 447.29859572713997,
+        "min_ms": 3.3624999996391125,
+        "max_ms": 9378.588099999888,
+        "avg_size": 139.56221889055473,
+        "rps": 22.4122587010197,
+        "failures_per_sec": 21.236203146993176,
+        "p50_ms": 32.0,
+        "p95_ms": 3600.0,
+        "p99_ms": 8000.0,
+        "slowest_endpoint": {
+          "name": "auth.login",
+          "method": "POST",
+          "avg_ms": 5544.315779999976,
+          "p95_ms": 9300.0,
+          "p99_ms": 9400.0,
+          "rps": 0.6720317451580119
+        }
+      },
+      "distribution": {
+        "p50_estimated_ms": 889.2359903426899,
+        "p95_estimated_ms": 2961.4967835227203,
+        "p99_estimated_ms": 3217.167623333344,
+        "avg_rps_window": 18.346329392857143,
+        "max_rps_window": 34.7,
+        "final_failure_count": 1151.0
+      },
+      "failures_rows": 21,
+      "error_rate": 0.9475262368815592,
+      "metrics_samples": [
+        {
+          "ts": "2026-03-25T12:40:27.548519+00:00"
+        },
+        {
+          "ts": "2026-03-25T12:40:29.548918+00:00"
+        },
+        {
+          "ts": "2026-03-25T12:40:31.556098+00:00"
+        },
+        {
+          "ts": "2026-03-25T12:40:33.556948+00:00"
+        },
+        {
+          "ts": "2026-03-25T12:40:35.560268+00:00"
+        },
+        {
+          "ts": "2026-03-25T12:40:37.560299+00:00"
+        },
+        {
+          "ts": "2026-03-25T12:40:39.574286+00:00"
+        },
+        {
+          "ts": "2026-03-25T12:40:41.574864+00:00"
+        },
+        {
+          "ts": "2026-03-25T12:40:43.578204+00:00"
+        },
+        {
+          "ts": "2026-03-25T12:40:45.578774+00:00"
+        },
+        {
+          "ts": "2026-03-25T12:40:47.578185+00:00"
+        },
+        {
+          "ts": "2026-03-25T12:40:49.589093+00:00"
+        },
+        {
+          "ts": "2026-03-25T12:40:51.589544+00:00"
+        },
+        {
+          "ts": "2026-03-25T12:40:53.590140+00:00"
+        },
+        {
+          "ts": "2026-03-25T12:40:55.590136+00:00"
+        },
+        {
+          "ts": "2026-03-25T12:40:57.590465+00:00"
+        },
+        {
+          "ts": "2026-03-25T12:40:59.601213+00:00"
+        },
+        {
+          "ts": "2026-03-25T12:41:01.609626+00:00"
+        },
+        {
+          "ts": "2026-03-25T12:41:03.609805+00:00"
+        },
+        {
+          "ts": "2026-03-25T12:41:05.619973+00:00"
+        },
+        {
+          "ts": "2026-03-25T12:41:07.619867+00:00"
+        },
+        {
+          "ts": "2026-03-25T12:41:09.619983+00:00"
+        },
+        {
+          "ts": "2026-03-25T12:41:11.620727+00:00"
+        },
+        {
+          "ts": "2026-03-25T12:41:13.664376+00:00"
+        },
+        {
+          "ts": "2026-03-25T12:41:15.664672+00:00"
+        },
+        {
+          "ts": "2026-03-25T12:41:17.685258+00:00"
+        },
+        {
+          "ts": "2026-03-25T12:41:19.685848+00:00"
+        },
+        {
+          "ts": "2026-03-25T12:41:21.686523+00:00"
+        },
+        {
+          "ts": "2026-03-25T12:41:23.687479+00:00"
+        },
+        {
+          "ts": "2026-03-25T12:41:25.687770+00:00"
+        },
+        {
+          "ts": "2026-03-25T12:41:27.688257+00:00"
+        }
+      ],
+      "metrics_summary": {
+        "backend_cpu_peak_percent": 0.0,
+        "backend_rss_peak_mb": 0.0,
+        "backend_threads_peak": 0.0,
+        "db_total_connections_peak": 0.0,
+        "db_active_connections_peak": 0.0,
+        "db_waiting_connections_peak": 0.0,
+        "db_longest_active_seconds_peak": 0.0
+      },
+      "artifacts": {
+        "stats_csv": "load-tests\\results\\phase1-baseline-d\\scenario_d_u40_stats.csv",
+        "stats_history_csv": "load-tests\\results\\phase1-baseline-d\\scenario_d_u40_stats_history.csv",
+        "failures_csv": "load-tests\\results\\phase1-baseline-d\\scenario_d_u40_failures.csv",
+        "report_html": "load-tests\\results\\phase1-baseline-d\\scenario_d_u40.html"
+      },
+      "capacity_pass": false
+    },
+    {
+      "scenario": "D",
+      "users": 50,
+      "started_at": "2026-03-25T12:41:28.764159+00:00",
+      "finished_at": "2026-03-25T12:42:29.786861+00:00",
+      "command": [
+        "C:\\Users\\harae\\Desktop\\ui migration\\proyecto1\\.venv\\Scripts\\locust.exe",
+        "-f",
+        "C:\\Users\\harae\\Desktop\\ui migration\\proyecto1\\load-tests\\locustfile.py",
+        "--host",
+        "http://127.0.0.1:8000",
+        "--users",
+        "50",
+        "--spawn-rate",
+        "5.0",
+        "--run-time",
+        "1m",
+        "--csv",
+        "load-tests\\results\\phase1-baseline-d\\scenario_d_u50",
+        "--html",
+        "load-tests\\results\\phase1-baseline-d\\scenario_d_u50.html",
+        "--headless",
+        "--only-summary"
+      ],
+      "exit_code": 1,
+      "stdout_tail": "",
+      "stderr_tail": "0  11000  11000  11000     50\nPOST     auth.select_context                                                                  3800   6700   7500   8200   9200   9600   9900   9900   9900   9900   9900     50\nGET      read.business_profile                                                                  37     66     82    140    290    410   9800   9800   9800   9800   9800     30\nGET      read.customers                                                                         51     68     94    110    140    230    690   2000   3700   3700   3700    104\nGET      read.dashboard                                                                         41     63     93    110    180    260    890   4400   9200   9200   9200    209\nGET      read.financial_dashboard                                                               17     36     58     71    140    180    750    830   2900   2900   2900    149\nGET      read.payments                                                                          42     55     66     75    120    180    210    290    290    290    290     51\nGET      read.products                                                                          18     27     28     79    120    150    150    150    150    150    150     14\nGET      read.sales                                                                             42     56     90    100    180    250    310    320   9100   9100   9100    107\nGET      setup.customers                                                                        52     90    120    200    930   2600   6500   8100   8400   8400   8400    319\nGET      setup.products                                                                         60     88    120    150    220    770   4700   8200   9900   9900   9900    319\nPOST     write.expense                                                                          49     87    100    130    280    610   8000   8200   8400   8400   8400    116\n--------|--------------------------------------------------------------------------------|--------|------|------|------|------|------|------|------|------|------|------|------\n         Aggregated                                                                             50     84    120    160    830   5400   8300   9400  11000  11000  11000   1518\n\nError report\n# occurrences      Error                                                                                               \n------------------|---------------------------------------------------------------------------------------------------------------------------------------------\n50                 POST auth.select_context: select-context failed status=403 payload={'error': 'No tienes acceso a este negocio'}\n319                GET setup.customers: HTTPError('500 Server Error: Internal Server Error for url: setup.customers')  \n319                GET setup.products: HTTPError('500 Server Error: Internal Server Error for url: setup.products')    \n104                GET read.customers: HTTPError('500 Server Error: Internal Server Error for url: read.customers')    \n51                 GET read.payments: HTTPError('500 Server Error: Internal Server Error for url: read.payments')      \n149                GET read.financial_dashboard: HTTPError('404 Client Error: NOT FOUND for url: read.financial_dashboard')\n209                GET read.dashboard: HTTPError('403 Client Error: FORBIDDEN for url: read.dashboard')                \n116                POST write.expense: create expense failed status=403 body={\n  \"error\": \"Permiso requerido: expenses.create\"\n}\n\n107                GET read.sales: HTTPError('500 Server Error: Internal Server Error for url: read.sales')            \n14                 GET read.products: HTTPError('500 Server Error: Internal Server Error for url: read.products')      \n------------------|---------------------------------------------------------------------------------------------------------------------------------------------\n\n",
+      "stats_summary": {
+        "requests": 1518,
+        "failures": 1438,
+        "median_ms": 50.0,
+        "avg_ms": 579.8024733860331,
+        "min_ms": 3.3966000000873464,
+        "max_ms": 11483.082700000068,
+        "avg_size": 142.41106719367588,
+        "rps": 25.556553499812544,
+        "failures_per_sec": 24.209699560428483,
+        "p50_ms": 50.0,
+        "p95_ms": 5400.0,
+        "p99_ms": 9400.0,
+        "slowest_endpoint": {
+          "name": "auth.login",
+          "method": "POST",
+          "avg_ms": 5790.031604000006,
+          "p95_ms": 10000.0,
+          "p99_ms": 11000.0,
+          "rps": 0.8417837121150377
+        }
+      },
+      "distribution": {
+        "p50_estimated_ms": 1221.7560793103296,
+        "p95_estimated_ms": 2514.600850526307,
+        "p99_estimated_ms": 3402.965553124989,
+        "avg_rps_window": 20.832440464285714,
+        "max_rps_window": 43.0,
+        "final_failure_count": 1312.0
+      },
+      "failures_rows": 21,
+      "error_rate": 0.9472990777338604,
+      "metrics_samples": [
+        {
+          "ts": "2026-03-25T12:41:28.804111+00:00"
+        },
+        {
+          "ts": "2026-03-25T12:41:30.804146+00:00"
+        },
+        {
+          "ts": "2026-03-25T12:41:32.816644+00:00"
+        },
+        {
+          "ts": "2026-03-25T12:41:34.819302+00:00"
+        },
+        {
+          "ts": "2026-03-25T12:41:36.819953+00:00"
+        },
+        {
+          "ts": "2026-03-25T12:41:38.820314+00:00"
+        },
+        {
+          "ts": "2026-03-25T12:41:40.821063+00:00"
+        },
+        {
+          "ts": "2026-03-25T12:41:42.821467+00:00"
+        },
+        {
+          "ts": "2026-03-25T12:41:44.821919+00:00"
+        },
+        {
+          "ts": "2026-03-25T12:41:46.822245+00:00"
+        },
+        {
+          "ts": "2026-03-25T12:41:48.823403+00:00"
+        },
+        {
+          "ts": "2026-03-25T12:41:50.823479+00:00"
+        },
+        {
+          "ts": "2026-03-25T12:41:52.823673+00:00"
+        },
+        {
+          "ts": "2026-03-25T12:41:54.826744+00:00"
+        },
+        {
+          "ts": "2026-03-25T12:41:56.867170+00:00"
+        },
+        {
+          "ts": "2026-03-25T12:41:58.867686+00:00"
+        },
+        {
+          "ts": "2026-03-25T12:42:00.877493+00:00"
+        },
+        {
+          "ts": "2026-03-25T12:42:02.876767+00:00"
+        },
+        {
+          "ts": "2026-03-25T12:42:04.876844+00:00"
+        },
+        {
+          "ts": "2026-03-25T12:42:06.876950+00:00"
+        },
+        {
+          "ts": "2026-03-25T12:42:08.877374+00:00"
+        },
+        {
+          "ts": "2026-03-25T12:42:10.919838+00:00"
+        },
+        {
+          "ts": "2026-03-25T12:42:12.919497+00:00"
+        },
+        {
+          "ts": "2026-03-25T12:42:14.944655+00:00"
+        },
+        {
+          "ts": "2026-03-25T12:42:16.952878+00:00"
+        },
+        {
+          "ts": "2026-03-25T12:42:19.001024+00:00"
+        },
+        {
+          "ts": "2026-03-25T12:42:21.001119+00:00"
+        },
+        {
+          "ts": "2026-03-25T12:42:23.001414+00:00"
+        },
+        {
+          "ts": "2026-03-25T12:42:25.001562+00:00"
+        },
+        {
+          "ts": "2026-03-25T12:42:27.001863+00:00"
+        },
+        {
+          "ts": "2026-03-25T12:42:29.001830+00:00"
+        }
+      ],
+      "metrics_summary": {
+        "backend_cpu_peak_percent": 0.0,
+        "backend_rss_peak_mb": 0.0,
+        "backend_threads_peak": 0.0,
+        "db_total_connections_peak": 0.0,
+        "db_active_connections_peak": 0.0,
+        "db_waiting_connections_peak": 0.0,
+        "db_longest_active_seconds_peak": 0.0
+      },
+      "artifacts": {
+        "stats_csv": "load-tests\\results\\phase1-baseline-d\\scenario_d_u50_stats.csv",
+        "stats_history_csv": "load-tests\\results\\phase1-baseline-d\\scenario_d_u50_stats_history.csv",
+        "failures_csv": "load-tests\\results\\phase1-baseline-d\\scenario_d_u50_failures.csv",
+        "report_html": "load-tests\\results\\phase1-baseline-d\\scenario_d_u50.html"
+      },
+      "capacity_pass": false
+    },
+    {
+      "scenario": "D",
+      "users": 60,
+      "started_at": "2026-03-25T12:42:29.789430+00:00",
+      "finished_at": "2026-03-25T12:43:30.886250+00:00",
+      "command": [
+        "C:\\Users\\harae\\Desktop\\ui migration\\proyecto1\\.venv\\Scripts\\locust.exe",
+        "-f",
+        "C:\\Users\\harae\\Desktop\\ui migration\\proyecto1\\load-tests\\locustfile.py",
+        "--host",
+        "http://127.0.0.1:8000",
+        "--users",
+        "60",
+        "--spawn-rate",
+        "5.0",
+        "--run-time",
+        "1m",
+        "--csv",
+        "load-tests\\results\\phase1-baseline-d\\scenario_d_u60",
+        "--html",
+        "load-tests\\results\\phase1-baseline-d\\scenario_d_u60.html",
+        "--headless",
+        "--only-summary"
+      ],
+      "exit_code": 1,
+      "stdout_tail": "",
+      "stderr_tail": "0  12000  12000  12000     60\nPOST     auth.select_context                                                                  3300   4900   6500   7900   8800  10000  10000  10000  10000  10000  10000     60\nGET      read.business_profile                                                                  21     38     72     74    150    170    430    430    430    430    430     28\nGET      read.customers                                                                         42     62     84    130    270   3500   4300   4900   7800   7800   7800    119\nGET      read.dashboard                                                                         65     92    120    160    440   2900   3800   4200   6600   6600   6600    210\nGET      read.financial_dashboard                                                               18     35     57    100    540   3600   3900   8700   9200   9200   9200    180\nGET      read.payments                                                                          46     78    130    170    300   3800   4300   9600   9600   9600   9600     55\nGET      read.products                                                                          48     64    110    150    960   2300   4100   4100   4100   4100   4100     31\nGET      read.sales                                                                             44     74     99    150    710   2300   3800   4500   4500   4500   4500     93\nGET      setup.customers                                                                        57    110    180    320   1200   3900   6600   9300  10000  10000  10000    343\nGET      setup.products                                                                         68    120    210    400   1200   4100   9900  10000  10000  10000  10000    343\nPOST     write.expense                                                                          59     85     99    130    710   3800   4100   4200   4900   4900   4900    112\n--------|--------------------------------------------------------------------------------|--------|------|------|------|------|------|------|------|------|------|------|------\n         Aggregated                                                                             58    110    190    400   3100   4700   8700  10000  11000  12000  12000   1634\n\nError report\n# occurrences      Error                                                                                               \n------------------|---------------------------------------------------------------------------------------------------------------------------------------------\n60                 POST auth.select_context: select-context failed status=403 payload={'error': 'No tienes acceso a este negocio'}\n343                GET setup.customers: HTTPError('500 Server Error: Internal Server Error for url: setup.customers')  \n343                GET setup.products: HTTPError('500 Server Error: Internal Server Error for url: setup.products')    \n119                GET read.customers: HTTPError('500 Server Error: Internal Server Error for url: read.customers')    \n180                GET read.financial_dashboard: HTTPError('404 Client Error: NOT FOUND for url: read.financial_dashboard')\n210                GET read.dashboard: HTTPError('403 Client Error: FORBIDDEN for url: read.dashboard')                \n112                POST write.expense: create expense failed status=403 body={\n  \"error\": \"Permiso requerido: expenses.create\"\n}\n\n31                 GET read.products: HTTPError('500 Server Error: Internal Server Error for url: read.products')      \n93                 GET read.sales: HTTPError('500 Server Error: Internal Server Error for url: read.sales')            \n55                 GET read.payments: HTTPError('500 Server Error: Internal Server Error for url: read.payments')      \n------------------|---------------------------------------------------------------------------------------------------------------------------------------------\n\n",
+      "stats_summary": {
+        "requests": 1633,
+        "failures": 1545,
+        "median_ms": 58.0,
+        "avg_ms": 787.6818691978007,
+        "min_ms": 3.353700000388926,
+        "max_ms": 11652.562100000068,
+        "avg_size": 146.3643600734844,
+        "rps": 27.53999421616966,
+        "failures_per_sec": 26.055903897110916,
+        "p50_ms": 58.0,
+        "p95_ms": 4700.0,
+        "p99_ms": 10000.0,
+        "slowest_endpoint": {
+          "name": "auth.login",
+          "method": "POST",
+          "avg_ms": 5190.95670833335,
+          "p95_ms": 11000.0,
+          "p99_ms": 12000.0,
+          "rps": 1.0118797629945986
+        }
+      },
+      "distribution": {
+        "p50_estimated_ms": 1260.8463326923375,
+        "p95_estimated_ms": 2503.6086842892787,
+        "p99_estimated_ms": 3116.405966183584,
+        "avg_rps_window": 24.033134928571428,
+        "max_rps_window": 49.0,
+        "final_failure_count": 1379.0
+      },
+      "failures_rows": 21,
+      "error_rate": 0.9461114513165952,
+      "metrics_samples": [
+        {
+          "ts": "2026-03-25T12:42:29.826626+00:00"
+        },
+        {
+          "ts": "2026-03-25T12:42:31.826145+00:00"
+        },
+        {
+          "ts": "2026-03-25T12:42:33.827042+00:00"
+        },
+        {
+          "ts": "2026-03-25T12:42:35.829975+00:00"
+        },
+        {
+          "ts": "2026-03-25T12:42:37.878534+00:00"
+        },
+        {
+          "ts": "2026-03-25T12:42:39.878305+00:00"
+        },
+        {
+          "ts": "2026-03-25T12:42:41.879157+00:00"
+        },
+        {
+          "ts": "2026-03-25T12:42:43.879725+00:00"
+        },
+        {
+          "ts": "2026-03-25T12:42:45.879825+00:00"
+        },
+        {
+          "ts": "2026-03-25T12:42:47.881271+00:00"
+        },
+        {
+          "ts": "2026-03-25T12:42:49.882211+00:00"
+        },
+        {
+          "ts": "2026-03-25T12:42:51.881843+00:00"
+        },
+        {
+          "ts": "2026-03-25T12:42:53.884463+00:00"
+        },
+        {
+          "ts": "2026-03-25T12:42:55.884304+00:00"
+        },
+        {
+          "ts": "2026-03-25T12:42:57.884646+00:00"
+        },
+        {
+          "ts": "2026-03-25T12:42:59.928075+00:00"
+        },
+        {
+          "ts": "2026-03-25T12:43:01.936458+00:00"
+        },
+        {
+          "ts": "2026-03-25T12:43:03.936704+00:00"
+        },
+        {
+          "ts": "2026-03-25T12:43:05.938563+00:00"
+        },
+        {
+          "ts": "2026-03-25T12:43:07.938858+00:00"
+        },
+        {
+          "ts": "2026-03-25T12:43:09.939139+00:00"
+        },
+        {
+          "ts": "2026-03-25T12:43:11.939823+00:00"
+        },
+        {
+          "ts": "2026-03-25T12:43:13.939855+00:00"
+        },
+        {
+          "ts": "2026-03-25T12:43:15.940593+00:00"
+        },
+        {
+          "ts": "2026-03-25T12:43:17.952919+00:00"
+        },
+        {
+          "ts": "2026-03-25T12:43:19.955608+00:00"
+        },
+        {
+          "ts": "2026-03-25T12:43:21.955617+00:00"
+        },
+        {
+          "ts": "2026-03-25T12:43:23.956257+00:00"
+        },
+        {
+          "ts": "2026-03-25T12:43:25.956333+00:00"
+        },
+        {
+          "ts": "2026-03-25T12:43:27.957006+00:00"
+        },
+        {
+          "ts": "2026-03-25T12:43:29.991378+00:00"
+        }
+      ],
+      "metrics_summary": {
+        "backend_cpu_peak_percent": 0.0,
+        "backend_rss_peak_mb": 0.0,
+        "backend_threads_peak": 0.0,
+        "db_total_connections_peak": 0.0,
+        "db_active_connections_peak": 0.0,
+        "db_waiting_connections_peak": 0.0,
+        "db_longest_active_seconds_peak": 0.0
+      },
+      "artifacts": {
+        "stats_csv": "load-tests\\results\\phase1-baseline-d\\scenario_d_u60_stats.csv",
+        "stats_history_csv": "load-tests\\results\\phase1-baseline-d\\scenario_d_u60_stats_history.csv",
+        "failures_csv": "load-tests\\results\\phase1-baseline-d\\scenario_d_u60_failures.csv",
+        "report_html": "load-tests\\results\\phase1-baseline-d\\scenario_d_u60.html"
+      },
+      "capacity_pass": false
+    }
+  ]
+}

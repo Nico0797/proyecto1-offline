@@ -1,3 +1,5 @@
+import api from './api';
+
 export type Priority = 'low' | 'medium' | 'high';
 export type ReminderStatus = 'active' | 'completed' | 'archived';
 
@@ -14,6 +16,8 @@ export interface Reminder {
   pinned: boolean;
   createdAt: string; // ISO
   updatedAt: string; // ISO
+  created_by_name?: string;
+  created_by_role?: string;
 }
 
 export interface CreateReminderDTO {
@@ -36,81 +40,52 @@ export interface UpdateReminderDTO {
   pinned?: boolean;
 }
 
-const STORAGE_KEY_PREFIX = 'reminders_business_';
+const STORAGE_KEY_PREFIX = 'reminders_business_'; // Legacy key for reference
 
 export const reminderService = {
-  list: (businessId: number): Reminder[] => {
-    const key = `${STORAGE_KEY_PREFIX}${businessId}`;
-    const data = localStorage.getItem(key);
-    return data ? JSON.parse(data) : [];
+  list: async (businessId: number): Promise<Reminder[]> => {
+    void STORAGE_KEY_PREFIX;
+    try {
+      const response = await api.get(`/businesses/${businessId}/reminders`);
+      return response.data.reminders;
+    } catch (error) {
+      console.error("Failed to fetch reminders", error);
+      return [];
+    }
   },
 
-  create: (businessId: number, data: CreateReminderDTO): Reminder => {
-    const reminders = reminderService.list(businessId);
-    const newReminder: Reminder = {
-      id: crypto.randomUUID(),
-      businessId,
-      title: data.title,
-      content: data.content || '',
-      priority: data.priority || 'medium',
-      dueDate: data.dueDate,
-      dueTime: data.dueTime,
-      tags: data.tags || [],
-      status: 'active',
-      pinned: false,
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-    };
-    
-    const updatedList = [newReminder, ...reminders];
-    localStorage.setItem(`${STORAGE_KEY_PREFIX}${businessId}`, JSON.stringify(updatedList));
-    return newReminder;
+  create: async (businessId: number, data: CreateReminderDTO): Promise<Reminder> => {
+    const response = await api.post(`/businesses/${businessId}/reminders`, data);
+    return response.data.reminder;
   },
 
-  update: (businessId: number, id: string, data: UpdateReminderDTO): Reminder | null => {
-    const reminders = reminderService.list(businessId);
-    const index = reminders.findIndex(r => r.id === id);
-    if (index === -1) return null;
-
-    const updatedReminder = {
-      ...reminders[index],
-      ...data,
-      updatedAt: new Date().toISOString()
-    };
-
-    reminders[index] = updatedReminder;
-    localStorage.setItem(`${STORAGE_KEY_PREFIX}${businessId}`, JSON.stringify(reminders));
-    return updatedReminder;
+  update: async (businessId: number, id: string, data: UpdateReminderDTO): Promise<Reminder> => {
+    const response = await api.put(`/businesses/${businessId}/reminders/${id}`, data);
+    return response.data.reminder;
   },
 
-  delete: (businessId: number, id: string): void => {
-    const reminders = reminderService.list(businessId);
-    const filtered = reminders.filter(r => r.id !== id);
-    localStorage.setItem(`${STORAGE_KEY_PREFIX}${businessId}`, JSON.stringify(filtered));
+  delete: async (businessId: number, id: string): Promise<void> => {
+    await api.delete(`/businesses/${businessId}/reminders/${id}`);
   },
 
-  toggleComplete: (businessId: number, id: string): Reminder | null => {
-    const reminders = reminderService.list(businessId);
-    const reminder = reminders.find(r => r.id === id);
-    if (!reminder) return null;
-
-    const newStatus = reminder.status === 'completed' ? 'active' : 'completed';
-    return reminderService.update(businessId, id, { status: newStatus });
+  toggleComplete: async (businessId: number, id: string, currentStatus: ReminderStatus): Promise<Reminder> => {
+    const newStatus = currentStatus === 'completed' ? 'active' : 'completed';
+    const response = await api.put(`/businesses/${businessId}/reminders/${id}`, { status: newStatus });
+    return response.data.reminder;
   },
 
-  togglePin: (businessId: number, id: string): Reminder | null => {
-    const reminders = reminderService.list(businessId);
-    const reminder = reminders.find(r => r.id === id);
-    if (!reminder) return null;
-
-    return reminderService.update(businessId, id, { pinned: !reminder.pinned });
+  togglePin: async (businessId: number, id: string, currentPinned: boolean): Promise<Reminder> => {
+    const response = await api.put(`/businesses/${businessId}/reminders/${id}`, { pinned: !currentPinned });
+    return response.data.reminder;
   },
 
-  archive: (businessId: number, id: string): Reminder | null => {
-    return reminderService.update(businessId, id, { status: 'archived' });
+  archive: async (businessId: number, id: string): Promise<Reminder> => {
+    const response = await api.put(`/businesses/${businessId}/reminders/${id}`, { status: 'archived' });
+    return response.data.reminder;
   },
   
-  restore: (businessId: number, id: string): Reminder | null => {
-      return reminderService.update(businessId, id, { status: 'active' });
+  restore: async (businessId: number, id: string): Promise<Reminder> => {
+      const response = await api.put(`/businesses/${businessId}/reminders/${id}`, { status: 'active' });
+      return response.data.reminder;
   }
 };

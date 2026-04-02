@@ -1,0 +1,791 @@
+{
+  "base_url": "http://127.0.0.1:8010",
+  "business_id": 2,
+  "users": [
+    40,
+    80
+  ],
+  "scenarios": [
+    "LOGIN"
+  ],
+  "run_time": "1m",
+  "spawn_rate": 5.0,
+  "fixture": null,
+  "runs": [
+    {
+      "scenario": "LOGIN",
+      "users": 40,
+      "started_at": "2026-03-27T03:34:57.209576+00:00",
+      "finished_at": "2026-03-27T03:35:58.469693+00:00",
+      "command": [
+        "C:\\Users\\harae\\Desktop\\ui migration\\proyecto1\\.venv\\Scripts\\locust.exe",
+        "-f",
+        "C:\\Users\\harae\\Desktop\\ui migration\\proyecto1\\load-tests\\locustfile.py",
+        "--host",
+        "http://127.0.0.1:8010",
+        "--users",
+        "40",
+        "--spawn-rate",
+        "5.0",
+        "--run-time",
+        "1m",
+        "--csv",
+        "load-tests\\results\\phase-auth-runtime-gunicorn-2x2-short\\scenario_login_u40",
+        "--html",
+        "load-tests\\results\\phase-auth-runtime-gunicorn-2x2-short\\scenario_login_u40.html",
+        "--headless",
+        "--only-summary"
+      ],
+      "exit_code": 0,
+      "stdout_tail": "",
+      "stderr_tail": "[2026-03-26 22:34:58,759] DESKTOP-9DI2UJR/INFO/locust.main: Starting Locust 2.43.3\n[2026-03-26 22:34:58,761] DESKTOP-9DI2UJR/INFO/locust.main: Run time limit set to 60 seconds\n[2026-03-26 22:34:58,763] DESKTOP-9DI2UJR/INFO/locust.runners: Ramping to 40 users at a rate of 5.00 per second\n[2026-03-26 22:35:05,873] DESKTOP-9DI2UJR/INFO/locust.runners: All users spawned: {\"CuadernoUser\": 40} (40 total users)\n[2026-03-26 22:35:57,971] DESKTOP-9DI2UJR/INFO/locust.main: --run-time limit reached, shutting down\n[2026-03-26 22:35:58,236] DESKTOP-9DI2UJR/INFO/locust.main: writing html report to file: load-tests\\results\\phase-auth-runtime-gunicorn-2x2-short\\scenario_login_u40.html\n[2026-03-26 22:35:58,251] DESKTOP-9DI2UJR/INFO/locust.main: Shutting down (exit code 0)\nType     Name                                                                          # reqs      # fails |    Avg     Min     Max    Med |   req/s  failures/s\n--------|----------------------------------------------------------------------------|-------|-------------|-------|-------|-------|-------|--------|-----------\nGET      auth.bootstrap                                                                   367     0(0.00%) |   2424      29    7469   2200 |    6.21        0.00\nPOST     auth.login                                                                       367     0(0.00%) |   2877     579    8058   2600 |    6.21        0.00\n--------|----------------------------------------------------------------------------|-------|-------------|-------|-------|-------|-------|--------|-----------\n         Aggregated                                                                       734     0(0.00%) |   2651      29    8058   2400 |   12.42        0.00\n\nResponse time percentiles (approximated)\nType     Name                                                                                  50%    66%    75%    80%    90%    95%    98%    99%  99.9% 99.99%   100% # reqs\n--------|--------------------------------------------------------------------------------|--------|------|------|------|------|------|------|------|------|------|------|------\nGET      auth.bootstrap                                                                       2200   2600   2800   3000   3800   4300   5500   6600   7500   7500   7500    367\nPOST     auth.login                                                                           2600   3100   3300   3600   4400   5000   6400   7100   8100   8100   8100    367\n--------|--------------------------------------------------------------------------------|--------|------|------|------|------|------|------|------|------|------|------|------\n         Aggregated                                                                           2400   2800   3100   3300   4200   4800   6100   7000   8100   8100   8100    734\n\n",
+      "stats_summary": {
+        "requests": 734,
+        "failures": 0,
+        "median_ms": 2400.0,
+        "avg_ms": 2651.353952452489,
+        "min_ms": 29.40590000071097,
+        "max_ms": 8058.5530000098515,
+        "avg_size": 1918.5,
+        "rps": 12.422968915516742,
+        "failures_per_sec": 0.0,
+        "p50_ms": 2400.0,
+        "p95_ms": 4800.0,
+        "p99_ms": 7000.0,
+        "slowest_endpoint": {
+          "name": "auth.login",
+          "method": "POST",
+          "avg_ms": 2877.907300545192,
+          "p95_ms": 5000.0,
+          "p99_ms": 7100.0,
+          "rps": 6.211484457758371
+        },
+        "endpoint_metrics": {
+          "auth.login": {
+            "avg_ms": 2877.907300545192,
+            "p95_ms": 5000.0,
+            "rps": 6.211484457758371,
+            "failures": 0,
+            "requests": 367
+          },
+          "auth.select_context": {
+            "avg_ms": 0.0,
+            "p95_ms": 0.0,
+            "rps": 0.0,
+            "failures": 0,
+            "requests": 0
+          },
+          "auth.bootstrap": {
+            "avg_ms": 2424.8006043597875,
+            "p95_ms": 4300.0,
+            "rps": 6.211484457758371,
+            "failures": 0,
+            "requests": 367
+          },
+          "read.dashboard": {
+            "avg_ms": 0.0,
+            "p95_ms": 0.0,
+            "rps": 0.0,
+            "failures": 0,
+            "requests": 0
+          },
+          "read.summary": {
+            "avg_ms": 0.0,
+            "p95_ms": 0.0,
+            "rps": 0.0,
+            "failures": 0,
+            "requests": 0
+          }
+        }
+      },
+      "distribution": {
+        "p50_estimated_ms": 2807.813105578787,
+        "p95_estimated_ms": 3554.3580745460613,
+        "p99_estimated_ms": 3568.1400006949643,
+        "avg_rps_window": 10.204280053571429,
+        "max_rps_window": 17.8,
+        "final_failure_count": 0.0
+      },
+      "profile_summary": {
+        "auth.login": {
+          "samples": 386,
+          "query_count_avg": 4.0,
+          "query_count_p95": 4.0,
+          "sql_time_ms_avg": 9.729,
+          "sql_time_ms_p95": 27.775,
+          "wall_time_ms_avg": 592.683,
+          "wall_time_ms_p95": 1015.271,
+          "python_time_ms_avg": 582.954,
+          "python_time_ms_p95": 980.186,
+          "instrumented_wall_ms_avg": 592.357,
+          "instrumented_wall_ms_p95": 1015.076,
+          "unaccounted_wall_ms_avg": 0.327,
+          "unaccounted_wall_ms_p95": 0.373,
+          "cache_hit_count": 0,
+          "stage_metrics": {
+            "fetch_user": {
+              "samples": 386,
+              "wall_ms_avg": 6.568,
+              "wall_ms_p95": 13.527,
+              "sql_time_ms_avg": 1.554,
+              "sql_time_ms_p95": 5.611,
+              "python_time_ms_avg": 5.014,
+              "python_time_ms_p95": 12.123,
+              "query_count_avg": 1.0,
+              "query_count_p95": 1.0
+            },
+            "password_verify": {
+              "samples": 386,
+              "wall_ms_avg": 568.668,
+              "wall_ms_p95": 962.897,
+              "sql_time_ms_avg": 0.0,
+              "sql_time_ms_p95": 0.0,
+              "python_time_ms_avg": 568.668,
+              "python_time_ms_p95": 962.897,
+              "query_count_avg": 0.0,
+              "query_count_p95": 0.0
+            },
+            "resolve_accessible_contexts": {
+              "samples": 386,
+              "wall_ms_avg": 16.517,
+              "wall_ms_p95": 32.685,
+              "sql_time_ms_avg": 8.175,
+              "sql_time_ms_p95": 26.507,
+              "python_time_ms_avg": 8.342,
+              "python_time_ms_p95": 17.177,
+              "query_count_avg": 3.0,
+              "query_count_p95": 3.0
+            },
+            "resolve_active_context": {
+              "samples": 386,
+              "wall_ms_avg": 0.05,
+              "wall_ms_p95": 0.07,
+              "sql_time_ms_avg": 0.0,
+              "sql_time_ms_p95": 0.0,
+              "python_time_ms_avg": 0.05,
+              "python_time_ms_p95": 0.07,
+              "query_count_avg": 0.0,
+              "query_count_p95": 0.0
+            },
+            "serialization_response": {
+              "samples": 386,
+              "wall_ms_avg": 0.172,
+              "wall_ms_p95": 0.183,
+              "sql_time_ms_avg": 0.0,
+              "sql_time_ms_p95": 0.0,
+              "python_time_ms_avg": 0.172,
+              "python_time_ms_p95": 0.183,
+              "query_count_avg": 0.0,
+              "query_count_p95": 0.0
+            },
+            "token_session_creation": {
+              "samples": 386,
+              "wall_ms_avg": 0.381,
+              "wall_ms_p95": 0.463,
+              "sql_time_ms_avg": 0.0,
+              "sql_time_ms_p95": 0.0,
+              "python_time_ms_avg": 0.381,
+              "python_time_ms_p95": 0.463,
+              "query_count_avg": 0.0,
+              "query_count_p95": 0.0
+            }
+          }
+        },
+        "auth.bootstrap": {
+          "samples": 367,
+          "query_count_avg": 1.016,
+          "query_count_p95": 1.0,
+          "sql_time_ms_avg": 1.956,
+          "sql_time_ms_p95": 6.676,
+          "wall_time_ms_avg": 3.663,
+          "wall_time_ms_p95": 12.549,
+          "python_time_ms_avg": 2.266,
+          "python_time_ms_p95": 11.922,
+          "instrumented_wall_ms_avg": 0.758,
+          "instrumented_wall_ms_p95": 0.0,
+          "unaccounted_wall_ms_avg": 2.905,
+          "unaccounted_wall_ms_p95": 12.514,
+          "cache_hit_count": 365,
+          "stage_metrics": {
+            "bootstrap_membership_lookup": {
+              "samples": 2,
+              "wall_ms_avg": 105.727,
+              "wall_ms_p95": 193.386,
+              "sql_time_ms_avg": 83.606,
+              "sql_time_ms_p95": 162.572,
+              "python_time_ms_avg": 22.121,
+              "python_time_ms_p95": 30.814,
+              "query_count_avg": 1.0,
+              "query_count_p95": 1.0
+            },
+            "bootstrap_modules_lookup": {
+              "samples": 2,
+              "wall_ms_avg": 31.492,
+              "wall_ms_p95": 60.012,
+              "sql_time_ms_avg": 29.138,
+              "sql_time_ms_p95": 57.078,
+              "python_time_ms_avg": 2.353,
+              "python_time_ms_p95": 2.934,
+              "query_count_avg": 1.0,
+              "query_count_p95": 1.0
+            },
+            "bootstrap_owned_businesses_lookup": {
+              "samples": 2,
+              "wall_ms_avg": 1.857,
+              "wall_ms_p95": 2.257,
+              "sql_time_ms_avg": 0.748,
+              "sql_time_ms_p95": 0.905,
+              "python_time_ms_avg": 1.11,
+              "python_time_ms_p95": 1.352,
+              "query_count_avg": 1.0,
+              "query_count_p95": 1.0
+            }
+          }
+        }
+      },
+      "failures_rows": 1,
+      "error_rate": 0.0,
+      "metrics_samples": [
+        {
+          "ts": "2026-03-27T03:34:57.255667+00:00",
+          "docker_cpu_percent": 0.04,
+          "docker_mem_percent": 1.48,
+          "docker_pids": 5,
+          "docker_mem_usage_mb": 235.5
+        },
+        {
+          "ts": "2026-03-27T03:35:00.398120+00:00",
+          "docker_cpu_percent": 443.07,
+          "docker_mem_percent": 1.55,
+          "docker_pids": 8,
+          "docker_mem_usage_mb": 247.1
+        },
+        {
+          "ts": "2026-03-27T03:35:03.519981+00:00",
+          "docker_cpu_percent": 655.42,
+          "docker_mem_percent": 1.55,
+          "docker_pids": 8,
+          "docker_mem_usage_mb": 247.7
+        },
+        {
+          "ts": "2026-03-27T03:35:06.940587+00:00",
+          "docker_cpu_percent": 687.47,
+          "docker_mem_percent": 1.61,
+          "docker_pids": 10,
+          "docker_mem_usage_mb": 257.0
+        },
+        {
+          "ts": "2026-03-27T03:35:12.152579+00:00",
+          "docker_cpu_percent": 712.05,
+          "docker_mem_percent": 1.55,
+          "docker_pids": 8,
+          "docker_mem_usage_mb": 247.7
+        },
+        {
+          "ts": "2026-03-27T03:35:15.587488+00:00",
+          "docker_cpu_percent": 524.32,
+          "docker_mem_percent": 1.56,
+          "docker_pids": 8,
+          "docker_mem_usage_mb": 248.1
+        },
+        {
+          "ts": "2026-03-27T03:35:19.529081+00:00",
+          "docker_cpu_percent": 421.64,
+          "docker_mem_percent": 1.55,
+          "docker_pids": 8,
+          "docker_mem_usage_mb": 247.9
+        },
+        {
+          "ts": "2026-03-27T03:35:22.860406+00:00",
+          "docker_cpu_percent": 463.08,
+          "docker_mem_percent": 1.55,
+          "docker_pids": 8,
+          "docker_mem_usage_mb": 247.9
+        },
+        {
+          "ts": "2026-03-27T03:35:26.740736+00:00",
+          "docker_cpu_percent": 422.77,
+          "docker_mem_percent": 1.56,
+          "docker_pids": 8,
+          "docker_mem_usage_mb": 248.0
+        },
+        {
+          "ts": "2026-03-27T03:35:29.873288+00:00",
+          "docker_cpu_percent": 395.69,
+          "docker_mem_percent": 1.56,
+          "docker_pids": 8,
+          "docker_mem_usage_mb": 248.2
+        },
+        {
+          "ts": "2026-03-27T03:35:33.012170+00:00",
+          "docker_cpu_percent": 453.08,
+          "docker_mem_percent": 1.56,
+          "docker_pids": 8,
+          "docker_mem_usage_mb": 248.5
+        },
+        {
+          "ts": "2026-03-27T03:35:36.873354+00:00",
+          "docker_cpu_percent": 412.93,
+          "docker_mem_percent": 1.56,
+          "docker_pids": 8,
+          "docker_mem_usage_mb": 248.6
+        },
+        {
+          "ts": "2026-03-27T03:35:39.977157+00:00",
+          "docker_cpu_percent": 522.63,
+          "docker_mem_percent": 1.56,
+          "docker_pids": 8,
+          "docker_mem_usage_mb": 248.4
+        },
+        {
+          "ts": "2026-03-27T03:35:43.204469+00:00",
+          "docker_cpu_percent": 426.18,
+          "docker_mem_percent": 1.56,
+          "docker_pids": 8,
+          "docker_mem_usage_mb": 248.9
+        },
+        {
+          "ts": "2026-03-27T03:35:46.883709+00:00",
+          "docker_cpu_percent": 306.29,
+          "docker_mem_percent": 1.56,
+          "docker_pids": 8,
+          "docker_mem_usage_mb": 248.7
+        },
+        {
+          "ts": "2026-03-27T03:35:49.966154+00:00",
+          "docker_cpu_percent": 470.07,
+          "docker_mem_percent": 1.56,
+          "docker_pids": 8,
+          "docker_mem_usage_mb": 248.7
+        },
+        {
+          "ts": "2026-03-27T03:35:53.109214+00:00",
+          "docker_cpu_percent": 422.75,
+          "docker_mem_percent": 1.56,
+          "docker_pids": 8,
+          "docker_mem_usage_mb": 248.5
+        },
+        {
+          "ts": "2026-03-27T03:35:56.802451+00:00",
+          "docker_cpu_percent": 411.67,
+          "docker_mem_percent": 1.56,
+          "docker_pids": 8,
+          "docker_mem_usage_mb": 248.5
+        }
+      ],
+      "metrics_summary": {
+        "backend_cpu_peak_percent": 0.0,
+        "backend_rss_peak_mb": 0.0,
+        "backend_threads_peak": 0.0,
+        "docker_cpu_peak_percent": 712.05,
+        "docker_mem_peak_mb": 257.0,
+        "docker_mem_peak_percent": 1.61,
+        "docker_pids_peak": 10,
+        "db_total_connections_peak": 0.0,
+        "db_active_connections_peak": 0.0,
+        "db_waiting_connections_peak": 0.0,
+        "db_longest_active_seconds_peak": 0.0,
+        "auth_login_queue_gap_ms_avg": 2285.224
+      },
+      "artifacts": {
+        "stats_csv": "load-tests\\results\\phase-auth-runtime-gunicorn-2x2-short\\scenario_login_u40_stats.csv",
+        "stats_history_csv": "load-tests\\results\\phase-auth-runtime-gunicorn-2x2-short\\scenario_login_u40_stats_history.csv",
+        "failures_csv": "load-tests\\results\\phase-auth-runtime-gunicorn-2x2-short\\scenario_login_u40_failures.csv",
+        "profile_summary_json": "load-tests\\results\\phase-auth-runtime-gunicorn-2x2-short\\scenario_login_u40_profile_summary.json",
+        "report_html": "load-tests\\results\\phase-auth-runtime-gunicorn-2x2-short\\scenario_login_u40.html"
+      },
+      "capacity_pass": false
+    },
+    {
+      "scenario": "LOGIN",
+      "users": 80,
+      "started_at": "2026-03-27T03:35:58.473258+00:00",
+      "finished_at": "2026-03-27T03:37:00.257134+00:00",
+      "command": [
+        "C:\\Users\\harae\\Desktop\\ui migration\\proyecto1\\.venv\\Scripts\\locust.exe",
+        "-f",
+        "C:\\Users\\harae\\Desktop\\ui migration\\proyecto1\\load-tests\\locustfile.py",
+        "--host",
+        "http://127.0.0.1:8010",
+        "--users",
+        "80",
+        "--spawn-rate",
+        "5.0",
+        "--run-time",
+        "1m",
+        "--csv",
+        "load-tests\\results\\phase-auth-runtime-gunicorn-2x2-short\\scenario_login_u80",
+        "--html",
+        "load-tests\\results\\phase-auth-runtime-gunicorn-2x2-short\\scenario_login_u80.html",
+        "--headless",
+        "--only-summary"
+      ],
+      "exit_code": 0,
+      "stdout_tail": "",
+      "stderr_tail": "[2026-03-26 22:36:00,703] DESKTOP-9DI2UJR/INFO/locust.main: Starting Locust 2.43.3\n[2026-03-26 22:36:00,707] DESKTOP-9DI2UJR/INFO/locust.main: Run time limit set to 60 seconds\n[2026-03-26 22:36:00,708] DESKTOP-9DI2UJR/INFO/locust.runners: Ramping to 80 users at a rate of 5.00 per second\n[2026-03-26 22:36:15,776] DESKTOP-9DI2UJR/INFO/locust.runners: All users spawned: {\"CuadernoUser\": 80} (80 total users)\n[2026-03-26 22:36:59,748] DESKTOP-9DI2UJR/INFO/locust.main: --run-time limit reached, shutting down\n[2026-03-26 22:36:59,994] DESKTOP-9DI2UJR/INFO/locust.main: writing html report to file: load-tests\\results\\phase-auth-runtime-gunicorn-2x2-short\\scenario_login_u80.html\n[2026-03-26 22:37:00,022] DESKTOP-9DI2UJR/INFO/locust.main: Shutting down (exit code 0)\nType     Name                                                                          # reqs      # fails |    Avg     Min     Max    Med |   req/s  failures/s\n--------|----------------------------------------------------------------------------|-------|-------------|-------|-------|-------|-------|--------|-----------\nGET      auth.bootstrap                                                                   356     0(0.00%) |   4696      11    8478   4600 |    6.03        0.00\nPOST     auth.login                                                                       356     0(0.00%) |   4964     466    8718   4900 |    6.03        0.00\n--------|----------------------------------------------------------------------------|-------|-------------|-------|-------|-------|-------|--------|-----------\n         Aggregated                                                                       712     0(0.00%) |   4830      11    8718   4700 |   12.07        0.00\n\nResponse time percentiles (approximated)\nType     Name                                                                                  50%    66%    75%    80%    90%    95%    98%    99%  99.9% 99.99%   100% # reqs\n--------|--------------------------------------------------------------------------------|--------|------|------|------|------|------|------|------|------|------|------|------\nGET      auth.bootstrap                                                                       4600   5200   5700   6200   7000   7300   7700   7800   8500   8500   8500    356\nPOST     auth.login                                                                           4900   5600   6100   6500   7200   7700   8100   8300   8700   8700   8700    356\n--------|--------------------------------------------------------------------------------|--------|------|------|------|------|------|------|------|------|------|------|------\n         Aggregated                                                                           4700   5400   6000   6300   7100   7500   7800   8200   8700   8700   8700    712\n\n",
+      "stats_summary": {
+        "requests": 704,
+        "failures": 0,
+        "median_ms": 4700.0,
+        "avg_ms": 4821.09610369368,
+        "min_ms": 11.418599999160506,
+        "max_ms": 8718.532599988976,
+        "avg_size": 1918.5,
+        "rps": 12.07291629430165,
+        "failures_per_sec": 0.0,
+        "p50_ms": 4700.0,
+        "p95_ms": 7500.0,
+        "p99_ms": 8200.0,
+        "slowest_endpoint": {
+          "name": "auth.login",
+          "method": "POST",
+          "avg_ms": 4977.657907670614,
+          "p95_ms": 7700.0,
+          "p99_ms": 8300.0,
+          "rps": 6.036458147150825
+        },
+        "endpoint_metrics": {
+          "auth.login": {
+            "avg_ms": 4977.657907670614,
+            "p95_ms": 7700.0,
+            "rps": 6.036458147150825,
+            "failures": 0,
+            "requests": 352
+          },
+          "auth.select_context": {
+            "avg_ms": 0.0,
+            "p95_ms": 0.0,
+            "rps": 0.0,
+            "failures": 0,
+            "requests": 0
+          },
+          "auth.bootstrap": {
+            "avg_ms": 4664.5342997167445,
+            "p95_ms": 7200.0,
+            "rps": 6.036458147150825,
+            "failures": 0,
+            "requests": 352
+          },
+          "read.dashboard": {
+            "avg_ms": 0.0,
+            "p95_ms": 0.0,
+            "rps": 0.0,
+            "failures": 0,
+            "requests": 0
+          },
+          "read.summary": {
+            "avg_ms": 0.0,
+            "p95_ms": 0.0,
+            "rps": 0.0,
+            "failures": 0,
+            "requests": 0
+          }
+        }
+      },
+      "distribution": {
+        "p50_estimated_ms": 4405.461915035691,
+        "p95_estimated_ms": 4799.323594189976,
+        "p99_estimated_ms": 4803.213203134736,
+        "avg_rps_window": 10.327721089285713,
+        "max_rps_window": 17.6,
+        "final_failure_count": 0.0
+      },
+      "profile_summary": {
+        "auth.login": {
+          "samples": 403,
+          "query_count_avg": 4.0,
+          "query_count_p95": 4.0,
+          "sql_time_ms_avg": 8.624,
+          "sql_time_ms_p95": 21.026,
+          "wall_time_ms_avg": 560.193,
+          "wall_time_ms_p95": 924.325,
+          "python_time_ms_avg": 551.569,
+          "python_time_ms_p95": 907.302,
+          "instrumented_wall_ms_avg": 559.904,
+          "instrumented_wall_ms_p95": 924.197,
+          "unaccounted_wall_ms_avg": 0.289,
+          "unaccounted_wall_ms_p95": 0.374,
+          "cache_hit_count": 0,
+          "stage_metrics": {
+            "fetch_user": {
+              "samples": 403,
+              "wall_ms_avg": 4.616,
+              "wall_ms_p95": 13.617,
+              "sql_time_ms_avg": 1.553,
+              "sql_time_ms_p95": 7.073,
+              "python_time_ms_avg": 3.063,
+              "python_time_ms_p95": 11.917,
+              "query_count_avg": 1.0,
+              "query_count_p95": 1.0
+            },
+            "password_verify": {
+              "samples": 403,
+              "wall_ms_avg": 540.975,
+              "wall_ms_p95": 880.183,
+              "sql_time_ms_avg": 0.0,
+              "sql_time_ms_p95": 0.0,
+              "python_time_ms_avg": 540.975,
+              "python_time_ms_p95": 880.183,
+              "query_count_avg": 0.0,
+              "query_count_p95": 0.0
+            },
+            "resolve_accessible_contexts": {
+              "samples": 403,
+              "wall_ms_avg": 13.424,
+              "wall_ms_p95": 28.365,
+              "sql_time_ms_avg": 7.071,
+              "sql_time_ms_p95": 16.111,
+              "python_time_ms_avg": 6.353,
+              "python_time_ms_p95": 15.074,
+              "query_count_avg": 3.0,
+              "query_count_p95": 3.0
+            },
+            "resolve_active_context": {
+              "samples": 403,
+              "wall_ms_avg": 0.122,
+              "wall_ms_p95": 0.073,
+              "sql_time_ms_avg": 0.0,
+              "sql_time_ms_p95": 0.0,
+              "python_time_ms_avg": 0.122,
+              "python_time_ms_p95": 0.073,
+              "query_count_avg": 0.0,
+              "query_count_p95": 0.0
+            },
+            "serialization_response": {
+              "samples": 403,
+              "wall_ms_avg": 0.209,
+              "wall_ms_p95": 0.179,
+              "sql_time_ms_avg": 0.0,
+              "sql_time_ms_p95": 0.0,
+              "python_time_ms_avg": 0.209,
+              "python_time_ms_p95": 0.179,
+              "query_count_avg": 0.0,
+              "query_count_p95": 0.0
+            },
+            "token_session_creation": {
+              "samples": 403,
+              "wall_ms_avg": 0.558,
+              "wall_ms_p95": 1.271,
+              "sql_time_ms_avg": 0.0,
+              "sql_time_ms_p95": 0.0,
+              "python_time_ms_avg": 0.558,
+              "python_time_ms_p95": 1.271,
+              "query_count_avg": 0.0,
+              "query_count_p95": 0.0
+            }
+          }
+        },
+        "auth.bootstrap": {
+          "samples": 356,
+          "query_count_avg": 1.008,
+          "query_count_p95": 1.0,
+          "sql_time_ms_avg": 1.185,
+          "sql_time_ms_p95": 4.149,
+          "wall_time_ms_avg": 2.395,
+          "wall_time_ms_p95": 9.172,
+          "python_time_ms_avg": 1.639,
+          "python_time_ms_p95": 8.643,
+          "instrumented_wall_ms_avg": 0.082,
+          "instrumented_wall_ms_p95": 0.0,
+          "unaccounted_wall_ms_avg": 2.313,
+          "unaccounted_wall_ms_p95": 8.679,
+          "cache_hit_count": 355,
+          "stage_metrics": {
+            "bootstrap_membership_lookup": {
+              "samples": 1,
+              "wall_ms_avg": 2.793,
+              "wall_ms_p95": 2.793,
+              "sql_time_ms_avg": 1.659,
+              "sql_time_ms_p95": 1.659,
+              "python_time_ms_avg": 1.134,
+              "python_time_ms_p95": 1.134,
+              "query_count_avg": 1.0,
+              "query_count_p95": 1.0
+            },
+            "bootstrap_modules_lookup": {
+              "samples": 1,
+              "wall_ms_avg": 12.638,
+              "wall_ms_p95": 12.638,
+              "sql_time_ms_avg": 11.915,
+              "sql_time_ms_p95": 11.915,
+              "python_time_ms_avg": 0.723,
+              "python_time_ms_p95": 0.723,
+              "query_count_avg": 1.0,
+              "query_count_p95": 1.0
+            },
+            "bootstrap_owned_businesses_lookup": {
+              "samples": 1,
+              "wall_ms_avg": 13.913,
+              "wall_ms_p95": 13.913,
+              "sql_time_ms_avg": 1.265,
+              "sql_time_ms_p95": 1.265,
+              "python_time_ms_avg": 12.648,
+              "python_time_ms_p95": 12.648,
+              "query_count_avg": 1.0,
+              "query_count_p95": 1.0
+            }
+          }
+        }
+      },
+      "failures_rows": 1,
+      "error_rate": 0.0,
+      "metrics_samples": [
+        {
+          "ts": "2026-03-27T03:35:58.533789+00:00",
+          "docker_cpu_percent": 602.77,
+          "docker_mem_percent": 1.56,
+          "docker_pids": 8,
+          "docker_mem_usage_mb": 248.7
+        },
+        {
+          "ts": "2026-03-27T03:36:01.969807+00:00",
+          "docker_cpu_percent": 420.55,
+          "docker_mem_percent": 1.56,
+          "docker_pids": 8,
+          "docker_mem_usage_mb": 248.4
+        },
+        {
+          "ts": "2026-03-27T03:36:05.371458+00:00",
+          "docker_cpu_percent": 583.94,
+          "docker_mem_percent": 1.56,
+          "docker_pids": 8,
+          "docker_mem_usage_mb": 248.4
+        },
+        {
+          "ts": "2026-03-27T03:36:09.440544+00:00",
+          "docker_cpu_percent": 497.23,
+          "docker_mem_percent": 1.56,
+          "docker_pids": 8,
+          "docker_mem_usage_mb": 248.8
+        },
+        {
+          "ts": "2026-03-27T03:36:12.844662+00:00",
+          "docker_cpu_percent": 613.9,
+          "docker_mem_percent": 1.56,
+          "docker_pids": 8,
+          "docker_mem_usage_mb": 248.9
+        },
+        {
+          "ts": "2026-03-27T03:36:16.355631+00:00",
+          "docker_cpu_percent": 461.46,
+          "docker_mem_percent": 1.62,
+          "docker_pids": 10,
+          "docker_mem_usage_mb": 258.1
+        },
+        {
+          "ts": "2026-03-27T03:36:19.501136+00:00",
+          "docker_cpu_percent": 409.6,
+          "docker_mem_percent": 1.56,
+          "docker_pids": 8,
+          "docker_mem_usage_mb": 249.0
+        },
+        {
+          "ts": "2026-03-27T03:36:22.629356+00:00",
+          "docker_cpu_percent": 493.87,
+          "docker_mem_percent": 1.56,
+          "docker_pids": 8,
+          "docker_mem_usage_mb": 248.8
+        },
+        {
+          "ts": "2026-03-27T03:36:25.757154+00:00",
+          "docker_cpu_percent": 399.03,
+          "docker_mem_percent": 1.56,
+          "docker_pids": 8,
+          "docker_mem_usage_mb": 248.8
+        },
+        {
+          "ts": "2026-03-27T03:36:28.913093+00:00",
+          "docker_cpu_percent": 415.72,
+          "docker_mem_percent": 1.56,
+          "docker_pids": 8,
+          "docker_mem_usage_mb": 249.1
+        },
+        {
+          "ts": "2026-03-27T03:36:32.280852+00:00",
+          "docker_cpu_percent": 344.28,
+          "docker_mem_percent": 1.56,
+          "docker_pids": 8,
+          "docker_mem_usage_mb": 249.1
+        },
+        {
+          "ts": "2026-03-27T03:36:35.437992+00:00",
+          "docker_cpu_percent": 408.89,
+          "docker_mem_percent": 1.56,
+          "docker_pids": 8,
+          "docker_mem_usage_mb": 248.9
+        },
+        {
+          "ts": "2026-03-27T03:36:38.525546+00:00",
+          "docker_cpu_percent": 467.25,
+          "docker_mem_percent": 1.56,
+          "docker_pids": 8,
+          "docker_mem_usage_mb": 249.2
+        },
+        {
+          "ts": "2026-03-27T03:36:41.649650+00:00",
+          "docker_cpu_percent": 359.68,
+          "docker_mem_percent": 1.56,
+          "docker_pids": 8,
+          "docker_mem_usage_mb": 249.2
+        },
+        {
+          "ts": "2026-03-27T03:36:44.835128+00:00",
+          "docker_cpu_percent": 406.2,
+          "docker_mem_percent": 1.56,
+          "docker_pids": 8,
+          "docker_mem_usage_mb": 249.0
+        },
+        {
+          "ts": "2026-03-27T03:36:48.850831+00:00",
+          "docker_cpu_percent": 461.48,
+          "docker_mem_percent": 1.62,
+          "docker_pids": 10,
+          "docker_mem_usage_mb": 258.6
+        },
+        {
+          "ts": "2026-03-27T03:36:51.977364+00:00",
+          "docker_cpu_percent": 469.43,
+          "docker_mem_percent": 1.57,
+          "docker_pids": 8,
+          "docker_mem_usage_mb": 249.6
+        },
+        {
+          "ts": "2026-03-27T03:36:55.826135+00:00",
+          "docker_cpu_percent": 383.24,
+          "docker_mem_percent": 1.56,
+          "docker_pids": 8,
+          "docker_mem_usage_mb": 249.4
+        },
+        {
+          "ts": "2026-03-27T03:36:59.047234+00:00",
+          "docker_cpu_percent": 458.55,
+          "docker_mem_percent": 1.56,
+          "docker_pids": 8,
+          "docker_mem_usage_mb": 249.4
+        }
+      ],
+      "metrics_summary": {
+        "backend_cpu_peak_percent": 0.0,
+        "backend_rss_peak_mb": 0.0,
+        "backend_threads_peak": 0.0,
+        "docker_cpu_peak_percent": 613.9,
+        "docker_mem_peak_mb": 258.6,
+        "docker_mem_peak_percent": 1.62,
+        "docker_pids_peak": 10,
+        "db_total_connections_peak": 0.0,
+        "db_active_connections_peak": 0.0,
+        "db_waiting_connections_peak": 0.0,
+        "db_longest_active_seconds_peak": 0.0,
+        "auth_login_queue_gap_ms_avg": 4417.465
+      },
+      "artifacts": {
+        "stats_csv": "load-tests\\results\\phase-auth-runtime-gunicorn-2x2-short\\scenario_login_u80_stats.csv",
+        "stats_history_csv": "load-tests\\results\\phase-auth-runtime-gunicorn-2x2-short\\scenario_login_u80_stats_history.csv",
+        "failures_csv": "load-tests\\results\\phase-auth-runtime-gunicorn-2x2-short\\scenario_login_u80_failures.csv",
+        "profile_summary_json": "load-tests\\results\\phase-auth-runtime-gunicorn-2x2-short\\scenario_login_u80_profile_summary.json",
+        "report_html": "load-tests\\results\\phase-auth-runtime-gunicorn-2x2-short\\scenario_login_u80.html"
+      },
+      "capacity_pass": false
+    }
+  ]
+}

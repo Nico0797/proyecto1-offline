@@ -5,9 +5,10 @@ import { formatCOP } from './helpers';
 
 interface ClientsKpisProps {
   customers: Customer[];
+  showReceivables?: boolean;
 }
 
-export const ClientsKpis: React.FC<ClientsKpisProps> = ({ customers }) => {
+export const ClientsKpis: React.FC<ClientsKpisProps> = ({ customers, showReceivables = true }) => {
   const totalCustomers = customers.length;
   const customersWithDebt = customers.filter(c => c.balance > 0).length;
   const totalDebt = customers.reduce((sum, c) => sum + c.balance, 0);
@@ -21,10 +22,10 @@ export const ClientsKpis: React.FC<ClientsKpisProps> = ({ customers }) => {
       <div className="md:hidden mb-2">
         <button
           onClick={() => setOpen(o => !o)}
-          className="w-full flex items-center justify-between px-3 py-2 rounded-xl bg-white/70 dark:bg-gray-800/70 backdrop-blur border border-gray-200 dark:border-gray-700 text-left shadow-sm"
+          className="app-surface flex w-full items-center justify-between px-3 py-2 text-left"
         >
           <div className="flex items-center gap-2">
-            <div className="p-1 bg-blue-100 dark:bg-blue-900/30 rounded-lg text-blue-600 dark:text-blue-400">
+            <div className="app-tone-icon-blue p-1">
               <Users className="w-4 h-4" />
             </div>
             <div>
@@ -38,30 +39,34 @@ export const ClientsKpis: React.FC<ClientsKpisProps> = ({ customers }) => {
 
       {/* Mobile: revealed KPIs */}
       {open && (
-        <div className="grid grid-cols-2 gap-2 mb-2 md:hidden">
-           <div className="bg-white/70 dark:bg-gray-800/70 backdrop-blur p-2 rounded-lg border border-gray-200 dark:border-gray-700 flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <div className="p-1 bg-red-100 dark:bg-red-900/30 rounded-lg text-red-600 dark:text-red-400">
-                <AlertCircle className="w-3 h-3" />
+        <div className={`grid gap-2 mb-2 md:hidden ${showReceivables ? 'grid-cols-2' : 'grid-cols-1'}`}>
+          {showReceivables && (
+            <>
+              <div className="app-stat-card flex items-center justify-between p-2">
+                <div className="flex items-center gap-2">
+                  <div className="app-tone-icon-red p-1">
+                    <AlertCircle className="w-3 h-3" />
+                  </div>
+                  <span className="text-[10px] text-gray-500 dark:text-gray-400">Con Deuda</span>
+                </div>
+                <div className="text-xs font-bold text-gray-900 dark:text-white">{customersWithDebt}</div>
               </div>
-              <span className="text-[10px] text-gray-500 dark:text-gray-400">Con Deuda</span>
-            </div>
-            <div className="text-xs font-bold text-gray-900 dark:text-white">{customersWithDebt}</div>
-          </div>
 
-          <div className="bg-white/70 dark:bg-gray-800/70 backdrop-blur p-2 rounded-lg border border-gray-200 dark:border-gray-700 flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <div className="p-1 bg-yellow-100 dark:bg-yellow-900/30 rounded-lg text-yellow-600 dark:text-yellow-400">
-                <DollarSign className="w-3 h-3" />
+              <div className="app-stat-card flex items-center justify-between p-2">
+                <div className="flex items-center gap-2">
+                  <div className="app-tone-icon-amber p-1">
+                    <DollarSign className="w-3 h-3" />
+                  </div>
+                  <span className="text-[10px] text-gray-500 dark:text-gray-400">Por Cobrar</span>
+                </div>
+                <div className="text-xs font-bold text-gray-900 dark:text-white truncate" title={formatCOP(totalDebt)}>{formatCOP(totalDebt)}</div>
               </div>
-              <span className="text-[10px] text-gray-500 dark:text-gray-400">Por Cobrar</span>
-            </div>
-            <div className="text-xs font-bold text-gray-900 dark:text-white truncate" title={formatCOP(totalDebt)}>{formatCOP(totalDebt)}</div>
-          </div>
+            </>
+          )}
 
-          <div className="bg-white/70 dark:bg-gray-800/70 backdrop-blur p-2 rounded-lg border border-gray-200 dark:border-gray-700 flex items-center justify-between">
+          <div className="app-stat-card flex items-center justify-between p-2">
              <div className="flex items-center gap-2">
-              <div className="p-1 bg-green-100 dark:bg-green-900/30 rounded-lg text-green-600 dark:text-green-400">
+              <div className="app-tone-icon-green p-1">
                 <Activity className="w-3 h-3" />
               </div>
               <span className="text-[10px] text-gray-500 dark:text-gray-400">Activos</span>
@@ -72,10 +77,10 @@ export const ClientsKpis: React.FC<ClientsKpisProps> = ({ customers }) => {
       )}
 
       {/* Desktop View - Cards */}
-      <div className="hidden md:grid md:grid-cols-4 gap-3 mb-4">
-        <div className="bg-white dark:bg-gray-800 p-3 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700">
+      <div className={`hidden md:grid gap-3 mb-4 ${showReceivables ? 'md:grid-cols-4' : 'md:grid-cols-2'}`}>
+        <div className="app-stat-card p-3">
             <div className="flex items-center gap-2 mb-1">
-              <div className="p-1.5 bg-blue-100 dark:bg-blue-900/30 rounded-lg text-blue-600 dark:text-blue-400">
+              <div className="app-tone-icon-blue p-1.5">
                 <Users className="w-4 h-4" />
               </div>
               <span className="text-xs font-medium text-gray-500 dark:text-gray-400">Clientes</span>
@@ -85,33 +90,37 @@ export const ClientsKpis: React.FC<ClientsKpisProps> = ({ customers }) => {
             </div>
         </div>
 
-        <div className="bg-white dark:bg-gray-800 p-3 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700">
-            <div className="flex items-center gap-2 mb-1">
-              <div className="p-1.5 bg-red-100 dark:bg-red-900/30 rounded-lg text-red-600 dark:text-red-400">
-                <AlertCircle className="w-4 h-4" />
-              </div>
-              <span className="text-xs font-medium text-gray-500 dark:text-gray-400">Con Deuda</span>
+        {showReceivables && (
+          <>
+            <div className="app-stat-card p-3">
+                <div className="flex items-center gap-2 mb-1">
+                  <div className="app-tone-icon-red p-1.5">
+                    <AlertCircle className="w-4 h-4" />
+                  </div>
+                  <span className="text-xs font-medium text-gray-500 dark:text-gray-400">Con Deuda</span>
+                </div>
+                <div className="text-lg font-bold text-gray-900 dark:text-white truncate">
+                    {customersWithDebt}
+                </div>
             </div>
-            <div className="text-lg font-bold text-gray-900 dark:text-white truncate">
-                {customersWithDebt}
-            </div>
-        </div>
 
-        <div className="bg-white dark:bg-gray-800 p-3 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700">
-            <div className="flex items-center gap-2 mb-1">
-              <div className="p-1.5 bg-yellow-100 dark:bg-yellow-900/30 rounded-lg text-yellow-600 dark:text-yellow-400">
-                <DollarSign className="w-4 h-4" />
-              </div>
-              <span className="text-xs font-medium text-gray-500 dark:text-gray-400">Por Cobrar</span>
+            <div className="app-stat-card p-3">
+                <div className="flex items-center gap-2 mb-1">
+                  <div className="app-tone-icon-amber p-1.5">
+                    <DollarSign className="w-4 h-4" />
+                  </div>
+                  <span className="text-xs font-medium text-gray-500 dark:text-gray-400">Por Cobrar</span>
+                </div>
+                <div className="text-lg font-bold text-gray-900 dark:text-white truncate" title={formatCOP(totalDebt)}>
+                    {formatCOP(totalDebt)}
+                </div>
             </div>
-            <div className="text-lg font-bold text-gray-900 dark:text-white truncate" title={formatCOP(totalDebt)}>
-                {formatCOP(totalDebt)}
-            </div>
-        </div>
+          </>
+        )}
 
-        <div className="bg-white dark:bg-gray-800 p-3 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700">
+        <div className="app-stat-card p-3">
             <div className="flex items-center gap-2 mb-1">
-              <div className="p-1.5 bg-green-100 dark:bg-green-900/30 rounded-lg text-green-600 dark:text-green-400">
+              <div className="app-tone-icon-green p-1.5">
                 <Activity className="w-4 h-4" />
               </div>
               <span className="text-xs font-medium text-gray-500 dark:text-gray-400">Activos</span>

@@ -2,11 +2,13 @@ import { useState, useEffect } from 'react';
 import api from '../services/api';
 import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
-import { Store, Check, ShieldCheck } from 'lucide-react';
-import { useNavigate, Link } from 'react-router-dom';
+import { Store, Check, ShieldCheck, Copy } from 'lucide-react';
+import { useNavigate, Link, useSearchParams } from 'react-router-dom';
 import { useAuthStore } from '../store/authStore';
 
 export const Register = () => {
+  const [searchParams] = useSearchParams();
+  const redirect = searchParams.get('redirect');
   const [step, setStep] = useState<'register' | 'verify'>('register');
   const [name, setName] = useState('');
   const [surname, setSurname] = useState('');
@@ -27,6 +29,7 @@ export const Register = () => {
   // Verification state
   const [verificationCode, setVerificationCode] = useState('');
   const [registeredUser, setRegisteredUser] = useState<{ email: string } | null>(null);
+  const [devVerificationCode, setDevVerificationCode] = useState('');
 
   const navigate = useNavigate();
   const login = useAuthStore((state) => state.login);
@@ -66,8 +69,10 @@ export const Register = () => {
       });
       
       const data = res.data;
-      if (data.verification_required || data.email_verification_code) { // Adjust based on backend response
+      const activationRequired = data.activation_required ?? data.verification_required ?? Boolean(data.email_verification_code);
+      if (activationRequired) {
         setRegisteredUser({ email });
+        setDevVerificationCode(data.verification_code || '');
         setStep('verify');
         
         // Dev convenience: if code is returned in response (dev mode)
@@ -105,7 +110,7 @@ export const Register = () => {
           localStorage.setItem('refresh_token', refresh_token);
         }
         login(user, useToken);
-        navigate('/dashboard');
+        navigate('/account-access', { replace: true });
       } else {
         setTimeout(() => navigate('/login'), 2000);
       }
@@ -151,6 +156,37 @@ export const Register = () => {
           </div>
 
           <form onSubmit={handleVerify} className="space-y-6">
+            {devVerificationCode && (
+              <div className="rounded-xl border border-emerald-500/30 bg-emerald-500/10 p-4 text-center">
+                <div className="text-xs font-semibold uppercase tracking-[0.18em] text-emerald-200">
+                  Codigo visible en desarrollo
+                </div>
+                <div className="mt-2 text-3xl font-bold tracking-[0.28em] text-white">
+                  {devVerificationCode}
+                </div>
+                <p className="mt-2 text-sm text-emerald-100/80">
+                  Tambien queda impreso en la consola del backend.
+                </p>
+                <div className="mt-3 flex justify-center">
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    className="gap-2"
+                    onClick={async () => {
+                      setVerificationCode(devVerificationCode);
+                      try {
+                        await navigator.clipboard.writeText(devVerificationCode);
+                      } catch {
+                        // noop
+                      }
+                    }}
+                  >
+                    <Copy className="h-4 w-4" />
+                    Copiar y usar codigo
+                  </Button>
+                </div>
+              </div>
+            )}
             <Input
               label="Código de Verificación"
               value={verificationCode}
@@ -171,7 +207,10 @@ export const Register = () => {
               type="button" 
               variant="secondary" 
               className="w-full mt-2" 
-              onClick={() => setStep('register')}
+              onClick={() => {
+                setStep('register');
+                setDevVerificationCode('');
+              }}
             >
               Volver
             </Button>
@@ -262,7 +301,7 @@ export const Register = () => {
           <div className="text-center mt-4">
             <p className="text-gray-400 text-sm">
               ¿Ya tienes cuenta?{' '}
-              <Link to="/login" className="text-blue-400 hover:text-blue-300 font-medium">
+              <Link to={redirect ? `/login?redirect=${redirect}` : "/login"} className="text-blue-400 hover:text-blue-300 font-medium">
                 Inicia sesión aquí
               </Link>
             </p>

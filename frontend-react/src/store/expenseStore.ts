@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import api from '../services/api';
 import { Expense } from '../types';
+import { buildBusinessExpensesQueryParams, getBusinessExpensesPath } from '../services/businessApiRoutes';
 
 interface ExpenseState {
   expenses: Expense[];
@@ -8,6 +9,7 @@ interface ExpenseState {
   error: string | null;
   fetchExpenses: (businessId: number, opts?: { category?: string; start_date?: string; end_date?: string; search?: string }) => Promise<void>;
   addExpense: (businessId: number, expense: Omit<Expense, 'id' | 'business_id'>) => Promise<void>;
+  updateExpense: (businessId: number, expenseId: number, expense: Partial<Expense>) => Promise<void>;
   deleteExpense: (businessId: number, id: number) => Promise<void>;
 }
 
@@ -18,15 +20,15 @@ export const useExpenseStore = create<ExpenseState>((set) => ({
   fetchExpenses: async (businessId, opts) => {
     set({ loading: true, error: null });
     try {
-      const response = await api.get(`/businesses/${businessId}/expenses`, {
-        params: {
-          category: opts?.category || undefined,
-          start_date: opts?.start_date || undefined,
-          end_date: opts?.end_date || undefined,
-          search: opts?.search || undefined,
-        },
+      const response = await api.get(getBusinessExpensesPath(businessId), {
+        params: buildBusinessExpensesQueryParams({
+          category: opts?.category,
+          start_date: opts?.start_date,
+          end_date: opts?.end_date,
+          search: opts?.search,
+        }),
       });
-      set({ expenses: response.data.expenses });
+      set({ expenses: Array.isArray(response.data?.expenses) ? response.data.expenses : [] });
     } catch (error: any) {
       set({ error: error.message });
     } finally {
@@ -38,6 +40,20 @@ export const useExpenseStore = create<ExpenseState>((set) => ({
     try {
       const response = await api.post(`/businesses/${businessId}/expenses`, expense);
       set((state) => ({ expenses: [response.data.expense, ...state.expenses] }));
+    } catch (error: any) {
+      set({ error: error.message });
+      throw error;
+    } finally {
+      set({ loading: false });
+    }
+  },
+  updateExpense: async (businessId, expenseId, expense) => {
+    set({ loading: true, error: null });
+    try {
+      const response = await api.put(`/businesses/${businessId}/expenses/${expenseId}`, expense);
+      set((state) => ({
+        expenses: state.expenses.map((item) => (item.id === expenseId ? response.data.expense : item)),
+      }));
     } catch (error: any) {
       set({ error: error.message });
       throw error;

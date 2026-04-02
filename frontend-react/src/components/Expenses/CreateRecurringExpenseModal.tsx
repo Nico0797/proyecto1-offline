@@ -4,6 +4,7 @@ import { useRecurringExpenseStore } from '../../store/recurringExpenseStore';
 import { Modal } from '../ui/Modal';
 import { Button } from '../ui/Button';
 import { Input } from '../ui/Input';
+import { CurrencyInput } from '../ui/CurrencyInput';
 import { EXPENSE_CATEGORIES } from '../../utils/expenseCategories';
 
 interface CreateRecurringExpenseModalProps {
@@ -89,7 +90,7 @@ export const CreateRecurringExpenseModal: React.FC<CreateRecurringExpenseModalPr
     >
       <form onSubmit={handleSubmit} className="space-y-4">
         <div>
-          <label className="block text-sm font-medium text-gray-400 mb-1">
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
             Nombre / Descripción
           </label>
           <Input
@@ -101,27 +102,24 @@ export const CreateRecurringExpenseModal: React.FC<CreateRecurringExpenseModalPr
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-gray-400 mb-1">
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
             Monto
           </label>
-          <Input
-            type="number"
-            min="0"
-            step="0.01"
+          <CurrencyInput
             value={formData.amount}
-            onChange={(e) => setFormData({ ...formData, amount: e.target.value })}
-            required
+            onChange={(val) => setFormData({ ...formData, amount: val ? val.toString() : '' })}
             placeholder="0.00"
+            required
           />
         </div>
 
         <div className="grid grid-cols-2 gap-4">
           <div>
-            <label className="block text-sm font-medium text-gray-400 mb-1">
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
               Frecuencia
             </label>
             <select
-              className="w-full bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-white focus:outline-none focus:border-blue-500"
+              className="w-full bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg px-3 py-2 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
               value={formData.frequency}
               onChange={(e) => setFormData({ ...formData, frequency: e.target.value as 'monthly' | 'weekly' | 'biweekly' | 'annual' })}
             >
@@ -131,7 +129,7 @@ export const CreateRecurringExpenseModal: React.FC<CreateRecurringExpenseModalPr
             </select>
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-400 mb-1">
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
               Próxima Fecha
             </label>
             <Input
@@ -144,11 +142,11 @@ export const CreateRecurringExpenseModal: React.FC<CreateRecurringExpenseModalPr
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-gray-400 mb-1">
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
             Categoría
           </label>
           <select
-            className="w-full bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-white focus:outline-none focus:border-blue-500"
+            className="w-full bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg px-3 py-2 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
             value={formData.category}
             onChange={(e) => setFormData({ ...formData, category: e.target.value })}
             required
@@ -166,9 +164,9 @@ export const CreateRecurringExpenseModal: React.FC<CreateRecurringExpenseModalPr
             id="is_active"
             checked={formData.is_active}
             onChange={(e) => setFormData({ ...formData, is_active: e.target.checked })}
-            className="w-4 h-4 text-blue-600 bg-gray-700 border-gray-600 rounded focus:ring-blue-500 focus:ring-2"
+            className="w-4 h-4 text-blue-600 bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600 rounded focus:ring-blue-500 focus:ring-2"
           />
-          <label htmlFor="is_active" className="text-sm font-medium text-gray-300 select-none cursor-pointer">
+          <label htmlFor="is_active" className="text-sm font-medium text-gray-700 dark:text-gray-300 select-none cursor-pointer">
             Gasto Activo (generar alertas)
           </label>
         </div>

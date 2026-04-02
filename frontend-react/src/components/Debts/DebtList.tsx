@@ -6,6 +6,9 @@ import { Edit2, Trash2, Calendar, MoreVertical, CreditCard, CheckCircle, AlertCi
 interface DebtListProps {
   debts: Debt[];
   loading: boolean;
+  canUpdate: boolean;
+  canDelete: boolean;
+  canRegisterPayment: boolean;
   onEdit: (debt: Debt) => void;
   onDelete: (id: number) => void;
   onViewDetails: (debt: Debt) => void;
@@ -30,7 +33,22 @@ const getStatusLabel = (status: string) => {
     }
 };
 
-export const DebtList: React.FC<DebtListProps> = ({ debts, loading, onEdit, onDelete, onViewDetails, onRegisterPayment }) => {
+const getOriginLabel = (debt: Debt) => {
+    if (debt.origin_type === 'recurring') return 'Generada desde recurrente';
+    return 'Cuenta por pagar manual';
+};
+
+export const DebtList: React.FC<DebtListProps> = ({
+  debts,
+  loading,
+  canUpdate,
+  canDelete,
+  canRegisterPayment,
+  onEdit,
+  onDelete,
+  onViewDetails,
+  onRegisterPayment,
+}) => {
   if (loading) {
     return (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -78,6 +96,9 @@ export const DebtList: React.FC<DebtListProps> = ({ debts, loading, onEdit, onDe
                                 <span className="w-1 h-1 rounded-full bg-gray-300 dark:bg-gray-600" />
                                 <span className="capitalize">{debt.category}</span>
                             </div>
+                            <div className="text-[11px] text-gray-400 dark:text-gray-500 mt-1">
+                                {getOriginLabel(debt)}
+                            </div>
                         </div>
                         <span className={`shrink-0 inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium uppercase tracking-wider ${getStatusColor(debt.status)}`}>
                             {getStatusLabel(debt.status)}
@@ -95,6 +116,9 @@ export const DebtList: React.FC<DebtListProps> = ({ debts, loading, onEdit, onDe
                              <div className="text-xs text-gray-500 dark:text-gray-400 mb-0.5">Total Original</div>
                              <div className="text-sm font-medium text-gray-600 dark:text-gray-300">
                                 {formatCOP(debt.total_amount)}
+                             </div>
+                             <div className="text-[11px] text-gray-500 dark:text-gray-400 mt-1">
+                                Pagado: {formatCOP(debt.amount_paid || 0)}
                              </div>
                         </div>
                     </div>
@@ -129,7 +153,7 @@ export const DebtList: React.FC<DebtListProps> = ({ debts, loading, onEdit, onDe
 
                 {/* Actions */}
                 <div className="grid grid-cols-4 gap-2 pt-3 border-t border-gray-100 dark:border-gray-700 mt-auto">
-                    {debt.status !== 'paid' ? (
+                    {debt.status !== 'paid' && canRegisterPayment ? (
                         <button 
                             onClick={() => onRegisterPayment(debt)}
                             className="col-span-2 flex items-center justify-center gap-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg py-2 px-3 text-xs font-semibold hover:opacity-90 transition-opacity"
@@ -139,8 +163,14 @@ export const DebtList: React.FC<DebtListProps> = ({ debts, loading, onEdit, onDe
                         </button>
                     ) : (
                         <div className="col-span-2 flex items-center justify-center gap-2 bg-green-50 dark:bg-green-900/20 text-green-600 dark:text-green-400 rounded-lg py-2 px-3 text-xs font-medium">
-                            <CheckCircle className="w-3.5 h-3.5" />
-                            PAGADO
+                            {debt.status === 'paid' ? (
+                              <>
+                                <CheckCircle className="w-3.5 h-3.5" />
+                                PAGADO
+                              </>
+                            ) : (
+                              <>SOLO LECTURA</>
+                            )}
                         </div>
                     )}
                     
@@ -153,24 +183,35 @@ export const DebtList: React.FC<DebtListProps> = ({ debts, loading, onEdit, onDe
                     </button>
                     
                     <div className="col-span-1 relative group/menu">
-                        <button className="w-full h-full flex items-center justify-center bg-gray-50 dark:bg-gray-700 text-gray-600 dark:text-gray-300 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors">
+                        {canUpdate || canDelete ? (
+                          <>
+                            <button className="w-full h-full flex items-center justify-center bg-gray-50 dark:bg-gray-700 text-gray-600 dark:text-gray-300 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors">
+                                <MoreVertical className="w-4 h-4" />
+                            </button>
+                            <div className="absolute bottom-full right-0 mb-2 w-32 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 py-1 hidden group-hover/menu:block z-10">
+                                {canUpdate ? (
+                                  <button 
+                                      onClick={() => onEdit(debt)}
+                                      className="w-full text-left px-3 py-2 text-xs text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 flex items-center gap-2"
+                                  >
+                                      <Edit2 className="w-3 h-3" /> Editar
+                                  </button>
+                                ) : null}
+                                {canDelete ? (
+                                  <button 
+                                      onClick={() => onDelete(debt.id)}
+                                      className="w-full text-left px-3 py-2 text-xs text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 flex items-center gap-2"
+                                  >
+                                      <Trash2 className="w-3 h-3" /> Eliminar
+                                  </button>
+                                ) : null}
+                            </div>
+                          </>
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center bg-gray-50 dark:bg-gray-700 text-gray-400 dark:text-gray-500 rounded-lg">
                             <MoreVertical className="w-4 h-4" />
-                        </button>
-                        {/* Dropdown Menu */}
-                        <div className="absolute bottom-full right-0 mb-2 w-32 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 py-1 hidden group-hover/menu:block z-10">
-                            <button 
-                                onClick={() => onEdit(debt)}
-                                className="w-full text-left px-3 py-2 text-xs text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 flex items-center gap-2"
-                            >
-                                <Edit2 className="w-3 h-3" /> Editar
-                            </button>
-                            <button 
-                                onClick={() => onDelete(debt.id)}
-                                className="w-full text-left px-3 py-2 text-xs text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 flex items-center gap-2"
-                            >
-                                <Trash2 className="w-3 h-3" /> Eliminar
-                            </button>
-                        </div>
+                          </div>
+                        )}
                     </div>
                 </div>
             </div>

@@ -1284,7 +1284,9 @@ def get_recurring_expenses_wrapper(business_id):
 if __name__ == "__main__":
     init_db_and_seed()
     host, port = "127.0.0.1", 8001
-    print(f"✅ App:  http://{host}:{port}/")
-    print(f"✅ Export: http://{host}:{port}/export.xlsx?from=YYYY-MM-DD&to=YYYY-MM-DD")
+    print("⚠️ server.py es un servidor legacy/mock y no es el backend oficial de desarrollo.")
+    print("⚠️ Para desarrollo local usa: python backend/main.py")
+    print(f"✅ Legacy App:  http://{host}:{port}/")
+    print(f"✅ Legacy Export: http://{host}:{port}/export.xlsx?from=YYYY-MM-DD&to=YYYY-MM-DD")
     port = int(os.environ.get("PORT", 8001))
     app.run(host="0.0.0.0", port=port, debug=False)

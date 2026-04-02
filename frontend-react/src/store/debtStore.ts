@@ -8,12 +8,15 @@ interface DebtState {
   loading: boolean;
   error: string | null;
   
-  fetchDebts: (businessId: number, filters?: { status?: string; category?: string; search?: string }) => Promise<void>;
-  fetchSummary: (businessId: number) => Promise<void>;
+  fetchDebts: (
+    businessId: number,
+    filters?: { status?: string; category?: string; search?: string; scope?: 'operational' | 'financial' }
+  ) => Promise<void>;
+  fetchSummary: (businessId: number, scope?: 'operational' | 'financial') => Promise<void>;
   addDebt: (businessId: number, debt: Partial<Debt>) => Promise<void>;
   updateDebt: (businessId: number, debtId: number, debt: Partial<Debt>) => Promise<void>;
   deleteDebt: (businessId: number, debtId: number) => Promise<void>;
-  addPayment: (businessId: number, debtId: number, payment: { amount: number; payment_date: string; payment_method?: string; note?: string }) => Promise<void>;
+  addPayment: (businessId: number, debtId: number, payment: { amount: number; payment_date: string; payment_method?: string; treasury_account_id?: number | null; note?: string }) => Promise<void>;
   deletePayment: (businessId: number, debtId: number, paymentId: number) => Promise<void>;
 }
 
@@ -33,9 +36,9 @@ export const useDebtStore = create<DebtState>((set, get) => ({
     }
   },
 
-  fetchSummary: async (businessId) => {
+  fetchSummary: async (businessId, scope) => {
     try {
-      const summary = await debtService.getSummary(businessId);
+      const summary = await debtService.getSummary(businessId, scope);
       set({ summary });
     } catch (error: any) {
       console.error("Error fetching summary:", error);
@@ -50,7 +53,7 @@ export const useDebtStore = create<DebtState>((set, get) => ({
         debts: [...state.debts, newDebt],
         loading: false 
       }));
-      get().fetchSummary(businessId);
+      get().fetchSummary(businessId, debt.scope);
     } catch (error: any) {
       set({ error: error.message, loading: false });
       throw error;
@@ -65,7 +68,7 @@ export const useDebtStore = create<DebtState>((set, get) => ({
         debts: state.debts.map((d) => (d.id === debtId ? updatedDebt : d)),
         loading: false
       }));
-      get().fetchSummary(businessId);
+      get().fetchSummary(businessId, debt.scope ?? updatedDebt.scope);
     } catch (error: any) {
       set({ error: error.message, loading: false });
       throw error;

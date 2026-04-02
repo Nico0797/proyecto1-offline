@@ -1,183 +1,312 @@
-import { useMemo, useState, useEffect } from 'react';
-import { Play, RefreshCcw, RotateCcw, GraduationCap, Award } from 'lucide-react';
-import { useTourStore } from '../../tour/tourStore';
-import { useTour } from '../../tour/TourProvider';
-import { lintTours, TourLintResult } from '../../tour/tourLinter';
-import { tourModules } from '../../tour/tourRegistry';
+import { useEffect, useMemo, useState } from 'react';
+import { Link } from 'react-router-dom';
+import { BookOpen, Play, RefreshCcw, RotateCcw, Sparkles } from 'lucide-react';
+import {
+  getOnboardingTutorialId,
+  getVisibleLearningCategories,
+  getVisibleLearningTutorials,
+  LEARNING_CATEGORIES,
+  type LearningCategoryId,
+} from '../../help/learningCenter';
+import { useAccess } from '../../hooks/useAccess';
 import { useAuthStore } from '../../store/authStore';
+import { useBusinessStore } from '../../store/businessStore';
+import { buildLearningScopeKey } from '../../store/learningCenterStore';
+import { useTour } from '../../tour/TourProvider';
+import { useTourStore } from '../../tour/tourStore';
 
-export const HelpTutorialsSection = () => {
-  const { resetAll, resetTour, getStatus } = useTourStore();
+type HelpTutorialsSectionProps = {
+  query?: string;
+  selectedCategoryId?: LearningCategoryId | 'all';
+};
+
+const STATUS_META: Record<string, { label: string; className: string }> = {
+  completed: {
+    label: 'Completado',
+    className: 'border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-900/30 dark:bg-emerald-900/10 dark:text-emerald-300',
+  },
+  dismissed: {
+    label: 'Descartado',
+    className: 'border-amber-200 bg-amber-50 text-amber-700 dark:border-amber-900/30 dark:bg-amber-900/10 dark:text-amber-300',
+  },
+  in_progress: {
+    label: 'En progreso',
+    className: 'border-blue-200 bg-blue-50 text-blue-700 dark:border-blue-900/30 dark:bg-blue-900/10 dark:text-blue-300',
+  },
+  not_started: {
+    label: 'Nuevo',
+    className: 'border-gray-200 bg-gray-50 text-gray-600 dark:border-gray-700 dark:bg-gray-800/80 dark:text-gray-300',
+  },
+};
+
+export const HelpTutorialsSection = ({
+  query = '',
+  selectedCategoryId = 'all',
+}: HelpTutorialsSectionProps) => {
   const { start } = useTour();
   const { user } = useAuthStore();
-  const [resetAllOpen, setResetAllOpen] = useState(false);
-  const [confirmAll, setConfirmAll] = useState(false);
-  const [pendingReset, setPendingReset] = useState<string | null>(null);
-  const status = useMemo(() => getStatus(), [getStatus]);
-  const [lintResults, setLintResults] = useState<TourLintResult[]>([]);
+  const { activeBusiness } = useBusinessStore();
+  const { canAccess, hasPermission, subscriptionPlan } = useAccess();
+  const perTour = useTourStore((state) => state.perTour);
+  const resetTour = useTourStore((state) => state.resetTour);
+  const resetAllTours = useTourStore((state) => state.resetAll);
+  const syncTourScope = useTourStore((state) => state.syncScope);
+
+  const [isResetAllOpen, setIsResetAllOpen] = useState(false);
+  const [pendingResetTourId, setPendingResetTourId] = useState<string | null>(null);
+
+  const onboardingTutorialId = getOnboardingTutorialId(subscriptionPlan, activeBusiness);
+  const scopeKey = buildLearningScopeKey(user?.id, activeBusiness?.id);
+  const onboardingRecord = perTour[onboardingTutorialId];
 
   useEffect(() => {
-    // Run Linter on mount for visibility
-    setTimeout(() => {
-      const results = lintTours();
-      setLintResults(results);
-    }, 1000);
-  }, []);
+    syncTourScope(scopeKey);
+  }, [scopeKey, syncTourScope]);
 
-  const getTourIssues = (tourId: string) => {
-    return lintResults.filter(r => r.tourId === tourId && r.status === 'MISSING');
+  const tutorials = useMemo(() => {
+    const visible = getVisibleLearningTutorials({
+      plan: subscriptionPlan,
+      business: activeBusiness,
+      canAccessFeature: canAccess,
+      hasPermission,
+    });
+
+    const needle = query.trim().toLowerCase();
+    return visible.filter((tutorial) => {
+      const matchesCategory = selectedCategoryId === 'all' || tutorial.categoryId === selectedCategoryId;
+      if (!matchesCategory) return false;
+      if (!needle) return true;
+
+      return [
+        tutorial.title,
+        tutorial.summary,
+        tutorial.whenToUse,
+        ...tutorial.outcomes,
+      ]
+        .join(' ')
+        .toLowerCase()
+        .includes(needle);
+    });
+  }, [activeBusiness, canAccess, hasPermission, query, selectedCategoryId, subscriptionPlan]);
+
+  const visibleCategories = useMemo(() => {
+    const filteredCategories = getVisibleLearningCategories(tutorials);
+    return LEARNING_CATEGORIES.filter((category) => filteredCategories.some((item) => item.id === category.id));
+  }, [tutorials]);
+
+  const handleResetAll = () => {
+    resetAllTours();
+    setIsResetAllOpen(false);
   };
 
-  const playInitial = () => {
-    start('sales.expert');
-  };
-
-  const playTour = (tourId: string) => {
-    start(tourId);
-  };
-
-  const handleLinter = () => {
-    lintTours();
-    alert('Diagnóstico generado en consola (F12)');
-  };
-
-  const doResetAll = () => {
-    if (!confirmAll) return;
-    resetAll();
-    setConfirmAll(false);
-    setResetAllOpen(false);
-    alert('Todos los tutoriales fueron reiniciados');
-  };
-
-  const doResetModule = () => {
-    if (!pendingReset) return;
-    // Reset the tour for the module
-    const module = tourModules[pendingReset];
-    if (module) {
-        resetTour(module.tour.id);
-    }
-    setPendingReset(null);
-    alert('Tutoriales del módulo reiniciados');
-  };
-
- 
+  const grouped = visibleCategories.map((category) => ({
+    category,
+    tutorials: tutorials.filter((tutorial) => tutorial.categoryId === category.id),
+  }));
 
   return (
-    <div className="space-y-4" data-tour="help.section">
-      <div className="bg-white/60 dark:bg-gray-800/60 backdrop-blur-md rounded-2xl border border-gray-200 dark:border-gray-700 p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div className="flex items-center gap-3">
-          <GraduationCap className="w-8 h-8 text-cyan-400" />
-          <div>
-            <div className="text-xs text-gray-400 font-medium uppercase tracking-wider">Tu Progreso</div>
-            <div className="font-bold text-gray-900 dark:text-white text-lg">
-               Centro de Aprendizaje
+    <div className="space-y-5" data-tour="help.section">
+      <div className="grid gap-4 lg:grid-cols-[1.3fr_0.7fr]">
+        <div className="rounded-[28px] border border-blue-200 bg-gradient-to-br from-blue-50 via-white to-cyan-50 p-5 shadow-sm dark:border-blue-900/30 dark:from-blue-900/10 dark:via-gray-900 dark:to-cyan-900/10">
+          <div className="flex items-start gap-3">
+            <div className="rounded-2xl bg-blue-600 p-3 text-white shadow-lg shadow-blue-600/20">
+                <Sparkles className="h-5 w-5" />
+            </div>
+            <div className="min-w-0 flex-1">
+              <div className="text-xs font-semibold uppercase tracking-[0.24em] text-blue-700 dark:text-blue-300">
+                Primer recorrido
+              </div>
+              <h3 className="mt-1 text-xl font-semibold text-gray-950 dark:text-white">
+                {onboardingRecord?.status === 'completed'
+                  ? 'Ya conoces el recorrido base de este negocio'
+                  : 'Empieza por el recorrido guiado del negocio actual'}
+              </h3>
+              <p className="mt-2 text-sm leading-6 text-gray-600 dark:text-gray-300">
+                {onboardingRecord?.status === 'completed'
+                  ? 'Si cambiaste de plan, de modulos o quieres reentrenar a alguien del equipo, puedes volver a abrir el onboarding desde aqui.'
+                  : 'La ayuda inicial se adapta al plan y modulos del negocio activo. Te muestra solo lo esencial para empezar bien.'}
+              </p>
             </div>
           </div>
+
+          <div className="mt-4 flex flex-wrap gap-2">
+            <button
+              onClick={() => start(onboardingTutorialId, { manual: true })}
+              className="inline-flex items-center gap-2 rounded-2xl bg-blue-600 px-4 py-2.5 text-sm font-medium text-white shadow-sm transition hover:bg-blue-700"
+            >
+              <Play className="h-4 w-4" />
+              {onboardingRecord?.status === 'completed' ? 'Repetir recorrido' : 'Iniciar recorrido'}
+            </button>
+            <button
+              onClick={() => {
+                resetTour(onboardingTutorialId);
+              }}
+              className="inline-flex items-center gap-2 rounded-2xl border border-gray-200 bg-white px-4 py-2.5 text-sm font-medium text-gray-700 transition hover:border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-200"
+            >
+              <RefreshCcw className="h-4 w-4" />
+              Reiniciar onboarding
+            </button>
+          </div>
         </div>
-        <div className="flex flex-wrap gap-2">
-          {import.meta.env.DEV && (
-             <button onClick={handleLinter} className="px-4 py-2 rounded-xl bg-amber-500/10 text-amber-500 hover:bg-amber-500/20 flex items-center gap-2 font-medium text-sm transition-colors border border-amber-500/20">
-                🔍 Diagnóstico
-             </button>
-          )}
-          <button onClick={playInitial} className="px-4 py-2 rounded-xl bg-gradient-to-r from-cyan-600 to-blue-600 text-white hover:from-cyan-500 hover:to-blue-500 shadow-lg shadow-cyan-900/20 flex items-center gap-2 font-medium text-sm transition-all active:scale-95">
-            <Play className="w-4 h-4 fill-current" /> Tutorial Inicial
-          </button>
-          <button onClick={() => setResetAllOpen(true)} className="px-4 py-2 rounded-xl bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-white hover:bg-gray-300 dark:hover:bg-gray-600 flex items-center gap-2 font-medium text-sm transition-colors">
-            <RotateCcw className="w-4 h-4" /> Reiniciar Todo
+
+        <div className="rounded-[28px] border border-gray-200 bg-white p-5 shadow-sm dark:border-gray-800 dark:bg-gray-900">
+          <div className="flex items-start gap-3">
+            <div className="rounded-2xl bg-gray-100 p-3 text-gray-700 dark:bg-gray-800 dark:text-gray-200">
+              <BookOpen className="h-5 w-5" />
+            </div>
+            <div className="min-w-0 flex-1">
+              <div className="text-xs font-semibold uppercase tracking-[0.24em] text-gray-500">
+                Progreso actual
+              </div>
+              <div className="mt-1 text-xl font-semibold text-gray-950 dark:text-white">
+                {tutorials.filter((tutorial) => perTour[tutorial.tourId]?.status === 'completed').length} de {tutorials.length} tutoriales completados
+              </div>
+              <p className="mt-2 text-sm leading-6 text-gray-600 dark:text-gray-300">
+                La ayuda queda disponible despues del onboarding y el progreso se guarda por usuario y negocio.
+              </p>
+            </div>
+          </div>
+
+          <button
+            onClick={() => setIsResetAllOpen(true)}
+            className="mt-4 inline-flex items-center gap-2 rounded-2xl border border-gray-200 bg-gray-50 px-4 py-2.5 text-sm font-medium text-gray-700 transition hover:bg-gray-100 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-200 dark:hover:bg-gray-700"
+          >
+            <RotateCcw className="h-4 w-4" />
+            Reiniciar todos los tutoriales
           </button>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-        {Object.values(tourModules)
-          .filter(module => !module.plan || module.plan === 'free' || (module.plan === 'pro' && user?.plan === 'pro'))
-          .map((module) => {
-          const tourId = module.tour.id;
-
-          const tourStatus = status.perTour?.[tourId]?.status || 'never';
-          const tourIssues = getTourIssues(tourId);
+      <div className="space-y-6">
+        {grouped.map(({ category, tutorials: categoryTutorials }) => {
+          if (!categoryTutorials.length) return null;
 
           return (
-            <div key={module.id} className="bg-white/60 dark:bg-gray-800/60 backdrop-blur rounded-2xl border border-gray-200 dark:border-gray-700 overflow-hidden flex flex-col hover:border-cyan-500/30 transition-colors duration-300">
-              <div className="p-5 flex-1">
-                 <div className="flex items-start justify-between mb-2">
-                    <h3 className="font-bold text-gray-900 dark:text-white text-lg">{module.title}</h3>
-                    <button onClick={() => setPendingReset(module.id)} className="text-gray-400 hover:text-white p-1 rounded hover:bg-gray-700/50 transition-colors" title="Reiniciar módulo">
-                        <RefreshCcw className="w-3.5 h-3.5" />
-                    </button>
-                 </div>
-                 <p className="text-sm text-gray-500 dark:text-gray-400 mb-5 leading-relaxed">{module.description || 'Aprende a dominar este módulo.'}</p>
-                 
-                 <div className="space-y-3">
-                    {/* Main Tour */}
-                    <div className="flex items-center justify-between p-3 rounded-xl bg-gray-50/50 dark:bg-gray-700/30 border border-gray-100 dark:border-gray-700/50">
-                        <div className="flex items-center gap-3">
-                            <div className="p-2 rounded-lg bg-blue-100/50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400">
-                                <Award className="w-4 h-4" />
-                            </div>
-                            <div className="flex flex-col">
-                                <span className="font-medium text-gray-900 dark:text-white text-sm">Tutorial Completo</span>
-                                <span className="text-[10px] text-gray-500 font-medium bg-gray-200 dark:bg-gray-800 px-1.5 py-0.5 rounded w-fit mt-1">{module.tour.duration}</span>
-                            </div>
-                        </div>
-                        <div className="flex items-center gap-2">
-                             {tourIssues.length > 0 && (
-                                <span className="text-xs text-red-500 font-bold bg-red-100 dark:bg-red-900/30 px-2 py-1 rounded" title={`${tourIssues.length} targets faltantes`}>
-                                    ⚠️ {tourIssues.length}
-                                </span>
-                             )}
-                            {tourStatus === 'completed' && (
-                                <span className="text-green-500 dark:text-green-400 bg-green-100 dark:bg-green-900/30 p-1.5 rounded-full">
-                                    <GraduationCap className="w-4 h-4" />
-                                </span>
-                            )}
-                        </div>
-                    </div>
-                 </div>
+            <section key={category.id} className="space-y-3">
+              <div>
+                <h3 className="text-lg font-semibold text-gray-950 dark:text-white">{category.label}</h3>
+                <p className="text-sm text-gray-500 dark:text-gray-400">{category.description}</p>
               </div>
-              
-              <div className="p-3 bg-gray-50/80 dark:bg-gray-800/80 border-t border-gray-200 dark:border-gray-700 flex justify-end">
-                <button 
-                    onClick={() => playTour(tourId)}
-                    className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 text-white rounded-xl text-sm font-medium shadow-lg shadow-blue-500/20 transition-all hover:scale-[1.02]"
-                >
-                    <Play className="w-4 h-4 fill-current" />
-                    {tourStatus === 'completed' ? 'Repetir Tutorial' : 'Iniciar Tutorial'}
-                </button>
+
+              <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+                {categoryTutorials.map((tutorial) => {
+                  const statusKey = perTour[tutorial.tourId]?.status || 'not_started';
+                  const status = STATUS_META[statusKey] || STATUS_META.not_started;
+
+                  return (
+                    <article
+                      key={tutorial.id}
+                      className="flex h-full flex-col rounded-[26px] border border-gray-200 bg-white p-5 shadow-sm transition hover:border-blue-300 dark:border-gray-800 dark:bg-gray-900 dark:hover:border-blue-900/50"
+                    >
+                      <div className="flex items-start justify-between gap-3">
+                        <div>
+                          <div className={`inline-flex rounded-full border px-2.5 py-1 text-[11px] font-semibold ${status.className}`}>
+                            {status.label}
+                          </div>
+                          <h4 className="mt-3 text-lg font-semibold text-gray-950 dark:text-white">{tutorial.title}</h4>
+                        </div>
+                        <div className="rounded-2xl bg-gray-100 px-2.5 py-1 text-xs font-medium text-gray-600 dark:bg-gray-800 dark:text-gray-300">
+                          {tutorial.estimatedTime}
+                        </div>
+                      </div>
+
+                      <p className="mt-3 text-sm leading-6 text-gray-600 dark:text-gray-300">{tutorial.summary}</p>
+
+                      <div className="mt-4 rounded-2xl bg-gray-50 p-4 text-sm dark:bg-gray-800/70">
+                        <div className="font-medium text-gray-900 dark:text-white">Cuando abrirlo</div>
+                        <div className="mt-1 leading-6 text-gray-600 dark:text-gray-300">{tutorial.whenToUse}</div>
+                      </div>
+
+                      <div className="mt-4 flex-1">
+                        <div className="text-xs font-semibold uppercase tracking-[0.22em] text-gray-400">Que te deja claro</div>
+                        <div className="mt-2 space-y-2">
+                          {tutorial.outcomes.map((outcome) => (
+                            <div key={outcome} className="rounded-2xl border border-gray-100 px-3 py-2 text-sm text-gray-600 dark:border-gray-800 dark:text-gray-300">
+                              {outcome}
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+
+                      <div className="mt-5 flex flex-wrap gap-2">
+                        <button
+                          onClick={() => start(tutorial.tourId, { manual: true })}
+                          className="inline-flex items-center gap-2 rounded-2xl bg-blue-600 px-4 py-2.5 text-sm font-medium text-white transition hover:bg-blue-700"
+                        >
+                          <Play className="h-4 w-4" />
+                          {statusKey === 'completed' ? 'Ver otra vez' : 'Abrir tutorial'}
+                        </button>
+                        <Link
+                          to={tutorial.route}
+                          className="inline-flex items-center gap-2 rounded-2xl border border-gray-200 bg-white px-4 py-2.5 text-sm font-medium text-gray-700 transition hover:border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-200"
+                        >
+                          Abrir modulo
+                        </Link>
+                        <button
+                          onClick={() => setPendingResetTourId(tutorial.tourId)}
+                          className="inline-flex items-center gap-2 rounded-2xl border border-gray-200 bg-gray-50 px-4 py-2.5 text-sm font-medium text-gray-700 transition hover:bg-gray-100 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-200 dark:hover:bg-gray-700"
+                        >
+                          <RefreshCcw className="h-4 w-4" />
+                          Reiniciar
+                        </button>
+                      </div>
+                    </article>
+                  );
+                })}
               </div>
-            </div>
+            </section>
           );
         })}
       </div>
 
-      {/* Reset All Modal */}
-      {resetAllOpen && (
-        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-[9999]">
-          <div className="w-full max-w-md bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-2xl p-6 shadow-2xl animate-fade-in">
-            <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-2">Reiniciar todos los tutoriales</h3>
-            <p className="text-sm text-gray-600 dark:text-gray-300 mb-4">Se borrará el progreso de todos los tutoriales. La bienvenida volverá a mostrarse al próximo inicio de sesión.</p>
-            <label className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-200 mb-6 cursor-pointer">
-              <input type="checkbox" checked={confirmAll} onChange={(e) => setConfirmAll(e.target.checked)} className="rounded text-cyan-600 focus:ring-cyan-500" />
-              Entiendo y deseo reiniciar todo
-            </label>
-            <div className="flex justify-end gap-2">
-              <button onClick={() => { setResetAllOpen(false); setConfirmAll(false); }} className="px-4 py-2 rounded-lg bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-white hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors">Cancelar</button>
-              <button onClick={doResetAll} disabled={!confirmAll} className="px-4 py-2 rounded-lg bg-red-600 text-white hover:bg-red-700 disabled:opacity-50 transition-colors">Reiniciar Todo</button>
+      {isResetAllOpen && (
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/60 p-4">
+          <div className="w-full max-w-md rounded-[28px] border border-gray-200 bg-white p-6 shadow-2xl dark:border-gray-700 dark:bg-gray-900">
+            <h3 className="text-lg font-semibold text-gray-950 dark:text-white">Reiniciar ayuda y tutoriales</h3>
+            <p className="mt-2 text-sm leading-6 text-gray-600 dark:text-gray-300">
+              Se borrara el progreso de este negocio y el onboarding volvera a estar disponible.
+            </p>
+            <div className="mt-6 flex justify-end gap-2">
+              <button
+                onClick={() => setIsResetAllOpen(false)}
+                className="rounded-2xl border border-gray-200 px-4 py-2.5 text-sm font-medium text-gray-700 dark:border-gray-700 dark:text-gray-200"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={handleResetAll}
+                className="rounded-2xl bg-red-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-red-700"
+              >
+                Reiniciar todo
+              </button>
             </div>
           </div>
         </div>
       )}
 
-      {/* Reset Module Modal */}
-      {pendingReset && (
-        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-[9999]">
-          <div className="w-full max-w-md bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-2xl p-6 shadow-2xl animate-fade-in">
-            <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-2">Reiniciar tutorial</h3>
-            <p className="text-sm text-gray-600 dark:text-gray-300 mb-6">Se borrará el progreso de los tutoriales (Rápido y Experto) de este módulo. ¿Deseas continuar?</p>
-            <div className="flex justify-end gap-2">
-              <button onClick={() => setPendingReset(null)} className="px-4 py-2 rounded-lg bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-white hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors">Cancelar</button>
-              <button onClick={doResetModule} className="px-4 py-2 rounded-lg bg-red-600 text-white hover:bg-red-700 transition-colors">Reiniciar</button>
+      {pendingResetTourId && (
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/60 p-4">
+          <div className="w-full max-w-md rounded-[28px] border border-gray-200 bg-white p-6 shadow-2xl dark:border-gray-700 dark:bg-gray-900">
+            <h3 className="text-lg font-semibold text-gray-950 dark:text-white">Reiniciar este tutorial</h3>
+            <p className="mt-2 text-sm leading-6 text-gray-600 dark:text-gray-300">
+              Se borrara el progreso guardado para este recorrido y podras empezarlo como nuevo.
+            </p>
+            <div className="mt-6 flex justify-end gap-2">
+              <button
+                onClick={() => setPendingResetTourId(null)}
+                className="rounded-2xl border border-gray-200 px-4 py-2.5 text-sm font-medium text-gray-700 dark:border-gray-700 dark:text-gray-200"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={() => {
+                  resetTour(pendingResetTourId);
+                  setPendingResetTourId(null);
+                }}
+                className="rounded-2xl bg-red-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-red-700"
+              >
+                Reiniciar
+              </button>
             </div>
           </div>
         </div>

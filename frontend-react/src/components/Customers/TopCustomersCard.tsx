@@ -54,7 +54,7 @@ export const TopCustomersCard: React.FC<TopCustomersCardProps> = ({ customers, s
     }, [customers, sales, period]);
 
     return (
-        <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-6 shadow-sm">
+        <div className="app-surface rounded-xl p-6 shadow-sm">
             <div className="flex justify-between items-center mb-6">
                 <h3 className="text-lg font-bold text-gray-900 dark:text-white flex items-center gap-2">
                     <TrendingUp className="w-5 h-5 text-purple-500" />
@@ -63,7 +63,7 @@ export const TopCustomersCard: React.FC<TopCustomersCardProps> = ({ customers, s
                 <select 
                     value={period}
                     onChange={(e) => setPeriod(Number(e.target.value) as any)}
-                    className="text-sm bg-gray-100 dark:bg-gray-700 border-none rounded-lg px-3 py-1 text-gray-700 dark:text-gray-300 focus:ring-2 focus:ring-purple-500"
+                    className="app-select py-1 text-sm"
                 >
                     <option value={7}>7 días</option>
                     <option value={30}>30 días</option>

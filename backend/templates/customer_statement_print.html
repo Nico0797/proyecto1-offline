@@ -1,0 +1,465 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Estado de cuenta {{ statement.customer.name }}</title>
+    <style>
+        @page {
+            size: A4;
+            margin: 18mm 14mm;
+        }
+        body {
+            font-family: Helvetica, Arial, sans-serif;
+            font-size: 12px;
+            color: #1f2937;
+            background: #f3f4f6;
+            margin: 0;
+            padding: 24px;
+            line-height: 1.5;
+        }
+        .page {
+            max-width: 880px;
+            margin: 0 auto;
+            background: #ffffff;
+            border: 1px solid #e5e7eb;
+            border-radius: 18px;
+            overflow: hidden;
+            box-shadow: 0 18px 50px rgba(15, 23, 42, 0.08);
+        }
+        .topbar {
+            height: 8px;
+            background: linear-gradient(90deg, {{ invoice_settings.brand_color or '#2563EB' }}, {{ invoice_settings.accent_color or '#0F172A' }});
+        }
+        .content {
+            padding: 28px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        img,
+        tr,
+        .header-table,
+        .summary-grid,
+        .section-table,
+        .totals-card {
+            page-break-inside: avoid;
+        }
+        .copy {
+            white-space: pre-wrap;
+            word-break: break-word;
+            overflow-wrap: anywhere;
+        }
+        .header-table td {
+            vertical-align: top;
+        }
+        .business-name {
+            font-size: 24px;
+            font-weight: bold;
+            color: #0f172a;
+            margin-bottom: 4px;
+        }
+        .business-meta,
+        .muted {
+            color: #6b7280;
+            font-size: 11px;
+        }
+        .logo {
+            max-width: 110px;
+            max-height: 70px;
+            margin-bottom: 12px;
+        }
+        .doc-title {
+            font-size: 26px;
+            font-weight: bold;
+            color: #0f172a;
+            text-align: right;
+        }
+        .doc-code {
+            font-size: 13px;
+            font-weight: bold;
+            text-align: right;
+            color: {{ invoice_settings.brand_color or '#2563EB' }};
+            margin-top: 4px;
+        }
+        .section-table {
+            margin-top: 20px;
+        }
+        .card {
+            width: 48.5%;
+            vertical-align: top;
+            background: #f8fafc;
+            border: 1px solid #e5e7eb;
+            border-radius: 12px;
+            padding: 14px;
+        }
+        .card-title {
+            font-size: 10px;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            color: #64748b;
+            font-weight: bold;
+            margin-bottom: 8px;
+        }
+        .summary-grid {
+            margin-top: 22px;
+        }
+        .summary-grid td {
+            width: 25%;
+            padding: 0 8px 0 0;
+            vertical-align: top;
+        }
+        .summary-card {
+            background: #f8fafc;
+            border: 1px solid #e5e7eb;
+            border-radius: 14px;
+            padding: 16px;
+            min-height: 96px;
+        }
+        .summary-card .label {
+            font-size: 10px;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            color: #64748b;
+            font-weight: bold;
+        }
+        .summary-card .value {
+            margin-top: 10px;
+            font-size: 18px;
+            font-weight: bold;
+            color: #0f172a;
+        }
+        .summary-card .helper {
+            margin-top: 6px;
+            font-size: 11px;
+            color: #64748b;
+        }
+        .section-block {
+            margin-top: 24px;
+            background: #ffffff;
+            border: 1px solid #e5e7eb;
+            border-radius: 14px;
+            overflow: hidden;
+        }
+        .section-label {
+            padding: 14px 16px;
+            background: #f8fafc;
+            border-bottom: 1px solid #e5e7eb;
+            font-size: 10px;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            color: #64748b;
+            font-weight: bold;
+        }
+        .items-table th,
+        .items-table td {
+            padding: 12px 14px;
+            border-bottom: 1px solid #eef2f7;
+            vertical-align: top;
+        }
+        .items-table tr:last-child td {
+            border-bottom: none;
+        }
+        .items-table thead {
+            display: table-header-group;
+        }
+        .items-table th {
+            background: #f8fafc;
+            color: #334155;
+            font-size: 10px;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            text-align: left;
+        }
+        .text-right {
+            text-align: right;
+        }
+        .status-pill {
+            display: inline-block;
+            padding: 6px 10px;
+            border-radius: 999px;
+            font-size: 10px;
+            font-weight: bold;
+            background: #eff6ff;
+            color: {{ invoice_settings.brand_color or '#2563EB' }};
+        }
+        .status-pill.overdue {
+            background: #ffe4e6;
+            color: #be123c;
+        }
+        .status-pill.partial {
+            background: #fef3c7;
+            color: #b45309;
+        }
+        .status-pill.paid {
+            background: #dcfce7;
+            color: #047857;
+        }
+        .status-pill.cancelled {
+            background: #e5e7eb;
+            color: #4b5563;
+        }
+        .actions {
+            margin-top: 24px;
+            text-align: right;
+        }
+        .btn {
+            display: inline-block;
+            padding: 10px 14px;
+            border-radius: 10px;
+            text-decoration: none;
+            font-size: 12px;
+            font-weight: bold;
+            margin-left: 8px;
+        }
+        .btn-primary {
+            background: {{ invoice_settings.brand_color or '#2563EB' }};
+            color: #ffffff;
+        }
+        .footer {
+            margin-top: 26px;
+            padding-top: 14px;
+            border-top: 1px solid #e5e7eb;
+            color: #94a3b8;
+            font-size: 10px;
+            text-align: center;
+        }
+        @media screen and (max-width: 768px) {
+            body {
+                padding: 0;
+                background: #ffffff;
+            }
+            .page {
+                border-radius: 0;
+                border: none;
+                box-shadow: none;
+            }
+            .content {
+                padding: 18px;
+            }
+            .doc-title,
+            .doc-code {
+                text-align: left;
+                margin-top: 12px;
+            }
+            .header-table,
+            .header-table tbody,
+            .header-table tr,
+            .header-table td,
+            .section-table,
+            .section-table tbody,
+            .section-table tr,
+            .section-table td,
+            .summary-grid,
+            .summary-grid tbody,
+            .summary-grid tr,
+            .summary-grid td {
+                display: block;
+                width: 100% !important;
+            }
+            .card,
+            .summary-card {
+                margin-bottom: 12px;
+            }
+            .section-block {
+                overflow-x: auto;
+            }
+            .actions {
+                text-align: left;
+            }
+            .btn {
+                margin: 0 8px 8px 0;
+            }
+        }
+        @media print {
+            body {
+                background: #ffffff;
+                padding: 0;
+            }
+            .page {
+                max-width: 100%;
+                border: none;
+                border-radius: 0;
+                box-shadow: none;
+            }
+            .actions {
+                display: none;
+            }
+            .section-block {
+                overflow: visible;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="page">
+        <div class="topbar"></div>
+        <div class="content">
+            <table class="header-table">
+                <tr>
+                    <td style="width: 55%;">
+                        {% if logo_url %}
+                        <img src="{{ logo_url }}" alt="Logo" class="logo">
+                        {% endif %}
+                        <div class="business-name">{{ business.name }}</div>
+                        <div class="business-meta">
+                            {% if business_tax_id %}<div>NIT / Documento: {{ business_tax_id }}</div>{% endif %}
+                            {% if business_phone %}<div>Tel: {{ business_phone }}</div>{% endif %}
+                            {% if business_address %}<div>{{ business_address }}</div>{% endif %}
+                        </div>
+                    </td>
+                    <td style="width: 45%;">
+                        <div class="doc-title">Estado de cuenta</div>
+                        <div class="doc-code">{{ statement.customer.name }}</div>
+                        <div class="muted" style="margin-top: 8px; text-align: right;">Corte: {{ date_range_label }}</div>
+                    </td>
+                </tr>
+            </table>
+
+            <table class="section-table">
+                <tr>
+                    <td class="card">
+                        <div class="card-title">Cliente</div>
+                        <strong>{{ statement.customer.name }}</strong><br>
+                        {% if statement.customer.phone %}Tel: {{ statement.customer.phone }}<br>{% endif %}
+                        {% if statement.customer.email %}Email: {{ statement.customer.email }}<br>{% endif %}
+                        {% if statement.customer.address %}{{ statement.customer.address }}{% endif %}
+                    </td>
+                    <td style="width: 3%;"></td>
+                    <td class="card">
+                        <div class="card-title">Resumen del corte</div>
+                        <strong>Facturas registradas:</strong> {{ statement.summary.invoice_count }}<br>
+                        <strong>Facturas abiertas:</strong> {{ statement.summary.open_count }}<br>
+                        <strong>Facturas vencidas:</strong> {{ statement.summary.overdue_count }}<br>
+                        <strong>Pagos recibidos:</strong> {{ statement.summary.payment_count }}<br>
+                        <strong>Generado:</strong> {{ generated_at_display }}
+                    </td>
+                </tr>
+            </table>
+
+            <table class="summary-grid">
+                <tr>
+                    <td>
+                        <div class="summary-card">
+                            <div class="label">Facturado</div>
+                            <div class="value">{{ summary_total_invoiced_display }}</div>
+                            <div class="helper">{{ statement.summary.invoice_count }} documento(s) considerados</div>
+                        </div>
+                    </td>
+                    <td>
+                        <div class="summary-card">
+                            <div class="label">Pagado</div>
+                            <div class="value">{{ summary_total_paid_display }}</div>
+                            <div class="helper">{{ statement.summary.payment_count }} pago(s) aplicados</div>
+                        </div>
+                    </td>
+                    <td>
+                        <div class="summary-card">
+                            <div class="label">Saldo pendiente</div>
+                            <div class="value">{{ summary_balance_due_display }}</div>
+                            <div class="helper">{{ statement.summary.open_count }} factura(s) con saldo</div>
+                        </div>
+                    </td>
+                    <td>
+                        <div class="summary-card">
+                            <div class="label">Saldo vencido</div>
+                            <div class="value">{{ summary_overdue_total_display }}</div>
+                            <div class="helper">{{ statement.summary.overdue_count }} factura(s) vencida(s)</div>
+                        </div>
+                    </td>
+                </tr>
+            </table>
+
+            <div class="section-block">
+                <div class="section-label">Facturas y saldos</div>
+                <table class="items-table">
+                    <thead>
+                        <tr>
+                            <th>Factura</th>
+                            <th>Emision</th>
+                            <th>Vence</th>
+                            <th class="text-right">Total</th>
+                            <th class="text-right">Pagado</th>
+                            <th class="text-right">Saldo</th>
+                            <th>Estado</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for invoice in statement_invoices %}
+                        <tr>
+                            <td>
+                                <strong>{{ invoice.invoice_number }}</strong>
+                                {% if invoice.notes %}
+                                <div class="muted copy" style="margin-top: 4px;">{{ invoice.notes }}</div>
+                                {% endif %}
+                            </td>
+                            <td>{{ invoice.issue_date_display }}</td>
+                            <td>{{ invoice.due_date_display }}</td>
+                            <td class="text-right">{{ invoice.total_display }}</td>
+                            <td class="text-right">{{ invoice.paid_amount_display }}</td>
+                            <td class="text-right"><strong>{{ invoice.balance_due_display }}</strong></td>
+                            <td>
+                                <span class="status-pill {{ invoice.status }}">{{ invoice.status_label }}</span>
+                                {% if invoice.days_overdue %}
+                                <div class="muted" style="margin-top: 4px;">{{ invoice.days_overdue }} dia(s) vencida</div>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                        {% if not statement_invoices %}
+                        <tr>
+                            <td colspan="7" class="muted">No hay movimientos de facturas para este corte.</td>
+                        </tr>
+                        {% endif %}
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="section-block">
+                <div class="section-label">Pagos recibidos</div>
+                <table class="items-table">
+                    <thead>
+                        <tr>
+                            <th>Fecha</th>
+                            <th>Factura</th>
+                            <th>Metodo</th>
+                            <th>Nota</th>
+                            <th class="text-right">Monto</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for payment in statement_payments %}
+                        <tr>
+                            <td>{{ payment.payment_date_display }}</td>
+                            <td>{{ payment.invoice_number }}</td>
+                            <td>{{ payment.event_type_label }}{% if payment.payment_method %} • {{ payment.payment_method }}{% endif %}</td>
+                            <td class="copy">{{ payment.note or '-' }}</td>
+                            <td class="text-right"><strong>{{ payment.signed_amount_display }}</strong></td>
+                        </tr>
+                        {% endfor %}
+                        {% if not statement_payments %}
+                        <tr>
+                            <td colspan="5" class="muted">No hay pagos registrados dentro del corte seleccionado.</td>
+                        </tr>
+                        {% endif %}
+                    </tbody>
+                </table>
+            </div>
+
+            {% if show_actions %}
+            <div class="actions">
+                <a href="javascript:window.print();" class="btn btn-primary">Imprimir</a>
+            </div>
+            {% endif %}
+
+            <div class="footer">
+                {{ invoice_settings.footer_text or 'Documento generado desde EnCaja.' }}<br>
+                Cobro neto en el corte: {{ summary_payments_received_display }}<br>
+                Ajustes del corte: {{ summary_refunded_total_display }} reembolsado • {{ summary_reversed_total_display }} revertido<br>
+                Generado el {{ generated_at_display }}
+            </div>
+        </div>
+    </div>
+</body>
+</html>

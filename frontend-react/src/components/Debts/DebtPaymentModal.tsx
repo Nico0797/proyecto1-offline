@@ -6,6 +6,7 @@ import { Button } from '../ui/Button';
 import { Input } from '../ui/Input';
 import { Debt } from '../../types/debts';
 import { formatCOP } from '../Expenses/helpers';
+import { TreasuryAccountSelect } from '../Treasury/TreasuryAccountSelect';
 
 interface DebtPaymentModalProps {
   isOpen: boolean;
@@ -26,6 +27,7 @@ export const DebtPaymentModal: React.FC<DebtPaymentModalProps> = ({
     amount: '',
     payment_date: new Date().toISOString().split('T')[0],
     payment_method: 'cash',
+    treasury_account_id: null as number | null,
     note: '',
   });
 
@@ -38,6 +40,7 @@ export const DebtPaymentModal: React.FC<DebtPaymentModalProps> = ({
         amount: parseFloat(formData.amount),
         payment_date: formData.payment_date,
         payment_method: formData.payment_method,
+        treasury_account_id: formData.treasury_account_id,
         note: formData.note,
       });
       onClose();
@@ -105,6 +108,13 @@ export const DebtPaymentModal: React.FC<DebtPaymentModalProps> = ({
             <option value="other">Otro</option>
           </select>
         </div>
+
+        <TreasuryAccountSelect
+          businessId={activeBusiness?.id}
+          value={formData.treasury_account_id}
+          onChange={(value) => setFormData({ ...formData, treasury_account_id: value })}
+          helperText="Elige la cuenta desde la que sale este pago."
+        />
 
         <div>
             <label className="block text-sm font-medium text-gray-400 mb-1">

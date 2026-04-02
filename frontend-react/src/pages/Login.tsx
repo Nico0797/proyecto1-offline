@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate, Link, useLocation } from 'react-router-dom';
 import { useAuthStore } from '../store/authStore';
+import { useBusinessStore } from '../store/businessStore';
 import api from '../services/api';
 import { Mail, Lock, Eye, EyeOff, ArrowRight, Loader2, Sparkles } from 'lucide-react';
 import logo from '../assets/logo.png';
@@ -9,6 +10,7 @@ export const Login = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const login = useAuthStore((state) => state.login);
+  const fetchAuthBootstrap = useBusinessStore((state) => state.fetchAuthBootstrap);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -22,6 +24,9 @@ export const Login = () => {
   const isFileProtocol = typeof window !== 'undefined' && window.location.protocol === 'file:';
   const canConfigureServer = isFileProtocol || !hasEnvBase;
 
+  const params = new URLSearchParams(location.search);
+  const redirect = params.get('redirect');
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
@@ -29,7 +34,7 @@ export const Login = () => {
 
     try {
       const response = await api.post('/auth/login', { email, password });
-      const { user, access_token, refresh_token, token } = response.data;
+      const { user, access_token, refresh_token, token, accessible_contexts, active_context } = response.data;
       const useToken = access_token || token;
       
       if (!useToken) {
@@ -42,12 +47,25 @@ export const Login = () => {
       
       // Artificial delay for smoother UX
       await new Promise(resolve => setTimeout(resolve, 800));
-      
-      login(user, useToken);
-      const params = new URLSearchParams(location.search);
-      const redirect = params.get('redirect');
-      const safeRedirect = redirect && redirect.startsWith('/') ? redirect : '/dashboard';
-      navigate(safeRedirect);
+       
+       login(user, useToken, active_context, accessible_contexts);
+       if (active_context?.business_id) {
+         await fetchAuthBootstrap(active_context.business_id);
+       }
+       
+       // Context Resolution Logic
+       if (active_context) {
+        // Direct access if context is already resolved
+        const safeRedirect = redirect && redirect.startsWith('/') ? redirect : '/dashboard';
+        navigate(safeRedirect, { replace: true });
+      } else if (accessible_contexts && accessible_contexts.length > 0) {
+        // Multiple contexts, need selection
+        navigate('/select-context', { replace: true });
+      } else {
+        // El acceso inicial y la selección de plan se resuelven antes del onboarding.
+        navigate('/account-access', { replace: true });
+      }
+
     } catch (err: any) {
       const serverError = err.response?.data?.error || err.response?.data?.message;
       setError(serverError || 'Error al iniciar sesión');
@@ -189,7 +207,7 @@ export const Login = () => {
                         </button>
                       </div>
                       <p className="text-[11px] text-gray-400">
-                        Emulador Android con backend local: http://10.0.2.2:8001/api
+                        Emulador Android con backend local: http://10.0.2.2:5000/api
                       </p>
                     </div>
                   )}
@@ -215,8 +233,8 @@ export const Login = () => {
                 </button>
               </form>
               
-              <div className="mt-6 pt-4 border-t border-gray-800 text-center">
-                <Link to="/register" className="block w-full">
+              <div className="mt-6 pt-4 border-t border-gray-800 text-center space-y-3">
+                <Link to={redirect ? `/register?redirect=${redirect}` : "/register"} className="block w-full">
                   <button className="w-full py-3 bg-gray-800 hover:bg-gray-750 text-white border border-gray-700 hover:border-gray-600 rounded-xl font-medium text-sm transition-all flex items-center justify-center gap-2">
                     Crear cuenta gratis
                   </button>

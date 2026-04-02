@@ -1,14 +1,8 @@
-import React, { useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowLeft, Shield, Lock, Eye, FileText } from 'lucide-react';
 import logo from '../assets/logo.png';
 
 export const PrivacyPolicy = () => {
-  // Force dark mode on mount
-  useEffect(() => {
-    document.documentElement.classList.add('dark');
-  }, []);
-
   return (
     <div className="min-h-screen bg-gray-950 text-gray-300 font-sans">
       {/* Header */}

@@ -1,10 +1,10 @@
 import api from './api';
 
 export interface MembershipInfo {
-  plan: 'free' | 'pro';
+  plan: 'free' | 'basic' | 'pro' | 'business';
   status: 'active' | 'canceled' | 'past_due' | 'inactive';
   nextBillingDate: string | null;
-  billingCycle: 'monthly' | 'quarterly' | 'yearly';
+  billingCycle: 'monthly' | 'quarterly' | 'yearly' | 'annual';
   paymentMethod?: {
     brand: string;
     last4: string;
@@ -22,16 +22,65 @@ export interface Invoice {
   pdfUrl?: string;
 }
 
-export interface Pricing {
-    currency: string;
-    monthly: number;
-    quarterly: number;
-    annual: number;
-    discounts: {
-        quarterly: number;
-        annual: number;
-    }
+export interface CatalogCyclePricing {
+  cycle: 'monthly' | 'quarterly' | 'annual';
+  label: string;
+  months: number;
+  discount_percent: number;
+  discount_label: string | null;
+  total_usd: number;
+  monthly_equivalent_usd: number;
+  savings_usd: number;
+  checkout_plan_code: PlanCode;
 }
+
+export interface CatalogPlanPricing {
+  key: 'basic' | 'pro' | 'business';
+  display_name: string;
+  tagline: string;
+  short_description: string;
+  highlight: string;
+  cta_label: string;
+  badge: string | null;
+  monthly_price_usd: number;
+  features: string[];
+  recommended_for: string[];
+  cycles: Record<'monthly' | 'quarterly' | 'annual', CatalogCyclePricing>;
+}
+
+export type PlanCode =
+  | 'basic_monthly'
+  | 'basic_quarterly'
+  | 'basic_annual'
+  | 'pro_monthly'
+  | 'pro_quarterly'
+  | 'pro_annual'
+  | 'business_monthly'
+  | 'business_quarterly'
+  | 'business_annual';
+
+export interface Pricing {
+  currency: string;
+  display_currency: string;
+  legacy_aliases: Record<string, string>;
+  plan_order: Array<'basic' | 'pro' | 'business'>;
+  cycle_order: Array<'monthly' | 'quarterly' | 'annual'>;
+  plans: Record<'basic' | 'pro' | 'business', CatalogPlanPricing>;
+  module_minimum_plan: Record<string, 'basic' | 'pro' | 'business'>;
+  business_type_recommended_plan: Record<string, 'basic' | 'pro' | 'business'>;
+}
+
+export const normalizeMembershipPlan = (plan?: string | null): 'basic' | 'pro' | 'business' => {
+  if (!plan || plan === 'free' || plan === 'basic') return 'basic';
+  if (plan === 'business') return 'business';
+  return 'pro';
+};
+
+export const getCycleKey = (cycle?: string | null): 'monthly' | 'quarterly' | 'annual' => {
+  if (cycle === 'quarterly') return 'quarterly';
+  if (cycle === 'annual' || cycle === 'yearly') return 'annual';
+  return 'monthly';
+};
 
 export const membershipService = {
   getMembership: async (): Promise<MembershipInfo> => {
@@ -44,7 +93,7 @@ export const membershipService = {
       return response.data;
   },
 
-  createCheckout: async (plan: 'pro_monthly' | 'pro_quarterly' | 'pro_annual', payment_method: 'card' | 'nequi' | 'pse' | 'bancolombia' = 'card'): Promise<string> => {
+  createCheckout: async (plan: PlanCode, payment_method: 'card' | 'nequi' | 'pse' | 'bancolombia' = 'card'): Promise<string> => {
       const res = await api.post('/billing/checkout', { plan, payment_method });
       const url = res.data?.checkout?.init_point || res.data?.checkout?.url;
       if (!url) {

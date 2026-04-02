@@ -1,0 +1,1532 @@
+{
+  "base_url": "http://127.0.0.1:18004",
+  "business_id": 16,
+  "users": [
+    30,
+    40,
+    60
+  ],
+  "scenarios": [
+    "D"
+  ],
+  "run_time": "2m",
+  "spawn_rate": 5.0,
+  "fixture": null,
+  "runs": [
+    {
+      "scenario": "D",
+      "users": 30,
+      "started_at": "2026-03-26T01:59:55.442786+00:00",
+      "finished_at": "2026-03-26T02:01:57.007351+00:00",
+      "command": [
+        "C:\\Users\\harae\\Desktop\\ui migration\\proyecto1\\.venv\\Scripts\\locust.exe",
+        "-f",
+        "C:\\Users\\harae\\Desktop\\ui migration\\proyecto1\\load-tests\\locustfile.py",
+        "--host",
+        "http://127.0.0.1:18004",
+        "--users",
+        "30",
+        "--spawn-rate",
+        "5.0",
+        "--run-time",
+        "2m",
+        "--csv",
+        "load-tests\\results\\phase2_slice4_prodlike_18004\\scenario_d_u30",
+        "--html",
+        "load-tests\\results\\phase2_slice4_prodlike_18004\\scenario_d_u30.html",
+        "--headless",
+        "--only-summary"
+      ],
+      "exit_code": 0,
+      "stdout_tail": "",
+      "stderr_tail": "   131    2678    510 |    2.19        0.00\nGET      read.payments                                                                     79     0(0.00%) |    724     176    2888    570 |    0.66        0.00\nGET      read.products                                                                     25     0(0.00%) |    681     202    1740    610 |    0.21        0.00\nGET      read.sales                                                                       129     0(0.00%) |    797     161    2714    590 |    1.08        0.00\nGET      read.summary                                                                     191     0(0.00%) |    521      94    2556    400 |    1.60        0.00\nPOST     write.expense                                                                    145     0(0.00%) |    651      98    3039    460 |    1.22        0.00\nPOST     write.payment                                                                     60     0(0.00%) |    713     201    2126    670 |    0.50        0.00\nPOST     write.sale                                                                       240     0(0.00%) |    638     112    2694    470 |    2.01        0.00\n--------|----------------------------------------------------------------------------|-------|-------------|-------|-------|-------|-------|--------|-----------\n         Aggregated                                                                      1288     0(0.00%) |    637       8    3972    480 |   10.79        0.00\n\nResponse time percentiles (approximated)\nType     Name                                                                                  50%    66%    75%    80%    90%    95%    98%    99%  99.9% 99.99%   100% # reqs\n--------|--------------------------------------------------------------------------------|--------|------|------|------|------|------|------|------|------|------|------|------\nGET      read.business_profile                                                                 260    380    550    720    990   1600   2500   2500   2500   2500   2500     37\nGET      read.customers                                                                        420    560    670    740    980   1400   2500   2600   4000   4000   4000    121\nGET      read.dashboard                                                                        510    690    810    920   1200   1600   2200   2600   2700   2700   2700    261\nGET      read.payments                                                                         570    730    900   1100   1500   1700   2700   2900   2900   2900   2900     79\nGET      read.products                                                                         610    790    830    940   1200   1300   1700   1700   1700   1700   1700     25\nGET      read.sales                                                                            590    780   1000   1200   1800   2000   2200   2500   2700   2700   2700    129\nGET      read.summary                                                                          400    550    640    720   1200   1500   1600   1900   2600   2600   2600    191\nPOST     write.expense                                                                         460    680    830   1000   1500   1700   2400   2400   3000   3000   3000    145\nPOST     write.payment                                                                         670    760    880    910   1300   1800   2100   2100   2100   2100   2100     60\nPOST     write.sale                                                                            480    640    780    930   1400   1800   2100   2200   2700   2700   2700    240\n--------|--------------------------------------------------------------------------------|--------|------|------|------|------|------|------|------|------|------|------|------\n         Aggregated                                                                            480    660    790    910   1300   1700   2100   2500   3000   4000   4000   1288\n\n",
+      "stats_summary": {
+        "requests": 1277,
+        "failures": 0,
+        "median_ms": 480.0,
+        "avg_ms": 633.6078859828135,
+        "min_ms": 8.526400000846479,
+        "max_ms": 3972.609399999783,
+        "avg_size": 50451.24510571652,
+        "rps": 10.796327586296943,
+        "failures_per_sec": 0.0,
+        "p50_ms": 480.0,
+        "p95_ms": 1700.0,
+        "p99_ms": 2500.0,
+        "slowest_endpoint": {
+          "name": "read.sales",
+          "method": "GET",
+          "avg_ms": 797.236519379951,
+          "p95_ms": 2000.0,
+          "p99_ms": 2500.0,
+          "rps": 1.090623538474789
+        }
+      },
+      "distribution": {
+        "p50_estimated_ms": 676.2322067227943,
+        "p95_estimated_ms": 1368.68249772777,
+        "p99_estimated_ms": 3039.3149000010453,
+        "avg_rps_window": 9.89655172413793,
+        "max_rps_window": 14.5,
+        "final_failure_count": 0.0
+      },
+      "failures_rows": 1,
+      "error_rate": 0.0,
+      "metrics_samples": [
+        {
+          "ts": "2026-03-26T01:59:55.490323+00:00",
+          "db_total_connections": 17,
+          "db_active_connections": 1,
+          "db_waiting_connections": 16,
+          "db_longest_active_seconds": 0.004618
+        },
+        {
+          "ts": "2026-03-26T01:59:57.495616+00:00",
+          "db_total_connections": 17,
+          "db_active_connections": 1,
+          "db_waiting_connections": 16,
+          "db_longest_active_seconds": 0.001003
+        },
+        {
+          "ts": "2026-03-26T01:59:59.498819+00:00",
+          "db_total_connections": 19,
+          "db_active_connections": 1,
+          "db_waiting_connections": 18,
+          "db_longest_active_seconds": 0.001026
+        },
+        {
+          "ts": "2026-03-26T02:00:01.500810+00:00",
+          "db_total_connections": 19,
+          "db_active_connections": 1,
+          "db_waiting_connections": 18,
+          "db_longest_active_seconds": 0.001
+        },
+        {
+          "ts": "2026-03-26T02:00:03.513053+00:00",
+          "db_total_connections": 19,
+          "db_active_connections": 1,
+          "db_waiting_connections": 18,
+          "db_longest_active_seconds": 0.001059
+        },
+        {
+          "ts": "2026-03-26T02:00:05.515256+00:00",
+          "db_total_connections": 19,
+          "db_active_connections": 1,
+          "db_waiting_connections": 18,
+          "db_longest_active_seconds": 0.00096
+        },
+        {
+          "ts": "2026-03-26T02:00:07.516259+00:00",
+          "db_total_connections": 19,
+          "db_active_connections": 1,
+          "db_waiting_connections": 18,
+          "db_longest_active_seconds": 0.000986
+        },
+        {
+          "ts": "2026-03-26T02:00:09.516959+00:00",
+          "db_total_connections": 19,
+          "db_active_connections": 1,
+          "db_waiting_connections": 18,
+          "db_longest_active_seconds": 0.000921
+        },
+        {
+          "ts": "2026-03-26T02:00:11.518656+00:00",
+          "db_total_connections": 19,
+          "db_active_connections": 1,
+          "db_waiting_connections": 18,
+          "db_longest_active_seconds": 0.000888
+        },
+        {
+          "ts": "2026-03-26T02:00:13.520007+00:00",
+          "db_total_connections": 19,
+          "db_active_connections": 2,
+          "db_waiting_connections": 17,
+          "db_longest_active_seconds": 0.008775
+        },
+        {
+          "ts": "2026-03-26T02:00:15.521421+00:00",
+          "db_total_connections": 19,
+          "db_active_connections": 1,
+          "db_waiting_connections": 18,
+          "db_longest_active_seconds": 0.001807
+        },
+        {
+          "ts": "2026-03-26T02:00:17.523717+00:00",
+          "db_total_connections": 19,
+          "db_active_connections": 1,
+          "db_waiting_connections": 18,
+          "db_longest_active_seconds": 0.001047
+        },
+        {
+          "ts": "2026-03-26T02:00:19.524795+00:00",
+          "db_total_connections": 19,
+          "db_active_connections": 1,
+          "db_waiting_connections": 18,
+          "db_longest_active_seconds": 0.001042
+        },
+        {
+          "ts": "2026-03-26T02:00:21.526441+00:00",
+          "db_total_connections": 19,
+          "db_active_connections": 1,
+          "db_waiting_connections": 17,
+          "db_longest_active_seconds": 0.001204
+        },
+        {
+          "ts": "2026-03-26T02:00:23.528487+00:00",
+          "db_total_connections": 19,
+          "db_active_connections": 1,
+          "db_waiting_connections": 18,
+          "db_longest_active_seconds": 0.000911
+        },
+        {
+          "ts": "2026-03-26T02:00:25.529880+00:00",
+          "db_total_connections": 19,
+          "db_active_connections": 1,
+          "db_waiting_connections": 18,
+          "db_longest_active_seconds": 0.00085
+        },
+        {
+          "ts": "2026-03-26T02:00:27.531313+00:00",
+          "db_total_connections": 19,
+          "db_active_connections": 1,
+          "db_waiting_connections": 18,
+          "db_longest_active_seconds": 0.001145
+        },
+        {
+          "ts": "2026-03-26T02:00:29.533005+00:00",
+          "db_total_connections": 19,
+          "db_active_connections": 1,
+          "db_waiting_connections": 18,
+          "db_longest_active_seconds": 0.000985
+        },
+        {
+          "ts": "2026-03-26T02:00:31.534183+00:00",
+          "db_total_connections": 19,
+          "db_active_connections": 1,
+          "db_waiting_connections": 18,
+          "db_longest_active_seconds": 0.001036
+        },
+        {
+          "ts": "2026-03-26T02:00:33.535738+00:00",
+          "db_total_connections": 19,
+          "db_active_connections": 1,
+          "db_waiting_connections": 18,
+          "db_longest_active_seconds": 0.000995
+        },
+        {
+          "ts": "2026-03-26T02:00:35.536968+00:00",
+          "db_total_connections": 19,
+          "db_active_connections": 1,
+          "db_waiting_connections": 18,
+          "db_longest_active_seconds": 0.001011
+        },
+        {
+          "ts": "2026-03-26T02:00:37.538109+00:00",
+          "db_total_connections": 19,
+          "db_active_connections": 1,
+          "db_waiting_connections": 18,
+          "db_longest_active_seconds": 0.000998
+        },
+        {
+          "ts": "2026-03-26T02:00:39.539500+00:00",
+          "db_total_connections": 19,
+          "db_active_connections": 1,
+          "db_waiting_connections": 18,
+          "db_longest_active_seconds": 0.000907
+        },
+        {
+          "ts": "2026-03-26T02:00:41.541111+00:00",
+          "db_total_connections": 19,
+          "db_active_connections": 1,
+          "db_waiting_connections": 18,
+          "db_longest_active_seconds": 0.00094
+        },
+        {
+          "ts": "2026-03-26T02:00:43.542741+00:00",
+          "db_total_connections": 19,
+          "db_active_connections": 1,
+          "db_waiting_connections": 18,
+          "db_longest_active_seconds": 0.000997
+        },
+        {
+          "ts": "2026-03-26T02:00:45.544457+00:00",
+          "db_total_connections": 19,
+          "db_active_connections": 1,
+          "db_waiting_connections": 18,
+          "db_longest_active_seconds": 0.001076
+        },
+        {
+          "ts": "2026-03-26T02:00:47.545489+00:00",
+          "db_total_connections": 19,
+          "db_active_connections": 1,
+          "db_waiting_connections": 18,
+          "db_longest_active_seconds": 0.000928
+        },
+        {
+          "ts": "2026-03-26T02:00:49.547273+00:00",
+          "db_total_connections": 19,
+          "db_active_connections": 2,
+          "db_waiting_connections": 17,
+          "db_longest_active_seconds": 0.001063
+        },
+        {
+          "ts": "2026-03-26T02:00:51.548572+00:00",
+          "db_total_connections": 19,
+          "db_active_connections": 1,
+          "db_waiting_connections": 18,
+          "db_longest_active_seconds": 0.000918
+        },
+        {
+          "ts": "2026-03-26T02:00:53.549908+00:00",
+          "db_total_connections": 19,
+          "db_active_connections": 1,
+          "db_waiting_connections": 18,
+          "db_longest_active_seconds": 0.00105
+        },
+        {
+          "ts": "2026-03-26T02:00:55.551281+00:00",
+          "db_total_connections": 19,
+          "db_active_connections": 1,
+          "db_waiting_connections": 18,
+          "db_longest_active_seconds": 0.000949
+        },
+        {
+          "ts": "2026-03-26T02:00:57.553108+00:00",
+          "db_total_connections": 19,
+          "db_active_connections": 1,
+          "db_waiting_connections": 18,
+          "db_longest_active_seconds": 0.001059
+        },
+        {
+          "ts": "2026-03-26T02:00:59.554757+00:00",
+          "db_total_connections": 19,
+          "db_active_connections": 1,
+          "db_waiting_connections": 18,
+          "db_longest_active_seconds": 0.001253
+        },
+        {
+          "ts": "2026-03-26T02:01:01.555772+00:00",
+          "db_total_connections": 19,
+          "db_active_connections": 1,
+          "db_waiting_connections": 18,
+          "db_longest_active_seconds": 0.001112
+        },
+        {
+          "ts": "2026-03-26T02:01:03.557693+00:00",
+          "db_total_connections": 19,
+          "db_active_connections": 1,
+          "db_waiting_connections": 18,
+          "db_longest_active_seconds": 0.000957
+        },
+        {
+          "ts": "2026-03-26T02:01:05.559279+00:00",
+          "db_total_connections": 19,
+          "db_active_connections": 1,
+          "db_waiting_connections": 18,
+          "db_longest_active_seconds": 0.000857
+        },
+        {
+          "ts": "2026-03-26T02:01:07.561276+00:00",
+          "db_total_connections": 19,
+          "db_active_connections": 1,
+          "db_waiting_connections": 18,
+          "db_longest_active_seconds": 0.001046
+        },
+        {
+          "ts": "2026-03-26T02:01:09.563982+00:00",
+          "db_total_connections": 19,
+          "db_active_connections": 1,
+          "db_waiting_connections": 18,
+          "db_longest_active_seconds": 0.00091
+        },
+        {
+          "ts": "2026-03-26T02:01:11.565011+00:00",
+          "db_total_connections": 19,
+          "db_active_connections": 1,
+          "db_waiting_connections": 18,
+          "db_longest_active_seconds": 0.000897
+        },
+        {
+          "ts": "2026-03-26T02:01:13.567911+00:00",
+          "db_total_connections": 19,
+          "db_active_connections": 1,
+          "db_waiting_connections": 18,
+          "db_longest_active_seconds": 0.000984
+        },
+        {
+          "ts": "2026-03-26T02:01:15.569105+00:00",
+          "db_total_connections": 19,
+          "db_active_connections": 1,
+          "db_waiting_connections": 17,
+          "db_longest_active_seconds": 0.000914
+        },
+        {
+          "ts": "2026-03-26T02:01:17.571067+00:00",
+          "db_total_connections": 19,
+          "db_active_connections": 1,
+          "db_waiting_connections": 18,
+          "db_longest_active_seconds": 0.000958
+        },
+        {
+          "ts": "2026-03-26T02:01:19.571977+00:00",
+          "db_total_connections": 19,
+          "db_active_connections": 1,
+          "db_waiting_connections": 18,
+          "db_longest_active_seconds": 0.001116
+        },
+        {
+          "ts": "2026-03-26T02:01:21.573895+00:00",
+          "db_total_connections": 19,
+          "db_active_connections": 1,
+          "db_waiting_connections": 18,
+          "db_longest_active_seconds": 0.001043
+        },
+        {
+          "ts": "2026-03-26T02:01:23.575382+00:00",
+          "db_total_connections": 19,
+          "db_active_connections": 1,
+          "db_waiting_connections": 18,
+          "db_longest_active_seconds": 0.000977
+        },
+        {
+          "ts": "2026-03-26T02:01:25.576708+00:00",
+          "db_total_connections": 19,
+          "db_active_connections": 1,
+          "db_waiting_connections": 18,
+          "db_longest_active_seconds": 0.000855
+        },
+        {
+          "ts": "2026-03-26T02:01:27.577970+00:00",
+          "db_total_connections": 19,
+          "db_active_connections": 1,
+          "db_waiting_connections": 18,
+          "db_longest_active_seconds": 0.000988
+        },
+        {
+          "ts": "2026-03-26T02:01:29.579584+00:00",
+          "db_total_connections": 19,
+          "db_active_connections": 1,
+          "db_waiting_connections": 18,
+          "db_longest_active_seconds": 0.000975
+        },
+        {
+          "ts": "2026-03-26T02:01:31.581503+00:00",
+          "db_total_connections": 19,
+          "db_active_connections": 1,
+          "db_waiting_connections": 18,
+          "db_longest_active_seconds": 0.001671
+        },
+        {
+          "ts": "2026-03-26T02:01:33.584081+00:00",
+          "db_total_connections": 19,
+          "db_active_connections": 1,
+          "db_waiting_connections": 18,
+          "db_longest_active_seconds": 0.00103
+        },
+        {
+          "ts": "2026-03-26T02:01:35.585858+00:00",
+          "db_total_connections": 19,
+          "db_active_connections": 1,
+          "db_waiting_connections": 18,
+          "db_longest_active_seconds": 0.0009
+        },
+        {
+          "ts": "2026-03-26T02:01:37.587102+00:00",
+          "db_total_connections": 19,
+          "db_active_connections": 1,
+          "db_waiting_connections": 18,
+          "db_longest_active_seconds": 0.000906
+        },
+        {
+          "ts": "2026-03-26T02:01:39.588328+00:00",
+          "db_total_connections": 19,
+          "db_active_connections": 1,
+          "db_waiting_connections": 18,
+          "db_longest_active_seconds": 0.000955
+        },
+        {
+          "ts": "2026-03-26T02:01:41.590068+00:00",
+          "db_total_connections": 19,
+          "db_active_connections": 1,
+          "db_waiting_connections": 18,
+          "db_longest_active_seconds": 0.000908
+        },
+        {
+          "ts": "2026-03-26T02:01:43.591669+00:00",
+          "db_total_connections": 19,
+          "db_active_connections": 1,
+          "db_waiting_connections": 18,
+          "db_longest_active_seconds": 0.000917
+        },
+        {
+          "ts": "2026-03-26T02:01:45.592912+00:00",
+          "db_total_connections": 19,
+          "db_active_connections": 1,
+          "db_waiting_connections": 18,
+          "db_longest_active_seconds": 0.001004
+        },
+        {
+          "ts": "2026-03-26T02:01:47.594211+00:00",
+          "db_total_connections": 19,
+          "db_active_connections": 1,
+          "db_waiting_connections": 18,
+          "db_longest_active_seconds": 0.001061
+        },
+        {
+          "ts": "2026-03-26T02:01:49.596135+00:00",
+          "db_total_connections": 19,
+          "db_active_connections": 1,
+          "db_waiting_connections": 18,
+          "db_longest_active_seconds": 0.001069
+        },
+        {
+          "ts": "2026-03-26T02:01:51.597491+00:00",
+          "db_total_connections": 19,
+          "db_active_connections": 1,
+          "db_waiting_connections": 18,
+          "db_longest_active_seconds": 0.000986
+        },
+        {
+          "ts": "2026-03-26T02:01:53.598898+00:00",
+          "db_total_connections": 19,
+          "db_active_connections": 1,
+          "db_waiting_connections": 18,
+          "db_longest_active_seconds": 0.000996
+        },
+        {
+          "ts": "2026-03-26T02:01:55.600812+00:00",
+          "db_total_connections": 19,
+          "db_active_connections": 1,
+          "db_waiting_connections": 17,
+          "db_longest_active_seconds": 0.000978
+        }
+      ],
+      "metrics_summary": {
+        "backend_cpu_peak_percent": 0.0,
+        "backend_rss_peak_mb": 0.0,
+        "backend_threads_peak": 0.0,
+        "db_total_connections_peak": 19,
+        "db_active_connections_peak": 2,
+        "db_waiting_connections_peak": 18,
+        "db_longest_active_seconds_peak": 0.008775
+      },
+      "artifacts": {
+        "stats_csv": "load-tests\\results\\phase2_slice4_prodlike_18004\\scenario_d_u30_stats.csv",
+        "stats_history_csv": "load-tests\\results\\phase2_slice4_prodlike_18004\\scenario_d_u30_stats_history.csv",
+        "failures_csv": "load-tests\\results\\phase2_slice4_prodlike_18004\\scenario_d_u30_failures.csv",
+        "report_html": "load-tests\\results\\phase2_slice4_prodlike_18004\\scenario_d_u30.html"
+      },
+      "capacity_pass": false
+    },
+    {
+      "scenario": "D",
+      "users": 40,
+      "started_at": "2026-03-26T02:01:57.011218+00:00",
+      "finished_at": "2026-03-26T02:03:58.967262+00:00",
+      "command": [
+        "C:\\Users\\harae\\Desktop\\ui migration\\proyecto1\\.venv\\Scripts\\locust.exe",
+        "-f",
+        "C:\\Users\\harae\\Desktop\\ui migration\\proyecto1\\load-tests\\locustfile.py",
+        "--host",
+        "http://127.0.0.1:18004",
+        "--users",
+        "40",
+        "--spawn-rate",
+        "5.0",
+        "--run-time",
+        "2m",
+        "--csv",
+        "load-tests\\results\\phase2_slice4_prodlike_18004\\scenario_d_u40",
+        "--html",
+        "load-tests\\results\\phase2_slice4_prodlike_18004\\scenario_d_u40.html",
+        "--headless",
+        "--only-summary"
+      ],
+      "exit_code": 0,
+      "stdout_tail": "",
+      "stderr_tail": "   178    9919   1700 |    1.91        0.00\nGET      read.payments                                                                     53     0(0.00%) |   1620     255    7310   1500 |    0.44        0.00\nGET      read.products                                                                     22     0(0.00%) |   1882     187    8423   1600 |    0.18        0.00\nGET      read.sales                                                                       109     0(0.00%) |   1793     188    9604   1600 |    0.91        0.00\nGET      read.summary                                                                     173     0(0.00%) |   1802      90    5486   1700 |    1.45        0.00\nPOST     write.expense                                                                    109     0(0.00%) |   1610     155    4603   1600 |    0.91        0.00\nPOST     write.payment                                                                     56     0(0.00%) |   1866     208    9175   1600 |    0.47        0.00\nPOST     write.sale                                                                       226     0(0.00%) |   1853     144    9621   1600 |    1.89        0.00\n--------|----------------------------------------------------------------------------|-------|-------------|-------|-------|-------|-------|--------|-----------\n         Aggregated                                                                      1135     0(0.00%) |   1770      12    9919   1600 |    9.49        0.00\n\nResponse time percentiles (approximated)\nType     Name                                                                                  50%    66%    75%    80%    90%    95%    98%    99%  99.9% 99.99%   100% # reqs\n--------|--------------------------------------------------------------------------------|--------|------|------|------|------|------|------|------|------|------|------|------\nGET      read.business_profile                                                                1300   1600   1900   2000   2300   4400   5500   5500   5500   5500   5500     31\nGET      read.customers                                                                       1500   1800   2100   2400   2900   3400   5000   5600   6100   6100   6100    127\nGET      read.dashboard                                                                       1700   2000   2300   2500   3200   4300   5400   5700   9900   9900   9900    229\nGET      read.payments                                                                        1500   1800   2000   2300   2700   3300   3700   7300   7300   7300   7300     53\nGET      read.products                                                                        1600   1800   2100   2200   2400   3800   8400   8400   8400   8400   8400     22\nGET      read.sales                                                                           1600   1900   2400   2600   3400   4300   5400   5600   9600   9600   9600    109\nGET      read.summary                                                                         1700   2000   2300   2600   3600   4300   4600   5200   5500   5500   5500    173\nPOST     write.expense                                                                        1600   1900   2000   2100   2600   3600   4500   4500   4600   4600   4600    109\nPOST     write.payment                                                                        1600   2000   2400   2500   3200   5800   6300   9200   9200   9200   9200     56\nPOST     write.sale                                                                           1600   1900   2400   2600   3300   4400   5400   8400   9600   9600   9600    226\n--------|--------------------------------------------------------------------------------|--------|------|------|------|------|------|------|------|------|------|------|------\n         Aggregated                                                                           1600   1900   2300   2400   3100   4300   5300   5800   9800   9900   9900   1135\n\n",
+      "stats_summary": {
+        "requests": 1135,
+        "failures": 0,
+        "median_ms": 1600.0,
+        "avg_ms": 1770.6449860792325,
+        "min_ms": 12.56650000141235,
+        "max_ms": 9919.305399998848,
+        "avg_size": 45451.84405286344,
+        "rps": 9.485595187127517,
+        "failures_per_sec": 0.0,
+        "p50_ms": 1600.0,
+        "p95_ms": 4300.0,
+        "p99_ms": 5800.0,
+        "slowest_endpoint": {
+          "name": "read.products",
+          "method": "GET",
+          "avg_ms": 1882.558886363933,
+          "p95_ms": 3800.0,
+          "p99_ms": 8400.0,
+          "rps": 0.18386175693110607
+        }
+      },
+      "distribution": {
+        "p50_estimated_ms": 1766.751181907823,
+        "p95_estimated_ms": 4681.246066666669,
+        "p99_estimated_ms": 5145.58584999977,
+        "avg_rps_window": 8.728817724137931,
+        "max_rps_window": 15.4,
+        "final_failure_count": 0.0
+      },
+      "failures_rows": 1,
+      "error_rate": 0.0,
+      "metrics_samples": [
+        {
+          "ts": "2026-03-26T02:01:57.065549+00:00",
+          "db_total_connections": 19,
+          "db_active_connections": 1,
+          "db_waiting_connections": 18,
+          "db_longest_active_seconds": 0.005197
+        },
+        {
+          "ts": "2026-03-26T02:01:59.071292+00:00",
+          "db_total_connections": 19,
+          "db_active_connections": 1,
+          "db_waiting_connections": 18,
+          "db_longest_active_seconds": 0.000999
+        },
+        {
+          "ts": "2026-03-26T02:02:01.073079+00:00",
+          "db_total_connections": 19,
+          "db_active_connections": 1,
+          "db_waiting_connections": 18,
+          "db_longest_active_seconds": 0.000934
+        },
+        {
+          "ts": "2026-03-26T02:02:03.074115+00:00",
+          "db_total_connections": 19,
+          "db_active_connections": 1,
+          "db_waiting_connections": 18,
+          "db_longest_active_seconds": 0.001655
+        },
+        {
+          "ts": "2026-03-26T02:02:05.076936+00:00",
+          "db_total_connections": 19,
+          "db_active_connections": 1,
+          "db_waiting_connections": 18,
+          "db_longest_active_seconds": 0.001038
+        },
+        {
+          "ts": "2026-03-26T02:02:07.078730+00:00",
+          "db_total_connections": 19,
+          "db_active_connections": 1,
+          "db_waiting_connections": 18,
+          "db_longest_active_seconds": 0.001025
+        },
+        {
+          "ts": "2026-03-26T02:02:09.080175+00:00",
+          "db_total_connections": 19,
+          "db_active_connections": 1,
+          "db_waiting_connections": 18,
+          "db_longest_active_seconds": 0.001007
+        },
+        {
+          "ts": "2026-03-26T02:02:11.081201+00:00",
+          "db_total_connections": 19,
+          "db_active_connections": 1,
+          "db_waiting_connections": 18,
+          "db_longest_active_seconds": 0.000908
+        },
+        {
+          "ts": "2026-03-26T02:02:13.083157+00:00",
+          "db_total_connections": 19,
+          "db_active_connections": 1,
+          "db_waiting_connections": 18,
+          "db_longest_active_seconds": 0.000897
+        },
+        {
+          "ts": "2026-03-26T02:02:15.084200+00:00",
+          "db_total_connections": 19,
+          "db_active_connections": 1,
+          "db_waiting_connections": 18,
+          "db_longest_active_seconds": 0.000912
+        },
+        {
+          "ts": "2026-03-26T02:02:17.085781+00:00",
+          "db_total_connections": 19,
+          "db_active_connections": 1,
+          "db_waiting_connections": 18,
+          "db_longest_active_seconds": 0.001069
+        },
+        {
+          "ts": "2026-03-26T02:02:19.087024+00:00",
+          "db_total_connections": 19,
+          "db_active_connections": 1,
+          "db_waiting_connections": 18,
+          "db_longest_active_seconds": 0.001114
+        },
+        {
+          "ts": "2026-03-26T02:02:21.088906+00:00",
+          "db_total_connections": 19,
+          "db_active_connections": 1,
+          "db_waiting_connections": 18,
+          "db_longest_active_seconds": 0.001035
+        },
+        {
+          "ts": "2026-03-26T02:02:23.090728+00:00",
+          "db_total_connections": 19,
+          "db_active_connections": 1,
+          "db_waiting_connections": 18,
+          "db_longest_active_seconds": 0.001038
+        },
+        {
+          "ts": "2026-03-26T02:02:25.092065+00:00",
+          "db_total_connections": 19,
+          "db_active_connections": 1,
+          "db_waiting_connections": 18,
+          "db_longest_active_seconds": 0.000895
+        },
+        {
+          "ts": "2026-03-26T02:02:27.093234+00:00",
+          "db_total_connections": 19,
+          "db_active_connections": 1,
+          "db_waiting_connections": 18,
+          "db_longest_active_seconds": 0.000963
+        },
+        {
+          "ts": "2026-03-26T02:02:29.095285+00:00",
+          "db_total_connections": 19,
+          "db_active_connections": 1,
+          "db_waiting_connections": 18,
+          "db_longest_active_seconds": 0.001016
+        },
+        {
+          "ts": "2026-03-26T02:02:31.096366+00:00",
+          "db_total_connections": 19,
+          "db_active_connections": 1,
+          "db_waiting_connections": 18,
+          "db_longest_active_seconds": 0.000882
+        },
+        {
+          "ts": "2026-03-26T02:02:33.099015+00:00",
+          "db_total_connections": 19,
+          "db_active_connections": 1,
+          "db_waiting_connections": 18,
+          "db_longest_active_seconds": 0.001008
+        },
+        {
+          "ts": "2026-03-26T02:02:35.101299+00:00",
+          "db_total_connections": 19,
+          "db_active_connections": 2,
+          "db_waiting_connections": 18,
+          "db_longest_active_seconds": 0.001446
+        },
+        {
+          "ts": "2026-03-26T02:02:37.104207+00:00",
+          "db_total_connections": 19,
+          "db_active_connections": 3,
+          "db_waiting_connections": 17,
+          "db_longest_active_seconds": 0.000907
+        },
+        {
+          "ts": "2026-03-26T02:02:39.105787+00:00",
+          "db_total_connections": 19,
+          "db_active_connections": 1,
+          "db_waiting_connections": 18,
+          "db_longest_active_seconds": 0.000956
+        },
+        {
+          "ts": "2026-03-26T02:02:41.106848+00:00",
+          "db_total_connections": 19,
+          "db_active_connections": 1,
+          "db_waiting_connections": 18,
+          "db_longest_active_seconds": 0.001134
+        },
+        {
+          "ts": "2026-03-26T02:02:43.107884+00:00",
+          "db_total_connections": 19,
+          "db_active_connections": 1,
+          "db_waiting_connections": 18,
+          "db_longest_active_seconds": 0.000994
+        },
+        {
+          "ts": "2026-03-26T02:02:45.109756+00:00",
+          "db_total_connections": 19,
+          "db_active_connections": 1,
+          "db_waiting_connections": 18,
+          "db_longest_active_seconds": 0.000955
+        },
+        {
+          "ts": "2026-03-26T02:02:47.111269+00:00",
+          "db_total_connections": 19,
+          "db_active_connections": 1,
+          "db_waiting_connections": 18,
+          "db_longest_active_seconds": 0.00099
+        },
+        {
+          "ts": "2026-03-26T02:02:49.112954+00:00",
+          "db_total_connections": 19,
+          "db_active_connections": 1,
+          "db_waiting_connections": 18,
+          "db_longest_active_seconds": 0.001
+        },
+        {
+          "ts": "2026-03-26T02:02:51.114550+00:00",
+          "db_total_connections": 19,
+          "db_active_connections": 1,
+          "db_waiting_connections": 18,
+          "db_longest_active_seconds": 0.000915
+        },
+        {
+          "ts": "2026-03-26T02:02:53.116026+00:00",
+          "db_total_connections": 19,
+          "db_active_connections": 1,
+          "db_waiting_connections": 18,
+          "db_longest_active_seconds": 0.000971
+        },
+        {
+          "ts": "2026-03-26T02:02:55.117628+00:00",
+          "db_total_connections": 19,
+          "db_active_connections": 1,
+          "db_waiting_connections": 18,
+          "db_longest_active_seconds": 0.000981
+        },
+        {
+          "ts": "2026-03-26T02:02:57.119258+00:00",
+          "db_total_connections": 19,
+          "db_active_connections": 1,
+          "db_waiting_connections": 18,
+          "db_longest_active_seconds": 0.001312
+        },
+        {
+          "ts": "2026-03-26T02:02:59.121174+00:00",
+          "db_total_connections": 19,
+          "db_active_connections": 1,
+          "db_waiting_connections": 18,
+          "db_longest_active_seconds": 0.001005
+        },
+        {
+          "ts": "2026-03-26T02:03:01.125112+00:00",
+          "db_total_connections": 19,
+          "db_active_connections": 1,
+          "db_waiting_connections": 18,
+          "db_longest_active_seconds": 0.001039
+        },
+        {
+          "ts": "2026-03-26T02:03:03.126905+00:00",
+          "db_total_connections": 19,
+          "db_active_connections": 1,
+          "db_waiting_connections": 18,
+          "db_longest_active_seconds": 0.001296
+        },
+        {
+          "ts": "2026-03-26T02:03:05.128773+00:00",
+          "db_total_connections": 19,
+          "db_active_connections": 1,
+          "db_waiting_connections": 18,
+          "db_longest_active_seconds": 0.001217
+        },
+        {
+          "ts": "2026-03-26T02:03:07.131185+00:00",
+          "db_total_connections": 17,
+          "db_active_connections": 1,
+          "db_waiting_connections": 16,
+          "db_longest_active_seconds": 0.000828
+        },
+        {
+          "ts": "2026-03-26T02:03:09.133048+00:00",
+          "db_total_connections": 17,
+          "db_active_connections": 2,
+          "db_waiting_connections": 16,
+          "db_longest_active_seconds": 0.001204
+        },
+        {
+          "ts": "2026-03-26T02:03:11.134970+00:00",
+          "db_total_connections": 19,
+          "db_active_connections": 3,
+          "db_waiting_connections": 18,
+          "db_longest_active_seconds": 0.001038
+        },
+        {
+          "ts": "2026-03-26T02:03:13.136398+00:00",
+          "db_total_connections": 19,
+          "db_active_connections": 1,
+          "db_waiting_connections": 18,
+          "db_longest_active_seconds": 0.000995
+        },
+        {
+          "ts": "2026-03-26T02:03:15.137170+00:00",
+          "db_total_connections": 17,
+          "db_active_connections": 1,
+          "db_waiting_connections": 16,
+          "db_longest_active_seconds": 0.001291
+        },
+        {
+          "ts": "2026-03-26T02:03:17.138973+00:00",
+          "db_total_connections": 17,
+          "db_active_connections": 1,
+          "db_waiting_connections": 16,
+          "db_longest_active_seconds": 0.000943
+        },
+        {
+          "ts": "2026-03-26T02:03:19.139876+00:00",
+          "db_total_connections": 17,
+          "db_active_connections": 1,
+          "db_waiting_connections": 16,
+          "db_longest_active_seconds": 0.000961
+        },
+        {
+          "ts": "2026-03-26T02:03:21.141801+00:00",
+          "db_total_connections": 17,
+          "db_active_connections": 1,
+          "db_waiting_connections": 16,
+          "db_longest_active_seconds": 0.000989
+        },
+        {
+          "ts": "2026-03-26T02:03:23.143475+00:00",
+          "db_total_connections": 17,
+          "db_active_connections": 1,
+          "db_waiting_connections": 16,
+          "db_longest_active_seconds": 0.001019
+        },
+        {
+          "ts": "2026-03-26T02:03:25.145041+00:00",
+          "db_total_connections": 17,
+          "db_active_connections": 1,
+          "db_waiting_connections": 16,
+          "db_longest_active_seconds": 0.00091
+        },
+        {
+          "ts": "2026-03-26T02:03:27.148441+00:00",
+          "db_total_connections": 17,
+          "db_active_connections": 1,
+          "db_waiting_connections": 16,
+          "db_longest_active_seconds": 0.000987
+        },
+        {
+          "ts": "2026-03-26T02:03:29.149494+00:00",
+          "db_total_connections": 17,
+          "db_active_connections": 1,
+          "db_waiting_connections": 16,
+          "db_longest_active_seconds": 0.000996
+        },
+        {
+          "ts": "2026-03-26T02:03:31.150990+00:00",
+          "db_total_connections": 17,
+          "db_active_connections": 1,
+          "db_waiting_connections": 16,
+          "db_longest_active_seconds": 0.00087
+        },
+        {
+          "ts": "2026-03-26T02:03:33.152496+00:00",
+          "db_total_connections": 17,
+          "db_active_connections": 1,
+          "db_waiting_connections": 16,
+          "db_longest_active_seconds": 0.001145
+        },
+        {
+          "ts": "2026-03-26T02:03:35.154323+00:00",
+          "db_total_connections": 17,
+          "db_active_connections": 1,
+          "db_waiting_connections": 16,
+          "db_longest_active_seconds": 0.001029
+        },
+        {
+          "ts": "2026-03-26T02:03:37.155831+00:00",
+          "db_total_connections": 17,
+          "db_active_connections": 1,
+          "db_waiting_connections": 16,
+          "db_longest_active_seconds": 0.000877
+        },
+        {
+          "ts": "2026-03-26T02:03:39.157209+00:00",
+          "db_total_connections": 17,
+          "db_active_connections": 2,
+          "db_waiting_connections": 15,
+          "db_longest_active_seconds": 0.00094
+        },
+        {
+          "ts": "2026-03-26T02:03:41.158817+00:00",
+          "db_total_connections": 17,
+          "db_active_connections": 1,
+          "db_waiting_connections": 16,
+          "db_longest_active_seconds": 0.000961
+        },
+        {
+          "ts": "2026-03-26T02:03:43.159844+00:00",
+          "db_total_connections": 17,
+          "db_active_connections": 1,
+          "db_waiting_connections": 16,
+          "db_longest_active_seconds": 0.000968
+        },
+        {
+          "ts": "2026-03-26T02:03:45.161444+00:00",
+          "db_total_connections": 17,
+          "db_active_connections": 1,
+          "db_waiting_connections": 16,
+          "db_longest_active_seconds": 0.001358
+        },
+        {
+          "ts": "2026-03-26T02:03:47.163053+00:00",
+          "db_total_connections": 17,
+          "db_active_connections": 1,
+          "db_waiting_connections": 16,
+          "db_longest_active_seconds": 0.000926
+        },
+        {
+          "ts": "2026-03-26T02:03:49.164122+00:00",
+          "db_total_connections": 17,
+          "db_active_connections": 1,
+          "db_waiting_connections": 16,
+          "db_longest_active_seconds": 0.000897
+        },
+        {
+          "ts": "2026-03-26T02:03:51.165140+00:00",
+          "db_total_connections": 17,
+          "db_active_connections": 1,
+          "db_waiting_connections": 16,
+          "db_longest_active_seconds": 0.000866
+        },
+        {
+          "ts": "2026-03-26T02:03:53.178930+00:00",
+          "db_total_connections": 17,
+          "db_active_connections": 1,
+          "db_waiting_connections": 16,
+          "db_longest_active_seconds": 0.001146
+        },
+        {
+          "ts": "2026-03-26T02:03:55.181694+00:00",
+          "db_total_connections": 17,
+          "db_active_connections": 1,
+          "db_waiting_connections": 16,
+          "db_longest_active_seconds": 0.000853
+        },
+        {
+          "ts": "2026-03-26T02:03:57.182771+00:00",
+          "db_total_connections": 17,
+          "db_active_connections": 1,
+          "db_waiting_connections": 16,
+          "db_longest_active_seconds": 0.000999
+        }
+      ],
+      "metrics_summary": {
+        "backend_cpu_peak_percent": 0.0,
+        "backend_rss_peak_mb": 0.0,
+        "backend_threads_peak": 0.0,
+        "db_total_connections_peak": 19,
+        "db_active_connections_peak": 3,
+        "db_waiting_connections_peak": 18,
+        "db_longest_active_seconds_peak": 0.005197
+      },
+      "artifacts": {
+        "stats_csv": "load-tests\\results\\phase2_slice4_prodlike_18004\\scenario_d_u40_stats.csv",
+        "stats_history_csv": "load-tests\\results\\phase2_slice4_prodlike_18004\\scenario_d_u40_stats_history.csv",
+        "failures_csv": "load-tests\\results\\phase2_slice4_prodlike_18004\\scenario_d_u40_failures.csv",
+        "report_html": "load-tests\\results\\phase2_slice4_prodlike_18004\\scenario_d_u40.html"
+      },
+      "capacity_pass": false
+    },
+    {
+      "scenario": "D",
+      "users": 60,
+      "started_at": "2026-03-26T02:03:58.973340+00:00",
+      "finished_at": "2026-03-26T02:06:00.567467+00:00",
+      "command": [
+        "C:\\Users\\harae\\Desktop\\ui migration\\proyecto1\\.venv\\Scripts\\locust.exe",
+        "-f",
+        "C:\\Users\\harae\\Desktop\\ui migration\\proyecto1\\load-tests\\locustfile.py",
+        "--host",
+        "http://127.0.0.1:18004",
+        "--users",
+        "60",
+        "--spawn-rate",
+        "5.0",
+        "--run-time",
+        "2m",
+        "--csv",
+        "load-tests\\results\\phase2_slice4_prodlike_18004\\scenario_d_u60",
+        "--html",
+        "load-tests\\results\\phase2_slice4_prodlike_18004\\scenario_d_u60.html",
+        "--headless",
+        "--only-summary"
+      ],
+      "exit_code": 0,
+      "stdout_tail": "",
+      "stderr_tail": "   204   19708   3000 |    2.03        0.00\nGET      read.payments                                                                     55     0(0.00%) |   2777     632    7035   2600 |    0.46        0.00\nGET      read.products                                                                     20     0(0.00%) |   2578     762    6700   2000 |    0.17        0.00\nGET      read.sales                                                                        88     0(0.00%) |   3464     221   14293   3200 |    0.74        0.00\nGET      read.summary                                                                     157     0(0.00%) |   3218     154   19586   3300 |    1.32        0.00\nPOST     write.expense                                                                    103     0(0.00%) |   3295     205   15857   3400 |    0.87        0.00\nPOST     write.payment                                                                     51     0(0.00%) |   3365     278    6942   3200 |    0.43        0.00\nPOST     write.sale                                                                       226     0(0.00%) |   3159     174   20089   3000 |    1.90        0.00\n--------|----------------------------------------------------------------------------|-------|-------------|-------|-------|-------|-------|--------|-----------\n         Aggregated                                                                      1075     0(0.00%) |   3236     127   20089   3100 |    9.04        0.00\n\nResponse time percentiles (approximated)\nType     Name                                                                                  50%    66%    75%    80%    90%    95%    98%    99%  99.9% 99.99%   100% # reqs\n--------|--------------------------------------------------------------------------------|--------|------|------|------|------|------|------|------|------|------|------|------\nGET      read.business_profile                                                                1100   2900   4100   4400   4900   6700  17000  17000  17000  17000  17000     29\nGET      read.customers                                                                       3100   3700   4400   4800   5200   6100   6700   7500   8000   8000   8000    104\nGET      read.dashboard                                                                       3100   3900   4700   5000   6200   7200  18000  18000  20000  20000  20000    242\nGET      read.payments                                                                        2600   3700   4000   4200   4800   5400   5900   7000   7000   7000   7000     55\nGET      read.products                                                                        2200   3100   3800   4300   5100   6700   6700   6700   6700   6700   6700     20\nGET      read.sales                                                                           3200   4000   4900   5100   6500   6800   8000  14000  14000  14000  14000     88\nGET      read.summary                                                                         3300   4000   4400   4800   5500   6600   7100  17000  20000  20000  20000    157\nPOST     write.expense                                                                        3400   3800   4100   4500   5400   6900   7300   7600  16000  16000  16000    103\nPOST     write.payment                                                                        3200   4700   5200   5400   6200   6600   6700   6900   6900   6900   6900     51\nPOST     write.sale                                                                           3000   3700   4000   4400   5300   6600  18000  19000  20000  20000  20000    226\n--------|--------------------------------------------------------------------------------|--------|------|------|------|------|------|------|------|------|------|------|------\n         Aggregated                                                                           3100   3900   4300   4800   5600   6700   8000  18000  20000  20000  20000   1075\n\n",
+      "stats_summary": {
+        "requests": 1069,
+        "failures": 0,
+        "median_ms": 3100.0,
+        "avg_ms": 3236.8265344247047,
+        "min_ms": 127.9605999989144,
+        "max_ms": 20089.23439999853,
+        "avg_size": 44753.28718428438,
+        "rps": 9.033578642502073,
+        "failures_per_sec": 0.0,
+        "p50_ms": 3100.0,
+        "p95_ms": 6700.0,
+        "p99_ms": 18000.0,
+        "slowest_endpoint": {
+          "name": "read.dashboard",
+          "method": "GET",
+          "avg_ms": 3511.257552083271,
+          "p95_ms": 7300.0,
+          "p99_ms": 18000.0,
+          "rps": 2.0281186849396606
+        }
+      },
+      "distribution": {
+        "p50_estimated_ms": 3043.0067608938634,
+        "p95_estimated_ms": 3914.4955305555923,
+        "p99_estimated_ms": 4367.71110421055,
+        "avg_rps_window": 8.185344827586206,
+        "max_rps_window": 15.0,
+        "final_failure_count": 0.0
+      },
+      "failures_rows": 1,
+      "error_rate": 0.0,
+      "metrics_samples": [
+        {
+          "ts": "2026-03-26T02:03:59.072092+00:00",
+          "db_total_connections": 17,
+          "db_active_connections": 1,
+          "db_waiting_connections": 16,
+          "db_longest_active_seconds": 0.004415
+        },
+        {
+          "ts": "2026-03-26T02:04:01.076595+00:00",
+          "db_total_connections": 17,
+          "db_active_connections": 1,
+          "db_waiting_connections": 16,
+          "db_longest_active_seconds": 0.001029
+        },
+        {
+          "ts": "2026-03-26T02:04:03.078220+00:00",
+          "db_total_connections": 19,
+          "db_active_connections": 1,
+          "db_waiting_connections": 18,
+          "db_longest_active_seconds": 0.001083
+        },
+        {
+          "ts": "2026-03-26T02:04:05.080469+00:00",
+          "db_total_connections": 19,
+          "db_active_connections": 1,
+          "db_waiting_connections": 18,
+          "db_longest_active_seconds": 0.001063
+        },
+        {
+          "ts": "2026-03-26T02:04:07.082216+00:00",
+          "db_total_connections": 19,
+          "db_active_connections": 1,
+          "db_waiting_connections": 18,
+          "db_longest_active_seconds": 0.001025
+        },
+        {
+          "ts": "2026-03-26T02:04:09.083250+00:00",
+          "db_total_connections": 19,
+          "db_active_connections": 1,
+          "db_waiting_connections": 18,
+          "db_longest_active_seconds": 0.001016
+        },
+        {
+          "ts": "2026-03-26T02:04:11.084503+00:00",
+          "db_total_connections": 19,
+          "db_active_connections": 1,
+          "db_waiting_connections": 18,
+          "db_longest_active_seconds": 0.000902
+        },
+        {
+          "ts": "2026-03-26T02:04:13.085902+00:00",
+          "db_total_connections": 19,
+          "db_active_connections": 1,
+          "db_waiting_connections": 18,
+          "db_longest_active_seconds": 0.001081
+        },
+        {
+          "ts": "2026-03-26T02:04:15.088471+00:00",
+          "db_total_connections": 19,
+          "db_active_connections": 1,
+          "db_waiting_connections": 18,
+          "db_longest_active_seconds": 0.000966
+        },
+        {
+          "ts": "2026-03-26T02:04:17.089975+00:00",
+          "db_total_connections": 19,
+          "db_active_connections": 1,
+          "db_waiting_connections": 18,
+          "db_longest_active_seconds": 0.000969
+        },
+        {
+          "ts": "2026-03-26T02:04:19.091845+00:00",
+          "db_total_connections": 19,
+          "db_active_connections": 1,
+          "db_waiting_connections": 18,
+          "db_longest_active_seconds": 0.000964
+        },
+        {
+          "ts": "2026-03-26T02:04:21.092989+00:00",
+          "db_total_connections": 19,
+          "db_active_connections": 1,
+          "db_waiting_connections": 18,
+          "db_longest_active_seconds": 0.000937
+        },
+        {
+          "ts": "2026-03-26T02:04:23.096096+00:00",
+          "db_total_connections": 19,
+          "db_active_connections": 1,
+          "db_waiting_connections": 18,
+          "db_longest_active_seconds": 0.001089
+        },
+        {
+          "ts": "2026-03-26T02:04:25.101069+00:00",
+          "db_total_connections": 19,
+          "db_active_connections": 1,
+          "db_waiting_connections": 18,
+          "db_longest_active_seconds": 0.000875
+        },
+        {
+          "ts": "2026-03-26T02:04:27.103042+00:00",
+          "db_total_connections": 19,
+          "db_active_connections": 1,
+          "db_waiting_connections": 18,
+          "db_longest_active_seconds": 0.001195
+        },
+        {
+          "ts": "2026-03-26T02:04:29.104880+00:00",
+          "db_total_connections": 19,
+          "db_active_connections": 1,
+          "db_waiting_connections": 18,
+          "db_longest_active_seconds": 0.001034
+        },
+        {
+          "ts": "2026-03-26T02:04:31.106776+00:00",
+          "db_total_connections": 19,
+          "db_active_connections": 1,
+          "db_waiting_connections": 18,
+          "db_longest_active_seconds": 0.000954
+        },
+        {
+          "ts": "2026-03-26T02:04:33.108293+00:00",
+          "db_total_connections": 19,
+          "db_active_connections": 1,
+          "db_waiting_connections": 18,
+          "db_longest_active_seconds": 0.001042
+        },
+        {
+          "ts": "2026-03-26T02:04:35.109808+00:00",
+          "db_total_connections": 19,
+          "db_active_connections": 1,
+          "db_waiting_connections": 18,
+          "db_longest_active_seconds": 0.000996
+        },
+        {
+          "ts": "2026-03-26T02:04:37.111528+00:00",
+          "db_total_connections": 19,
+          "db_active_connections": 1,
+          "db_waiting_connections": 18,
+          "db_longest_active_seconds": 0.000896
+        },
+        {
+          "ts": "2026-03-26T02:04:39.113105+00:00",
+          "db_total_connections": 19,
+          "db_active_connections": 1,
+          "db_waiting_connections": 18,
+          "db_longest_active_seconds": 0.000946
+        },
+        {
+          "ts": "2026-03-26T02:04:41.114762+00:00",
+          "db_total_connections": 19,
+          "db_active_connections": 1,
+          "db_waiting_connections": 18,
+          "db_longest_active_seconds": 0.001011
+        },
+        {
+          "ts": "2026-03-26T02:04:43.115700+00:00",
+          "db_total_connections": 19,
+          "db_active_connections": 1,
+          "db_waiting_connections": 18,
+          "db_longest_active_seconds": 0.001027
+        },
+        {
+          "ts": "2026-03-26T02:04:45.117585+00:00",
+          "db_total_connections": 19,
+          "db_active_connections": 1,
+          "db_waiting_connections": 18,
+          "db_longest_active_seconds": 0.00095
+        },
+        {
+          "ts": "2026-03-26T02:04:47.118856+00:00",
+          "db_total_connections": 19,
+          "db_active_connections": 1,
+          "db_waiting_connections": 18,
+          "db_longest_active_seconds": 0.000953
+        },
+        {
+          "ts": "2026-03-26T02:04:49.120285+00:00",
+          "db_total_connections": 19,
+          "db_active_connections": 1,
+          "db_waiting_connections": 18,
+          "db_longest_active_seconds": 0.000922
+        },
+        {
+          "ts": "2026-03-26T02:04:51.121951+00:00",
+          "db_total_connections": 19,
+          "db_active_connections": 1,
+          "db_waiting_connections": 18,
+          "db_longest_active_seconds": 0.000901
+        },
+        {
+          "ts": "2026-03-26T02:04:53.122985+00:00",
+          "db_total_connections": 19,
+          "db_active_connections": 1,
+          "db_waiting_connections": 18,
+          "db_longest_active_seconds": 0.000986
+        },
+        {
+          "ts": "2026-03-26T02:04:55.124856+00:00",
+          "db_total_connections": 19,
+          "db_active_connections": 1,
+          "db_waiting_connections": 18,
+          "db_longest_active_seconds": 0.001
+        },
+        {
+          "ts": "2026-03-26T02:04:57.126176+00:00",
+          "db_total_connections": 19,
+          "db_active_connections": 1,
+          "db_waiting_connections": 18,
+          "db_longest_active_seconds": 0.00092
+        },
+        {
+          "ts": "2026-03-26T02:04:59.127424+00:00",
+          "db_total_connections": 19,
+          "db_active_connections": 1,
+          "db_waiting_connections": 18,
+          "db_longest_active_seconds": 0.001
+        },
+        {
+          "ts": "2026-03-26T02:05:01.129081+00:00",
+          "db_total_connections": 19,
+          "db_active_connections": 1,
+          "db_waiting_connections": 18,
+          "db_longest_active_seconds": 0.000972
+        },
+        {
+          "ts": "2026-03-26T02:05:03.130343+00:00",
+          "db_total_connections": 19,
+          "db_active_connections": 1,
+          "db_waiting_connections": 18,
+          "db_longest_active_seconds": 0.001022
+        },
+        {
+          "ts": "2026-03-26T02:05:05.132865+00:00",
+          "db_total_connections": 19,
+          "db_active_connections": 2,
+          "db_waiting_connections": 17,
+          "db_longest_active_seconds": 0.001121
+        },
+        {
+          "ts": "2026-03-26T02:05:07.134258+00:00",
+          "db_total_connections": 19,
+          "db_active_connections": 1,
+          "db_waiting_connections": 18,
+          "db_longest_active_seconds": 0.001147
+        },
+        {
+          "ts": "2026-03-26T02:05:09.135918+00:00",
+          "db_total_connections": 19,
+          "db_active_connections": 1,
+          "db_waiting_connections": 18,
+          "db_longest_active_seconds": 0.000943
+        },
+        {
+          "ts": "2026-03-26T02:05:11.137683+00:00",
+          "db_total_connections": 19,
+          "db_active_connections": 1,
+          "db_waiting_connections": 18,
+          "db_longest_active_seconds": 0.000983
+        },
+        {
+          "ts": "2026-03-26T02:05:13.139968+00:00",
+          "db_total_connections": 19,
+          "db_active_connections": 1,
+          "db_waiting_connections": 18,
+          "db_longest_active_seconds": 0.001046
+        },
+        {
+          "ts": "2026-03-26T02:05:15.141351+00:00",
+          "db_total_connections": 19,
+          "db_active_connections": 1,
+          "db_waiting_connections": 18,
+          "db_longest_active_seconds": 0.000909
+        },
+        {
+          "ts": "2026-03-26T02:05:17.142985+00:00",
+          "db_total_connections": 19,
+          "db_active_connections": 2,
+          "db_waiting_connections": 18,
+          "db_longest_active_seconds": 0.001586
+        },
+        {
+          "ts": "2026-03-26T02:05:19.144363+00:00",
+          "db_total_connections": 19,
+          "db_active_connections": 1,
+          "db_waiting_connections": 18,
+          "db_longest_active_seconds": 0.000927
+        },
+        {
+          "ts": "2026-03-26T02:05:21.145256+00:00",
+          "db_total_connections": 19,
+          "db_active_connections": 1,
+          "db_waiting_connections": 18,
+          "db_longest_active_seconds": 0.000972
+        },
+        {
+          "ts": "2026-03-26T02:05:23.147042+00:00",
+          "db_total_connections": 19,
+          "db_active_connections": 1,
+          "db_waiting_connections": 18,
+          "db_longest_active_seconds": 0.001058
+        },
+        {
+          "ts": "2026-03-26T02:05:25.148430+00:00",
+          "db_total_connections": 19,
+          "db_active_connections": 1,
+          "db_waiting_connections": 18,
+          "db_longest_active_seconds": 0.00095
+        },
+        {
+          "ts": "2026-03-26T02:05:27.149754+00:00",
+          "db_total_connections": 19,
+          "db_active_connections": 1,
+          "db_waiting_connections": 18,
+          "db_longest_active_seconds": 0.00124
+        },
+        {
+          "ts": "2026-03-26T02:05:29.151090+00:00",
+          "db_total_connections": 19,
+          "db_active_connections": 1,
+          "db_waiting_connections": 18,
+          "db_longest_active_seconds": 0.000967
+        },
+        {
+          "ts": "2026-03-26T02:05:31.152823+00:00",
+          "db_total_connections": 19,
+          "db_active_connections": 1,
+          "db_waiting_connections": 18,
+          "db_longest_active_seconds": 0.001002
+        },
+        {
+          "ts": "2026-03-26T02:05:33.153991+00:00",
+          "db_total_connections": 19,
+          "db_active_connections": 1,
+          "db_waiting_connections": 18,
+          "db_longest_active_seconds": 0.000916
+        },
+        {
+          "ts": "2026-03-26T02:05:35.155507+00:00",
+          "db_total_connections": 19,
+          "db_active_connections": 1,
+          "db_waiting_connections": 18,
+          "db_longest_active_seconds": 0.000952
+        },
+        {
+          "ts": "2026-03-26T02:05:37.156757+00:00",
+          "db_total_connections": 19,
+          "db_active_connections": 1,
+          "db_waiting_connections": 18,
+          "db_longest_active_seconds": 0.000946
+        },
+        {
+          "ts": "2026-03-26T02:05:39.158068+00:00",
+          "db_total_connections": 19,
+          "db_active_connections": 1,
+          "db_waiting_connections": 18,
+          "db_longest_active_seconds": 0.001035
+        },
+        {
+          "ts": "2026-03-26T02:05:41.159641+00:00",
+          "db_total_connections": 19,
+          "db_active_connections": 1,
+          "db_waiting_connections": 18,
+          "db_longest_active_seconds": 0.001175
+        },
+        {
+          "ts": "2026-03-26T02:05:43.166473+00:00",
+          "db_total_connections": 19,
+          "db_active_connections": 1,
+          "db_waiting_connections": 18,
+          "db_longest_active_seconds": 0.000999
+        },
+        {
+          "ts": "2026-03-26T02:05:45.169169+00:00",
+          "db_total_connections": 19,
+          "db_active_connections": 1,
+          "db_waiting_connections": 18,
+          "db_longest_active_seconds": 0.000932
+        },
+        {
+          "ts": "2026-03-26T02:05:47.171427+00:00",
+          "db_total_connections": 17,
+          "db_active_connections": 1,
+          "db_waiting_connections": 16,
+          "db_longest_active_seconds": 0.000986
+        },
+        {
+          "ts": "2026-03-26T02:05:49.173176+00:00",
+          "db_total_connections": 17,
+          "db_active_connections": 1,
+          "db_waiting_connections": 16,
+          "db_longest_active_seconds": 0.000953
+        },
+        {
+          "ts": "2026-03-26T02:05:51.174681+00:00",
+          "db_total_connections": 17,
+          "db_active_connections": 1,
+          "db_waiting_connections": 16,
+          "db_longest_active_seconds": 0.000971
+        },
+        {
+          "ts": "2026-03-26T02:05:53.176365+00:00",
+          "db_total_connections": 17,
+          "db_active_connections": 1,
+          "db_waiting_connections": 16,
+          "db_longest_active_seconds": 0.000939
+        },
+        {
+          "ts": "2026-03-26T02:05:55.177844+00:00",
+          "db_total_connections": 17,
+          "db_active_connections": 2,
+          "db_waiting_connections": 15,
+          "db_longest_active_seconds": 0.000885
+        },
+        {
+          "ts": "2026-03-26T02:05:57.179007+00:00",
+          "db_total_connections": 17,
+          "db_active_connections": 1,
+          "db_waiting_connections": 16,
+          "db_longest_active_seconds": 0.00095
+        },
+        {
+          "ts": "2026-03-26T02:05:59.180698+00:00",
+          "db_total_connections": 17,
+          "db_active_connections": 2,
+          "db_waiting_connections": 15,
+          "db_longest_active_seconds": 0.000967
+        }
+      ],
+      "metrics_summary": {
+        "backend_cpu_peak_percent": 0.0,
+        "backend_rss_peak_mb": 0.0,
+        "backend_threads_peak": 0.0,
+        "db_total_connections_peak": 19,
+        "db_active_connections_peak": 2,
+        "db_waiting_connections_peak": 18,
+        "db_longest_active_seconds_peak": 0.004415
+      },
+      "artifacts": {
+        "stats_csv": "load-tests\\results\\phase2_slice4_prodlike_18004\\scenario_d_u60_stats.csv",
+        "stats_history_csv": "load-tests\\results\\phase2_slice4_prodlike_18004\\scenario_d_u60_stats_history.csv",
+        "failures_csv": "load-tests\\results\\phase2_slice4_prodlike_18004\\scenario_d_u60_failures.csv",
+        "report_html": "load-tests\\results\\phase2_slice4_prodlike_18004\\scenario_d_u60.html"
+      },
+      "capacity_pass": false
+    }
+  ]
+}

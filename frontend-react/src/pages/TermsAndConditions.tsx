@@ -1,13 +1,8 @@
-import React, { useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowLeft, FileText, Shield, Scale } from 'lucide-react';
 import logo from '../assets/logo.png';
 
 export const TermsAndConditions = () => {
-  useEffect(() => {
-    document.documentElement.classList.add('dark');
-  }, []);
-
   return (
     <div className="min-h-screen bg-gray-950 text-gray-300 font-sans">
       <header className="bg-gray-900 border-b border-gray-800 sticky top-0 z-50">

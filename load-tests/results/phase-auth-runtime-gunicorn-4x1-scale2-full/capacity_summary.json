@@ -1,0 +1,4047 @@
+{
+  "base_url": "http://127.0.0.1:8020",
+  "business_id": 2,
+  "users": [
+    20,
+    40,
+    60,
+    80,
+    100
+  ],
+  "scenarios": [
+    "LOGIN"
+  ],
+  "run_time": "2m",
+  "spawn_rate": 5.0,
+  "fixture": null,
+  "runs": [
+    {
+      "scenario": "LOGIN",
+      "users": 20,
+      "started_at": "2026-03-27T11:08:34.125831+00:00",
+      "finished_at": "2026-03-27T11:10:37.813599+00:00",
+      "command": [
+        "C:\\Users\\harae\\Desktop\\ui migration\\proyecto1\\.venv\\Scripts\\locust.exe",
+        "-f",
+        "C:\\Users\\harae\\Desktop\\ui migration\\proyecto1\\load-tests\\locustfile.py",
+        "--host",
+        "http://127.0.0.1:8020",
+        "--users",
+        "20",
+        "--spawn-rate",
+        "5.0",
+        "--run-time",
+        "2m",
+        "--csv",
+        "load-tests\\results\\phase-auth-runtime-gunicorn-4x1-scale2-full\\scenario_login_u20",
+        "--html",
+        "load-tests\\results\\phase-auth-runtime-gunicorn-4x1-scale2-full\\scenario_login_u20.html",
+        "--headless",
+        "--only-summary"
+      ],
+      "exit_code": 0,
+      "stdout_tail": "",
+      "stderr_tail": "[2026-03-27 06:08:36,306] DESKTOP-9DI2UJR/INFO/locust.main: Starting Locust 2.43.3\n[2026-03-27 06:08:36,308] DESKTOP-9DI2UJR/INFO/locust.main: Run time limit set to 120 seconds\n[2026-03-27 06:08:36,310] DESKTOP-9DI2UJR/INFO/locust.runners: Ramping to 20 users at a rate of 5.00 per second\n[2026-03-27 06:08:39,332] DESKTOP-9DI2UJR/INFO/locust.runners: All users spawned: {\"CuadernoUser\": 20} (20 total users)\n[2026-03-27 06:10:35,358] DESKTOP-9DI2UJR/INFO/locust.main: --run-time limit reached, shutting down\n[2026-03-27 06:10:35,696] DESKTOP-9DI2UJR/INFO/locust.main: writing html report to file: load-tests\\results\\phase-auth-runtime-gunicorn-4x1-scale2-full\\scenario_login_u20.html\n[2026-03-27 06:10:35,734] DESKTOP-9DI2UJR/INFO/locust.main: Shutting down (exit code 0)\nType     Name                                                                          # reqs      # fails |    Avg     Min     Max    Med |   req/s  failures/s\n--------|----------------------------------------------------------------------------|-------|-------------|-------|-------|-------|-------|--------|-----------\nGET      auth.bootstrap                                                                   799     0(0.00%) |    700       6    3122    620 |    6.70        0.00\nPOST     auth.login                                                                       799     0(0.00%) |   1725     437    4591   1600 |    6.70        0.00\n--------|----------------------------------------------------------------------------|-------|-------------|-------|-------|-------|-------|--------|-----------\n         Aggregated                                                                      1598     0(0.00%) |   1212       6    4591   1100 |   13.40        0.00\n\nResponse time percentiles (approximated)\nType     Name                                                                                  50%    66%    75%    80%    90%    95%    98%    99%  99.9% 99.99%   100% # reqs\n--------|--------------------------------------------------------------------------------|--------|------|------|------|------|------|------|------|------|------|------|------\nGET      auth.bootstrap                                                                        620    880   1000   1200   1500   1800   2200   2700   3100   3100   3100    799\nPOST     auth.login                                                                           1600   1900   2100   2200   2700   3100   3600   3900   4600   4600   4600    799\n--------|--------------------------------------------------------------------------------|--------|------|------|------|------|------|------|------|------|------|------|------\n         Aggregated                                                                           1100   1500   1700   1900   2300   2700   3300   3600   4300   4600   4600   1598\n\n",
+      "stats_summary": {
+        "requests": 1596,
+        "failures": 0,
+        "median_ms": 1100.0,
+        "avg_ms": 1212.8283493732677,
+        "min_ms": 6.637999991653487,
+        "max_ms": 4591.472000000067,
+        "avg_size": 1918.5,
+        "rps": 13.432132118126583,
+        "failures_per_sec": 0.0,
+        "p50_ms": 1100.0,
+        "p95_ms": 2700.0,
+        "p99_ms": 3600.0,
+        "slowest_endpoint": {
+          "name": "auth.login",
+          "method": "POST",
+          "avg_ms": 1726.5476164154045,
+          "p95_ms": 3100.0,
+          "p99_ms": 3900.0,
+          "rps": 6.716066059063292
+        },
+        "endpoint_metrics": {
+          "auth.login": {
+            "avg_ms": 1726.5476164154045,
+            "p95_ms": 3100.0,
+            "rps": 6.716066059063292,
+            "failures": 0,
+            "requests": 798
+          },
+          "auth.select_context": {
+            "avg_ms": 0.0,
+            "p95_ms": 0.0,
+            "rps": 0.0,
+            "failures": 0,
+            "requests": 0
+          },
+          "auth.bootstrap": {
+            "avg_ms": 699.1090823311308,
+            "p95_ms": 1800.0,
+            "rps": 6.716066059063292,
+            "failures": 0,
+            "requests": 798
+          },
+          "read.dashboard": {
+            "avg_ms": 0.0,
+            "p95_ms": 0.0,
+            "rps": 0.0,
+            "failures": 0,
+            "requests": 0
+          },
+          "read.summary": {
+            "avg_ms": 0.0,
+            "p95_ms": 0.0,
+            "rps": 0.0,
+            "failures": 0,
+            "requests": 0
+          }
+        }
+      },
+      "distribution": {
+        "p50_estimated_ms": 1283.7009015648798,
+        "p95_estimated_ms": 1650.2160761894108,
+        "p99_estimated_ms": 1666.2149231337053,
+        "avg_rps_window": 12.431143939655172,
+        "max_rps_window": 17.4,
+        "final_failure_count": 0.0
+      },
+      "profile_summary": {
+        "auth.login": {
+          "samples": 802,
+          "query_count_avg": 4.0,
+          "query_count_p95": 4.0,
+          "sql_time_ms_avg": 18.039,
+          "sql_time_ms_p95": 48.467,
+          "wall_time_ms_avg": 1094.508,
+          "wall_time_ms_p95": 1775.059,
+          "python_time_ms_avg": 1076.468,
+          "python_time_ms_p95": 1745.084,
+          "instrumented_wall_ms_avg": 1093.795,
+          "instrumented_wall_ms_p95": 1774.905,
+          "unaccounted_wall_ms_avg": 0.713,
+          "unaccounted_wall_ms_p95": 1.033,
+          "cache_hit_count": 0,
+          "stage_metrics": {
+            "fetch_user": {
+              "samples": 802,
+              "wall_ms_avg": 16.021,
+              "wall_ms_p95": 34.797,
+              "sql_time_ms_avg": 3.297,
+              "sql_time_ms_p95": 15.722,
+              "python_time_ms_avg": 12.723,
+              "python_time_ms_p95": 25.092,
+              "query_count_avg": 1.0,
+              "query_count_p95": 1.0
+            },
+            "password_verify": {
+              "samples": 802,
+              "wall_ms_avg": 1049.788,
+              "wall_ms_p95": 1713.038,
+              "sql_time_ms_avg": 0.0,
+              "sql_time_ms_p95": 0.0,
+              "python_time_ms_avg": 1049.788,
+              "python_time_ms_p95": 1713.038,
+              "query_count_avg": 0.0,
+              "query_count_p95": 0.0
+            },
+            "resolve_accessible_contexts": {
+              "samples": 802,
+              "wall_ms_avg": 26.473,
+              "wall_ms_p95": 64.52,
+              "sql_time_ms_avg": 14.742,
+              "sql_time_ms_p95": 43.146,
+              "python_time_ms_avg": 11.731,
+              "python_time_ms_p95": 33.741,
+              "query_count_avg": 3.0,
+              "query_count_p95": 3.0
+            },
+            "resolve_active_context": {
+              "samples": 802,
+              "wall_ms_avg": 0.103,
+              "wall_ms_p95": 0.071,
+              "sql_time_ms_avg": 0.0,
+              "sql_time_ms_p95": 0.0,
+              "python_time_ms_avg": 0.103,
+              "python_time_ms_p95": 0.071,
+              "query_count_avg": 0.0,
+              "query_count_p95": 0.0
+            },
+            "serialization_response": {
+              "samples": 802,
+              "wall_ms_avg": 0.342,
+              "wall_ms_p95": 0.208,
+              "sql_time_ms_avg": 0.0,
+              "sql_time_ms_p95": 0.0,
+              "python_time_ms_avg": 0.342,
+              "python_time_ms_p95": 0.208,
+              "query_count_avg": 0.0,
+              "query_count_p95": 0.0
+            },
+            "token_session_creation": {
+              "samples": 802,
+              "wall_ms_avg": 1.068,
+              "wall_ms_p95": 4.338,
+              "sql_time_ms_avg": 0.0,
+              "sql_time_ms_p95": 0.0,
+              "python_time_ms_avg": 1.068,
+              "python_time_ms_p95": 4.338,
+              "query_count_avg": 0.0,
+              "query_count_p95": 0.0
+            }
+          }
+        },
+        "auth.bootstrap": {
+          "samples": 799,
+          "query_count_avg": 1.026,
+          "query_count_p95": 1.0,
+          "sql_time_ms_avg": 3.249,
+          "sql_time_ms_p95": 14.924,
+          "wall_time_ms_avg": 5.017,
+          "wall_time_ms_p95": 17.974,
+          "python_time_ms_avg": 3.627,
+          "python_time_ms_p95": 15.586,
+          "instrumented_wall_ms_avg": 0.449,
+          "instrumented_wall_ms_p95": 0.0,
+          "unaccounted_wall_ms_avg": 4.568,
+          "unaccounted_wall_ms_p95": 17.329,
+          "cache_hit_count": 792,
+          "stage_metrics": {
+            "bootstrap_membership_lookup": {
+              "samples": 7,
+              "wall_ms_avg": 37.36,
+              "wall_ms_p95": 141.241,
+              "sql_time_ms_avg": 10.36,
+              "sql_time_ms_p95": 30.194,
+              "python_time_ms_avg": 26.999,
+              "python_time_ms_p95": 111.047,
+              "query_count_avg": 1.0,
+              "query_count_p95": 1.0
+            },
+            "bootstrap_modules_lookup": {
+              "samples": 7,
+              "wall_ms_avg": 9.482,
+              "wall_ms_p95": 18.077,
+              "sql_time_ms_avg": 5.994,
+              "sql_time_ms_p95": 16.253,
+              "python_time_ms_avg": 3.488,
+              "python_time_ms_p95": 10.319,
+              "query_count_avg": 1.0,
+              "query_count_p95": 1.0
+            },
+            "bootstrap_owned_businesses_lookup": {
+              "samples": 7,
+              "wall_ms_avg": 4.418,
+              "wall_ms_p95": 16.317,
+              "sql_time_ms_avg": 3.336,
+              "sql_time_ms_p95": 15.255,
+              "python_time_ms_avg": 1.083,
+              "python_time_ms_p95": 1.42,
+              "query_count_avg": 1.0,
+              "query_count_p95": 1.0
+            }
+          }
+        }
+      },
+      "failures_rows": 1,
+      "error_rate": 0.0,
+      "metrics_samples": [
+        {
+          "ts": "2026-03-27T11:08:34.126376+00:00",
+          "docker_containers": {
+            "encaja-login-scale2-a": {
+              "cpu_percent": 0.02,
+              "mem_percent": 2.75,
+              "pids": 6,
+              "mem_usage_mb": 438.6
+            },
+            "encaja-login-scale2-b": {
+              "cpu_percent": 247.99,
+              "mem_percent": 2.81,
+              "pids": 6,
+              "mem_usage_mb": 448.4
+            }
+          },
+          "docker_container_count": 2,
+          "docker_cpu_percent": 248.01,
+          "docker_mem_usage_mb": 887.0,
+          "docker_mem_percent": 2.81,
+          "docker_pids": 12,
+          "db_total_connections": 7,
+          "db_active_connections": 1,
+          "db_waiting_connections": 0,
+          "db_longest_active_seconds": 0.011782
+        },
+        {
+          "ts": "2026-03-27T11:08:40.196535+00:00",
+          "docker_containers": {
+            "encaja-login-scale2-a": {
+              "cpu_percent": 216.09,
+              "mem_percent": 2.87,
+              "pids": 6,
+              "mem_usage_mb": 457.2
+            },
+            "encaja-login-scale2-b": {
+              "cpu_percent": 345.14,
+              "mem_percent": 2.87,
+              "pids": 6,
+              "mem_usage_mb": 457.0
+            }
+          },
+          "docker_container_count": 2,
+          "docker_cpu_percent": 561.23,
+          "docker_mem_usage_mb": 914.2,
+          "docker_mem_percent": 2.87,
+          "docker_pids": 12,
+          "db_total_connections": 10,
+          "db_active_connections": 1,
+          "db_waiting_connections": 0,
+          "db_longest_active_seconds": 0.036799
+        },
+        {
+          "ts": "2026-03-27T11:08:46.633174+00:00",
+          "docker_containers": {
+            "encaja-login-scale2-a": {
+              "cpu_percent": 304.89,
+              "mem_percent": 2.93,
+              "pids": 8,
+              "mem_usage_mb": 466.8
+            },
+            "encaja-login-scale2-b": {
+              "cpu_percent": 209.79,
+              "mem_percent": 2.87,
+              "pids": 6,
+              "mem_usage_mb": 457.2
+            }
+          },
+          "docker_container_count": 2,
+          "docker_cpu_percent": 514.68,
+          "docker_mem_usage_mb": 924.0,
+          "docker_mem_percent": 2.93,
+          "docker_pids": 14,
+          "db_total_connections": 10,
+          "db_active_connections": 1,
+          "db_waiting_connections": 0,
+          "db_longest_active_seconds": 0.008426
+        },
+        {
+          "ts": "2026-03-27T11:08:53.234275+00:00",
+          "docker_containers": {
+            "encaja-login-scale2-a": {
+              "cpu_percent": 343.6,
+              "mem_percent": 2.87,
+              "pids": 6,
+              "mem_usage_mb": 457.5
+            },
+            "encaja-login-scale2-b": {
+              "cpu_percent": 320.81,
+              "mem_percent": 2.87,
+              "pids": 6,
+              "mem_usage_mb": 457.2
+            }
+          },
+          "docker_container_count": 2,
+          "docker_cpu_percent": 664.41,
+          "docker_mem_usage_mb": 914.7,
+          "docker_mem_percent": 2.87,
+          "docker_pids": 12,
+          "db_total_connections": 10,
+          "db_active_connections": 1,
+          "db_waiting_connections": 0,
+          "db_longest_active_seconds": 0.007605
+        },
+        {
+          "ts": "2026-03-27T11:08:59.112197+00:00",
+          "docker_containers": {
+            "encaja-login-scale2-a": {
+              "cpu_percent": 269.65,
+              "mem_percent": 2.87,
+              "pids": 6,
+              "mem_usage_mb": 457.5
+            },
+            "encaja-login-scale2-b": {
+              "cpu_percent": 189.58,
+              "mem_percent": 2.87,
+              "pids": 6,
+              "mem_usage_mb": 457.3
+            }
+          },
+          "docker_container_count": 2,
+          "docker_cpu_percent": 459.23,
+          "docker_mem_usage_mb": 914.8,
+          "docker_mem_percent": 2.87,
+          "docker_pids": 12,
+          "db_total_connections": 10,
+          "db_active_connections": 1,
+          "db_waiting_connections": 0,
+          "db_longest_active_seconds": 0.016814
+        },
+        {
+          "ts": "2026-03-27T11:09:04.640043+00:00",
+          "docker_containers": {
+            "encaja-login-scale2-a": {
+              "cpu_percent": 203.97,
+              "mem_percent": 2.87,
+              "pids": 6,
+              "mem_usage_mb": 457.9
+            },
+            "encaja-login-scale2-b": {
+              "cpu_percent": 190.06,
+              "mem_percent": 2.87,
+              "pids": 6,
+              "mem_usage_mb": 457.6
+            }
+          },
+          "docker_container_count": 2,
+          "docker_cpu_percent": 394.03,
+          "docker_mem_usage_mb": 915.5,
+          "docker_mem_percent": 2.87,
+          "docker_pids": 12,
+          "db_total_connections": 10,
+          "db_active_connections": 1,
+          "db_waiting_connections": 0,
+          "db_longest_active_seconds": 0.007267
+        },
+        {
+          "ts": "2026-03-27T11:09:12.109433+00:00",
+          "docker_containers": {
+            "encaja-login-scale2-a": {
+              "cpu_percent": 270.44,
+              "mem_percent": 2.87,
+              "pids": 6,
+              "mem_usage_mb": 457.9
+            },
+            "encaja-login-scale2-b": {
+              "cpu_percent": 183.22,
+              "mem_percent": 2.87,
+              "pids": 6,
+              "mem_usage_mb": 457.7
+            }
+          },
+          "docker_container_count": 2,
+          "docker_cpu_percent": 453.66,
+          "docker_mem_usage_mb": 915.6,
+          "docker_mem_percent": 2.87,
+          "docker_pids": 12,
+          "db_total_connections": 10,
+          "db_active_connections": 1,
+          "db_waiting_connections": 0,
+          "db_longest_active_seconds": 0.020035
+        },
+        {
+          "ts": "2026-03-27T11:09:17.599006+00:00",
+          "docker_containers": {
+            "encaja-login-scale2-a": {
+              "cpu_percent": 204.09,
+              "mem_percent": 2.87,
+              "pids": 6,
+              "mem_usage_mb": 457.9
+            },
+            "encaja-login-scale2-b": {
+              "cpu_percent": 196.87,
+              "mem_percent": 2.92,
+              "pids": 8,
+              "mem_usage_mb": 465.0
+            }
+          },
+          "docker_container_count": 2,
+          "docker_cpu_percent": 400.96,
+          "docker_mem_usage_mb": 922.9,
+          "docker_mem_percent": 2.92,
+          "docker_pids": 14,
+          "db_total_connections": 10,
+          "db_active_connections": 1,
+          "db_waiting_connections": 0,
+          "db_longest_active_seconds": 0.007711
+        },
+        {
+          "ts": "2026-03-27T11:09:23.129278+00:00",
+          "docker_containers": {
+            "encaja-login-scale2-a": {
+              "cpu_percent": 219.45,
+              "mem_percent": 2.87,
+              "pids": 6,
+              "mem_usage_mb": 458.0
+            },
+            "encaja-login-scale2-b": {
+              "cpu_percent": 232.99,
+              "mem_percent": 2.87,
+              "pids": 6,
+              "mem_usage_mb": 457.7
+            }
+          },
+          "docker_container_count": 2,
+          "docker_cpu_percent": 452.44,
+          "docker_mem_usage_mb": 915.7,
+          "docker_mem_percent": 2.87,
+          "docker_pids": 12,
+          "db_total_connections": 10,
+          "db_active_connections": 1,
+          "db_waiting_connections": 0,
+          "db_longest_active_seconds": 0.004935
+        },
+        {
+          "ts": "2026-03-27T11:09:28.801328+00:00",
+          "docker_containers": {
+            "encaja-login-scale2-a": {
+              "cpu_percent": 206.53,
+              "mem_percent": 2.87,
+              "pids": 6,
+              "mem_usage_mb": 458.0
+            },
+            "encaja-login-scale2-b": {
+              "cpu_percent": 259.04,
+              "mem_percent": 2.87,
+              "pids": 6,
+              "mem_usage_mb": 457.8
+            }
+          },
+          "docker_container_count": 2,
+          "docker_cpu_percent": 465.57,
+          "docker_mem_usage_mb": 915.8,
+          "docker_mem_percent": 2.87,
+          "docker_pids": 12,
+          "db_total_connections": 10,
+          "db_active_connections": 1,
+          "db_waiting_connections": 0,
+          "db_longest_active_seconds": 0.029756
+        },
+        {
+          "ts": "2026-03-27T11:09:36.387165+00:00",
+          "docker_containers": {
+            "encaja-login-scale2-a": {
+              "cpu_percent": 353.71,
+              "mem_percent": 2.87,
+              "pids": 6,
+              "mem_usage_mb": 458.1
+            },
+            "encaja-login-scale2-b": {
+              "cpu_percent": 329.72,
+              "mem_percent": 2.87,
+              "pids": 6,
+              "mem_usage_mb": 458.1
+            }
+          },
+          "docker_container_count": 2,
+          "docker_cpu_percent": 683.43,
+          "docker_mem_usage_mb": 916.2,
+          "docker_mem_percent": 2.87,
+          "docker_pids": 12,
+          "db_total_connections": 10,
+          "db_active_connections": 1,
+          "db_waiting_connections": 0,
+          "db_longest_active_seconds": 0.007171
+        },
+        {
+          "ts": "2026-03-27T11:09:42.993973+00:00",
+          "docker_containers": {
+            "encaja-login-scale2-a": {
+              "cpu_percent": 246.97,
+              "mem_percent": 2.87,
+              "pids": 6,
+              "mem_usage_mb": 458.1
+            },
+            "encaja-login-scale2-b": {
+              "cpu_percent": 202.8,
+              "mem_percent": 2.87,
+              "pids": 6,
+              "mem_usage_mb": 458.1
+            }
+          },
+          "docker_container_count": 2,
+          "docker_cpu_percent": 449.77,
+          "docker_mem_usage_mb": 916.2,
+          "docker_mem_percent": 2.87,
+          "docker_pids": 12,
+          "db_total_connections": 10,
+          "db_active_connections": 1,
+          "db_waiting_connections": 0,
+          "db_longest_active_seconds": 0.010056
+        },
+        {
+          "ts": "2026-03-27T11:09:48.595362+00:00",
+          "docker_containers": {
+            "encaja-login-scale2-a": {
+              "cpu_percent": 239.58,
+              "mem_percent": 2.91,
+              "pids": 8,
+              "mem_usage_mb": 464.2
+            },
+            "encaja-login-scale2-b": {
+              "cpu_percent": 205.91,
+              "mem_percent": 2.93,
+              "pids": 8,
+              "mem_usage_mb": 467.5
+            }
+          },
+          "docker_container_count": 2,
+          "docker_cpu_percent": 445.49,
+          "docker_mem_usage_mb": 931.7,
+          "docker_mem_percent": 2.93,
+          "docker_pids": 16,
+          "db_total_connections": 10,
+          "db_active_connections": 1,
+          "db_waiting_connections": 0,
+          "db_longest_active_seconds": 0.018352
+        },
+        {
+          "ts": "2026-03-27T11:09:54.078022+00:00",
+          "docker_containers": {
+            "encaja-login-scale2-a": {
+              "cpu_percent": 160.09,
+              "mem_percent": 2.87,
+              "pids": 6,
+              "mem_usage_mb": 458.2
+            },
+            "encaja-login-scale2-b": {
+              "cpu_percent": 235.21,
+              "mem_percent": 2.87,
+              "pids": 6,
+              "mem_usage_mb": 458.2
+            }
+          },
+          "docker_container_count": 2,
+          "docker_cpu_percent": 395.3,
+          "docker_mem_usage_mb": 916.4,
+          "docker_mem_percent": 2.87,
+          "docker_pids": 12,
+          "db_total_connections": 10,
+          "db_active_connections": 1,
+          "db_waiting_connections": 0,
+          "db_longest_active_seconds": 0.01794
+        },
+        {
+          "ts": "2026-03-27T11:09:59.763451+00:00",
+          "docker_containers": {
+            "encaja-login-scale2-a": {
+              "cpu_percent": 295.62,
+              "mem_percent": 2.87,
+              "pids": 6,
+              "mem_usage_mb": 458.2
+            },
+            "encaja-login-scale2-b": {
+              "cpu_percent": 216.49,
+              "mem_percent": 2.87,
+              "pids": 6,
+              "mem_usage_mb": 458.2
+            }
+          },
+          "docker_container_count": 2,
+          "docker_cpu_percent": 512.11,
+          "docker_mem_usage_mb": 916.4,
+          "docker_mem_percent": 2.87,
+          "docker_pids": 12,
+          "db_total_connections": 10,
+          "db_active_connections": 1,
+          "db_waiting_connections": 0,
+          "db_longest_active_seconds": 0.014014
+        },
+        {
+          "ts": "2026-03-27T11:10:05.374347+00:00",
+          "docker_containers": {
+            "encaja-login-scale2-a": {
+              "cpu_percent": 231.67,
+              "mem_percent": 2.87,
+              "pids": 6,
+              "mem_usage_mb": 458.2
+            },
+            "encaja-login-scale2-b": {
+              "cpu_percent": 215.88,
+              "mem_percent": 2.87,
+              "pids": 6,
+              "mem_usage_mb": 458.2
+            }
+          },
+          "docker_container_count": 2,
+          "docker_cpu_percent": 447.55,
+          "docker_mem_usage_mb": 916.4,
+          "docker_mem_percent": 2.87,
+          "docker_pids": 12,
+          "db_total_connections": 10,
+          "db_active_connections": 2,
+          "db_waiting_connections": 0,
+          "db_longest_active_seconds": 0.016553
+        },
+        {
+          "ts": "2026-03-27T11:10:11.760179+00:00",
+          "docker_containers": {
+            "encaja-login-scale2-a": {
+              "cpu_percent": 216.5,
+              "mem_percent": 2.87,
+              "pids": 6,
+              "mem_usage_mb": 458.3
+            },
+            "encaja-login-scale2-b": {
+              "cpu_percent": 314.22,
+              "mem_percent": 2.87,
+              "pids": 6,
+              "mem_usage_mb": 458.3
+            }
+          },
+          "docker_container_count": 2,
+          "docker_cpu_percent": 530.72,
+          "docker_mem_usage_mb": 916.6,
+          "docker_mem_percent": 2.87,
+          "docker_pids": 12,
+          "db_total_connections": 10,
+          "db_active_connections": 1,
+          "db_waiting_connections": 0,
+          "db_longest_active_seconds": 0.005256
+        },
+        {
+          "ts": "2026-03-27T11:10:17.384683+00:00",
+          "docker_containers": {
+            "encaja-login-scale2-a": {
+              "cpu_percent": 211.17,
+              "mem_percent": 2.87,
+              "pids": 6,
+              "mem_usage_mb": 458.3
+            },
+            "encaja-login-scale2-b": {
+              "cpu_percent": 209.53,
+              "mem_percent": 2.87,
+              "pids": 6,
+              "mem_usage_mb": 458.3
+            }
+          },
+          "docker_container_count": 2,
+          "docker_cpu_percent": 420.7,
+          "docker_mem_usage_mb": 916.6,
+          "docker_mem_percent": 2.87,
+          "docker_pids": 12,
+          "db_total_connections": 10,
+          "db_active_connections": 1,
+          "db_waiting_connections": 0,
+          "db_longest_active_seconds": 0.012266
+        },
+        {
+          "ts": "2026-03-27T11:10:23.347606+00:00",
+          "docker_containers": {
+            "encaja-login-scale2-a": {
+              "cpu_percent": 224.95,
+              "mem_percent": 2.87,
+              "pids": 6,
+              "mem_usage_mb": 458.3
+            },
+            "encaja-login-scale2-b": {
+              "cpu_percent": 179.36,
+              "mem_percent": 2.87,
+              "pids": 6,
+              "mem_usage_mb": 458.4
+            }
+          },
+          "docker_container_count": 2,
+          "docker_cpu_percent": 404.31,
+          "docker_mem_usage_mb": 916.7,
+          "docker_mem_percent": 2.87,
+          "docker_pids": 12,
+          "db_total_connections": 10,
+          "db_active_connections": 1,
+          "db_waiting_connections": 0,
+          "db_longest_active_seconds": 0.010828
+        },
+        {
+          "ts": "2026-03-27T11:10:28.964123+00:00",
+          "docker_containers": {
+            "encaja-login-scale2-a": {
+              "cpu_percent": 207.12,
+              "mem_percent": 2.87,
+              "pids": 6,
+              "mem_usage_mb": 458.4
+            },
+            "encaja-login-scale2-b": {
+              "cpu_percent": 195.05,
+              "mem_percent": 2.88,
+              "pids": 6,
+              "mem_usage_mb": 458.6
+            }
+          },
+          "docker_container_count": 2,
+          "docker_cpu_percent": 402.17,
+          "docker_mem_usage_mb": 917.0,
+          "docker_mem_percent": 2.88,
+          "docker_pids": 12,
+          "db_total_connections": 10,
+          "db_active_connections": 1,
+          "db_waiting_connections": 0,
+          "db_longest_active_seconds": 0.013295
+        },
+        {
+          "ts": "2026-03-27T11:10:34.443923+00:00",
+          "docker_containers": {
+            "encaja-login-scale2-a": {
+              "cpu_percent": 152.53,
+              "mem_percent": 2.87,
+              "pids": 6,
+              "mem_usage_mb": 458.4
+            },
+            "encaja-login-scale2-b": {
+              "cpu_percent": 0.01,
+              "mem_percent": 2.87,
+              "pids": 6,
+              "mem_usage_mb": 458.4
+            }
+          },
+          "docker_container_count": 2,
+          "docker_cpu_percent": 152.54,
+          "docker_mem_usage_mb": 916.8,
+          "docker_mem_percent": 2.87,
+          "docker_pids": 12,
+          "db_total_connections": 10,
+          "db_active_connections": 1,
+          "db_waiting_connections": 0,
+          "db_longest_active_seconds": 0.005293
+        }
+      ],
+      "metrics_summary": {
+        "backend_cpu_peak_percent": 0.0,
+        "backend_rss_peak_mb": 0.0,
+        "backend_threads_peak": 0.0,
+        "docker_cpu_peak_percent": 683.43,
+        "docker_mem_peak_mb": 931.7,
+        "docker_mem_peak_percent": 2.93,
+        "docker_pids_peak": 16,
+        "db_total_connections_peak": 10,
+        "db_active_connections_peak": 2,
+        "db_waiting_connections_peak": 0,
+        "db_longest_active_seconds_peak": 0.036799,
+        "docker_cpu_peak_percent_by_container": {
+          "encaja-login-scale2-a": 353.71,
+          "encaja-login-scale2-b": 345.14
+        },
+        "docker_mem_peak_mb_by_container": {
+          "encaja-login-scale2-a": 466.8,
+          "encaja-login-scale2-b": 467.5
+        },
+        "docker_pids_peak_by_container": {
+          "encaja-login-scale2-a": 8,
+          "encaja-login-scale2-b": 8
+        },
+        "auth_login_queue_gap_ms_avg": 632.04
+      },
+      "artifacts": {
+        "stats_csv": "load-tests\\results\\phase-auth-runtime-gunicorn-4x1-scale2-full\\scenario_login_u20_stats.csv",
+        "stats_history_csv": "load-tests\\results\\phase-auth-runtime-gunicorn-4x1-scale2-full\\scenario_login_u20_stats_history.csv",
+        "failures_csv": "load-tests\\results\\phase-auth-runtime-gunicorn-4x1-scale2-full\\scenario_login_u20_failures.csv",
+        "profile_summary_json": "load-tests\\results\\phase-auth-runtime-gunicorn-4x1-scale2-full\\scenario_login_u20_profile_summary.json",
+        "report_html": "load-tests\\results\\phase-auth-runtime-gunicorn-4x1-scale2-full\\scenario_login_u20.html"
+      },
+      "capacity_pass": false
+    },
+    {
+      "scenario": "LOGIN",
+      "users": 40,
+      "started_at": "2026-03-27T11:10:37.818314+00:00",
+      "finished_at": "2026-03-27T11:12:39.810762+00:00",
+      "command": [
+        "C:\\Users\\harae\\Desktop\\ui migration\\proyecto1\\.venv\\Scripts\\locust.exe",
+        "-f",
+        "C:\\Users\\harae\\Desktop\\ui migration\\proyecto1\\load-tests\\locustfile.py",
+        "--host",
+        "http://127.0.0.1:8020",
+        "--users",
+        "40",
+        "--spawn-rate",
+        "5.0",
+        "--run-time",
+        "2m",
+        "--csv",
+        "load-tests\\results\\phase-auth-runtime-gunicorn-4x1-scale2-full\\scenario_login_u40",
+        "--html",
+        "load-tests\\results\\phase-auth-runtime-gunicorn-4x1-scale2-full\\scenario_login_u40.html",
+        "--headless",
+        "--only-summary"
+      ],
+      "exit_code": 0,
+      "stdout_tail": "",
+      "stderr_tail": "[2026-03-27 06:10:39,510] DESKTOP-9DI2UJR/INFO/locust.main: Starting Locust 2.43.3\n[2026-03-27 06:10:39,513] DESKTOP-9DI2UJR/INFO/locust.main: Run time limit set to 120 seconds\n[2026-03-27 06:10:39,515] DESKTOP-9DI2UJR/INFO/locust.runners: Ramping to 40 users at a rate of 5.00 per second\n[2026-03-27 06:10:46,653] DESKTOP-9DI2UJR/INFO/locust.runners: All users spawned: {\"CuadernoUser\": 40} (40 total users)\n[2026-03-27 06:12:38,557] DESKTOP-9DI2UJR/INFO/locust.main: --run-time limit reached, shutting down\n[2026-03-27 06:12:38,800] DESKTOP-9DI2UJR/INFO/locust.main: writing html report to file: load-tests\\results\\phase-auth-runtime-gunicorn-4x1-scale2-full\\scenario_login_u40.html\n[2026-03-27 06:12:38,826] DESKTOP-9DI2UJR/INFO/locust.main: Shutting down (exit code 0)\nType     Name                                                                          # reqs      # fails |    Avg     Min     Max    Med |   req/s  failures/s\n--------|----------------------------------------------------------------------------|-------|-------------|-------|-------|-------|-------|--------|-----------\nGET      auth.bootstrap                                                                   790     0(0.00%) |   2118      12    5605   2100 |    6.65        0.00\nPOST     auth.login                                                                       790     0(0.00%) |   3152     775    6607   3200 |    6.65        0.00\n--------|----------------------------------------------------------------------------|-------|-------------|-------|-------|-------|-------|--------|-----------\n         Aggregated                                                                      1580     0(0.00%) |   2635      12    6607   2600 |   13.29        0.00\n\nResponse time percentiles (approximated)\nType     Name                                                                                  50%    66%    75%    80%    90%    95%    98%    99%  99.9% 99.99%   100% # reqs\n--------|--------------------------------------------------------------------------------|--------|------|------|------|------|------|------|------|------|------|------|------\nGET      auth.bootstrap                                                                       2100   2800   3100   3300   3700   4300   4900   5000   5600   5600   5600    790\nPOST     auth.login                                                                           3200   3800   4100   4300   4800   5300   5800   6100   6600   6600   6600    790\n--------|--------------------------------------------------------------------------------|--------|------|------|------|------|------|------|------|------|------|------|------\n         Aggregated                                                                           2600   3300   3700   3900   4500   5000   5500   5800   6600   6600   6600   1580\n\n",
+      "stats_summary": {
+        "requests": 1580,
+        "failures": 0,
+        "median_ms": 2600.0,
+        "avg_ms": 2635.5147007597866,
+        "min_ms": 12.998499994864687,
+        "max_ms": 6607.494299998507,
+        "avg_size": 1918.5,
+        "rps": 13.290490185843861,
+        "failures_per_sec": 0.0,
+        "p50_ms": 2600.0,
+        "p95_ms": 5000.0,
+        "p99_ms": 5800.0,
+        "slowest_endpoint": {
+          "name": "auth.login",
+          "method": "POST",
+          "avg_ms": 3152.975391519486,
+          "p95_ms": 5300.0,
+          "p99_ms": 6100.0,
+          "rps": 6.645245092921931
+        },
+        "endpoint_metrics": {
+          "auth.login": {
+            "avg_ms": 3152.975391519486,
+            "p95_ms": 5300.0,
+            "rps": 6.645245092921931,
+            "failures": 0,
+            "requests": 790
+          },
+          "auth.select_context": {
+            "avg_ms": 0.0,
+            "p95_ms": 0.0,
+            "rps": 0.0,
+            "failures": 0,
+            "requests": 0
+          },
+          "auth.bootstrap": {
+            "avg_ms": 2118.054010000086,
+            "p95_ms": 4300.0,
+            "rps": 6.645245092921931,
+            "failures": 0,
+            "requests": 790
+          },
+          "read.dashboard": {
+            "avg_ms": 0.0,
+            "p95_ms": 0.0,
+            "rps": 0.0,
+            "failures": 0,
+            "requests": 0
+          },
+          "read.summary": {
+            "avg_ms": 0.0,
+            "p95_ms": 0.0,
+            "rps": 0.0,
+            "failures": 0,
+            "requests": 0
+          }
+        }
+      },
+      "distribution": {
+        "p50_estimated_ms": 2621.4200311475056,
+        "p95_estimated_ms": 2796.900750876184,
+        "p99_estimated_ms": 2835.9140024580574,
+        "avg_rps_window": 12.120833327586206,
+        "max_rps_window": 16.4,
+        "final_failure_count": 0.0
+      },
+      "profile_summary": {
+        "auth.login": {
+          "samples": 799,
+          "query_count_avg": 4.0,
+          "query_count_p95": 4.0,
+          "sql_time_ms_avg": 19.191,
+          "sql_time_ms_p95": 47.473,
+          "wall_time_ms_avg": 1142.903,
+          "wall_time_ms_p95": 1863.665,
+          "python_time_ms_avg": 1123.712,
+          "python_time_ms_p95": 1826.275,
+          "instrumented_wall_ms_avg": 1142.319,
+          "instrumented_wall_ms_p95": 1863.503,
+          "unaccounted_wall_ms_avg": 0.584,
+          "unaccounted_wall_ms_p95": 0.449,
+          "cache_hit_count": 0,
+          "stage_metrics": {
+            "fetch_user": {
+              "samples": 799,
+              "wall_ms_avg": 10.07,
+              "wall_ms_p95": 32.509,
+              "sql_time_ms_avg": 3.592,
+              "sql_time_ms_p95": 16.14,
+              "python_time_ms_avg": 6.478,
+              "python_time_ms_p95": 24.473,
+              "query_count_avg": 1.0,
+              "query_count_p95": 1.0
+            },
+            "password_verify": {
+              "samples": 799,
+              "wall_ms_avg": 1101.973,
+              "wall_ms_p95": 1766.423,
+              "sql_time_ms_avg": 0.0,
+              "sql_time_ms_p95": 0.0,
+              "python_time_ms_avg": 1101.973,
+              "python_time_ms_p95": 1766.423,
+              "query_count_avg": 0.0,
+              "query_count_p95": 0.0
+            },
+            "resolve_accessible_contexts": {
+              "samples": 799,
+              "wall_ms_avg": 28.838,
+              "wall_ms_p95": 63.907,
+              "sql_time_ms_avg": 15.599,
+              "sql_time_ms_p95": 42.381,
+              "python_time_ms_avg": 13.239,
+              "python_time_ms_p95": 33.192,
+              "query_count_avg": 3.0,
+              "query_count_p95": 3.0
+            },
+            "resolve_active_context": {
+              "samples": 799,
+              "wall_ms_avg": 0.133,
+              "wall_ms_p95": 0.07,
+              "sql_time_ms_avg": 0.0,
+              "sql_time_ms_p95": 0.0,
+              "python_time_ms_avg": 0.133,
+              "python_time_ms_p95": 0.07,
+              "query_count_avg": 0.0,
+              "query_count_p95": 0.0
+            },
+            "serialization_response": {
+              "samples": 799,
+              "wall_ms_avg": 0.256,
+              "wall_ms_p95": 0.17,
+              "sql_time_ms_avg": 0.0,
+              "sql_time_ms_p95": 0.0,
+              "python_time_ms_avg": 0.256,
+              "python_time_ms_p95": 0.17,
+              "query_count_avg": 0.0,
+              "query_count_p95": 0.0
+            },
+            "token_session_creation": {
+              "samples": 799,
+              "wall_ms_avg": 1.05,
+              "wall_ms_p95": 5.823,
+              "sql_time_ms_avg": 0.0,
+              "sql_time_ms_p95": 0.0,
+              "python_time_ms_avg": 1.05,
+              "python_time_ms_p95": 5.823,
+              "query_count_avg": 0.0,
+              "query_count_p95": 0.0
+            }
+          }
+        },
+        "auth.bootstrap": {
+          "samples": 790,
+          "query_count_avg": 1.019,
+          "query_count_p95": 1.0,
+          "sql_time_ms_avg": 3.242,
+          "sql_time_ms_p95": 15.84,
+          "wall_time_ms_avg": 4.833,
+          "wall_time_ms_p95": 16.614,
+          "python_time_ms_avg": 3.558,
+          "python_time_ms_p95": 15.272,
+          "instrumented_wall_ms_avg": 0.224,
+          "instrumented_wall_ms_p95": 0.0,
+          "unaccounted_wall_ms_avg": 4.609,
+          "unaccounted_wall_ms_p95": 16.253,
+          "cache_hit_count": 785,
+          "stage_metrics": {
+            "bootstrap_membership_lookup": {
+              "samples": 5,
+              "wall_ms_avg": 18.905,
+              "wall_ms_p95": 49.328,
+              "sql_time_ms_avg": 3.493,
+              "sql_time_ms_p95": 8.784,
+              "python_time_ms_avg": 15.412,
+              "python_time_ms_p95": 45.26,
+              "query_count_avg": 1.0,
+              "query_count_p95": 1.0
+            },
+            "bootstrap_modules_lookup": {
+              "samples": 5,
+              "wall_ms_avg": 6.716,
+              "wall_ms_p95": 10.766,
+              "sql_time_ms_avg": 3.095,
+              "sql_time_ms_p95": 6.106,
+              "python_time_ms_avg": 3.621,
+              "python_time_ms_p95": 10.529,
+              "query_count_avg": 1.0,
+              "query_count_p95": 1.0
+            },
+            "bootstrap_owned_businesses_lookup": {
+              "samples": 5,
+              "wall_ms_avg": 9.848,
+              "wall_ms_p95": 26.33,
+              "sql_time_ms_avg": 6.144,
+              "sql_time_ms_p95": 13.104,
+              "python_time_ms_avg": 3.704,
+              "python_time_ms_p95": 13.226,
+              "query_count_avg": 1.0,
+              "query_count_p95": 1.0
+            }
+          }
+        }
+      },
+      "failures_rows": 1,
+      "error_rate": 0.0,
+      "metrics_samples": [
+        {
+          "ts": "2026-03-27T11:10:37.818754+00:00",
+          "docker_containers": {
+            "encaja-login-scale2-a": {
+              "cpu_percent": 26.21,
+              "mem_percent": 2.87,
+              "pids": 6,
+              "mem_usage_mb": 458.4
+            },
+            "encaja-login-scale2-b": {
+              "cpu_percent": 366.19,
+              "mem_percent": 2.87,
+              "pids": 6,
+              "mem_usage_mb": 458.4
+            }
+          },
+          "docker_container_count": 2,
+          "docker_cpu_percent": 392.4,
+          "docker_mem_usage_mb": 916.8,
+          "docker_mem_percent": 2.87,
+          "docker_pids": 12,
+          "db_total_connections": 10,
+          "db_active_connections": 1,
+          "db_waiting_connections": 0,
+          "db_longest_active_seconds": 0.016243
+        },
+        {
+          "ts": "2026-03-27T11:10:46.298371+00:00",
+          "docker_containers": {
+            "encaja-login-scale2-a": {
+              "cpu_percent": 381.98,
+              "mem_percent": 2.87,
+              "pids": 6,
+              "mem_usage_mb": 458.5
+            },
+            "encaja-login-scale2-b": {
+              "cpu_percent": 262.91,
+              "mem_percent": 2.88,
+              "pids": 6,
+              "mem_usage_mb": 458.5
+            }
+          },
+          "docker_container_count": 2,
+          "docker_cpu_percent": 644.89,
+          "docker_mem_usage_mb": 917.0,
+          "docker_mem_percent": 2.88,
+          "docker_pids": 12,
+          "db_total_connections": 10,
+          "db_active_connections": 1,
+          "db_waiting_connections": 0,
+          "db_longest_active_seconds": 0.012216
+        },
+        {
+          "ts": "2026-03-27T11:10:55.134636+00:00",
+          "docker_containers": {
+            "encaja-login-scale2-a": {
+              "cpu_percent": 203.01,
+              "mem_percent": 2.88,
+              "pids": 6,
+              "mem_usage_mb": 458.5
+            },
+            "encaja-login-scale2-b": {
+              "cpu_percent": 191.21,
+              "mem_percent": 2.88,
+              "pids": 6,
+              "mem_usage_mb": 458.8
+            }
+          },
+          "docker_container_count": 2,
+          "docker_cpu_percent": 394.22,
+          "docker_mem_usage_mb": 917.3,
+          "docker_mem_percent": 2.88,
+          "docker_pids": 12,
+          "db_total_connections": 10,
+          "db_active_connections": 1,
+          "db_waiting_connections": 0,
+          "db_longest_active_seconds": 0.015204
+        },
+        {
+          "ts": "2026-03-27T11:11:01.706319+00:00",
+          "docker_containers": {
+            "encaja-login-scale2-a": {
+              "cpu_percent": 240.06,
+              "mem_percent": 2.88,
+              "pids": 6,
+              "mem_usage_mb": 458.5
+            },
+            "encaja-login-scale2-b": {
+              "cpu_percent": 279.18,
+              "mem_percent": 2.88,
+              "pids": 6,
+              "mem_usage_mb": 458.6
+            }
+          },
+          "docker_container_count": 2,
+          "docker_cpu_percent": 519.24,
+          "docker_mem_usage_mb": 917.1,
+          "docker_mem_percent": 2.88,
+          "docker_pids": 12,
+          "db_total_connections": 10,
+          "db_active_connections": 1,
+          "db_waiting_connections": 0,
+          "db_longest_active_seconds": 0.01775
+        },
+        {
+          "ts": "2026-03-27T11:11:07.503295+00:00",
+          "docker_containers": {
+            "encaja-login-scale2-a": {
+              "cpu_percent": 239.77,
+              "mem_percent": 2.88,
+              "pids": 6,
+              "mem_usage_mb": 458.6
+            },
+            "encaja-login-scale2-b": {
+              "cpu_percent": 185.93,
+              "mem_percent": 2.88,
+              "pids": 6,
+              "mem_usage_mb": 458.6
+            }
+          },
+          "docker_container_count": 2,
+          "docker_cpu_percent": 425.7,
+          "docker_mem_usage_mb": 917.2,
+          "docker_mem_percent": 2.88,
+          "docker_pids": 12,
+          "db_total_connections": 10,
+          "db_active_connections": 1,
+          "db_waiting_connections": 0,
+          "db_longest_active_seconds": 0.014364
+        },
+        {
+          "ts": "2026-03-27T11:11:13.367338+00:00",
+          "docker_containers": {
+            "encaja-login-scale2-a": {
+              "cpu_percent": 224.41,
+              "mem_percent": 2.88,
+              "pids": 6,
+              "mem_usage_mb": 458.9
+            },
+            "encaja-login-scale2-b": {
+              "cpu_percent": 204.68,
+              "mem_percent": 2.88,
+              "pids": 6,
+              "mem_usage_mb": 458.6
+            }
+          },
+          "docker_container_count": 2,
+          "docker_cpu_percent": 429.09,
+          "docker_mem_usage_mb": 917.5,
+          "docker_mem_percent": 2.88,
+          "docker_pids": 12,
+          "db_total_connections": 10,
+          "db_active_connections": 1,
+          "db_waiting_connections": 0,
+          "db_longest_active_seconds": 0.015528
+        },
+        {
+          "ts": "2026-03-27T11:11:18.914848+00:00",
+          "docker_containers": {
+            "encaja-login-scale2-a": {
+              "cpu_percent": 264.65,
+              "mem_percent": 2.88,
+              "pids": 6,
+              "mem_usage_mb": 458.9
+            },
+            "encaja-login-scale2-b": {
+              "cpu_percent": 179.02,
+              "mem_percent": 2.88,
+              "pids": 6,
+              "mem_usage_mb": 458.7
+            }
+          },
+          "docker_container_count": 2,
+          "docker_cpu_percent": 443.67,
+          "docker_mem_usage_mb": 917.6,
+          "docker_mem_percent": 2.88,
+          "docker_pids": 12,
+          "db_total_connections": 10,
+          "db_active_connections": 1,
+          "db_waiting_connections": 0,
+          "db_longest_active_seconds": 0.00654
+        },
+        {
+          "ts": "2026-03-27T11:11:24.485834+00:00",
+          "docker_containers": {
+            "encaja-login-scale2-a": {
+              "cpu_percent": 239.99,
+              "mem_percent": 2.94,
+              "pids": 8,
+              "mem_usage_mb": 468.5
+            },
+            "encaja-login-scale2-b": {
+              "cpu_percent": 240.13,
+              "mem_percent": 2.92,
+              "pids": 8,
+              "mem_usage_mb": 466.4
+            }
+          },
+          "docker_container_count": 2,
+          "docker_cpu_percent": 480.12,
+          "docker_mem_usage_mb": 934.9,
+          "docker_mem_percent": 2.94,
+          "docker_pids": 16,
+          "db_total_connections": 10,
+          "db_active_connections": 1,
+          "db_waiting_connections": 0,
+          "db_longest_active_seconds": 0.015485
+        },
+        {
+          "ts": "2026-03-27T11:11:30.304255+00:00",
+          "docker_containers": {
+            "encaja-login-scale2-a": {
+              "cpu_percent": 216.1,
+              "mem_percent": 2.88,
+              "pids": 6,
+              "mem_usage_mb": 459.0
+            },
+            "encaja-login-scale2-b": {
+              "cpu_percent": 201.24,
+              "mem_percent": 2.88,
+              "pids": 6,
+              "mem_usage_mb": 458.7
+            }
+          },
+          "docker_container_count": 2,
+          "docker_cpu_percent": 417.34,
+          "docker_mem_usage_mb": 917.7,
+          "docker_mem_percent": 2.88,
+          "docker_pids": 12,
+          "db_total_connections": 10,
+          "db_active_connections": 1,
+          "db_waiting_connections": 0,
+          "db_longest_active_seconds": 0.014036
+        },
+        {
+          "ts": "2026-03-27T11:11:35.885832+00:00",
+          "docker_containers": {
+            "encaja-login-scale2-a": {
+              "cpu_percent": 204.69,
+              "mem_percent": 2.88,
+              "pids": 6,
+              "mem_usage_mb": 459.0
+            },
+            "encaja-login-scale2-b": {
+              "cpu_percent": 253.34,
+              "mem_percent": 2.88,
+              "pids": 6,
+              "mem_usage_mb": 458.8
+            }
+          },
+          "docker_container_count": 2,
+          "docker_cpu_percent": 458.03,
+          "docker_mem_usage_mb": 917.8,
+          "docker_mem_percent": 2.88,
+          "docker_pids": 12,
+          "db_total_connections": 10,
+          "db_active_connections": 1,
+          "db_waiting_connections": 0,
+          "db_longest_active_seconds": 0.011993
+        },
+        {
+          "ts": "2026-03-27T11:11:41.873397+00:00",
+          "docker_containers": {
+            "encaja-login-scale2-a": {
+              "cpu_percent": 202.6,
+              "mem_percent": 2.88,
+              "pids": 6,
+              "mem_usage_mb": 459.0
+            },
+            "encaja-login-scale2-b": {
+              "cpu_percent": 199.94,
+              "mem_percent": 2.88,
+              "pids": 6,
+              "mem_usage_mb": 459.1
+            }
+          },
+          "docker_container_count": 2,
+          "docker_cpu_percent": 402.54,
+          "docker_mem_usage_mb": 918.1,
+          "docker_mem_percent": 2.88,
+          "docker_pids": 12,
+          "db_total_connections": 10,
+          "db_active_connections": 1,
+          "db_waiting_connections": 0,
+          "db_longest_active_seconds": 0.015012
+        },
+        {
+          "ts": "2026-03-27T11:11:47.574054+00:00",
+          "docker_containers": {
+            "encaja-login-scale2-a": {
+              "cpu_percent": 189.41,
+              "mem_percent": 2.88,
+              "pids": 6,
+              "mem_usage_mb": 459.1
+            },
+            "encaja-login-scale2-b": {
+              "cpu_percent": 252.98,
+              "mem_percent": 2.88,
+              "pids": 6,
+              "mem_usage_mb": 459.1
+            }
+          },
+          "docker_container_count": 2,
+          "docker_cpu_percent": 442.39,
+          "docker_mem_usage_mb": 918.2,
+          "docker_mem_percent": 2.88,
+          "docker_pids": 12,
+          "db_total_connections": 10,
+          "db_active_connections": 1,
+          "db_waiting_connections": 0,
+          "db_longest_active_seconds": 0.033033
+        },
+        {
+          "ts": "2026-03-27T11:11:55.265517+00:00",
+          "docker_containers": {
+            "encaja-login-scale2-a": {
+              "cpu_percent": 251.22,
+              "mem_percent": 2.88,
+              "pids": 6,
+              "mem_usage_mb": 459.1
+            },
+            "encaja-login-scale2-b": {
+              "cpu_percent": 238.0,
+              "mem_percent": 2.88,
+              "pids": 6,
+              "mem_usage_mb": 459.1
+            }
+          },
+          "docker_container_count": 2,
+          "docker_cpu_percent": 489.22,
+          "docker_mem_usage_mb": 918.2,
+          "docker_mem_percent": 2.88,
+          "docker_pids": 12,
+          "db_total_connections": 10,
+          "db_active_connections": 1,
+          "db_waiting_connections": 0,
+          "db_longest_active_seconds": 0.018622
+        },
+        {
+          "ts": "2026-03-27T11:12:00.874419+00:00",
+          "docker_containers": {
+            "encaja-login-scale2-a": {
+              "cpu_percent": 235.51,
+              "mem_percent": 2.88,
+              "pids": 6,
+              "mem_usage_mb": 459.1
+            },
+            "encaja-login-scale2-b": {
+              "cpu_percent": 268.0,
+              "mem_percent": 2.88,
+              "pids": 6,
+              "mem_usage_mb": 459.2
+            }
+          },
+          "docker_container_count": 2,
+          "docker_cpu_percent": 503.51,
+          "docker_mem_usage_mb": 918.3,
+          "docker_mem_percent": 2.88,
+          "docker_pids": 12,
+          "db_total_connections": 10,
+          "db_active_connections": 1,
+          "db_waiting_connections": 0,
+          "db_longest_active_seconds": 0.018486
+        },
+        {
+          "ts": "2026-03-27T11:12:06.577970+00:00",
+          "docker_containers": {
+            "encaja-login-scale2-a": {
+              "cpu_percent": 287.69,
+              "mem_percent": 2.88,
+              "pids": 6,
+              "mem_usage_mb": 459.1
+            },
+            "encaja-login-scale2-b": {
+              "cpu_percent": 260.1,
+              "mem_percent": 2.88,
+              "pids": 6,
+              "mem_usage_mb": 459.2
+            }
+          },
+          "docker_container_count": 2,
+          "docker_cpu_percent": 547.79,
+          "docker_mem_usage_mb": 918.3,
+          "docker_mem_percent": 2.88,
+          "docker_pids": 12,
+          "db_total_connections": 10,
+          "db_active_connections": 1,
+          "db_waiting_connections": 0,
+          "db_longest_active_seconds": 0.007109
+        },
+        {
+          "ts": "2026-03-27T11:12:12.596933+00:00",
+          "docker_containers": {
+            "encaja-login-scale2-a": {
+              "cpu_percent": 212.51,
+              "mem_percent": 2.88,
+              "pids": 6,
+              "mem_usage_mb": 459.2
+            },
+            "encaja-login-scale2-b": {
+              "cpu_percent": 222.55,
+              "mem_percent": 2.88,
+              "pids": 6,
+              "mem_usage_mb": 459.2
+            }
+          },
+          "docker_container_count": 2,
+          "docker_cpu_percent": 435.06,
+          "docker_mem_usage_mb": 918.4,
+          "docker_mem_percent": 2.88,
+          "docker_pids": 12,
+          "db_total_connections": 10,
+          "db_active_connections": 1,
+          "db_waiting_connections": 0,
+          "db_longest_active_seconds": 0.037863
+        },
+        {
+          "ts": "2026-03-27T11:12:18.377574+00:00",
+          "docker_containers": {
+            "encaja-login-scale2-a": {
+              "cpu_percent": 295.43,
+              "mem_percent": 2.88,
+              "pids": 6,
+              "mem_usage_mb": 459.2
+            },
+            "encaja-login-scale2-b": {
+              "cpu_percent": 208.4,
+              "mem_percent": 2.88,
+              "pids": 6,
+              "mem_usage_mb": 459.3
+            }
+          },
+          "docker_container_count": 2,
+          "docker_cpu_percent": 503.83,
+          "docker_mem_usage_mb": 918.5,
+          "docker_mem_percent": 2.88,
+          "docker_pids": 12,
+          "db_total_connections": 10,
+          "db_active_connections": 1,
+          "db_waiting_connections": 0,
+          "db_longest_active_seconds": 0.005041
+        },
+        {
+          "ts": "2026-03-27T11:12:24.177089+00:00",
+          "docker_containers": {
+            "encaja-login-scale2-a": {
+              "cpu_percent": 215.26,
+              "mem_percent": 2.88,
+              "pids": 6,
+              "mem_usage_mb": 459.2
+            },
+            "encaja-login-scale2-b": {
+              "cpu_percent": 200.0,
+              "mem_percent": 2.88,
+              "pids": 6,
+              "mem_usage_mb": 459.3
+            }
+          },
+          "docker_container_count": 2,
+          "docker_cpu_percent": 415.26,
+          "docker_mem_usage_mb": 918.5,
+          "docker_mem_percent": 2.88,
+          "docker_pids": 12,
+          "db_total_connections": 10,
+          "db_active_connections": 1,
+          "db_waiting_connections": 0,
+          "db_longest_active_seconds": 0.005723
+        },
+        {
+          "ts": "2026-03-27T11:12:29.791017+00:00",
+          "docker_containers": {
+            "encaja-login-scale2-a": {
+              "cpu_percent": 188.47,
+              "mem_percent": 2.88,
+              "pids": 6,
+              "mem_usage_mb": 459.2
+            },
+            "encaja-login-scale2-b": {
+              "cpu_percent": 191.92,
+              "mem_percent": 2.88,
+              "pids": 6,
+              "mem_usage_mb": 459.3
+            }
+          },
+          "docker_container_count": 2,
+          "docker_cpu_percent": 380.39,
+          "docker_mem_usage_mb": 918.5,
+          "docker_mem_percent": 2.88,
+          "docker_pids": 12,
+          "db_total_connections": 10,
+          "db_active_connections": 1,
+          "db_waiting_connections": 0,
+          "db_longest_active_seconds": 0.02118
+        },
+        {
+          "ts": "2026-03-27T11:12:35.298833+00:00",
+          "docker_containers": {
+            "encaja-login-scale2-a": {
+              "cpu_percent": 197.63,
+              "mem_percent": 2.88,
+              "pids": 6,
+              "mem_usage_mb": 459.2
+            },
+            "encaja-login-scale2-b": {
+              "cpu_percent": 218.93,
+              "mem_percent": 2.88,
+              "pids": 6,
+              "mem_usage_mb": 459.3
+            }
+          },
+          "docker_container_count": 2,
+          "docker_cpu_percent": 416.56,
+          "docker_mem_usage_mb": 918.5,
+          "docker_mem_percent": 2.88,
+          "docker_pids": 12,
+          "db_total_connections": 10,
+          "db_active_connections": 2,
+          "db_waiting_connections": 0,
+          "db_longest_active_seconds": 0.014
+        }
+      ],
+      "metrics_summary": {
+        "backend_cpu_peak_percent": 0.0,
+        "backend_rss_peak_mb": 0.0,
+        "backend_threads_peak": 0.0,
+        "docker_cpu_peak_percent": 644.89,
+        "docker_mem_peak_mb": 934.9,
+        "docker_mem_peak_percent": 2.94,
+        "docker_pids_peak": 16,
+        "db_total_connections_peak": 10,
+        "db_active_connections_peak": 2,
+        "db_waiting_connections_peak": 0,
+        "db_longest_active_seconds_peak": 0.037863,
+        "docker_cpu_peak_percent_by_container": {
+          "encaja-login-scale2-a": 381.98,
+          "encaja-login-scale2-b": 366.19
+        },
+        "docker_mem_peak_mb_by_container": {
+          "encaja-login-scale2-a": 468.5,
+          "encaja-login-scale2-b": 466.4
+        },
+        "docker_pids_peak_by_container": {
+          "encaja-login-scale2-a": 8,
+          "encaja-login-scale2-b": 8
+        },
+        "auth_login_queue_gap_ms_avg": 2010.072
+      },
+      "artifacts": {
+        "stats_csv": "load-tests\\results\\phase-auth-runtime-gunicorn-4x1-scale2-full\\scenario_login_u40_stats.csv",
+        "stats_history_csv": "load-tests\\results\\phase-auth-runtime-gunicorn-4x1-scale2-full\\scenario_login_u40_stats_history.csv",
+        "failures_csv": "load-tests\\results\\phase-auth-runtime-gunicorn-4x1-scale2-full\\scenario_login_u40_failures.csv",
+        "profile_summary_json": "load-tests\\results\\phase-auth-runtime-gunicorn-4x1-scale2-full\\scenario_login_u40_profile_summary.json",
+        "report_html": "load-tests\\results\\phase-auth-runtime-gunicorn-4x1-scale2-full\\scenario_login_u40.html"
+      },
+      "capacity_pass": false
+    },
+    {
+      "scenario": "LOGIN",
+      "users": 60,
+      "started_at": "2026-03-27T11:12:39.814814+00:00",
+      "finished_at": "2026-03-27T11:14:42.442420+00:00",
+      "command": [
+        "C:\\Users\\harae\\Desktop\\ui migration\\proyecto1\\.venv\\Scripts\\locust.exe",
+        "-f",
+        "C:\\Users\\harae\\Desktop\\ui migration\\proyecto1\\load-tests\\locustfile.py",
+        "--host",
+        "http://127.0.0.1:8020",
+        "--users",
+        "60",
+        "--spawn-rate",
+        "5.0",
+        "--run-time",
+        "2m",
+        "--csv",
+        "load-tests\\results\\phase-auth-runtime-gunicorn-4x1-scale2-full\\scenario_login_u60",
+        "--html",
+        "load-tests\\results\\phase-auth-runtime-gunicorn-4x1-scale2-full\\scenario_login_u60.html",
+        "--headless",
+        "--only-summary"
+      ],
+      "exit_code": 0,
+      "stdout_tail": "",
+      "stderr_tail": "[2026-03-27 06:12:41,671] DESKTOP-9DI2UJR/INFO/locust.main: Starting Locust 2.43.3\n[2026-03-27 06:12:41,674] DESKTOP-9DI2UJR/INFO/locust.main: Run time limit set to 120 seconds\n[2026-03-27 06:12:41,675] DESKTOP-9DI2UJR/INFO/locust.runners: Ramping to 60 users at a rate of 5.00 per second\n[2026-03-27 06:12:52,683] DESKTOP-9DI2UJR/INFO/locust.runners: All users spawned: {\"CuadernoUser\": 60} (60 total users)\n[2026-03-27 06:14:40,743] DESKTOP-9DI2UJR/INFO/locust.main: --run-time limit reached, shutting down\n[2026-03-27 06:14:41,291] DESKTOP-9DI2UJR/INFO/locust.main: writing html report to file: load-tests\\results\\phase-auth-runtime-gunicorn-4x1-scale2-full\\scenario_login_u60.html\n[2026-03-27 06:14:41,324] DESKTOP-9DI2UJR/INFO/locust.main: Shutting down (exit code 0)\nType     Name                                                                          # reqs      # fails |    Avg     Min     Max    Med |   req/s  failures/s\n--------|----------------------------------------------------------------------------|-------|-------------|-------|-------|-------|-------|--------|-----------\nGET      auth.bootstrap                                                                   756     0(0.00%) |   3638       7    7967   3600 |    6.33        0.00\nPOST     auth.login                                                                       756     0(0.00%) |   4567     497    9661   4700 |    6.33        0.00\n--------|----------------------------------------------------------------------------|-------|-------------|-------|-------|-------|-------|--------|-----------\n         Aggregated                                                                      1512     0(0.00%) |   4103       7    9661   4100 |   12.66        0.00\n\nResponse time percentiles (approximated)\nType     Name                                                                                  50%    66%    75%    80%    90%    95%    98%    99%  99.9% 99.99%   100% # reqs\n--------|--------------------------------------------------------------------------------|--------|------|------|------|------|------|------|------|------|------|------|------\nGET      auth.bootstrap                                                                       3600   4300   4700   5000   5600   6200   6900   7200   8000   8000   8000    756\nPOST     auth.login                                                                           4700   5300   5700   6000   6700   7400   8100   8500   9700   9700   9700    756\n--------|--------------------------------------------------------------------------------|--------|------|------|------|------|------|------|------|------|------|------|------\n         Aggregated                                                                           4100   4800   5300   5500   6200   6900   7700   8100   9200   9700   9700   1512\n\n",
+      "stats_summary": {
+        "requests": 1508,
+        "failures": 0,
+        "median_ms": 4100.0,
+        "avg_ms": 4106.175847347511,
+        "min_ms": 7.204900000942871,
+        "max_ms": 9661.989099986386,
+        "avg_size": 1918.5,
+        "rps": 12.712397649992257,
+        "failures_per_sec": 0.0,
+        "p50_ms": 4100.0,
+        "p95_ms": 6900.0,
+        "p99_ms": 8100.0,
+        "slowest_endpoint": {
+          "name": "auth.login",
+          "method": "POST",
+          "avg_ms": 4576.821928116292,
+          "p95_ms": 7400.0,
+          "p99_ms": 8500.0,
+          "rps": 6.356198824996128
+        },
+        "endpoint_metrics": {
+          "auth.login": {
+            "avg_ms": 4576.821928116292,
+            "p95_ms": 7400.0,
+            "rps": 6.356198824996128,
+            "failures": 0,
+            "requests": 754
+          },
+          "auth.select_context": {
+            "avg_ms": 0.0,
+            "p95_ms": 0.0,
+            "rps": 0.0,
+            "failures": 0,
+            "requests": 0
+          },
+          "auth.bootstrap": {
+            "avg_ms": 3635.5297665787325,
+            "p95_ms": 6200.0,
+            "rps": 6.356198824996128,
+            "failures": 0,
+            "requests": 754
+          },
+          "read.dashboard": {
+            "avg_ms": 0.0,
+            "p95_ms": 0.0,
+            "rps": 0.0,
+            "failures": 0,
+            "requests": 0
+          },
+          "read.summary": {
+            "avg_ms": 0.0,
+            "p95_ms": 0.0,
+            "rps": 0.0,
+            "failures": 0,
+            "requests": 0
+          }
+        }
+      },
+      "distribution": {
+        "p50_estimated_ms": 4072.05145720847,
+        "p95_estimated_ms": 4220.671057238572,
+        "p99_estimated_ms": 4232.3684417495415,
+        "avg_rps_window": 11.769403396551724,
+        "max_rps_window": 17.4,
+        "final_failure_count": 0.0
+      },
+      "profile_summary": {
+        "auth.login": {
+          "samples": 780,
+          "query_count_avg": 4.0,
+          "query_count_p95": 4.0,
+          "sql_time_ms_avg": 19.328,
+          "sql_time_ms_p95": 54.204,
+          "wall_time_ms_avg": 1174.301,
+          "wall_time_ms_p95": 1840.991,
+          "python_time_ms_avg": 1154.972,
+          "python_time_ms_p95": 1816.402,
+          "instrumented_wall_ms_avg": 1173.754,
+          "instrumented_wall_ms_p95": 1840.851,
+          "unaccounted_wall_ms_avg": 0.546,
+          "unaccounted_wall_ms_p95": 0.409,
+          "cache_hit_count": 0,
+          "stage_metrics": {
+            "fetch_user": {
+              "samples": 780,
+              "wall_ms_avg": 10.072,
+              "wall_ms_p95": 32.414,
+              "sql_time_ms_avg": 3.578,
+              "sql_time_ms_p95": 15.663,
+              "python_time_ms_avg": 6.494,
+              "python_time_ms_p95": 24.195,
+              "query_count_avg": 1.0,
+              "query_count_p95": 1.0
+            },
+            "password_verify": {
+              "samples": 780,
+              "wall_ms_avg": 1134.291,
+              "wall_ms_p95": 1782.974,
+              "sql_time_ms_avg": 0.0,
+              "sql_time_ms_p95": 0.0,
+              "python_time_ms_avg": 1134.291,
+              "python_time_ms_p95": 1782.974,
+              "query_count_avg": 0.0,
+              "query_count_p95": 0.0
+            },
+            "resolve_accessible_contexts": {
+              "samples": 780,
+              "wall_ms_avg": 28.056,
+              "wall_ms_p95": 69.364,
+              "sql_time_ms_avg": 15.75,
+              "sql_time_ms_p95": 45.729,
+              "python_time_ms_avg": 12.306,
+              "python_time_ms_p95": 42.467,
+              "query_count_avg": 3.0,
+              "query_count_p95": 3.0
+            },
+            "resolve_active_context": {
+              "samples": 780,
+              "wall_ms_avg": 0.09,
+              "wall_ms_p95": 0.069,
+              "sql_time_ms_avg": 0.0,
+              "sql_time_ms_p95": 0.0,
+              "python_time_ms_avg": 0.09,
+              "python_time_ms_p95": 0.069,
+              "query_count_avg": 0.0,
+              "query_count_p95": 0.0
+            },
+            "serialization_response": {
+              "samples": 780,
+              "wall_ms_avg": 0.236,
+              "wall_ms_p95": 0.267,
+              "sql_time_ms_avg": 0.0,
+              "sql_time_ms_p95": 0.0,
+              "python_time_ms_avg": 0.236,
+              "python_time_ms_p95": 0.267,
+              "query_count_avg": 0.0,
+              "query_count_p95": 0.0
+            },
+            "token_session_creation": {
+              "samples": 780,
+              "wall_ms_avg": 1.01,
+              "wall_ms_p95": 2.463,
+              "sql_time_ms_avg": 0.0,
+              "sql_time_ms_p95": 0.0,
+              "python_time_ms_avg": 1.01,
+              "python_time_ms_p95": 2.463,
+              "query_count_avg": 0.0,
+              "query_count_p95": 0.0
+            }
+          }
+        },
+        "auth.bootstrap": {
+          "samples": 756,
+          "query_count_avg": 1.016,
+          "query_count_p95": 1.0,
+          "sql_time_ms_avg": 3.032,
+          "sql_time_ms_p95": 14.072,
+          "wall_time_ms_avg": 4.142,
+          "wall_time_ms_p95": 15.531,
+          "python_time_ms_avg": 2.816,
+          "python_time_ms_p95": 14.233,
+          "instrumented_wall_ms_avg": 0.175,
+          "instrumented_wall_ms_p95": 0.0,
+          "unaccounted_wall_ms_avg": 3.967,
+          "unaccounted_wall_ms_p95": 15.501,
+          "cache_hit_count": 752,
+          "stage_metrics": {
+            "bootstrap_membership_lookup": {
+              "samples": 4,
+              "wall_ms_avg": 20.399,
+              "wall_ms_p95": 46.021,
+              "sql_time_ms_avg": 10.038,
+              "sql_time_ms_p95": 14.238,
+              "python_time_ms_avg": 10.361,
+              "python_time_ms_p95": 37.411,
+              "query_count_avg": 1.0,
+              "query_count_p95": 1.0
+            },
+            "bootstrap_modules_lookup": {
+              "samples": 4,
+              "wall_ms_avg": 2.563,
+              "wall_ms_p95": 4.839,
+              "sql_time_ms_avg": 1.099,
+              "sql_time_ms_p95": 1.375,
+              "python_time_ms_avg": 1.464,
+              "python_time_ms_p95": 3.545,
+              "query_count_avg": 1.0,
+              "query_count_p95": 1.0
+            },
+            "bootstrap_owned_businesses_lookup": {
+              "samples": 4,
+              "wall_ms_avg": 10.194,
+              "wall_ms_p95": 35.258,
+              "sql_time_ms_avg": 9.125,
+              "sql_time_ms_p95": 34.111,
+              "python_time_ms_avg": 1.069,
+              "python_time_ms_p95": 1.226,
+              "query_count_avg": 1.0,
+              "query_count_p95": 1.0
+            }
+          }
+        }
+      },
+      "failures_rows": 1,
+      "error_rate": 0.0,
+      "metrics_samples": [
+        {
+          "ts": "2026-03-27T11:12:39.815254+00:00",
+          "docker_containers": {
+            "encaja-login-scale2-a": {
+              "cpu_percent": 509.58,
+              "mem_percent": 2.88,
+              "pids": 6,
+              "mem_usage_mb": 459.2
+            },
+            "encaja-login-scale2-b": {
+              "cpu_percent": 128.32,
+              "mem_percent": 2.88,
+              "pids": 6,
+              "mem_usage_mb": 459.3
+            }
+          },
+          "docker_container_count": 2,
+          "docker_cpu_percent": 637.9,
+          "docker_mem_usage_mb": 918.5,
+          "docker_mem_percent": 2.88,
+          "docker_pids": 12,
+          "db_total_connections": 10,
+          "db_active_connections": 1,
+          "db_waiting_connections": 0,
+          "db_longest_active_seconds": 0.006244
+        },
+        {
+          "ts": "2026-03-27T11:12:45.728412+00:00",
+          "docker_containers": {
+            "encaja-login-scale2-a": {
+              "cpu_percent": 195.08,
+              "mem_percent": 2.88,
+              "pids": 6,
+              "mem_usage_mb": 459.2
+            },
+            "encaja-login-scale2-b": {
+              "cpu_percent": 194.01,
+              "mem_percent": 2.88,
+              "pids": 6,
+              "mem_usage_mb": 459.3
+            }
+          },
+          "docker_container_count": 2,
+          "docker_cpu_percent": 389.09,
+          "docker_mem_usage_mb": 918.5,
+          "docker_mem_percent": 2.88,
+          "docker_pids": 12,
+          "db_total_connections": 10,
+          "db_active_connections": 1,
+          "db_waiting_connections": 0,
+          "db_longest_active_seconds": 0.033053
+        },
+        {
+          "ts": "2026-03-27T11:12:51.943340+00:00",
+          "docker_containers": {
+            "encaja-login-scale2-a": {
+              "cpu_percent": 203.24,
+              "mem_percent": 2.88,
+              "pids": 6,
+              "mem_usage_mb": 459.2
+            },
+            "encaja-login-scale2-b": {
+              "cpu_percent": 201.34,
+              "mem_percent": 2.88,
+              "pids": 6,
+              "mem_usage_mb": 459.3
+            }
+          },
+          "docker_container_count": 2,
+          "docker_cpu_percent": 404.58,
+          "docker_mem_usage_mb": 918.5,
+          "docker_mem_percent": 2.88,
+          "docker_pids": 12,
+          "db_total_connections": 10,
+          "db_active_connections": 1,
+          "db_waiting_connections": 0,
+          "db_longest_active_seconds": 0.009672
+        },
+        {
+          "ts": "2026-03-27T11:12:57.820805+00:00",
+          "docker_containers": {
+            "encaja-login-scale2-a": {
+              "cpu_percent": 281.37,
+              "mem_percent": 2.88,
+              "pids": 6,
+              "mem_usage_mb": 459.2
+            },
+            "encaja-login-scale2-b": {
+              "cpu_percent": 206.13,
+              "mem_percent": 2.88,
+              "pids": 6,
+              "mem_usage_mb": 459.3
+            }
+          },
+          "docker_container_count": 2,
+          "docker_cpu_percent": 487.5,
+          "docker_mem_usage_mb": 918.5,
+          "docker_mem_percent": 2.88,
+          "docker_pids": 12,
+          "db_total_connections": 10,
+          "db_active_connections": 1,
+          "db_waiting_connections": 0,
+          "db_longest_active_seconds": 0.005064
+        },
+        {
+          "ts": "2026-03-27T11:13:03.966708+00:00",
+          "docker_containers": {
+            "encaja-login-scale2-a": {
+              "cpu_percent": 211.51,
+              "mem_percent": 2.88,
+              "pids": 6,
+              "mem_usage_mb": 459.2
+            },
+            "encaja-login-scale2-b": {
+              "cpu_percent": 241.4,
+              "mem_percent": 2.88,
+              "pids": 6,
+              "mem_usage_mb": 459.3
+            }
+          },
+          "docker_container_count": 2,
+          "docker_cpu_percent": 452.91,
+          "docker_mem_usage_mb": 918.5,
+          "docker_mem_percent": 2.88,
+          "docker_pids": 12,
+          "db_total_connections": 10,
+          "db_active_connections": 1,
+          "db_waiting_connections": 0,
+          "db_longest_active_seconds": 0.016829
+        },
+        {
+          "ts": "2026-03-27T11:13:10.226702+00:00",
+          "docker_containers": {
+            "encaja-login-scale2-a": {
+              "cpu_percent": 392.97,
+              "mem_percent": 2.88,
+              "pids": 6,
+              "mem_usage_mb": 459.3
+            },
+            "encaja-login-scale2-b": {
+              "cpu_percent": 239.17,
+              "mem_percent": 2.88,
+              "pids": 6,
+              "mem_usage_mb": 459.3
+            }
+          },
+          "docker_container_count": 2,
+          "docker_cpu_percent": 632.14,
+          "docker_mem_usage_mb": 918.6,
+          "docker_mem_percent": 2.88,
+          "docker_pids": 12,
+          "db_total_connections": 10,
+          "db_active_connections": 1,
+          "db_waiting_connections": 0,
+          "db_longest_active_seconds": 0.009691
+        },
+        {
+          "ts": "2026-03-27T11:13:18.250319+00:00",
+          "docker_containers": {
+            "encaja-login-scale2-a": {
+              "cpu_percent": 205.46,
+              "mem_percent": 2.88,
+              "pids": 6,
+              "mem_usage_mb": 459.3
+            },
+            "encaja-login-scale2-b": {
+              "cpu_percent": 321.06,
+              "mem_percent": 2.88,
+              "pids": 6,
+              "mem_usage_mb": 459.3
+            }
+          },
+          "docker_container_count": 2,
+          "docker_cpu_percent": 526.52,
+          "docker_mem_usage_mb": 918.6,
+          "docker_mem_percent": 2.88,
+          "docker_pids": 12,
+          "db_total_connections": 10,
+          "db_active_connections": 1,
+          "db_waiting_connections": 0,
+          "db_longest_active_seconds": 0.012178
+        },
+        {
+          "ts": "2026-03-27T11:13:24.306816+00:00",
+          "docker_containers": {
+            "encaja-login-scale2-a": {
+              "cpu_percent": 175.3,
+              "mem_percent": 2.88,
+              "pids": 6,
+              "mem_usage_mb": 459.2
+            },
+            "encaja-login-scale2-b": {
+              "cpu_percent": 295.69,
+              "mem_percent": 2.88,
+              "pids": 6,
+              "mem_usage_mb": 459.3
+            }
+          },
+          "docker_container_count": 2,
+          "docker_cpu_percent": 470.99,
+          "docker_mem_usage_mb": 918.5,
+          "docker_mem_percent": 2.88,
+          "docker_pids": 12,
+          "db_total_connections": 10,
+          "db_active_connections": 1,
+          "db_waiting_connections": 0,
+          "db_longest_active_seconds": 0.015271
+        },
+        {
+          "ts": "2026-03-27T11:13:31.093096+00:00",
+          "docker_containers": {
+            "encaja-login-scale2-a": {
+              "cpu_percent": 266.71,
+              "mem_percent": 2.88,
+              "pids": 6,
+              "mem_usage_mb": 459.2
+            },
+            "encaja-login-scale2-b": {
+              "cpu_percent": 286.1,
+              "mem_percent": 2.88,
+              "pids": 6,
+              "mem_usage_mb": 459.3
+            }
+          },
+          "docker_container_count": 2,
+          "docker_cpu_percent": 552.81,
+          "docker_mem_usage_mb": 918.5,
+          "docker_mem_percent": 2.88,
+          "docker_pids": 12,
+          "db_total_connections": 10,
+          "db_active_connections": 1,
+          "db_waiting_connections": 0,
+          "db_longest_active_seconds": 0.051647
+        },
+        {
+          "ts": "2026-03-27T11:13:37.465611+00:00",
+          "docker_containers": {
+            "encaja-login-scale2-a": {
+              "cpu_percent": 246.3,
+              "mem_percent": 2.88,
+              "pids": 7,
+              "mem_usage_mb": 459.7
+            },
+            "encaja-login-scale2-b": {
+              "cpu_percent": 241.57,
+              "mem_percent": 2.88,
+              "pids": 6,
+              "mem_usage_mb": 459.3
+            }
+          },
+          "docker_container_count": 2,
+          "docker_cpu_percent": 487.87,
+          "docker_mem_usage_mb": 919.0,
+          "docker_mem_percent": 2.88,
+          "docker_pids": 13,
+          "db_total_connections": 10,
+          "db_active_connections": 1,
+          "db_waiting_connections": 0,
+          "db_longest_active_seconds": 0.016732
+        },
+        {
+          "ts": "2026-03-27T11:13:44.117462+00:00",
+          "docker_containers": {
+            "encaja-login-scale2-a": {
+              "cpu_percent": 196.41,
+              "mem_percent": 2.88,
+              "pids": 6,
+              "mem_usage_mb": 459.3
+            },
+            "encaja-login-scale2-b": {
+              "cpu_percent": 193.04,
+              "mem_percent": 2.88,
+              "pids": 6,
+              "mem_usage_mb": 459.5
+            }
+          },
+          "docker_container_count": 2,
+          "docker_cpu_percent": 389.45,
+          "docker_mem_usage_mb": 918.8,
+          "docker_mem_percent": 2.88,
+          "docker_pids": 12,
+          "db_total_connections": 10,
+          "db_active_connections": 1,
+          "db_waiting_connections": 0,
+          "db_longest_active_seconds": 0.016411
+        },
+        {
+          "ts": "2026-03-27T11:13:49.727823+00:00",
+          "docker_containers": {
+            "encaja-login-scale2-a": {
+              "cpu_percent": 254.01,
+              "mem_percent": 2.88,
+              "pids": 6,
+              "mem_usage_mb": 459.2
+            },
+            "encaja-login-scale2-b": {
+              "cpu_percent": 201.85,
+              "mem_percent": 2.88,
+              "pids": 6,
+              "mem_usage_mb": 459.5
+            }
+          },
+          "docker_container_count": 2,
+          "docker_cpu_percent": 455.86,
+          "docker_mem_usage_mb": 918.7,
+          "docker_mem_percent": 2.88,
+          "docker_pids": 12,
+          "db_total_connections": 10,
+          "db_active_connections": 1,
+          "db_waiting_connections": 0,
+          "db_longest_active_seconds": 0.008398
+        },
+        {
+          "ts": "2026-03-27T11:13:55.234767+00:00",
+          "docker_containers": {
+            "encaja-login-scale2-a": {
+              "cpu_percent": 361.82,
+              "mem_percent": 2.88,
+              "pids": 6,
+              "mem_usage_mb": 459.3
+            },
+            "encaja-login-scale2-b": {
+              "cpu_percent": 243.76,
+              "mem_percent": 2.88,
+              "pids": 6,
+              "mem_usage_mb": 459.5
+            }
+          },
+          "docker_container_count": 2,
+          "docker_cpu_percent": 605.58,
+          "docker_mem_usage_mb": 918.8,
+          "docker_mem_percent": 2.88,
+          "docker_pids": 12,
+          "db_total_connections": 10,
+          "db_active_connections": 1,
+          "db_waiting_connections": 0,
+          "db_longest_active_seconds": 0.012797
+        },
+        {
+          "ts": "2026-03-27T11:14:01.737339+00:00",
+          "docker_containers": {
+            "encaja-login-scale2-a": {
+              "cpu_percent": 281.64,
+              "mem_percent": 2.88,
+              "pids": 6,
+              "mem_usage_mb": 459.3
+            },
+            "encaja-login-scale2-b": {
+              "cpu_percent": 186.32,
+              "mem_percent": 2.88,
+              "pids": 6,
+              "mem_usage_mb": 459.5
+            }
+          },
+          "docker_container_count": 2,
+          "docker_cpu_percent": 467.96,
+          "docker_mem_usage_mb": 918.8,
+          "docker_mem_percent": 2.88,
+          "docker_pids": 12,
+          "db_total_connections": 10,
+          "db_active_connections": 1,
+          "db_waiting_connections": 0,
+          "db_longest_active_seconds": 0.005095
+        },
+        {
+          "ts": "2026-03-27T11:14:07.399768+00:00",
+          "docker_containers": {
+            "encaja-login-scale2-a": {
+              "cpu_percent": 208.64,
+              "mem_percent": 2.88,
+              "pids": 6,
+              "mem_usage_mb": 459.3
+            },
+            "encaja-login-scale2-b": {
+              "cpu_percent": 197.81,
+              "mem_percent": 2.94,
+              "pids": 8,
+              "mem_usage_mb": 469.1
+            }
+          },
+          "docker_container_count": 2,
+          "docker_cpu_percent": 406.45,
+          "docker_mem_usage_mb": 928.4,
+          "docker_mem_percent": 2.94,
+          "docker_pids": 14,
+          "db_total_connections": 10,
+          "db_active_connections": 1,
+          "db_waiting_connections": 0,
+          "db_longest_active_seconds": 0.012634
+        },
+        {
+          "ts": "2026-03-27T11:14:13.364463+00:00",
+          "docker_containers": {
+            "encaja-login-scale2-a": {
+              "cpu_percent": 205.2,
+              "mem_percent": 2.94,
+              "pids": 8,
+              "mem_usage_mb": 468.6
+            },
+            "encaja-login-scale2-b": {
+              "cpu_percent": 314.72,
+              "mem_percent": 2.88,
+              "pids": 6,
+              "mem_usage_mb": 459.5
+            }
+          },
+          "docker_container_count": 2,
+          "docker_cpu_percent": 519.92,
+          "docker_mem_usage_mb": 928.1,
+          "docker_mem_percent": 2.94,
+          "docker_pids": 14,
+          "db_total_connections": 10,
+          "db_active_connections": 1,
+          "db_waiting_connections": 0,
+          "db_longest_active_seconds": 0.020114
+        },
+        {
+          "ts": "2026-03-27T11:14:20.225191+00:00",
+          "docker_containers": {
+            "encaja-login-scale2-a": {
+              "cpu_percent": 178.08,
+              "mem_percent": 2.88,
+              "pids": 6,
+              "mem_usage_mb": 459.3
+            },
+            "encaja-login-scale2-b": {
+              "cpu_percent": 253.43,
+              "mem_percent": 2.88,
+              "pids": 6,
+              "mem_usage_mb": 459.5
+            }
+          },
+          "docker_container_count": 2,
+          "docker_cpu_percent": 431.51,
+          "docker_mem_usage_mb": 918.8,
+          "docker_mem_percent": 2.88,
+          "docker_pids": 12,
+          "db_total_connections": 10,
+          "db_active_connections": 1,
+          "db_waiting_connections": 0,
+          "db_longest_active_seconds": 0.011686
+        },
+        {
+          "ts": "2026-03-27T11:14:25.728534+00:00",
+          "docker_containers": {
+            "encaja-login-scale2-a": {
+              "cpu_percent": 199.44,
+              "mem_percent": 2.88,
+              "pids": 6,
+              "mem_usage_mb": 459.3
+            },
+            "encaja-login-scale2-b": {
+              "cpu_percent": 249.49,
+              "mem_percent": 2.88,
+              "pids": 6,
+              "mem_usage_mb": 459.5
+            }
+          },
+          "docker_container_count": 2,
+          "docker_cpu_percent": 448.93,
+          "docker_mem_usage_mb": 918.8,
+          "docker_mem_percent": 2.88,
+          "docker_pids": 12,
+          "db_total_connections": 10,
+          "db_active_connections": 1,
+          "db_waiting_connections": 0,
+          "db_longest_active_seconds": 0.024673
+        },
+        {
+          "ts": "2026-03-27T11:14:31.481595+00:00",
+          "docker_containers": {
+            "encaja-login-scale2-a": {
+              "cpu_percent": 198.64,
+              "mem_percent": 2.88,
+              "pids": 6,
+              "mem_usage_mb": 459.3
+            },
+            "encaja-login-scale2-b": {
+              "cpu_percent": 203.11,
+              "mem_percent": 2.88,
+              "pids": 6,
+              "mem_usage_mb": 459.7
+            }
+          },
+          "docker_container_count": 2,
+          "docker_cpu_percent": 401.75,
+          "docker_mem_usage_mb": 919.0,
+          "docker_mem_percent": 2.88,
+          "docker_pids": 12,
+          "db_total_connections": 10,
+          "db_active_connections": 1,
+          "db_waiting_connections": 0,
+          "db_longest_active_seconds": 0.031776
+        },
+        {
+          "ts": "2026-03-27T11:14:37.034771+00:00",
+          "docker_containers": {
+            "encaja-login-scale2-a": {
+              "cpu_percent": 226.63,
+              "mem_percent": 2.88,
+              "pids": 6,
+              "mem_usage_mb": 459.3
+            },
+            "encaja-login-scale2-b": {
+              "cpu_percent": 327.18,
+              "mem_percent": 2.88,
+              "pids": 6,
+              "mem_usage_mb": 459.5
+            }
+          },
+          "docker_container_count": 2,
+          "docker_cpu_percent": 553.81,
+          "docker_mem_usage_mb": 918.8,
+          "docker_mem_percent": 2.88,
+          "docker_pids": 12,
+          "db_total_connections": 10,
+          "db_active_connections": 1,
+          "db_waiting_connections": 0,
+          "db_longest_active_seconds": 0.032182
+        }
+      ],
+      "metrics_summary": {
+        "backend_cpu_peak_percent": 0.0,
+        "backend_rss_peak_mb": 0.0,
+        "backend_threads_peak": 0.0,
+        "docker_cpu_peak_percent": 637.9,
+        "docker_mem_peak_mb": 928.4,
+        "docker_mem_peak_percent": 2.94,
+        "docker_pids_peak": 14,
+        "db_total_connections_peak": 10,
+        "db_active_connections_peak": 1,
+        "db_waiting_connections_peak": 0,
+        "db_longest_active_seconds_peak": 0.051647,
+        "docker_cpu_peak_percent_by_container": {
+          "encaja-login-scale2-a": 509.58,
+          "encaja-login-scale2-b": 327.18
+        },
+        "docker_mem_peak_mb_by_container": {
+          "encaja-login-scale2-a": 468.6,
+          "encaja-login-scale2-b": 469.1
+        },
+        "docker_pids_peak_by_container": {
+          "encaja-login-scale2-a": 8,
+          "encaja-login-scale2-b": 8
+        },
+        "auth_login_queue_gap_ms_avg": 3402.521
+      },
+      "artifacts": {
+        "stats_csv": "load-tests\\results\\phase-auth-runtime-gunicorn-4x1-scale2-full\\scenario_login_u60_stats.csv",
+        "stats_history_csv": "load-tests\\results\\phase-auth-runtime-gunicorn-4x1-scale2-full\\scenario_login_u60_stats_history.csv",
+        "failures_csv": "load-tests\\results\\phase-auth-runtime-gunicorn-4x1-scale2-full\\scenario_login_u60_failures.csv",
+        "profile_summary_json": "load-tests\\results\\phase-auth-runtime-gunicorn-4x1-scale2-full\\scenario_login_u60_profile_summary.json",
+        "report_html": "load-tests\\results\\phase-auth-runtime-gunicorn-4x1-scale2-full\\scenario_login_u60.html"
+      },
+      "capacity_pass": false
+    },
+    {
+      "scenario": "LOGIN",
+      "users": 80,
+      "started_at": "2026-03-27T11:14:42.448636+00:00",
+      "finished_at": "2026-03-27T11:16:44.055275+00:00",
+      "command": [
+        "C:\\Users\\harae\\Desktop\\ui migration\\proyecto1\\.venv\\Scripts\\locust.exe",
+        "-f",
+        "C:\\Users\\harae\\Desktop\\ui migration\\proyecto1\\load-tests\\locustfile.py",
+        "--host",
+        "http://127.0.0.1:8020",
+        "--users",
+        "80",
+        "--spawn-rate",
+        "5.0",
+        "--run-time",
+        "2m",
+        "--csv",
+        "load-tests\\results\\phase-auth-runtime-gunicorn-4x1-scale2-full\\scenario_login_u80",
+        "--html",
+        "load-tests\\results\\phase-auth-runtime-gunicorn-4x1-scale2-full\\scenario_login_u80.html",
+        "--headless",
+        "--only-summary"
+      ],
+      "exit_code": 0,
+      "stdout_tail": "",
+      "stderr_tail": "[2026-03-27 06:14:44,954] DESKTOP-9DI2UJR/INFO/locust.main: Starting Locust 2.43.3\n[2026-03-27 06:14:44,964] DESKTOP-9DI2UJR/INFO/locust.main: Run time limit set to 120 seconds\n[2026-03-27 06:14:44,966] DESKTOP-9DI2UJR/INFO/locust.runners: Ramping to 80 users at a rate of 5.00 per second\n[2026-03-27 06:15:00,103] DESKTOP-9DI2UJR/INFO/locust.runners: All users spawned: {\"CuadernoUser\": 80} (80 total users)\n[2026-03-27 06:16:43,511] DESKTOP-9DI2UJR/INFO/locust.main: --run-time limit reached, shutting down\n[2026-03-27 06:16:43,759] DESKTOP-9DI2UJR/INFO/locust.main: writing html report to file: load-tests\\results\\phase-auth-runtime-gunicorn-4x1-scale2-full\\scenario_login_u80.html\n[2026-03-27 06:16:43,781] DESKTOP-9DI2UJR/INFO/locust.main: Shutting down (exit code 0)\nType     Name                                                                          # reqs      # fails |    Avg     Min     Max    Med |   req/s  failures/s\n--------|----------------------------------------------------------------------------|-------|-------------|-------|-------|-------|-------|--------|-----------\nGET      auth.bootstrap                                                                   795     0(0.00%) |   4663      18    8559   4600 |    6.72        0.00\nPOST     auth.login                                                                       795     0(0.00%) |   5558     585    9770   5600 |    6.72        0.00\n--------|----------------------------------------------------------------------------|-------|-------------|-------|-------|-------|-------|--------|-----------\n         Aggregated                                                                      1590     0(0.00%) |   5111      18    9770   5100 |   13.43        0.00\n\nResponse time percentiles (approximated)\nType     Name                                                                                  50%    66%    75%    80%    90%    95%    98%    99%  99.9% 99.99%   100% # reqs\n--------|--------------------------------------------------------------------------------|--------|------|------|------|------|------|------|------|------|------|------|------\nGET      auth.bootstrap                                                                       4600   5100   5400   5700   6300   6900   7500   8000   8600   8600   8600    795\nPOST     auth.login                                                                           5600   6100   6300   6600   7300   7800   8600   8900   9800   9800   9800    795\n--------|--------------------------------------------------------------------------------|--------|------|------|------|------|------|------|------|------|------|------|------\n         Aggregated                                                                           5100   5600   6000   6200   6900   7400   8200   8600   9300   9800   9800   1590\n\n",
+      "stats_summary": {
+        "requests": 1590,
+        "failures": 0,
+        "median_ms": 5100.0,
+        "avg_ms": 5111.036728176517,
+        "min_ms": 18.83879999513738,
+        "max_ms": 9770.28289998998,
+        "avg_size": 1918.5,
+        "rps": 13.433446346593271,
+        "failures_per_sec": 0.0,
+        "p50_ms": 5100.0,
+        "p95_ms": 7400.0,
+        "p99_ms": 8600.0,
+        "slowest_endpoint": {
+          "name": "auth.login",
+          "method": "POST",
+          "avg_ms": 5558.685917233242,
+          "p95_ms": 7800.0,
+          "p99_ms": 8900.0,
+          "rps": 6.716723173296636
+        },
+        "endpoint_metrics": {
+          "auth.login": {
+            "avg_ms": 5558.685917233242,
+            "p95_ms": 7800.0,
+            "rps": 6.716723173296636,
+            "failures": 0,
+            "requests": 795
+          },
+          "auth.select_context": {
+            "avg_ms": 0.0,
+            "p95_ms": 0.0,
+            "rps": 0.0,
+            "failures": 0,
+            "requests": 0
+          },
+          "auth.bootstrap": {
+            "avg_ms": 4663.387539119787,
+            "p95_ms": 6900.0,
+            "rps": 6.716723173296636,
+            "failures": 0,
+            "requests": 795
+          },
+          "read.dashboard": {
+            "avg_ms": 0.0,
+            "p95_ms": 0.0,
+            "rps": 0.0,
+            "failures": 0,
+            "requests": 0
+          },
+          "read.summary": {
+            "avg_ms": 0.0,
+            "p95_ms": 0.0,
+            "rps": 0.0,
+            "failures": 0,
+            "requests": 0
+          }
+        }
+      },
+      "distribution": {
+        "p50_estimated_ms": 4876.6558492088625,
+        "p95_estimated_ms": 5118.401902233061,
+        "p99_estimated_ms": 5119.796044098023,
+        "avg_rps_window": 12.261165844827586,
+        "max_rps_window": 17.0,
+        "final_failure_count": 0.0
+      },
+      "profile_summary": {
+        "auth.login": {
+          "samples": 829,
+          "query_count_avg": 4.0,
+          "query_count_p95": 4.0,
+          "sql_time_ms_avg": 17.54,
+          "sql_time_ms_p95": 46.11,
+          "wall_time_ms_avg": 1084.757,
+          "wall_time_ms_p95": 1685.117,
+          "python_time_ms_avg": 1067.217,
+          "python_time_ms_p95": 1652.441,
+          "instrumented_wall_ms_avg": 1084.36,
+          "instrumented_wall_ms_p95": 1684.938,
+          "unaccounted_wall_ms_avg": 0.396,
+          "unaccounted_wall_ms_p95": 0.424,
+          "cache_hit_count": 0,
+          "stage_metrics": {
+            "fetch_user": {
+              "samples": 829,
+              "wall_ms_avg": 9.065,
+              "wall_ms_p95": 28.29,
+              "sql_time_ms_avg": 3.142,
+              "sql_time_ms_p95": 13.905,
+              "python_time_ms_avg": 5.923,
+              "python_time_ms_p95": 19.454,
+              "query_count_avg": 1.0,
+              "query_count_p95": 1.0
+            },
+            "password_verify": {
+              "samples": 829,
+              "wall_ms_avg": 1048.497,
+              "wall_ms_p95": 1622.296,
+              "sql_time_ms_avg": 0.0,
+              "sql_time_ms_p95": 0.0,
+              "python_time_ms_avg": 1048.497,
+              "python_time_ms_p95": 1622.296,
+              "query_count_avg": 0.0,
+              "query_count_p95": 0.0
+            },
+            "resolve_accessible_contexts": {
+              "samples": 829,
+              "wall_ms_avg": 25.428,
+              "wall_ms_p95": 58.194,
+              "sql_time_ms_avg": 14.398,
+              "sql_time_ms_p95": 43.362,
+              "python_time_ms_avg": 11.031,
+              "python_time_ms_p95": 34.501,
+              "query_count_avg": 3.0,
+              "query_count_p95": 3.0
+            },
+            "resolve_active_context": {
+              "samples": 829,
+              "wall_ms_avg": 0.236,
+              "wall_ms_p95": 0.082,
+              "sql_time_ms_avg": 0.0,
+              "sql_time_ms_p95": 0.0,
+              "python_time_ms_avg": 0.236,
+              "python_time_ms_p95": 0.082,
+              "query_count_avg": 0.0,
+              "query_count_p95": 0.0
+            },
+            "serialization_response": {
+              "samples": 829,
+              "wall_ms_avg": 0.301,
+              "wall_ms_p95": 0.2,
+              "sql_time_ms_avg": 0.0,
+              "sql_time_ms_p95": 0.0,
+              "python_time_ms_avg": 0.301,
+              "python_time_ms_p95": 0.2,
+              "query_count_avg": 0.0,
+              "query_count_p95": 0.0
+            },
+            "token_session_creation": {
+              "samples": 829,
+              "wall_ms_avg": 0.833,
+              "wall_ms_p95": 3.688,
+              "sql_time_ms_avg": 0.0,
+              "sql_time_ms_p95": 0.0,
+              "python_time_ms_avg": 0.833,
+              "python_time_ms_p95": 3.688,
+              "query_count_avg": 0.0,
+              "query_count_p95": 0.0
+            }
+          }
+        },
+        "auth.bootstrap": {
+          "samples": 795,
+          "query_count_avg": 1.011,
+          "query_count_p95": 1.0,
+          "sql_time_ms_avg": 2.942,
+          "sql_time_ms_p95": 13.064,
+          "wall_time_ms_avg": 4.711,
+          "wall_time_ms_p95": 16.083,
+          "python_time_ms_avg": 3.494,
+          "python_time_ms_p95": 14.604,
+          "instrumented_wall_ms_avg": 0.13,
+          "instrumented_wall_ms_p95": 0.0,
+          "unaccounted_wall_ms_avg": 4.581,
+          "unaccounted_wall_ms_p95": 15.961,
+          "cache_hit_count": 792,
+          "stage_metrics": {
+            "bootstrap_membership_lookup": {
+              "samples": 3,
+              "wall_ms_avg": 25.405,
+              "wall_ms_p95": 63.421,
+              "sql_time_ms_avg": 3.703,
+              "sql_time_ms_p95": 5.443,
+              "python_time_ms_avg": 21.702,
+              "python_time_ms_p95": 61.137,
+              "query_count_avg": 1.0,
+              "query_count_p95": 1.0
+            },
+            "bootstrap_modules_lookup": {
+              "samples": 3,
+              "wall_ms_avg": 5.188,
+              "wall_ms_p95": 10.852,
+              "sql_time_ms_avg": 3.759,
+              "sql_time_ms_p95": 9.588,
+              "python_time_ms_avg": 1.429,
+              "python_time_ms_p95": 2.187,
+              "query_count_avg": 1.0,
+              "query_count_p95": 1.0
+            },
+            "bootstrap_owned_businesses_lookup": {
+              "samples": 3,
+              "wall_ms_avg": 3.944,
+              "wall_ms_p95": 6.455,
+              "sql_time_ms_avg": 1.884,
+              "sql_time_ms_p95": 4.059,
+              "python_time_ms_avg": 2.06,
+              "python_time_ms_p95": 2.761,
+              "query_count_avg": 1.0,
+              "query_count_p95": 1.0
+            }
+          }
+        }
+      },
+      "failures_rows": 1,
+      "error_rate": 0.0,
+      "metrics_samples": [
+        {
+          "ts": "2026-03-27T11:14:42.449403+00:00",
+          "docker_containers": {
+            "encaja-login-scale2-a": {
+              "cpu_percent": 294.59,
+              "mem_percent": 2.88,
+              "pids": 6,
+              "mem_usage_mb": 459.3
+            },
+            "encaja-login-scale2-b": {
+              "cpu_percent": 236.89,
+              "mem_percent": 2.94,
+              "pids": 8,
+              "mem_usage_mb": 468.8
+            }
+          },
+          "docker_container_count": 2,
+          "docker_cpu_percent": 531.48,
+          "docker_mem_usage_mb": 928.1,
+          "docker_mem_percent": 2.94,
+          "docker_pids": 14,
+          "db_total_connections": 10,
+          "db_active_connections": 1,
+          "db_waiting_connections": 0,
+          "db_longest_active_seconds": 0.023702
+        },
+        {
+          "ts": "2026-03-27T11:14:48.764363+00:00",
+          "docker_containers": {
+            "encaja-login-scale2-a": {
+              "cpu_percent": 208.51,
+              "mem_percent": 2.88,
+              "pids": 6,
+              "mem_usage_mb": 459.3
+            },
+            "encaja-login-scale2-b": {
+              "cpu_percent": 216.74,
+              "mem_percent": 2.88,
+              "pids": 6,
+              "mem_usage_mb": 459.5
+            }
+          },
+          "docker_container_count": 2,
+          "docker_cpu_percent": 425.25,
+          "docker_mem_usage_mb": 918.8,
+          "docker_mem_percent": 2.88,
+          "docker_pids": 12,
+          "db_total_connections": 10,
+          "db_active_connections": 1,
+          "db_waiting_connections": 0,
+          "db_longest_active_seconds": 0.004823
+        },
+        {
+          "ts": "2026-03-27T11:14:54.572444+00:00",
+          "docker_containers": {
+            "encaja-login-scale2-a": {
+              "cpu_percent": 297.22,
+              "mem_percent": 2.88,
+              "pids": 6,
+              "mem_usage_mb": 459.3
+            },
+            "encaja-login-scale2-b": {
+              "cpu_percent": 241.46,
+              "mem_percent": 2.88,
+              "pids": 6,
+              "mem_usage_mb": 459.5
+            }
+          },
+          "docker_container_count": 2,
+          "docker_cpu_percent": 538.68,
+          "docker_mem_usage_mb": 918.8,
+          "docker_mem_percent": 2.88,
+          "docker_pids": 12,
+          "db_total_connections": 10,
+          "db_active_connections": 1,
+          "db_waiting_connections": 0,
+          "db_longest_active_seconds": 0.014368
+        },
+        {
+          "ts": "2026-03-27T11:15:00.267230+00:00",
+          "docker_containers": {
+            "encaja-login-scale2-a": {
+              "cpu_percent": 204.59,
+              "mem_percent": 2.88,
+              "pids": 6,
+              "mem_usage_mb": 459.3
+            },
+            "encaja-login-scale2-b": {
+              "cpu_percent": 203.93,
+              "mem_percent": 2.88,
+              "pids": 6,
+              "mem_usage_mb": 459.5
+            }
+          },
+          "docker_container_count": 2,
+          "docker_cpu_percent": 408.52,
+          "docker_mem_usage_mb": 918.8,
+          "docker_mem_percent": 2.88,
+          "docker_pids": 12,
+          "db_total_connections": 10,
+          "db_active_connections": 1,
+          "db_waiting_connections": 0,
+          "db_longest_active_seconds": 0.012674
+        },
+        {
+          "ts": "2026-03-27T11:15:05.842293+00:00",
+          "docker_containers": {
+            "encaja-login-scale2-a": {
+              "cpu_percent": 209.08,
+              "mem_percent": 2.88,
+              "pids": 6,
+              "mem_usage_mb": 459.3
+            },
+            "encaja-login-scale2-b": {
+              "cpu_percent": 198.81,
+              "mem_percent": 2.88,
+              "pids": 6,
+              "mem_usage_mb": 459.5
+            }
+          },
+          "docker_container_count": 2,
+          "docker_cpu_percent": 407.89,
+          "docker_mem_usage_mb": 918.8,
+          "docker_mem_percent": 2.88,
+          "docker_pids": 12,
+          "db_total_connections": 10,
+          "db_active_connections": 1,
+          "db_waiting_connections": 0,
+          "db_longest_active_seconds": 0.005483
+        },
+        {
+          "ts": "2026-03-27T11:15:12.363051+00:00",
+          "docker_containers": {
+            "encaja-login-scale2-a": {
+              "cpu_percent": 317.0,
+              "mem_percent": 2.88,
+              "pids": 6,
+              "mem_usage_mb": 459.4
+            },
+            "encaja-login-scale2-b": {
+              "cpu_percent": 200.35,
+              "mem_percent": 2.88,
+              "pids": 6,
+              "mem_usage_mb": 459.5
+            }
+          },
+          "docker_container_count": 2,
+          "docker_cpu_percent": 517.35,
+          "docker_mem_usage_mb": 918.9,
+          "docker_mem_percent": 2.88,
+          "docker_pids": 12,
+          "db_total_connections": 10,
+          "db_active_connections": 1,
+          "db_waiting_connections": 0,
+          "db_longest_active_seconds": 0.007179
+        },
+        {
+          "ts": "2026-03-27T11:15:17.889682+00:00",
+          "docker_containers": {
+            "encaja-login-scale2-a": {
+              "cpu_percent": 257.33,
+              "mem_percent": 2.94,
+              "pids": 8,
+              "mem_usage_mb": 468.8
+            },
+            "encaja-login-scale2-b": {
+              "cpu_percent": 227.56,
+              "mem_percent": 2.88,
+              "pids": 6,
+              "mem_usage_mb": 459.5
+            }
+          },
+          "docker_container_count": 2,
+          "docker_cpu_percent": 484.89,
+          "docker_mem_usage_mb": 928.3,
+          "docker_mem_percent": 2.94,
+          "docker_pids": 14,
+          "db_total_connections": 10,
+          "db_active_connections": 1,
+          "db_waiting_connections": 0,
+          "db_longest_active_seconds": 0.006549
+        },
+        {
+          "ts": "2026-03-27T11:15:24.032654+00:00",
+          "docker_containers": {
+            "encaja-login-scale2-a": {
+              "cpu_percent": 232.89,
+              "mem_percent": 2.88,
+              "pids": 6,
+              "mem_usage_mb": 459.7
+            },
+            "encaja-login-scale2-b": {
+              "cpu_percent": 223.99,
+              "mem_percent": 2.88,
+              "pids": 6,
+              "mem_usage_mb": 459.5
+            }
+          },
+          "docker_container_count": 2,
+          "docker_cpu_percent": 456.88,
+          "docker_mem_usage_mb": 919.2,
+          "docker_mem_percent": 2.88,
+          "docker_pids": 12,
+          "db_total_connections": 10,
+          "db_active_connections": 1,
+          "db_waiting_connections": 0,
+          "db_longest_active_seconds": 0.007402
+        },
+        {
+          "ts": "2026-03-27T11:15:29.604938+00:00",
+          "docker_containers": {
+            "encaja-login-scale2-a": {
+              "cpu_percent": 172.8,
+              "mem_percent": 2.88,
+              "pids": 6,
+              "mem_usage_mb": 459.5
+            },
+            "encaja-login-scale2-b": {
+              "cpu_percent": 206.89,
+              "mem_percent": 2.88,
+              "pids": 6,
+              "mem_usage_mb": 459.5
+            }
+          },
+          "docker_container_count": 2,
+          "docker_cpu_percent": 379.69,
+          "docker_mem_usage_mb": 919.0,
+          "docker_mem_percent": 2.88,
+          "docker_pids": 12,
+          "db_total_connections": 10,
+          "db_active_connections": 1,
+          "db_waiting_connections": 0,
+          "db_longest_active_seconds": 0.008269
+        },
+        {
+          "ts": "2026-03-27T11:15:35.104135+00:00",
+          "docker_containers": {
+            "encaja-login-scale2-a": {
+              "cpu_percent": 200.32,
+              "mem_percent": 2.88,
+              "pids": 6,
+              "mem_usage_mb": 459.5
+            },
+            "encaja-login-scale2-b": {
+              "cpu_percent": 203.58,
+              "mem_percent": 2.88,
+              "pids": 6,
+              "mem_usage_mb": 459.5
+            }
+          },
+          "docker_container_count": 2,
+          "docker_cpu_percent": 403.9,
+          "docker_mem_usage_mb": 919.0,
+          "docker_mem_percent": 2.88,
+          "docker_pids": 12,
+          "db_total_connections": 10,
+          "db_active_connections": 1,
+          "db_waiting_connections": 0,
+          "db_longest_active_seconds": 0.020482
+        },
+        {
+          "ts": "2026-03-27T11:15:41.838459+00:00",
+          "docker_containers": {
+            "encaja-login-scale2-a": {
+              "cpu_percent": 200.71,
+              "mem_percent": 2.88,
+              "pids": 6,
+              "mem_usage_mb": 459.5
+            },
+            "encaja-login-scale2-b": {
+              "cpu_percent": 262.51,
+              "mem_percent": 2.88,
+              "pids": 6,
+              "mem_usage_mb": 459.5
+            }
+          },
+          "docker_container_count": 2,
+          "docker_cpu_percent": 463.22,
+          "docker_mem_usage_mb": 919.0,
+          "docker_mem_percent": 2.88,
+          "docker_pids": 12,
+          "db_total_connections": 10,
+          "db_active_connections": 1,
+          "db_waiting_connections": 0,
+          "db_longest_active_seconds": 0.061274
+        },
+        {
+          "ts": "2026-03-27T11:15:47.655632+00:00",
+          "docker_containers": {
+            "encaja-login-scale2-a": {
+              "cpu_percent": 207.47,
+              "mem_percent": 2.88,
+              "pids": 6,
+              "mem_usage_mb": 459.5
+            },
+            "encaja-login-scale2-b": {
+              "cpu_percent": 197.88,
+              "mem_percent": 2.9,
+              "pids": 8,
+              "mem_usage_mb": 461.9
+            }
+          },
+          "docker_container_count": 2,
+          "docker_cpu_percent": 405.35,
+          "docker_mem_usage_mb": 921.4,
+          "docker_mem_percent": 2.9,
+          "docker_pids": 14,
+          "db_total_connections": 10,
+          "db_active_connections": 1,
+          "db_waiting_connections": 0,
+          "db_longest_active_seconds": 0.00498
+        },
+        {
+          "ts": "2026-03-27T11:15:53.432566+00:00",
+          "docker_containers": {
+            "encaja-login-scale2-a": {
+              "cpu_percent": 200.52,
+              "mem_percent": 2.94,
+              "pids": 8,
+              "mem_usage_mb": 468.9
+            },
+            "encaja-login-scale2-b": {
+              "cpu_percent": 349.81,
+              "mem_percent": 2.88,
+              "pids": 6,
+              "mem_usage_mb": 459.6
+            }
+          },
+          "docker_container_count": 2,
+          "docker_cpu_percent": 550.33,
+          "docker_mem_usage_mb": 928.5,
+          "docker_mem_percent": 2.94,
+          "docker_pids": 14,
+          "db_total_connections": 10,
+          "db_active_connections": 1,
+          "db_waiting_connections": 0,
+          "db_longest_active_seconds": 0.005467
+        },
+        {
+          "ts": "2026-03-27T11:15:59.248087+00:00",
+          "docker_containers": {
+            "encaja-login-scale2-a": {
+              "cpu_percent": 312.41,
+              "mem_percent": 2.88,
+              "pids": 6,
+              "mem_usage_mb": 459.6
+            },
+            "encaja-login-scale2-b": {
+              "cpu_percent": 274.3,
+              "mem_percent": 2.88,
+              "pids": 6,
+              "mem_usage_mb": 459.6
+            }
+          },
+          "docker_container_count": 2,
+          "docker_cpu_percent": 586.71,
+          "docker_mem_usage_mb": 919.2,
+          "docker_mem_percent": 2.88,
+          "docker_pids": 12,
+          "db_total_connections": 10,
+          "db_active_connections": 1,
+          "db_waiting_connections": 0,
+          "db_longest_active_seconds": 0.00496
+        },
+        {
+          "ts": "2026-03-27T11:16:04.825083+00:00",
+          "docker_containers": {
+            "encaja-login-scale2-a": {
+              "cpu_percent": 198.52,
+              "mem_percent": 2.88,
+              "pids": 6,
+              "mem_usage_mb": 459.6
+            },
+            "encaja-login-scale2-b": {
+              "cpu_percent": 228.03,
+              "mem_percent": 2.88,
+              "pids": 6,
+              "mem_usage_mb": 459.6
+            }
+          },
+          "docker_container_count": 2,
+          "docker_cpu_percent": 426.55,
+          "docker_mem_usage_mb": 919.2,
+          "docker_mem_percent": 2.88,
+          "docker_pids": 12,
+          "db_total_connections": 10,
+          "db_active_connections": 1,
+          "db_waiting_connections": 0,
+          "db_longest_active_seconds": 0.005013
+        },
+        {
+          "ts": "2026-03-27T11:16:10.459705+00:00",
+          "docker_containers": {
+            "encaja-login-scale2-a": {
+              "cpu_percent": 174.48,
+              "mem_percent": 2.88,
+              "pids": 6,
+              "mem_usage_mb": 459.6
+            },
+            "encaja-login-scale2-b": {
+              "cpu_percent": 202.49,
+              "mem_percent": 2.88,
+              "pids": 6,
+              "mem_usage_mb": 459.6
+            }
+          },
+          "docker_container_count": 2,
+          "docker_cpu_percent": 376.97,
+          "docker_mem_usage_mb": 919.2,
+          "docker_mem_percent": 2.88,
+          "docker_pids": 12,
+          "db_total_connections": 10,
+          "db_active_connections": 1,
+          "db_waiting_connections": 0,
+          "db_longest_active_seconds": 0.010397
+        },
+        {
+          "ts": "2026-03-27T11:16:16.023824+00:00",
+          "docker_containers": {
+            "encaja-login-scale2-a": {
+              "cpu_percent": 220.88,
+              "mem_percent": 2.88,
+              "pids": 6,
+              "mem_usage_mb": 459.7
+            },
+            "encaja-login-scale2-b": {
+              "cpu_percent": 217.85,
+              "mem_percent": 2.88,
+              "pids": 6,
+              "mem_usage_mb": 459.7
+            }
+          },
+          "docker_container_count": 2,
+          "docker_cpu_percent": 438.73,
+          "docker_mem_usage_mb": 919.4,
+          "docker_mem_percent": 2.88,
+          "docker_pids": 12,
+          "db_total_connections": 10,
+          "db_active_connections": 1,
+          "db_waiting_connections": 0,
+          "db_longest_active_seconds": 0.008516
+        },
+        {
+          "ts": "2026-03-27T11:16:22.393828+00:00",
+          "docker_containers": {
+            "encaja-login-scale2-a": {
+              "cpu_percent": 301.98,
+              "mem_percent": 2.88,
+              "pids": 6,
+              "mem_usage_mb": 459.7
+            },
+            "encaja-login-scale2-b": {
+              "cpu_percent": 238.24,
+              "mem_percent": 2.94,
+              "pids": 8,
+              "mem_usage_mb": 469.1
+            }
+          },
+          "docker_container_count": 2,
+          "docker_cpu_percent": 540.22,
+          "docker_mem_usage_mb": 928.8,
+          "docker_mem_percent": 2.94,
+          "docker_pids": 14,
+          "db_total_connections": 10,
+          "db_active_connections": 1,
+          "db_waiting_connections": 0,
+          "db_longest_active_seconds": 0.012331
+        },
+        {
+          "ts": "2026-03-27T11:16:28.125229+00:00",
+          "docker_containers": {
+            "encaja-login-scale2-a": {
+              "cpu_percent": 228.48,
+              "mem_percent": 2.88,
+              "pids": 6,
+              "mem_usage_mb": 459.7
+            },
+            "encaja-login-scale2-b": {
+              "cpu_percent": 214.14,
+              "mem_percent": 2.88,
+              "pids": 6,
+              "mem_usage_mb": 459.7
+            }
+          },
+          "docker_container_count": 2,
+          "docker_cpu_percent": 442.62,
+          "docker_mem_usage_mb": 919.4,
+          "docker_mem_percent": 2.88,
+          "docker_pids": 12,
+          "db_total_connections": 10,
+          "db_active_connections": 1,
+          "db_waiting_connections": 0,
+          "db_longest_active_seconds": 0.017195
+        },
+        {
+          "ts": "2026-03-27T11:16:33.695541+00:00",
+          "docker_containers": {
+            "encaja-login-scale2-a": {
+              "cpu_percent": 199.48,
+              "mem_percent": 2.88,
+              "pids": 6,
+              "mem_usage_mb": 459.7
+            },
+            "encaja-login-scale2-b": {
+              "cpu_percent": 193.21,
+              "mem_percent": 2.88,
+              "pids": 6,
+              "mem_usage_mb": 459.8
+            }
+          },
+          "docker_container_count": 2,
+          "docker_cpu_percent": 392.69,
+          "docker_mem_usage_mb": 919.5,
+          "docker_mem_percent": 2.88,
+          "docker_pids": 12,
+          "db_total_connections": 10,
+          "db_active_connections": 1,
+          "db_waiting_connections": 0,
+          "db_longest_active_seconds": 0.005597
+        },
+        {
+          "ts": "2026-03-27T11:16:39.316943+00:00",
+          "docker_containers": {
+            "encaja-login-scale2-a": {
+              "cpu_percent": 259.73,
+              "mem_percent": 2.88,
+              "pids": 6,
+              "mem_usage_mb": 459.8
+            },
+            "encaja-login-scale2-b": {
+              "cpu_percent": 213.47,
+              "mem_percent": 2.88,
+              "pids": 6,
+              "mem_usage_mb": 459.8
+            }
+          },
+          "docker_container_count": 2,
+          "docker_cpu_percent": 473.2,
+          "docker_mem_usage_mb": 919.6,
+          "docker_mem_percent": 2.88,
+          "docker_pids": 12,
+          "db_total_connections": 10,
+          "db_active_connections": 1,
+          "db_waiting_connections": 0,
+          "db_longest_active_seconds": 0.01429
+        }
+      ],
+      "metrics_summary": {
+        "backend_cpu_peak_percent": 0.0,
+        "backend_rss_peak_mb": 0.0,
+        "backend_threads_peak": 0.0,
+        "docker_cpu_peak_percent": 586.71,
+        "docker_mem_peak_mb": 928.8,
+        "docker_mem_peak_percent": 2.94,
+        "docker_pids_peak": 14,
+        "db_total_connections_peak": 10,
+        "db_active_connections_peak": 1,
+        "db_waiting_connections_peak": 0,
+        "db_longest_active_seconds_peak": 0.061274,
+        "docker_cpu_peak_percent_by_container": {
+          "encaja-login-scale2-a": 317.0,
+          "encaja-login-scale2-b": 349.81
+        },
+        "docker_mem_peak_mb_by_container": {
+          "encaja-login-scale2-a": 468.9,
+          "encaja-login-scale2-b": 469.1
+        },
+        "docker_pids_peak_by_container": {
+          "encaja-login-scale2-a": 8,
+          "encaja-login-scale2-b": 8
+        },
+        "auth_login_queue_gap_ms_avg": 4473.929
+      },
+      "artifacts": {
+        "stats_csv": "load-tests\\results\\phase-auth-runtime-gunicorn-4x1-scale2-full\\scenario_login_u80_stats.csv",
+        "stats_history_csv": "load-tests\\results\\phase-auth-runtime-gunicorn-4x1-scale2-full\\scenario_login_u80_stats_history.csv",
+        "failures_csv": "load-tests\\results\\phase-auth-runtime-gunicorn-4x1-scale2-full\\scenario_login_u80_failures.csv",
+        "profile_summary_json": "load-tests\\results\\phase-auth-runtime-gunicorn-4x1-scale2-full\\scenario_login_u80_profile_summary.json",
+        "report_html": "load-tests\\results\\phase-auth-runtime-gunicorn-4x1-scale2-full\\scenario_login_u80.html"
+      },
+      "capacity_pass": false
+    },
+    {
+      "scenario": "LOGIN",
+      "users": 100,
+      "started_at": "2026-03-27T11:16:44.060091+00:00",
+      "finished_at": "2026-03-27T11:18:46.644766+00:00",
+      "command": [
+        "C:\\Users\\harae\\Desktop\\ui migration\\proyecto1\\.venv\\Scripts\\locust.exe",
+        "-f",
+        "C:\\Users\\harae\\Desktop\\ui migration\\proyecto1\\load-tests\\locustfile.py",
+        "--host",
+        "http://127.0.0.1:8020",
+        "--users",
+        "100",
+        "--spawn-rate",
+        "5.0",
+        "--run-time",
+        "2m",
+        "--csv",
+        "load-tests\\results\\phase-auth-runtime-gunicorn-4x1-scale2-full\\scenario_login_u100",
+        "--html",
+        "load-tests\\results\\phase-auth-runtime-gunicorn-4x1-scale2-full\\scenario_login_u100.html",
+        "--headless",
+        "--only-summary"
+      ],
+      "exit_code": 0,
+      "stdout_tail": "",
+      "stderr_tail": "[2026-03-27 06:16:46,250] DESKTOP-9DI2UJR/INFO/locust.main: Starting Locust 2.43.3\n[2026-03-27 06:16:46,254] DESKTOP-9DI2UJR/INFO/locust.main: Run time limit set to 120 seconds\n[2026-03-27 06:16:46,256] DESKTOP-9DI2UJR/INFO/locust.runners: Ramping to 100 users at a rate of 5.00 per second\n[2026-03-27 06:17:05,520] DESKTOP-9DI2UJR/INFO/locust.runners: All users spawned: {\"CuadernoUser\": 100} (100 total users)\n[2026-03-27 06:18:45,145] DESKTOP-9DI2UJR/INFO/locust.main: --run-time limit reached, shutting down\n[2026-03-27 06:18:45,383] DESKTOP-9DI2UJR/INFO/locust.main: writing html report to file: load-tests\\results\\phase-auth-runtime-gunicorn-4x1-scale2-full\\scenario_login_u100.html\n[2026-03-27 06:18:45,410] DESKTOP-9DI2UJR/INFO/locust.main: Shutting down (exit code 0)\nType     Name                                                                          # reqs      # fails |    Avg     Min     Max    Med |   req/s  failures/s\n--------|----------------------------------------------------------------------------|-------|-------------|-------|-------|-------|-------|--------|-----------\nGET      auth.bootstrap                                                                   740     0(0.00%) |   6091      10   12571   5100 |    6.24        0.00\nPOST     auth.login                                                                       740     0(0.00%) |   6950     782   14081   5900 |    6.24        0.00\n--------|----------------------------------------------------------------------------|-------|-------------|-------|-------|-------|-------|--------|-----------\n         Aggregated                                                                      1480     0(0.00%) |   6520      10   14081   5800 |   12.47        0.00\n\nResponse time percentiles (approximated)\nType     Name                                                                                  50%    66%    75%    80%    90%    95%    98%    99%  99.9% 99.99%   100% # reqs\n--------|--------------------------------------------------------------------------------|--------|------|------|------|------|------|------|------|------|------|------|------\nGET      auth.bootstrap                                                                       5100   7600   8600   9000  10000  11000  12000  12000  13000  13000  13000    740\nPOST     auth.login                                                                           6000   8300   9300   9800  11000  12000  13000  13000  14000  14000  14000    740\n--------|--------------------------------------------------------------------------------|--------|------|------|------|------|------|------|------|------|------|------|------\n         Aggregated                                                                           5800   7900   8900   9500  11000  11000  12000  13000  13000  14000  14000   1480\n\n",
+      "stats_summary": {
+        "requests": 1476,
+        "failures": 0,
+        "median_ms": 5800.0,
+        "avg_ms": 6528.440618224568,
+        "min_ms": 10.487099993042648,
+        "max_ms": 14081.173800019315,
+        "avg_size": 1918.5,
+        "rps": 12.463755633532884,
+        "failures_per_sec": 0.0,
+        "p50_ms": 5800.0,
+        "p95_ms": 11000.0,
+        "p99_ms": 13000.0,
+        "slowest_endpoint": {
+          "name": "auth.login",
+          "method": "POST",
+          "avg_ms": 6956.4488760161275,
+          "p95_ms": 12000.0,
+          "p99_ms": 13000.0,
+          "rps": 6.231877816766442
+        },
+        "endpoint_metrics": {
+          "auth.login": {
+            "avg_ms": 6956.4488760161275,
+            "p95_ms": 12000.0,
+            "rps": 6.231877816766442,
+            "failures": 0,
+            "requests": 738
+          },
+          "auth.select_context": {
+            "avg_ms": 0.0,
+            "p95_ms": 0.0,
+            "rps": 0.0,
+            "failures": 0,
+            "requests": 0
+          },
+          "auth.bootstrap": {
+            "avg_ms": 6100.4323604329975,
+            "p95_ms": 11000.0,
+            "rps": 6.231877816766442,
+            "failures": 0,
+            "requests": 738
+          },
+          "read.dashboard": {
+            "avg_ms": 0.0,
+            "p95_ms": 0.0,
+            "rps": 0.0,
+            "failures": 0,
+            "requests": 0
+          },
+          "read.summary": {
+            "avg_ms": 0.0,
+            "p95_ms": 0.0,
+            "rps": 0.0,
+            "failures": 0,
+            "requests": 0
+          }
+        }
+      },
+      "distribution": {
+        "p50_estimated_ms": 6209.269247071462,
+        "p95_estimated_ms": 6495.325899852464,
+        "p99_estimated_ms": 6529.514190346873,
+        "avg_rps_window": 11.65603448275862,
+        "max_rps_window": 17.2,
+        "final_failure_count": 0.0
+      },
+      "profile_summary": {
+        "auth.login": {
+          "samples": 787,
+          "query_count_avg": 4.0,
+          "query_count_p95": 4.0,
+          "sql_time_ms_avg": 17.915,
+          "sql_time_ms_p95": 47.852,
+          "wall_time_ms_avg": 1129.737,
+          "wall_time_ms_p95": 1765.276,
+          "python_time_ms_avg": 1111.822,
+          "python_time_ms_p95": 1735.204,
+          "instrumented_wall_ms_avg": 1129.321,
+          "instrumented_wall_ms_p95": 1765.133,
+          "unaccounted_wall_ms_avg": 0.416,
+          "unaccounted_wall_ms_p95": 0.405,
+          "cache_hit_count": 0,
+          "stage_metrics": {
+            "fetch_user": {
+              "samples": 787,
+              "wall_ms_avg": 9.038,
+              "wall_ms_p95": 31.819,
+              "sql_time_ms_avg": 2.75,
+              "sql_time_ms_p95": 12.666,
+              "python_time_ms_avg": 6.289,
+              "python_time_ms_p95": 25.914,
+              "query_count_avg": 1.0,
+              "query_count_p95": 1.0
+            },
+            "password_verify": {
+              "samples": 787,
+              "wall_ms_avg": 1092.039,
+              "wall_ms_p95": 1705.229,
+              "sql_time_ms_avg": 0.0,
+              "sql_time_ms_p95": 0.0,
+              "python_time_ms_avg": 1092.039,
+              "python_time_ms_p95": 1705.229,
+              "query_count_avg": 0.0,
+              "query_count_p95": 0.0
+            },
+            "resolve_accessible_contexts": {
+              "samples": 787,
+              "wall_ms_avg": 26.805,
+              "wall_ms_p95": 68.1,
+              "sql_time_ms_avg": 15.166,
+              "sql_time_ms_p95": 43.815,
+              "python_time_ms_avg": 11.639,
+              "python_time_ms_p95": 43.866,
+              "query_count_avg": 3.0,
+              "query_count_p95": 3.0
+            },
+            "resolve_active_context": {
+              "samples": 787,
+              "wall_ms_avg": 0.063,
+              "wall_ms_p95": 0.07,
+              "sql_time_ms_avg": 0.0,
+              "sql_time_ms_p95": 0.0,
+              "python_time_ms_avg": 0.063,
+              "python_time_ms_p95": 0.07,
+              "query_count_avg": 0.0,
+              "query_count_p95": 0.0
+            },
+            "serialization_response": {
+              "samples": 787,
+              "wall_ms_avg": 0.505,
+              "wall_ms_p95": 0.297,
+              "sql_time_ms_avg": 0.0,
+              "sql_time_ms_p95": 0.0,
+              "python_time_ms_avg": 0.505,
+              "python_time_ms_p95": 0.297,
+              "query_count_avg": 0.0,
+              "query_count_p95": 0.0
+            },
+            "token_session_creation": {
+              "samples": 787,
+              "wall_ms_avg": 0.871,
+              "wall_ms_p95": 4.392,
+              "sql_time_ms_avg": 0.0,
+              "sql_time_ms_p95": 0.0,
+              "python_time_ms_avg": 0.871,
+              "python_time_ms_p95": 4.392,
+              "query_count_avg": 0.0,
+              "query_count_p95": 0.0
+            }
+          }
+        },
+        "auth.bootstrap": {
+          "samples": 740,
+          "query_count_avg": 1.016,
+          "query_count_p95": 1.0,
+          "sql_time_ms_avg": 2.574,
+          "sql_time_ms_p95": 12.593,
+          "wall_time_ms_avg": 4.906,
+          "wall_time_ms_p95": 16.27,
+          "python_time_ms_avg": 3.712,
+          "python_time_ms_p95": 15.266,
+          "instrumented_wall_ms_avg": 0.087,
+          "instrumented_wall_ms_p95": 0.0,
+          "unaccounted_wall_ms_avg": 4.819,
+          "unaccounted_wall_ms_p95": 16.197,
+          "cache_hit_count": 736,
+          "stage_metrics": {
+            "bootstrap_membership_lookup": {
+              "samples": 4,
+              "wall_ms_avg": 11.466,
+              "wall_ms_p95": 31.139,
+              "sql_time_ms_avg": 5.148,
+              "sql_time_ms_p95": 9.875,
+              "python_time_ms_avg": 6.318,
+              "python_time_ms_p95": 21.264,
+              "query_count_avg": 1.0,
+              "query_count_p95": 1.0
+            },
+            "bootstrap_modules_lookup": {
+              "samples": 4,
+              "wall_ms_avg": 1.885,
+              "wall_ms_p95": 2.746,
+              "sql_time_ms_avg": 1.172,
+              "sql_time_ms_p95": 1.956,
+              "python_time_ms_avg": 0.713,
+              "python_time_ms_p95": 0.79,
+              "query_count_avg": 1.0,
+              "query_count_p95": 1.0
+            },
+            "bootstrap_owned_businesses_lookup": {
+              "samples": 4,
+              "wall_ms_avg": 2.769,
+              "wall_ms_p95": 6.116,
+              "sql_time_ms_avg": 0.778,
+              "sql_time_ms_p95": 0.977,
+              "python_time_ms_avg": 1.991,
+              "python_time_ms_p95": 5.139,
+              "query_count_avg": 1.0,
+              "query_count_p95": 1.0
+            }
+          }
+        }
+      },
+      "failures_rows": 1,
+      "error_rate": 0.0,
+      "metrics_samples": [
+        {
+          "ts": "2026-03-27T11:16:44.060357+00:00",
+          "docker_containers": {
+            "encaja-login-scale2-a": {
+              "cpu_percent": 288.38,
+              "mem_percent": 2.88,
+              "pids": 6,
+              "mem_usage_mb": 459.8
+            },
+            "encaja-login-scale2-b": {
+              "cpu_percent": 184.85,
+              "mem_percent": 2.88,
+              "pids": 6,
+              "mem_usage_mb": 459.8
+            }
+          },
+          "docker_container_count": 2,
+          "docker_cpu_percent": 473.23,
+          "docker_mem_usage_mb": 919.6,
+          "docker_mem_percent": 2.88,
+          "docker_pids": 12,
+          "db_total_connections": 10,
+          "db_active_connections": 1,
+          "db_waiting_connections": 0,
+          "db_longest_active_seconds": 0.033626
+        },
+        {
+          "ts": "2026-03-27T11:16:49.801127+00:00",
+          "docker_containers": {
+            "encaja-login-scale2-a": {
+              "cpu_percent": 266.23,
+              "mem_percent": 2.88,
+              "pids": 6,
+              "mem_usage_mb": 459.8
+            },
+            "encaja-login-scale2-b": {
+              "cpu_percent": 224.29,
+              "mem_percent": 2.88,
+              "pids": 6,
+              "mem_usage_mb": 459.8
+            }
+          },
+          "docker_container_count": 2,
+          "docker_cpu_percent": 490.52,
+          "docker_mem_usage_mb": 919.6,
+          "docker_mem_percent": 2.88,
+          "docker_pids": 12,
+          "db_total_connections": 10,
+          "db_active_connections": 1,
+          "db_waiting_connections": 0,
+          "db_longest_active_seconds": 0.01954
+        },
+        {
+          "ts": "2026-03-27T11:16:55.343604+00:00",
+          "docker_containers": {
+            "encaja-login-scale2-a": {
+              "cpu_percent": 235.82,
+              "mem_percent": 2.88,
+              "pids": 6,
+              "mem_usage_mb": 459.8
+            },
+            "encaja-login-scale2-b": {
+              "cpu_percent": 226.67,
+              "mem_percent": 2.94,
+              "pids": 8,
+              "mem_usage_mb": 469.2
+            }
+          },
+          "docker_container_count": 2,
+          "docker_cpu_percent": 462.49,
+          "docker_mem_usage_mb": 929.0,
+          "docker_mem_percent": 2.94,
+          "docker_pids": 14,
+          "db_total_connections": 10,
+          "db_active_connections": 1,
+          "db_waiting_connections": 0,
+          "db_longest_active_seconds": 0.004886
+        },
+        {
+          "ts": "2026-03-27T11:17:01.555184+00:00",
+          "docker_containers": {
+            "encaja-login-scale2-a": {
+              "cpu_percent": 209.44,
+              "mem_percent": 2.88,
+              "pids": 6,
+              "mem_usage_mb": 459.8
+            },
+            "encaja-login-scale2-b": {
+              "cpu_percent": 244.51,
+              "mem_percent": 2.88,
+              "pids": 6,
+              "mem_usage_mb": 459.9
+            }
+          },
+          "docker_container_count": 2,
+          "docker_cpu_percent": 453.95,
+          "docker_mem_usage_mb": 919.7,
+          "docker_mem_percent": 2.88,
+          "docker_pids": 12,
+          "db_total_connections": 10,
+          "db_active_connections": 1,
+          "db_waiting_connections": 0,
+          "db_longest_active_seconds": 0.007159
+        },
+        {
+          "ts": "2026-03-27T11:17:09.493609+00:00",
+          "docker_containers": {
+            "encaja-login-scale2-a": {
+              "cpu_percent": 214.66,
+              "mem_percent": 2.88,
+              "pids": 6,
+              "mem_usage_mb": 459.8
+            },
+            "encaja-login-scale2-b": {
+              "cpu_percent": 258.91,
+              "mem_percent": 2.88,
+              "pids": 6,
+              "mem_usage_mb": 459.9
+            }
+          },
+          "docker_container_count": 2,
+          "docker_cpu_percent": 473.57,
+          "docker_mem_usage_mb": 919.7,
+          "docker_mem_percent": 2.88,
+          "docker_pids": 12,
+          "db_total_connections": 10,
+          "db_active_connections": 1,
+          "db_waiting_connections": 0,
+          "db_longest_active_seconds": 0.0176
+        },
+        {
+          "ts": "2026-03-27T11:17:14.985005+00:00",
+          "docker_containers": {
+            "encaja-login-scale2-a": {
+              "cpu_percent": 261.64,
+              "mem_percent": 2.88,
+              "pids": 6,
+              "mem_usage_mb": 459.9
+            },
+            "encaja-login-scale2-b": {
+              "cpu_percent": 202.5,
+              "mem_percent": 2.88,
+              "pids": 6,
+              "mem_usage_mb": 459.9
+            }
+          },
+          "docker_container_count": 2,
+          "docker_cpu_percent": 464.14,
+          "docker_mem_usage_mb": 919.8,
+          "docker_mem_percent": 2.88,
+          "docker_pids": 12,
+          "db_total_connections": 10,
+          "db_active_connections": 1,
+          "db_waiting_connections": 0,
+          "db_longest_active_seconds": 0.016149
+        },
+        {
+          "ts": "2026-03-27T11:17:20.594977+00:00",
+          "docker_containers": {
+            "encaja-login-scale2-a": {
+              "cpu_percent": 229.29,
+              "mem_percent": 2.88,
+              "pids": 6,
+              "mem_usage_mb": 459.9
+            },
+            "encaja-login-scale2-b": {
+              "cpu_percent": 196.22,
+              "mem_percent": 2.88,
+              "pids": 6,
+              "mem_usage_mb": 459.9
+            }
+          },
+          "docker_container_count": 2,
+          "docker_cpu_percent": 425.51,
+          "docker_mem_usage_mb": 919.8,
+          "docker_mem_percent": 2.88,
+          "docker_pids": 12,
+          "db_total_connections": 10,
+          "db_active_connections": 1,
+          "db_waiting_connections": 0,
+          "db_longest_active_seconds": 0.005286
+        },
+        {
+          "ts": "2026-03-27T11:17:26.049693+00:00",
+          "docker_containers": {
+            "encaja-login-scale2-a": {
+              "cpu_percent": 325.96,
+              "mem_percent": 2.88,
+              "pids": 6,
+              "mem_usage_mb": 459.9
+            },
+            "encaja-login-scale2-b": {
+              "cpu_percent": 323.61,
+              "mem_percent": 2.88,
+              "pids": 6,
+              "mem_usage_mb": 460.0
+            }
+          },
+          "docker_container_count": 2,
+          "docker_cpu_percent": 649.57,
+          "docker_mem_usage_mb": 919.9,
+          "docker_mem_percent": 2.88,
+          "docker_pids": 12,
+          "db_total_connections": 10,
+          "db_active_connections": 1,
+          "db_waiting_connections": 0,
+          "db_longest_active_seconds": 0.016273
+        },
+        {
+          "ts": "2026-03-27T11:17:32.814845+00:00",
+          "docker_containers": {
+            "encaja-login-scale2-a": {
+              "cpu_percent": 211.33,
+              "mem_percent": 2.94,
+              "pids": 8,
+              "mem_usage_mb": 469.3
+            },
+            "encaja-login-scale2-b": {
+              "cpu_percent": 228.31,
+              "mem_percent": 2.89,
+              "pids": 8,
+              "mem_usage_mb": 460.4
+            }
+          },
+          "docker_container_count": 2,
+          "docker_cpu_percent": 439.64,
+          "docker_mem_usage_mb": 929.7,
+          "docker_mem_percent": 2.94,
+          "docker_pids": 16,
+          "db_total_connections": 10,
+          "db_active_connections": 1,
+          "db_waiting_connections": 0,
+          "db_longest_active_seconds": 0.008694
+        },
+        {
+          "ts": "2026-03-27T11:17:38.366198+00:00",
+          "docker_containers": {
+            "encaja-login-scale2-a": {
+              "cpu_percent": 211.69,
+              "mem_percent": 2.88,
+              "pids": 6,
+              "mem_usage_mb": 460.0
+            },
+            "encaja-login-scale2-b": {
+              "cpu_percent": 243.39,
+              "mem_percent": 2.88,
+              "pids": 6,
+              "mem_usage_mb": 460.0
+            }
+          },
+          "docker_container_count": 2,
+          "docker_cpu_percent": 455.08,
+          "docker_mem_usage_mb": 920.0,
+          "docker_mem_percent": 2.88,
+          "docker_pids": 12,
+          "db_total_connections": 10,
+          "db_active_connections": 1,
+          "db_waiting_connections": 0,
+          "db_longest_active_seconds": 0.015221
+        },
+        {
+          "ts": "2026-03-27T11:17:43.789155+00:00",
+          "docker_containers": {
+            "encaja-login-scale2-a": {
+              "cpu_percent": 208.78,
+              "mem_percent": 2.88,
+              "pids": 6,
+              "mem_usage_mb": 460.0
+            },
+            "encaja-login-scale2-b": {
+              "cpu_percent": 241.74,
+              "mem_percent": 2.88,
+              "pids": 6,
+              "mem_usage_mb": 460.0
+            }
+          },
+          "docker_container_count": 2,
+          "docker_cpu_percent": 450.52,
+          "docker_mem_usage_mb": 920.0,
+          "docker_mem_percent": 2.88,
+          "docker_pids": 12,
+          "db_total_connections": 10,
+          "db_active_connections": 1,
+          "db_waiting_connections": 0,
+          "db_longest_active_seconds": 0.01479
+        },
+        {
+          "ts": "2026-03-27T11:17:49.383860+00:00",
+          "docker_containers": {
+            "encaja-login-scale2-a": {
+              "cpu_percent": 189.21,
+              "mem_percent": 2.88,
+              "pids": 6,
+              "mem_usage_mb": 460.0
+            },
+            "encaja-login-scale2-b": {
+              "cpu_percent": 252.13,
+              "mem_percent": 2.88,
+              "pids": 6,
+              "mem_usage_mb": 460.1
+            }
+          },
+          "docker_container_count": 2,
+          "docker_cpu_percent": 441.34,
+          "docker_mem_usage_mb": 920.1,
+          "docker_mem_percent": 2.88,
+          "docker_pids": 12,
+          "db_total_connections": 10,
+          "db_active_connections": 1,
+          "db_waiting_connections": 0,
+          "db_longest_active_seconds": 0.005537
+        },
+        {
+          "ts": "2026-03-27T11:17:54.837849+00:00",
+          "docker_containers": {
+            "encaja-login-scale2-a": {
+              "cpu_percent": 223.56,
+              "mem_percent": 2.88,
+              "pids": 6,
+              "mem_usage_mb": 460.0
+            },
+            "encaja-login-scale2-b": {
+              "cpu_percent": 232.67,
+              "mem_percent": 2.88,
+              "pids": 6,
+              "mem_usage_mb": 460.1
+            }
+          },
+          "docker_container_count": 2,
+          "docker_cpu_percent": 456.23,
+          "docker_mem_usage_mb": 920.1,
+          "docker_mem_percent": 2.88,
+          "docker_pids": 12,
+          "db_total_connections": 10,
+          "db_active_connections": 1,
+          "db_waiting_connections": 0,
+          "db_longest_active_seconds": 0.017816
+        },
+        {
+          "ts": "2026-03-27T11:18:00.491823+00:00",
+          "docker_containers": {
+            "encaja-login-scale2-a": {
+              "cpu_percent": 207.67,
+              "mem_percent": 2.88,
+              "pids": 6,
+              "mem_usage_mb": 460.0
+            },
+            "encaja-login-scale2-b": {
+              "cpu_percent": 253.87,
+              "mem_percent": 2.89,
+              "pids": 6,
+              "mem_usage_mb": 460.1
+            }
+          },
+          "docker_container_count": 2,
+          "docker_cpu_percent": 461.54,
+          "docker_mem_usage_mb": 920.1,
+          "docker_mem_percent": 2.89,
+          "docker_pids": 12,
+          "db_total_connections": 10,
+          "db_active_connections": 1,
+          "db_waiting_connections": 0,
+          "db_longest_active_seconds": 0.005739
+        },
+        {
+          "ts": "2026-03-27T11:18:06.101924+00:00",
+          "docker_containers": {
+            "encaja-login-scale2-a": {
+              "cpu_percent": 212.79,
+              "mem_percent": 2.94,
+              "pids": 8,
+              "mem_usage_mb": 469.4
+            },
+            "encaja-login-scale2-b": {
+              "cpu_percent": 229.6,
+              "mem_percent": 2.89,
+              "pids": 6,
+              "mem_usage_mb": 460.1
+            }
+          },
+          "docker_container_count": 2,
+          "docker_cpu_percent": 442.39,
+          "docker_mem_usage_mb": 929.5,
+          "docker_mem_percent": 2.94,
+          "docker_pids": 14,
+          "db_total_connections": 10,
+          "db_active_connections": 1,
+          "db_waiting_connections": 0,
+          "db_longest_active_seconds": 0.013241
+        },
+        {
+          "ts": "2026-03-27T11:18:12.851749+00:00",
+          "docker_containers": {
+            "encaja-login-scale2-a": {
+              "cpu_percent": 215.74,
+              "mem_percent": 2.88,
+              "pids": 6,
+              "mem_usage_mb": 460.1
+            },
+            "encaja-login-scale2-b": {
+              "cpu_percent": 269.09,
+              "mem_percent": 2.89,
+              "pids": 6,
+              "mem_usage_mb": 460.1
+            }
+          },
+          "docker_container_count": 2,
+          "docker_cpu_percent": 484.83,
+          "docker_mem_usage_mb": 920.2,
+          "docker_mem_percent": 2.89,
+          "docker_pids": 12,
+          "db_total_connections": 10,
+          "db_active_connections": 1,
+          "db_waiting_connections": 0,
+          "db_longest_active_seconds": 0.025502
+        },
+        {
+          "ts": "2026-03-27T11:18:19.440655+00:00",
+          "docker_containers": {
+            "encaja-login-scale2-a": {
+              "cpu_percent": 190.93,
+              "mem_percent": 2.89,
+              "pids": 6,
+              "mem_usage_mb": 460.1
+            },
+            "encaja-login-scale2-b": {
+              "cpu_percent": 203.46,
+              "mem_percent": 2.89,
+              "pids": 6,
+              "mem_usage_mb": 460.1
+            }
+          },
+          "docker_container_count": 2,
+          "docker_cpu_percent": 394.39,
+          "docker_mem_usage_mb": 920.2,
+          "docker_mem_percent": 2.89,
+          "docker_pids": 12,
+          "db_total_connections": 10,
+          "db_active_connections": 1,
+          "db_waiting_connections": 0,
+          "db_longest_active_seconds": 0.011035
+        },
+        {
+          "ts": "2026-03-27T11:18:25.074790+00:00",
+          "docker_containers": {
+            "encaja-login-scale2-a": {
+              "cpu_percent": 209.52,
+              "mem_percent": 2.89,
+              "pids": 6,
+              "mem_usage_mb": 460.1
+            },
+            "encaja-login-scale2-b": {
+              "cpu_percent": 287.84,
+              "mem_percent": 2.89,
+              "pids": 6,
+              "mem_usage_mb": 460.1
+            }
+          },
+          "docker_container_count": 2,
+          "docker_cpu_percent": 497.36,
+          "docker_mem_usage_mb": 920.2,
+          "docker_mem_percent": 2.89,
+          "docker_pids": 12,
+          "db_total_connections": 10,
+          "db_active_connections": 1,
+          "db_waiting_connections": 0,
+          "db_longest_active_seconds": 0.008391
+        },
+        {
+          "ts": "2026-03-27T11:18:30.759998+00:00",
+          "docker_containers": {
+            "encaja-login-scale2-a": {
+              "cpu_percent": 258.4,
+              "mem_percent": 2.89,
+              "pids": 6,
+              "mem_usage_mb": 460.1
+            },
+            "encaja-login-scale2-b": {
+              "cpu_percent": 189.99,
+              "mem_percent": 2.89,
+              "pids": 6,
+              "mem_usage_mb": 460.2
+            }
+          },
+          "docker_container_count": 2,
+          "docker_cpu_percent": 448.39,
+          "docker_mem_usage_mb": 920.3,
+          "docker_mem_percent": 2.89,
+          "docker_pids": 12,
+          "db_total_connections": 10,
+          "db_active_connections": 1,
+          "db_waiting_connections": 0,
+          "db_longest_active_seconds": 0.005345
+        },
+        {
+          "ts": "2026-03-27T11:18:36.371436+00:00",
+          "docker_containers": {
+            "encaja-login-scale2-a": {
+              "cpu_percent": 247.79,
+              "mem_percent": 2.89,
+              "pids": 6,
+              "mem_usage_mb": 461.7
+            },
+            "encaja-login-scale2-b": {
+              "cpu_percent": 174.35,
+              "mem_percent": 2.94,
+              "pids": 8,
+              "mem_usage_mb": 469.5
+            }
+          },
+          "docker_container_count": 2,
+          "docker_cpu_percent": 422.14,
+          "docker_mem_usage_mb": 931.2,
+          "docker_mem_percent": 2.94,
+          "docker_pids": 14,
+          "db_total_connections": 9,
+          "db_active_connections": 1,
+          "db_waiting_connections": 0,
+          "db_longest_active_seconds": 0.004929
+        },
+        {
+          "ts": "2026-03-27T11:18:42.935724+00:00",
+          "docker_containers": {
+            "encaja-login-scale2-a": {
+              "cpu_percent": 184.66,
+              "mem_percent": 2.82,
+              "pids": 6,
+              "mem_usage_mb": 450.4
+            },
+            "encaja-login-scale2-b": {
+              "cpu_percent": 255.19,
+              "mem_percent": 2.89,
+              "pids": 6,
+              "mem_usage_mb": 460.2
+            }
+          },
+          "docker_container_count": 2,
+          "docker_cpu_percent": 439.85,
+          "docker_mem_usage_mb": 910.6,
+          "docker_mem_percent": 2.89,
+          "docker_pids": 12,
+          "db_total_connections": 9,
+          "db_active_connections": 2,
+          "db_waiting_connections": 0,
+          "db_longest_active_seconds": 0.009552
+        }
+      ],
+      "metrics_summary": {
+        "backend_cpu_peak_percent": 0.0,
+        "backend_rss_peak_mb": 0.0,
+        "backend_threads_peak": 0.0,
+        "docker_cpu_peak_percent": 649.57,
+        "docker_mem_peak_mb": 931.2,
+        "docker_mem_peak_percent": 2.94,
+        "docker_pids_peak": 16,
+        "db_total_connections_peak": 10,
+        "db_active_connections_peak": 2,
+        "db_waiting_connections_peak": 0,
+        "db_longest_active_seconds_peak": 0.033626,
+        "docker_cpu_peak_percent_by_container": {
+          "encaja-login-scale2-a": 325.96,
+          "encaja-login-scale2-b": 323.61
+        },
+        "docker_mem_peak_mb_by_container": {
+          "encaja-login-scale2-a": 469.4,
+          "encaja-login-scale2-b": 469.5
+        },
+        "docker_pids_peak_by_container": {
+          "encaja-login-scale2-a": 8,
+          "encaja-login-scale2-b": 8
+        },
+        "auth_login_queue_gap_ms_avg": 5826.712
+      },
+      "artifacts": {
+        "stats_csv": "load-tests\\results\\phase-auth-runtime-gunicorn-4x1-scale2-full\\scenario_login_u100_stats.csv",
+        "stats_history_csv": "load-tests\\results\\phase-auth-runtime-gunicorn-4x1-scale2-full\\scenario_login_u100_stats_history.csv",
+        "failures_csv": "load-tests\\results\\phase-auth-runtime-gunicorn-4x1-scale2-full\\scenario_login_u100_failures.csv",
+        "profile_summary_json": "load-tests\\results\\phase-auth-runtime-gunicorn-4x1-scale2-full\\scenario_login_u100_profile_summary.json",
+        "report_html": "load-tests\\results\\phase-auth-runtime-gunicorn-4x1-scale2-full\\scenario_login_u100.html"
+      },
+      "capacity_pass": false
+    }
+  ]
+}

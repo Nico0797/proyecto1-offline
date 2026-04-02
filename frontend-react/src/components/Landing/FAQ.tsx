@@ -3,12 +3,12 @@ import { ChevronDown, ChevronUp } from 'lucide-react';
 
 const FAQS = [
   {
-    q: '¿Qué incluye el plan Free y Pro?',
-    a: 'El plan Free es perfecto para empezar: registra ventas, gastos y clientes ilimitados en 1 negocio. El plan Pro desbloquea múltiples negocios, analíticas avanzadas, reportes exportables, alertas de stock, recordatorios de cobro y plantillas de WhatsApp.'
+    q: '¿Qué incluye la membresía Básica y Pro?',
+    a: 'La membresía Básica es perfecta para empezar: registra ventas, gastos y clientes desde tu primer negocio. Pro desbloquea más capacidad operativa, analíticas avanzadas, reportes exportables, alertas de stock, recordatorios de cobro y plantillas de WhatsApp.'
   },
   {
     q: '¿Cómo funciona la opción multi-negocio?',
-    a: 'Con el plan Pro, puedes agregar tantos negocios como necesites dentro de la misma cuenta. Cada negocio mantiene sus ventas, productos y clientes de forma independiente, pero tú gestionas todo con un solo login.'
+    a: 'Con los planes Pro y Business, puedes agregar múltiples negocios dentro de la misma cuenta. Cada negocio mantiene sus ventas, productos y clientes de forma independiente, pero tú gestionas todo con un solo login.'
   },
   {
     q: '¿Cómo se calculan los reportes?',
@@ -16,7 +16,7 @@ const FAQS = [
   },
   {
     q: '¿Puedo exportar mis datos?',
-    a: 'Sí, con el plan Pro puedes descargar todos tus reportes de ventas, inventario y clientes en formato Excel o PDF para compartirlos con tu contador o guardarlos como respaldo.'
+    a: 'Sí, con los planes superiores puedes descargar tus reportes de ventas, inventario y clientes en formato Excel o PDF para compartirlos con tu contador o guardarlos como respaldo.'
   },
   {
     q: '¿Cómo funciona la integración con WhatsApp?',

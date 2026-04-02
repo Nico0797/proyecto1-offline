@@ -5,3 +5,5 @@ export * from './ProductsReportTab';
 export * from './ExpensesReportTab';
 export * from './ReceivablesReportTab';
 export * from './CombinedReportsTab';
+export * from './ProfitabilityReportTab';
+export * from './TeamReportTab';

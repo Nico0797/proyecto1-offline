@@ -49,15 +49,15 @@ export const CustomerList: React.FC<CustomerListProps> = ({
     });
 
   return (
-    <div className="flex flex-col h-full bg-white dark:bg-gray-800 w-full">
-      <div className="p-4 border-b border-gray-200 dark:border-gray-700 space-y-3">
+    <div className="app-surface flex h-full w-full flex-col rounded-none border-0 shadow-none lg:rounded-[24px] lg:border">
+      <div className="app-divider space-y-3 border-b p-4">
         <div className="flex justify-between items-center">
-          <h2 className="text-lg font-bold text-gray-900 dark:text-white">Clientes</h2>
+          <h2 className="app-text text-lg font-bold">Clientes</h2>
           <Button size="sm" onClick={onAdd}><Plus className="w-4 h-4" /></Button>
         </div>
         
         <div className="relative">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+          <Search className="app-text-muted absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 transform" />
           <Input 
             placeholder="Buscar..." 
             value={searchTerm}
@@ -69,46 +69,46 @@ export const CustomerList: React.FC<CustomerListProps> = ({
         <div className="flex gap-2 overflow-x-auto pb-1">
           <button 
             onClick={() => onFilterChange('all')}
-            className={`px-3 py-1 rounded-full text-xs font-medium whitespace-nowrap transition-colors ${filter === 'all' ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400' : 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-400'}`}
+            className={`px-3 py-1 rounded-full text-xs font-medium whitespace-nowrap transition-colors ${filter === 'all' ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400' : 'app-chip'}`}
           >
             Todos
           </button>
           <button 
             onClick={() => onFilterChange('debt')}
-            className={`px-3 py-1 rounded-full text-xs font-medium whitespace-nowrap transition-colors ${filter === 'debt' ? 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400' : 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-400'}`}
+            className={`px-3 py-1 rounded-full text-xs font-medium whitespace-nowrap transition-colors ${filter === 'debt' ? 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400' : 'app-chip'}`}
           >
             Con Deuda
           </button>
           <button 
             onClick={() => onFilterChange('paid')}
-            className={`px-3 py-1 rounded-full text-xs font-medium whitespace-nowrap transition-colors ${filter === 'paid' ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' : 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-400'}`}
+            className={`px-3 py-1 rounded-full text-xs font-medium whitespace-nowrap transition-colors ${filter === 'paid' ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' : 'app-chip'}`}
           >
             Paz y Salvo
           </button>
           <div className="relative">
             <button 
               onClick={() => setShowSortMenu(!showSortMenu)}
-              className="px-3 py-1 rounded-full text-xs font-medium whitespace-nowrap transition-colors bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-400"
+              className="app-chip px-3 py-1 rounded-full text-xs font-medium whitespace-nowrap transition-colors"
             >
               Ordenar: {sort === 'name' ? 'Nombre' : sort === 'debt' ? 'Deuda' : 'Reciente'}
             </button>
             {showSortMenu && (
-              <div className="absolute top-full left-0 mt-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg z-10">
+              <div className="app-surface absolute left-0 top-full z-10 mt-1 rounded-lg shadow-lg">
                 <button 
                   onClick={() => { onSortChange('name'); setShowSortMenu(false); }}
-                  className={`block w-full text-left px-3 py-2 text-xs whitespace-nowrap ${sort === 'name' ? 'text-blue-600 dark:text-blue-400 font-medium' : 'text-gray-700 dark:text-gray-300'}`}
+                  className={`block w-full whitespace-nowrap px-3 py-2 text-left text-xs ${sort === 'name' ? 'font-medium text-blue-600 dark:text-blue-400' : 'app-text-secondary'}`}
                 >
                   Nombre
                 </button>
                 <button 
                   onClick={() => { onSortChange('debt'); setShowSortMenu(false); }}
-                  className={`block w-full text-left px-3 py-2 text-xs whitespace-nowrap ${sort === 'debt' ? 'text-blue-600 dark:text-blue-400 font-medium' : 'text-gray-700 dark:text-gray-300'}`}
+                  className={`block w-full whitespace-nowrap px-3 py-2 text-left text-xs ${sort === 'debt' ? 'font-medium text-blue-600 dark:text-blue-400' : 'app-text-secondary'}`}
                 >
                   Deuda
                 </button>
                 <button 
                   onClick={() => { onSortChange('recent'); setShowSortMenu(false); }}
-                  className={`block w-full text-left px-3 py-2 text-xs whitespace-nowrap ${sort === 'recent' ? 'text-blue-600 dark:text-blue-400 font-medium' : 'text-gray-700 dark:text-gray-300'}`}
+                  className={`block w-full whitespace-nowrap px-3 py-2 text-left text-xs ${sort === 'recent' ? 'font-medium text-blue-600 dark:text-blue-400' : 'app-text-secondary'}`}
                 >
                   Reciente
                 </button>
@@ -124,10 +124,10 @@ export const CustomerList: React.FC<CustomerListProps> = ({
             <div 
               key={customer.id}
               onClick={() => onSelect(customer)}
-              className={`p-4 border-b border-gray-100 dark:border-gray-700/50 cursor-pointer transition-colors hover:bg-gray-50 dark:hover:bg-gray-700/50 ${selectedId === customer.id ? 'bg-blue-50 dark:bg-blue-900/20 border-l-4 border-l-blue-500' : 'border-l-4 border-l-transparent'}`}
+              className={`app-divider cursor-pointer border-b p-4 transition-colors hover:bg-gray-50 ${selectedId === customer.id ? 'bg-blue-50 dark:bg-blue-900/20 border-l-4 border-l-blue-500' : 'border-l-4 border-l-transparent'}`}
             >
               <div className="flex justify-between items-start mb-1">
-                <h3 className={`font-medium text-sm truncate pr-2 ${selectedId === customer.id ? 'text-blue-700 dark:text-blue-400' : 'text-gray-900 dark:text-white'}`}>
+                <h3 className={`truncate pr-2 text-sm font-medium ${selectedId === customer.id ? 'text-blue-700 dark:text-blue-400' : 'app-text'}`}>
                   {customer.name}
                 </h3>
                 {customer.balance > 0 && (
@@ -137,7 +137,7 @@ export const CustomerList: React.FC<CustomerListProps> = ({
                 )}
               </div>
               <div className="flex justify-between items-end">
-                <div className="text-xs text-gray-500 dark:text-gray-400">
+                <div className="app-text-muted text-xs">
                   {customer.phone || 'Sin teléfono'}
                 </div>
                 <div className={`text-sm font-semibold ${customer.balance > 0 ? 'text-red-600 dark:text-red-400' : 'text-green-600 dark:text-green-400'}`}>
@@ -147,7 +147,7 @@ export const CustomerList: React.FC<CustomerListProps> = ({
             </div>
           ))
         ) : (
-          <div className="p-8 text-center text-gray-500 text-sm">
+          <div className="app-text-muted p-8 text-center text-sm">
             No se encontraron clientes.
           </div>
         )}

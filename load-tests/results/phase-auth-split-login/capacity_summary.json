@@ -1,0 +1,1624 @@
+{
+  "base_url": "http://127.0.0.1:5000",
+  "business_id": 16,
+  "users": [
+    20,
+    40,
+    60,
+    80,
+    100
+  ],
+  "scenarios": [
+    "LOGIN"
+  ],
+  "run_time": "2m",
+  "spawn_rate": 5.0,
+  "fixture": null,
+  "runs": [
+    {
+      "scenario": "LOGIN",
+      "users": 20,
+      "started_at": "2026-03-27T00:13:19.853206+00:00",
+      "finished_at": "2026-03-27T00:15:22.028202+00:00",
+      "command": [
+        "C:\\Users\\harae\\Desktop\\ui migration\\proyecto1\\.venv\\Scripts\\locust.exe",
+        "-f",
+        "C:\\Users\\harae\\Desktop\\ui migration\\proyecto1\\load-tests\\locustfile.py",
+        "--host",
+        "http://127.0.0.1:5000",
+        "--users",
+        "20",
+        "--spawn-rate",
+        "5.0",
+        "--run-time",
+        "2m",
+        "--csv",
+        "load-tests\\results\\phase-auth-split-login\\scenario_login_u20",
+        "--html",
+        "load-tests\\results\\phase-auth-split-login\\scenario_login_u20.html",
+        "--headless",
+        "--only-summary"
+      ],
+      "exit_code": 0,
+      "stdout_tail": "",
+      "stderr_tail": "[2026-03-26 19:13:22,507] DESKTOP-9DI2UJR/INFO/locust.main: Starting Locust 2.43.3\n[2026-03-26 19:13:22,510] DESKTOP-9DI2UJR/INFO/locust.main: Run time limit set to 120 seconds\n[2026-03-26 19:13:22,512] DESKTOP-9DI2UJR/INFO/locust.runners: Ramping to 20 users at a rate of 5.00 per second\n[2026-03-26 19:13:25,709] DESKTOP-9DI2UJR/INFO/locust.runners: All users spawned: {\"CuadernoUser\": 20} (20 total users)\n[2026-03-26 19:15:21,395] DESKTOP-9DI2UJR/INFO/locust.main: --run-time limit reached, shutting down\n[2026-03-26 19:15:21,703] DESKTOP-9DI2UJR/INFO/locust.main: writing html report to file: load-tests\\results\\phase-auth-split-login\\scenario_login_u20.html\n[2026-03-26 19:15:21,710] DESKTOP-9DI2UJR/INFO/locust.main: Shutting down (exit code 0)\nType     Name                                                                          # reqs      # fails |    Avg     Min     Max    Med |   req/s  failures/s\n--------|----------------------------------------------------------------------------|-------|-------------|-------|-------|-------|-------|--------|-----------\nGET      auth.bootstrap                                                                   423     0(0.00%) |    357      15    2769    220 |    3.55        0.00\nPOST     auth.login                                                                       423     0(0.00%) |   4526     515    7576   4400 |    3.55        0.00\n--------|----------------------------------------------------------------------------|-------|-------------|-------|-------|-------|-------|--------|-----------\n         Aggregated                                                                       846     0(0.00%) |   2442      15    7576   1600 |    7.10        0.00\n\nResponse time percentiles (approximated)\nType     Name                                                                                  50%    66%    75%    80%    90%    95%    98%    99%  99.9% 99.99%   100% # reqs\n--------|--------------------------------------------------------------------------------|--------|------|------|------|------|------|------|------|------|------|------|------\nGET      auth.bootstrap                                                                        220    300    390    480    780   1000   1300   1800   2800   2800   2800    423\nPOST     auth.login                                                                           4400   4600   4800   5100   6000   7100   7400   7500   7600   7600   7600    423\n--------|--------------------------------------------------------------------------------|--------|------|------|------|------|------|------|------|------|------|------|------\n         Aggregated                                                                           1700   4100   4400   4600   5100   6000   7200   7400   7600   7600   7600    846\n\n",
+      "stats_summary": {
+        "requests": 832,
+        "failures": 0,
+        "median_ms": 1600.0,
+        "avg_ms": 2441.972128606024,
+        "min_ms": 15.460599999642,
+        "max_ms": 7576.486500009196,
+        "avg_size": 2626.0,
+        "rps": 7.040663396459094,
+        "failures_per_sec": 0.0,
+        "p50_ms": 1700.0,
+        "p95_ms": 6100.0,
+        "p99_ms": 7400.0,
+        "slowest_endpoint": {
+          "name": "auth.login",
+          "method": "POST",
+          "avg_ms": 4534.390938942649,
+          "p95_ms": 7200.0,
+          "p99_ms": 7500.0,
+          "rps": 3.520331698229547
+        },
+        "endpoint_metrics": {
+          "auth.login": {
+            "avg_ms": 4534.390938942649,
+            "p95_ms": 7200.0,
+            "rps": 3.520331698229547,
+            "failures": 0,
+            "requests": 416
+          },
+          "auth.select_context": {
+            "avg_ms": 0.0,
+            "p95_ms": 0.0,
+            "rps": 0.0,
+            "failures": 0,
+            "requests": 0
+          },
+          "auth.bootstrap": {
+            "avg_ms": 349.55331826939494,
+            "p95_ms": 950.0,
+            "rps": 3.520331698229547,
+            "failures": 0,
+            "requests": 416
+          },
+          "read.dashboard": {
+            "avg_ms": 0.0,
+            "p95_ms": 0.0,
+            "rps": 0.0,
+            "failures": 0,
+            "requests": 0
+          },
+          "read.summary": {
+            "avg_ms": 0.0,
+            "p95_ms": 0.0,
+            "rps": 0.0,
+            "failures": 0,
+            "requests": 0
+          }
+        }
+      },
+      "distribution": {
+        "p50_estimated_ms": 2481.1678319278763,
+        "p95_estimated_ms": 3223.274264288193,
+        "p99_estimated_ms": 3723.4721500019077,
+        "avg_rps_window": 6.507423379310345,
+        "max_rps_window": 8.6,
+        "final_failure_count": 0.0
+      },
+      "profile_summary": {
+        "auth.login": {
+          "samples": 435,
+          "query_count_avg": 62.0,
+          "query_count_p95": 62.0,
+          "sql_time_ms_avg": 3408.657,
+          "sql_time_ms_p95": 5464.199,
+          "wall_time_ms_avg": 4149.327,
+          "wall_time_ms_p95": 6561.032,
+          "cache_hit_count": 0
+        },
+        "auth.bootstrap": {
+          "samples": 423,
+          "query_count_avg": 4.0,
+          "query_count_p95": 4.0,
+          "sql_time_ms_avg": 260.033,
+          "sql_time_ms_p95": 780.873,
+          "wall_time_ms_avg": 205.743,
+          "wall_time_ms_p95": 639.578,
+          "cache_hit_count": 0
+        }
+      },
+      "failures_rows": 1,
+      "error_rate": 0.0,
+      "metrics_samples": [
+        {
+          "ts": "2026-03-27T00:13:19.853862+00:00"
+        },
+        {
+          "ts": "2026-03-27T00:13:21.867478+00:00"
+        },
+        {
+          "ts": "2026-03-27T00:13:23.919752+00:00"
+        },
+        {
+          "ts": "2026-03-27T00:13:25.923526+00:00"
+        },
+        {
+          "ts": "2026-03-27T00:13:27.924669+00:00"
+        },
+        {
+          "ts": "2026-03-27T00:13:29.925748+00:00"
+        },
+        {
+          "ts": "2026-03-27T00:13:31.949171+00:00"
+        },
+        {
+          "ts": "2026-03-27T00:13:33.976189+00:00"
+        },
+        {
+          "ts": "2026-03-27T00:13:35.976772+00:00"
+        },
+        {
+          "ts": "2026-03-27T00:13:37.978216+00:00"
+        },
+        {
+          "ts": "2026-03-27T00:13:39.987461+00:00"
+        },
+        {
+          "ts": "2026-03-27T00:13:42.022003+00:00"
+        },
+        {
+          "ts": "2026-03-27T00:13:44.097027+00:00"
+        },
+        {
+          "ts": "2026-03-27T00:13:46.099400+00:00"
+        },
+        {
+          "ts": "2026-03-27T00:13:48.137000+00:00"
+        },
+        {
+          "ts": "2026-03-27T00:13:50.158223+00:00"
+        },
+        {
+          "ts": "2026-03-27T00:13:52.162233+00:00"
+        },
+        {
+          "ts": "2026-03-27T00:13:54.177174+00:00"
+        },
+        {
+          "ts": "2026-03-27T00:13:56.177593+00:00"
+        },
+        {
+          "ts": "2026-03-27T00:13:58.247778+00:00"
+        },
+        {
+          "ts": "2026-03-27T00:14:00.248675+00:00"
+        },
+        {
+          "ts": "2026-03-27T00:14:02.263439+00:00"
+        },
+        {
+          "ts": "2026-03-27T00:14:04.264067+00:00"
+        },
+        {
+          "ts": "2026-03-27T00:14:06.264209+00:00"
+        },
+        {
+          "ts": "2026-03-27T00:14:08.266761+00:00"
+        },
+        {
+          "ts": "2026-03-27T00:14:10.267932+00:00"
+        },
+        {
+          "ts": "2026-03-27T00:14:12.328220+00:00"
+        },
+        {
+          "ts": "2026-03-27T00:14:14.415111+00:00"
+        },
+        {
+          "ts": "2026-03-27T00:14:16.414974+00:00"
+        },
+        {
+          "ts": "2026-03-27T00:14:18.431413+00:00"
+        },
+        {
+          "ts": "2026-03-27T00:14:20.431797+00:00"
+        },
+        {
+          "ts": "2026-03-27T00:14:22.453021+00:00"
+        },
+        {
+          "ts": "2026-03-27T00:14:24.485782+00:00"
+        },
+        {
+          "ts": "2026-03-27T00:14:26.485729+00:00"
+        },
+        {
+          "ts": "2026-03-27T00:14:28.522291+00:00"
+        },
+        {
+          "ts": "2026-03-27T00:14:30.522486+00:00"
+        },
+        {
+          "ts": "2026-03-27T00:14:32.530084+00:00"
+        },
+        {
+          "ts": "2026-03-27T00:14:34.556499+00:00"
+        },
+        {
+          "ts": "2026-03-27T00:14:36.556215+00:00"
+        },
+        {
+          "ts": "2026-03-27T00:14:38.625456+00:00"
+        },
+        {
+          "ts": "2026-03-27T00:14:40.626223+00:00"
+        },
+        {
+          "ts": "2026-03-27T00:14:42.631724+00:00"
+        },
+        {
+          "ts": "2026-03-27T00:14:44.780365+00:00"
+        },
+        {
+          "ts": "2026-03-27T00:14:46.796826+00:00"
+        },
+        {
+          "ts": "2026-03-27T00:14:48.816767+00:00"
+        },
+        {
+          "ts": "2026-03-27T00:14:50.817785+00:00"
+        },
+        {
+          "ts": "2026-03-27T00:14:52.827996+00:00"
+        },
+        {
+          "ts": "2026-03-27T00:14:54.844970+00:00"
+        },
+        {
+          "ts": "2026-03-27T00:14:56.845678+00:00"
+        },
+        {
+          "ts": "2026-03-27T00:14:58.901560+00:00"
+        },
+        {
+          "ts": "2026-03-27T00:15:00.935293+00:00"
+        },
+        {
+          "ts": "2026-03-27T00:15:02.936894+00:00"
+        },
+        {
+          "ts": "2026-03-27T00:15:04.948160+00:00"
+        },
+        {
+          "ts": "2026-03-27T00:15:06.979120+00:00"
+        },
+        {
+          "ts": "2026-03-27T00:15:08.988090+00:00"
+        },
+        {
+          "ts": "2026-03-27T00:15:10.988802+00:00"
+        },
+        {
+          "ts": "2026-03-27T00:15:12.997814+00:00"
+        },
+        {
+          "ts": "2026-03-27T00:15:14.998945+00:00"
+        },
+        {
+          "ts": "2026-03-27T00:15:17.027879+00:00"
+        },
+        {
+          "ts": "2026-03-27T00:15:19.029094+00:00"
+        },
+        {
+          "ts": "2026-03-27T00:15:21.062573+00:00"
+        }
+      ],
+      "metrics_summary": {
+        "backend_cpu_peak_percent": 0.0,
+        "backend_rss_peak_mb": 0.0,
+        "backend_threads_peak": 0.0,
+        "db_total_connections_peak": 0.0,
+        "db_active_connections_peak": 0.0,
+        "db_waiting_connections_peak": 0.0,
+        "db_longest_active_seconds_peak": 0.0
+      },
+      "artifacts": {
+        "stats_csv": "load-tests\\results\\phase-auth-split-login\\scenario_login_u20_stats.csv",
+        "stats_history_csv": "load-tests\\results\\phase-auth-split-login\\scenario_login_u20_stats_history.csv",
+        "failures_csv": "load-tests\\results\\phase-auth-split-login\\scenario_login_u20_failures.csv",
+        "profile_summary_json": "load-tests\\results\\phase-auth-split-login\\scenario_login_u20_profile_summary.json",
+        "report_html": "load-tests\\results\\phase-auth-split-login\\scenario_login_u20.html"
+      },
+      "capacity_pass": false
+    },
+    {
+      "scenario": "LOGIN",
+      "users": 40,
+      "started_at": "2026-03-27T00:15:22.032361+00:00",
+      "finished_at": "2026-03-27T00:17:23.829708+00:00",
+      "command": [
+        "C:\\Users\\harae\\Desktop\\ui migration\\proyecto1\\.venv\\Scripts\\locust.exe",
+        "-f",
+        "C:\\Users\\harae\\Desktop\\ui migration\\proyecto1\\load-tests\\locustfile.py",
+        "--host",
+        "http://127.0.0.1:5000",
+        "--users",
+        "40",
+        "--spawn-rate",
+        "5.0",
+        "--run-time",
+        "2m",
+        "--csv",
+        "load-tests\\results\\phase-auth-split-login\\scenario_login_u40",
+        "--html",
+        "load-tests\\results\\phase-auth-split-login\\scenario_login_u40.html",
+        "--headless",
+        "--only-summary"
+      ],
+      "exit_code": 0,
+      "stdout_tail": "",
+      "stderr_tail": "[2026-03-26 19:15:23,950] DESKTOP-9DI2UJR/INFO/locust.main: Starting Locust 2.43.3\n[2026-03-26 19:15:23,953] DESKTOP-9DI2UJR/INFO/locust.main: Run time limit set to 120 seconds\n[2026-03-26 19:15:23,955] DESKTOP-9DI2UJR/INFO/locust.runners: Ramping to 40 users at a rate of 5.00 per second\n[2026-03-26 19:15:31,018] DESKTOP-9DI2UJR/INFO/locust.runners: All users spawned: {\"CuadernoUser\": 40} (40 total users)\n[2026-03-26 19:17:23,176] DESKTOP-9DI2UJR/INFO/locust.main: --run-time limit reached, shutting down\n[2026-03-26 19:17:23,591] DESKTOP-9DI2UJR/INFO/locust.main: writing html report to file: load-tests\\results\\phase-auth-split-login\\scenario_login_u40.html\n[2026-03-26 19:17:23,600] DESKTOP-9DI2UJR/INFO/locust.main: Shutting down (exit code 0)\nType     Name                                                                          # reqs      # fails |    Avg     Min     Max    Med |   req/s  failures/s\n--------|----------------------------------------------------------------------------|-------|-------------|-------|-------|-------|-------|--------|-----------\nGET      auth.bootstrap                                                                   392     0(0.00%) |    548     195    4330    400 |    3.35        0.00\nPOST     auth.login                                                                       392     0(0.00%) |   9811     938   14315   9300 |    3.35        0.00\n--------|----------------------------------------------------------------------------|-------|-------------|-------|-------|-------|-------|--------|-----------\n         Aggregated                                                                       784     0(0.00%) |   5179     195   14315   1800 |    6.69        0.00\n\nResponse time percentiles (approximated)\nType     Name                                                                                  50%    66%    75%    80%    90%    95%    98%    99%  99.9% 99.99%   100% # reqs\n--------|--------------------------------------------------------------------------------|--------|------|------|------|------|------|------|------|------|------|------|------\nGET      auth.bootstrap                                                                        400    450    610    670    850   1200   2100   2700   4300   4300   4300    392\nPOST     auth.login                                                                           9300  10000  11000  12000  13000  14000  14000  14000  14000  14000  14000    392\n--------|--------------------------------------------------------------------------------|--------|------|------|------|------|------|------|------|------|------|------|------\n         Aggregated                                                                           2100   9000   9300   9600  12000  13000  14000  14000  14000  14000  14000    784\n\n",
+      "stats_summary": {
+        "requests": 784,
+        "failures": 0,
+        "median_ms": 1800.0,
+        "avg_ms": 5179.901370790915,
+        "min_ms": 195.141699994565,
+        "max_ms": 14315.577400004258,
+        "avg_size": 2626.0,
+        "rps": 6.693155575225172,
+        "failures_per_sec": 0.0,
+        "p50_ms": 2100.0,
+        "p95_ms": 13000.0,
+        "p99_ms": 14000.0,
+        "slowest_endpoint": {
+          "name": "auth.login",
+          "method": "POST",
+          "avg_ms": 9811.224065561377,
+          "p95_ms": 14000.0,
+          "p99_ms": 14000.0,
+          "rps": 3.346577787612586
+        },
+        "endpoint_metrics": {
+          "auth.login": {
+            "avg_ms": 9811.224065561377,
+            "p95_ms": 14000.0,
+            "rps": 3.346577787612586,
+            "failures": 0,
+            "requests": 392
+          },
+          "auth.select_context": {
+            "avg_ms": 0.0,
+            "p95_ms": 0.0,
+            "rps": 0.0,
+            "failures": 0,
+            "requests": 0
+          },
+          "auth.bootstrap": {
+            "avg_ms": 548.578676020451,
+            "p95_ms": 1200.0,
+            "rps": 3.346577787612586,
+            "failures": 0,
+            "requests": 392
+          },
+          "read.dashboard": {
+            "avg_ms": 0.0,
+            "p95_ms": 0.0,
+            "rps": 0.0,
+            "failures": 0,
+            "requests": 0
+          },
+          "read.summary": {
+            "avg_ms": 0.0,
+            "p95_ms": 0.0,
+            "rps": 0.0,
+            "failures": 0,
+            "requests": 0
+          }
+        }
+      },
+      "distribution": {
+        "p50_estimated_ms": 4815.013764827694,
+        "p95_estimated_ms": 5027.747878783903,
+        "p99_estimated_ms": 5179.901370790915,
+        "avg_rps_window": 6.294252870689655,
+        "max_rps_window": 8.8,
+        "final_failure_count": 0.0
+      },
+      "profile_summary": {
+        "auth.login": {
+          "samples": 392,
+          "query_count_avg": 62.0,
+          "query_count_p95": 62.0,
+          "sql_time_ms_avg": 8691.47,
+          "sql_time_ms_p95": 11916.875,
+          "wall_time_ms_avg": 9522.87,
+          "wall_time_ms_p95": 12901.493,
+          "cache_hit_count": 0
+        },
+        "auth.bootstrap": {
+          "samples": 392,
+          "query_count_avg": 4.0,
+          "query_count_p95": 4.0,
+          "sql_time_ms_avg": 403.664,
+          "sql_time_ms_p95": 761.561,
+          "wall_time_ms_avg": 321.691,
+          "wall_time_ms_p95": 637.351,
+          "cache_hit_count": 0
+        }
+      },
+      "failures_rows": 1,
+      "error_rate": 0.0,
+      "metrics_samples": [
+        {
+          "ts": "2026-03-27T00:15:22.094605+00:00"
+        },
+        {
+          "ts": "2026-03-27T00:15:24.126640+00:00"
+        },
+        {
+          "ts": "2026-03-27T00:15:26.167679+00:00"
+        },
+        {
+          "ts": "2026-03-27T00:15:28.175149+00:00"
+        },
+        {
+          "ts": "2026-03-27T00:15:30.175102+00:00"
+        },
+        {
+          "ts": "2026-03-27T00:15:32.186251+00:00"
+        },
+        {
+          "ts": "2026-03-27T00:15:34.190910+00:00"
+        },
+        {
+          "ts": "2026-03-27T00:15:36.213962+00:00"
+        },
+        {
+          "ts": "2026-03-27T00:15:38.214821+00:00"
+        },
+        {
+          "ts": "2026-03-27T00:15:40.286318+00:00"
+        },
+        {
+          "ts": "2026-03-27T00:15:42.288072+00:00"
+        },
+        {
+          "ts": "2026-03-27T00:15:44.290059+00:00"
+        },
+        {
+          "ts": "2026-03-27T00:15:46.491970+00:00"
+        },
+        {
+          "ts": "2026-03-27T00:15:48.525208+00:00"
+        },
+        {
+          "ts": "2026-03-27T00:15:50.541096+00:00"
+        },
+        {
+          "ts": "2026-03-27T00:15:52.626817+00:00"
+        },
+        {
+          "ts": "2026-03-27T00:15:54.626943+00:00"
+        },
+        {
+          "ts": "2026-03-27T00:15:56.709426+00:00"
+        },
+        {
+          "ts": "2026-03-27T00:15:58.744651+00:00"
+        },
+        {
+          "ts": "2026-03-27T00:16:00.810806+00:00"
+        },
+        {
+          "ts": "2026-03-27T00:16:02.811212+00:00"
+        },
+        {
+          "ts": "2026-03-27T00:16:04.811617+00:00"
+        },
+        {
+          "ts": "2026-03-27T00:16:06.879628+00:00"
+        },
+        {
+          "ts": "2026-03-27T00:16:08.925322+00:00"
+        },
+        {
+          "ts": "2026-03-27T00:16:10.926156+00:00"
+        },
+        {
+          "ts": "2026-03-27T00:16:12.930767+00:00"
+        },
+        {
+          "ts": "2026-03-27T00:16:14.950224+00:00"
+        },
+        {
+          "ts": "2026-03-27T00:16:16.954794+00:00"
+        },
+        {
+          "ts": "2026-03-27T00:16:18.958114+00:00"
+        },
+        {
+          "ts": "2026-03-27T00:16:20.962096+00:00"
+        },
+        {
+          "ts": "2026-03-27T00:16:22.961422+00:00"
+        },
+        {
+          "ts": "2026-03-27T00:16:24.983332+00:00"
+        },
+        {
+          "ts": "2026-03-27T00:16:26.983873+00:00"
+        },
+        {
+          "ts": "2026-03-27T00:16:29.015461+00:00"
+        },
+        {
+          "ts": "2026-03-27T00:16:31.038288+00:00"
+        },
+        {
+          "ts": "2026-03-27T00:16:33.039671+00:00"
+        },
+        {
+          "ts": "2026-03-27T00:16:35.066150+00:00"
+        },
+        {
+          "ts": "2026-03-27T00:16:37.066622+00:00"
+        },
+        {
+          "ts": "2026-03-27T00:16:39.081539+00:00"
+        },
+        {
+          "ts": "2026-03-27T00:16:41.108269+00:00"
+        },
+        {
+          "ts": "2026-03-27T00:16:43.108914+00:00"
+        },
+        {
+          "ts": "2026-03-27T00:16:45.138501+00:00"
+        },
+        {
+          "ts": "2026-03-27T00:16:47.139291+00:00"
+        },
+        {
+          "ts": "2026-03-27T00:16:49.215242+00:00"
+        },
+        {
+          "ts": "2026-03-27T00:16:51.244226+00:00"
+        },
+        {
+          "ts": "2026-03-27T00:16:53.244956+00:00"
+        },
+        {
+          "ts": "2026-03-27T00:16:55.246044+00:00"
+        },
+        {
+          "ts": "2026-03-27T00:16:57.373673+00:00"
+        },
+        {
+          "ts": "2026-03-27T00:16:59.385189+00:00"
+        },
+        {
+          "ts": "2026-03-27T00:17:01.393180+00:00"
+        },
+        {
+          "ts": "2026-03-27T00:17:03.440658+00:00"
+        },
+        {
+          "ts": "2026-03-27T00:17:05.500263+00:00"
+        },
+        {
+          "ts": "2026-03-27T00:17:07.500702+00:00"
+        },
+        {
+          "ts": "2026-03-27T00:17:09.545256+00:00"
+        },
+        {
+          "ts": "2026-03-27T00:17:11.605810+00:00"
+        },
+        {
+          "ts": "2026-03-27T00:17:13.606837+00:00"
+        },
+        {
+          "ts": "2026-03-27T00:17:15.613001+00:00"
+        },
+        {
+          "ts": "2026-03-27T00:17:17.632021+00:00"
+        },
+        {
+          "ts": "2026-03-27T00:17:19.677871+00:00"
+        },
+        {
+          "ts": "2026-03-27T00:17:21.681097+00:00"
+        },
+        {
+          "ts": "2026-03-27T00:17:23.682779+00:00"
+        }
+      ],
+      "metrics_summary": {
+        "backend_cpu_peak_percent": 0.0,
+        "backend_rss_peak_mb": 0.0,
+        "backend_threads_peak": 0.0,
+        "db_total_connections_peak": 0.0,
+        "db_active_connections_peak": 0.0,
+        "db_waiting_connections_peak": 0.0,
+        "db_longest_active_seconds_peak": 0.0
+      },
+      "artifacts": {
+        "stats_csv": "load-tests\\results\\phase-auth-split-login\\scenario_login_u40_stats.csv",
+        "stats_history_csv": "load-tests\\results\\phase-auth-split-login\\scenario_login_u40_stats_history.csv",
+        "failures_csv": "load-tests\\results\\phase-auth-split-login\\scenario_login_u40_failures.csv",
+        "profile_summary_json": "load-tests\\results\\phase-auth-split-login\\scenario_login_u40_profile_summary.json",
+        "report_html": "load-tests\\results\\phase-auth-split-login\\scenario_login_u40.html"
+      },
+      "capacity_pass": false
+    },
+    {
+      "scenario": "LOGIN",
+      "users": 60,
+      "started_at": "2026-03-27T00:17:23.833515+00:00",
+      "finished_at": "2026-03-27T00:19:25.566731+00:00",
+      "command": [
+        "C:\\Users\\harae\\Desktop\\ui migration\\proyecto1\\.venv\\Scripts\\locust.exe",
+        "-f",
+        "C:\\Users\\harae\\Desktop\\ui migration\\proyecto1\\load-tests\\locustfile.py",
+        "--host",
+        "http://127.0.0.1:5000",
+        "--users",
+        "60",
+        "--spawn-rate",
+        "5.0",
+        "--run-time",
+        "2m",
+        "--csv",
+        "load-tests\\results\\phase-auth-split-login\\scenario_login_u60",
+        "--html",
+        "load-tests\\results\\phase-auth-split-login\\scenario_login_u60.html",
+        "--headless",
+        "--only-summary"
+      ],
+      "exit_code": 0,
+      "stdout_tail": "",
+      "stderr_tail": "[2026-03-26 19:17:26,397] DESKTOP-9DI2UJR/INFO/locust.main: Starting Locust 2.43.3\n[2026-03-26 19:17:26,401] DESKTOP-9DI2UJR/INFO/locust.main: Run time limit set to 120 seconds\n[2026-03-26 19:17:26,403] DESKTOP-9DI2UJR/INFO/locust.runners: Ramping to 60 users at a rate of 5.00 per second\n[2026-03-26 19:17:37,438] DESKTOP-9DI2UJR/INFO/locust.runners: All users spawned: {\"CuadernoUser\": 60} (60 total users)\n[2026-03-26 19:19:25,012] DESKTOP-9DI2UJR/INFO/locust.main: --run-time limit reached, shutting down\n[2026-03-26 19:19:25,253] DESKTOP-9DI2UJR/INFO/locust.main: writing html report to file: load-tests\\results\\phase-auth-split-login\\scenario_login_u60.html\n[2026-03-26 19:19:25,267] DESKTOP-9DI2UJR/INFO/locust.main: Shutting down (exit code 0)\nType     Name                                                                          # reqs      # fails |    Avg     Min     Max    Med |   req/s  failures/s\n--------|----------------------------------------------------------------------------|-------|-------------|-------|-------|-------|-------|--------|-----------\nGET      auth.bootstrap                                                                   373     0(0.00%) |   1174     315    4513    760 |    3.14        0.00\nPOST     auth.login                                                                       373     0(0.00%) |  15374    7725   21961  15000 |    3.14        0.00\n--------|----------------------------------------------------------------------------|-------|-------------|-------|-------|-------|-------|--------|-----------\n         Aggregated                                                                       746     0(0.00%) |   8274     315   21961   4500 |    6.28        0.00\n\nResponse time percentiles (approximated)\nType     Name                                                                                  50%    66%    75%    80%    90%    95%    98%    99%  99.9% 99.99%   100% # reqs\n--------|--------------------------------------------------------------------------------|--------|------|------|------|------|------|------|------|------|------|------|------\nGET      auth.bootstrap                                                                        760   1100   1400   1700   2800   3100   3900   4000   4500   4500   4500    373\nPOST     auth.login                                                                          15000  15000  17000  18000  20000  20000  21000  22000  22000  22000  22000    373\n--------|--------------------------------------------------------------------------------|--------|------|------|------|------|------|------|------|------|------|------|------\n         Aggregated                                                                           7700  14000  15000  15000  18000  20000  21000  21000  22000  22000  22000    746\n\n",
+      "stats_summary": {
+        "requests": 746,
+        "failures": 0,
+        "median_ms": 4500.0,
+        "avg_ms": 8274.47103605878,
+        "min_ms": 315.87399999261834,
+        "max_ms": 21961.19770000223,
+        "avg_size": 2626.0,
+        "rps": 6.281630439548656,
+        "failures_per_sec": 0.0,
+        "p50_ms": 7700.0,
+        "p95_ms": 20000.0,
+        "p99_ms": 21000.0,
+        "slowest_endpoint": {
+          "name": "auth.login",
+          "method": "POST",
+          "avg_ms": 15374.622353350698,
+          "p95_ms": 20000.0,
+          "p99_ms": 22000.0,
+          "rps": 3.140815219774328
+        },
+        "endpoint_metrics": {
+          "auth.login": {
+            "avg_ms": 15374.622353350698,
+            "p95_ms": 20000.0,
+            "rps": 3.140815219774328,
+            "failures": 0,
+            "requests": 373
+          },
+          "auth.select_context": {
+            "avg_ms": 0.0,
+            "p95_ms": 0.0,
+            "rps": 0.0,
+            "failures": 0,
+            "requests": 0
+          },
+          "auth.bootstrap": {
+            "avg_ms": 1174.3197187668743,
+            "p95_ms": 3100.0,
+            "rps": 3.140815219774328,
+            "failures": 0,
+            "requests": 373
+          },
+          "read.dashboard": {
+            "avg_ms": 0.0,
+            "p95_ms": 0.0,
+            "rps": 0.0,
+            "failures": 0,
+            "requests": 0
+          },
+          "read.summary": {
+            "avg_ms": 0.0,
+            "p95_ms": 0.0,
+            "rps": 0.0,
+            "failures": 0,
+            "requests": 0
+          }
+        }
+      },
+      "distribution": {
+        "p50_estimated_ms": 8185.177440260023,
+        "p95_estimated_ms": 8755.979437437261,
+        "p99_estimated_ms": 8802.636796495242,
+        "avg_rps_window": 5.5137931034482754,
+        "max_rps_window": 10.0,
+        "final_failure_count": 0.0
+      },
+      "profile_summary": {
+        "auth.login": {
+          "samples": 373,
+          "query_count_avg": 62.0,
+          "query_count_p95": 62.0,
+          "sql_time_ms_avg": 14442.412,
+          "sql_time_ms_p95": 19434.322,
+          "wall_time_ms_avg": 15190.397,
+          "wall_time_ms_p95": 20165.016,
+          "cache_hit_count": 0
+        },
+        "auth.bootstrap": {
+          "samples": 373,
+          "query_count_avg": 4.0,
+          "query_count_p95": 4.0,
+          "sql_time_ms_avg": 899.364,
+          "sql_time_ms_p95": 2728.148,
+          "wall_time_ms_avg": 693.24,
+          "wall_time_ms_p95": 2170.849,
+          "cache_hit_count": 0
+        }
+      },
+      "failures_rows": 1,
+      "error_rate": 0.0,
+      "metrics_samples": [
+        {
+          "ts": "2026-03-27T00:17:23.833890+00:00"
+        },
+        {
+          "ts": "2026-03-27T00:17:25.858343+00:00"
+        },
+        {
+          "ts": "2026-03-27T00:17:27.895701+00:00"
+        },
+        {
+          "ts": "2026-03-27T00:17:29.941297+00:00"
+        },
+        {
+          "ts": "2026-03-27T00:17:31.973466+00:00"
+        },
+        {
+          "ts": "2026-03-27T00:17:33.973957+00:00"
+        },
+        {
+          "ts": "2026-03-27T00:17:36.008554+00:00"
+        },
+        {
+          "ts": "2026-03-27T00:17:38.038644+00:00"
+        },
+        {
+          "ts": "2026-03-27T00:17:40.038532+00:00"
+        },
+        {
+          "ts": "2026-03-27T00:17:42.051587+00:00"
+        },
+        {
+          "ts": "2026-03-27T00:17:44.071864+00:00"
+        },
+        {
+          "ts": "2026-03-27T00:17:46.072296+00:00"
+        },
+        {
+          "ts": "2026-03-27T00:17:48.105339+00:00"
+        },
+        {
+          "ts": "2026-03-27T00:17:50.118820+00:00"
+        },
+        {
+          "ts": "2026-03-27T00:17:52.137739+00:00"
+        },
+        {
+          "ts": "2026-03-27T00:17:54.137498+00:00"
+        },
+        {
+          "ts": "2026-03-27T00:17:56.138935+00:00"
+        },
+        {
+          "ts": "2026-03-27T00:17:58.167553+00:00"
+        },
+        {
+          "ts": "2026-03-27T00:18:00.168877+00:00"
+        },
+        {
+          "ts": "2026-03-27T00:18:02.170318+00:00"
+        },
+        {
+          "ts": "2026-03-27T00:18:04.217197+00:00"
+        },
+        {
+          "ts": "2026-03-27T00:18:06.218735+00:00"
+        },
+        {
+          "ts": "2026-03-27T00:18:08.282795+00:00"
+        },
+        {
+          "ts": "2026-03-27T00:18:10.325501+00:00"
+        },
+        {
+          "ts": "2026-03-27T00:18:12.396174+00:00"
+        },
+        {
+          "ts": "2026-03-27T00:18:14.426607+00:00"
+        },
+        {
+          "ts": "2026-03-27T00:18:16.431630+00:00"
+        },
+        {
+          "ts": "2026-03-27T00:18:18.431886+00:00"
+        },
+        {
+          "ts": "2026-03-27T00:18:20.433339+00:00"
+        },
+        {
+          "ts": "2026-03-27T00:18:22.465605+00:00"
+        },
+        {
+          "ts": "2026-03-27T00:18:24.486166+00:00"
+        },
+        {
+          "ts": "2026-03-27T00:18:26.498718+00:00"
+        },
+        {
+          "ts": "2026-03-27T00:18:28.498998+00:00"
+        },
+        {
+          "ts": "2026-03-27T00:18:30.526776+00:00"
+        },
+        {
+          "ts": "2026-03-27T00:18:32.527215+00:00"
+        },
+        {
+          "ts": "2026-03-27T00:18:34.618101+00:00"
+        },
+        {
+          "ts": "2026-03-27T00:18:36.629813+00:00"
+        },
+        {
+          "ts": "2026-03-27T00:18:38.630878+00:00"
+        },
+        {
+          "ts": "2026-03-27T00:18:40.630631+00:00"
+        },
+        {
+          "ts": "2026-03-27T00:18:42.631317+00:00"
+        },
+        {
+          "ts": "2026-03-27T00:18:44.632174+00:00"
+        },
+        {
+          "ts": "2026-03-27T00:18:46.632207+00:00"
+        },
+        {
+          "ts": "2026-03-27T00:18:48.725840+00:00"
+        },
+        {
+          "ts": "2026-03-27T00:18:50.735715+00:00"
+        },
+        {
+          "ts": "2026-03-27T00:18:52.736791+00:00"
+        },
+        {
+          "ts": "2026-03-27T00:18:54.805316+00:00"
+        },
+        {
+          "ts": "2026-03-27T00:18:56.844598+00:00"
+        },
+        {
+          "ts": "2026-03-27T00:18:58.910724+00:00"
+        },
+        {
+          "ts": "2026-03-27T00:19:00.944978+00:00"
+        },
+        {
+          "ts": "2026-03-27T00:19:02.952654+00:00"
+        },
+        {
+          "ts": "2026-03-27T00:19:04.995450+00:00"
+        },
+        {
+          "ts": "2026-03-27T00:19:07.006949+00:00"
+        },
+        {
+          "ts": "2026-03-27T00:19:09.007594+00:00"
+        },
+        {
+          "ts": "2026-03-27T00:19:11.009040+00:00"
+        },
+        {
+          "ts": "2026-03-27T00:19:13.010135+00:00"
+        },
+        {
+          "ts": "2026-03-27T00:19:15.053569+00:00"
+        },
+        {
+          "ts": "2026-03-27T00:19:17.062895+00:00"
+        },
+        {
+          "ts": "2026-03-27T00:19:19.159040+00:00"
+        },
+        {
+          "ts": "2026-03-27T00:19:21.218284+00:00"
+        },
+        {
+          "ts": "2026-03-27T00:19:23.230946+00:00"
+        },
+        {
+          "ts": "2026-03-27T00:19:25.243137+00:00"
+        }
+      ],
+      "metrics_summary": {
+        "backend_cpu_peak_percent": 0.0,
+        "backend_rss_peak_mb": 0.0,
+        "backend_threads_peak": 0.0,
+        "db_total_connections_peak": 0.0,
+        "db_active_connections_peak": 0.0,
+        "db_waiting_connections_peak": 0.0,
+        "db_longest_active_seconds_peak": 0.0
+      },
+      "artifacts": {
+        "stats_csv": "load-tests\\results\\phase-auth-split-login\\scenario_login_u60_stats.csv",
+        "stats_history_csv": "load-tests\\results\\phase-auth-split-login\\scenario_login_u60_stats_history.csv",
+        "failures_csv": "load-tests\\results\\phase-auth-split-login\\scenario_login_u60_failures.csv",
+        "profile_summary_json": "load-tests\\results\\phase-auth-split-login\\scenario_login_u60_profile_summary.json",
+        "report_html": "load-tests\\results\\phase-auth-split-login\\scenario_login_u60.html"
+      },
+      "capacity_pass": false
+    },
+    {
+      "scenario": "LOGIN",
+      "users": 80,
+      "started_at": "2026-03-27T00:19:25.570329+00:00",
+      "finished_at": "2026-03-27T00:21:28.131284+00:00",
+      "command": [
+        "C:\\Users\\harae\\Desktop\\ui migration\\proyecto1\\.venv\\Scripts\\locust.exe",
+        "-f",
+        "C:\\Users\\harae\\Desktop\\ui migration\\proyecto1\\load-tests\\locustfile.py",
+        "--host",
+        "http://127.0.0.1:5000",
+        "--users",
+        "80",
+        "--spawn-rate",
+        "5.0",
+        "--run-time",
+        "2m",
+        "--csv",
+        "load-tests\\results\\phase-auth-split-login\\scenario_login_u80",
+        "--html",
+        "load-tests\\results\\phase-auth-split-login\\scenario_login_u80.html",
+        "--headless",
+        "--only-summary"
+      ],
+      "exit_code": 0,
+      "stdout_tail": "",
+      "stderr_tail": "[2026-03-26 19:19:28,609] DESKTOP-9DI2UJR/INFO/locust.main: Starting Locust 2.43.3\n[2026-03-26 19:19:28,613] DESKTOP-9DI2UJR/INFO/locust.main: Run time limit set to 120 seconds\n[2026-03-26 19:19:28,616] DESKTOP-9DI2UJR/INFO/locust.runners: Ramping to 80 users at a rate of 5.00 per second\n[2026-03-26 19:19:43,859] DESKTOP-9DI2UJR/INFO/locust.runners: All users spawned: {\"CuadernoUser\": 80} (80 total users)\n[2026-03-26 19:21:27,261] DESKTOP-9DI2UJR/INFO/locust.main: --run-time limit reached, shutting down\n[2026-03-26 19:21:27,680] DESKTOP-9DI2UJR/INFO/locust.main: writing html report to file: load-tests\\results\\phase-auth-split-login\\scenario_login_u80.html\n[2026-03-26 19:21:27,709] DESKTOP-9DI2UJR/INFO/locust.main: Shutting down (exit code 0)\nType     Name                                                                          # reqs      # fails |    Avg     Min     Max    Med |   req/s  failures/s\n--------|----------------------------------------------------------------------------|-------|-------------|-------|-------|-------|-------|--------|-----------\nGET      auth.bootstrap                                                                   369     0(0.00%) |   3795      59    9616   3600 |    3.17        0.00\nPOST     auth.login                                                                       369     0(0.00%) |  17645    1812   29598  17000 |    3.17        0.00\n--------|----------------------------------------------------------------------------|-------|-------------|-------|-------|-------|-------|--------|-----------\n         Aggregated                                                                       738     0(0.00%) |  10720      59   29598   8400 |    6.33        0.00\n\nResponse time percentiles (approximated)\nType     Name                                                                                  50%    66%    75%    80%    90%    95%    98%    99%  99.9% 99.99%   100% # reqs\n--------|--------------------------------------------------------------------------------|--------|------|------|------|------|------|------|------|------|------|------|------\nGET      auth.bootstrap                                                                       3600   4500   5200   5600   7000   8000   8400   8500   9600   9600   9600    369\nPOST     auth.login                                                                          17000  19000  20000  22000  25000  25000  27000  27000  30000  30000  30000    369\n--------|--------------------------------------------------------------------------------|--------|------|------|------|------|------|------|------|------|------|------|------\n         Aggregated                                                                           8400  15000  17000  18000  22000  25000  26000  27000  30000  30000  30000    738\n\n",
+      "stats_summary": {
+        "requests": 738,
+        "failures": 0,
+        "median_ms": 8400.0,
+        "avg_ms": 10720.308832384391,
+        "min_ms": 59.6666999917943,
+        "max_ms": 29598.679300004733,
+        "avg_size": 2626.0,
+        "rps": 6.33275529534476,
+        "failures_per_sec": 0.0,
+        "p50_ms": 8400.0,
+        "p95_ms": 25000.0,
+        "p99_ms": 27000.0,
+        "slowest_endpoint": {
+          "name": "auth.login",
+          "method": "POST",
+          "avg_ms": 17645.588337398058,
+          "p95_ms": 25000.0,
+          "p99_ms": 27000.0,
+          "rps": 3.16637764767238
+        },
+        "endpoint_metrics": {
+          "auth.login": {
+            "avg_ms": 17645.588337398058,
+            "p95_ms": 25000.0,
+            "rps": 3.16637764767238,
+            "failures": 0,
+            "requests": 369
+          },
+          "auth.select_context": {
+            "avg_ms": 0.0,
+            "p95_ms": 0.0,
+            "rps": 0.0,
+            "failures": 0,
+            "requests": 0
+          },
+          "auth.bootstrap": {
+            "avg_ms": 3795.029327370735,
+            "p95_ms": 8000.0,
+            "rps": 3.16637764767238,
+            "failures": 0,
+            "requests": 369
+          },
+          "read.dashboard": {
+            "avg_ms": 0.0,
+            "p95_ms": 0.0,
+            "rps": 0.0,
+            "failures": 0,
+            "requests": 0
+          },
+          "read.summary": {
+            "avg_ms": 0.0,
+            "p95_ms": 0.0,
+            "rps": 0.0,
+            "failures": 0,
+            "requests": 0
+          }
+        }
+      },
+      "distribution": {
+        "p50_estimated_ms": 10296.858443346238,
+        "p95_estimated_ms": 10720.308832384391,
+        "p99_estimated_ms": 10824.718270116196,
+        "avg_rps_window": 6.2083333879310345,
+        "max_rps_window": 12.4,
+        "final_failure_count": 0.0
+      },
+      "profile_summary": {
+        "auth.login": {
+          "samples": 378,
+          "query_count_avg": 62.0,
+          "query_count_p95": 62.0,
+          "sql_time_ms_avg": 13776.125,
+          "sql_time_ms_p95": 18190.478,
+          "wall_time_ms_avg": 17438.114,
+          "wall_time_ms_p95": 24981.029,
+          "cache_hit_count": 0
+        },
+        "auth.bootstrap": {
+          "samples": 369,
+          "query_count_avg": 4.0,
+          "query_count_p95": 4.0,
+          "sql_time_ms_avg": 1694.349,
+          "sql_time_ms_p95": 4993.49,
+          "wall_time_ms_avg": 1451.955,
+          "wall_time_ms_p95": 4510.089,
+          "cache_hit_count": 0
+        }
+      },
+      "failures_rows": 1,
+      "error_rate": 0.0,
+      "metrics_samples": [
+        {
+          "ts": "2026-03-27T00:19:25.636103+00:00"
+        },
+        {
+          "ts": "2026-03-27T00:19:27.637098+00:00"
+        },
+        {
+          "ts": "2026-03-27T00:19:29.646954+00:00"
+        },
+        {
+          "ts": "2026-03-27T00:19:31.667762+00:00"
+        },
+        {
+          "ts": "2026-03-27T00:19:33.685752+00:00"
+        },
+        {
+          "ts": "2026-03-27T00:19:35.707931+00:00"
+        },
+        {
+          "ts": "2026-03-27T00:19:37.731414+00:00"
+        },
+        {
+          "ts": "2026-03-27T00:19:39.731983+00:00"
+        },
+        {
+          "ts": "2026-03-27T00:19:41.787313+00:00"
+        },
+        {
+          "ts": "2026-03-27T00:19:43.787742+00:00"
+        },
+        {
+          "ts": "2026-03-27T00:19:45.788267+00:00"
+        },
+        {
+          "ts": "2026-03-27T00:19:47.788451+00:00"
+        },
+        {
+          "ts": "2026-03-27T00:19:49.793261+00:00"
+        },
+        {
+          "ts": "2026-03-27T00:19:51.795560+00:00"
+        },
+        {
+          "ts": "2026-03-27T00:19:53.796639+00:00"
+        },
+        {
+          "ts": "2026-03-27T00:19:55.808262+00:00"
+        },
+        {
+          "ts": "2026-03-27T00:19:57.836011+00:00"
+        },
+        {
+          "ts": "2026-03-27T00:19:59.857402+00:00"
+        },
+        {
+          "ts": "2026-03-27T00:20:01.860090+00:00"
+        },
+        {
+          "ts": "2026-03-27T00:20:03.860041+00:00"
+        },
+        {
+          "ts": "2026-03-27T00:20:05.875777+00:00"
+        },
+        {
+          "ts": "2026-03-27T00:20:07.907735+00:00"
+        },
+        {
+          "ts": "2026-03-27T00:20:09.910327+00:00"
+        },
+        {
+          "ts": "2026-03-27T00:20:11.915314+00:00"
+        },
+        {
+          "ts": "2026-03-27T00:20:13.942227+00:00"
+        },
+        {
+          "ts": "2026-03-27T00:20:15.999650+00:00"
+        },
+        {
+          "ts": "2026-03-27T00:20:18.005713+00:00"
+        },
+        {
+          "ts": "2026-03-27T00:20:20.050663+00:00"
+        },
+        {
+          "ts": "2026-03-27T00:20:22.062270+00:00"
+        },
+        {
+          "ts": "2026-03-27T00:20:24.067508+00:00"
+        },
+        {
+          "ts": "2026-03-27T00:20:26.066885+00:00"
+        },
+        {
+          "ts": "2026-03-27T00:20:28.098004+00:00"
+        },
+        {
+          "ts": "2026-03-27T00:20:30.112296+00:00"
+        },
+        {
+          "ts": "2026-03-27T00:20:32.127302+00:00"
+        },
+        {
+          "ts": "2026-03-27T00:20:34.141462+00:00"
+        },
+        {
+          "ts": "2026-03-27T00:20:36.141327+00:00"
+        },
+        {
+          "ts": "2026-03-27T00:20:38.142125+00:00"
+        },
+        {
+          "ts": "2026-03-27T00:20:40.142700+00:00"
+        },
+        {
+          "ts": "2026-03-27T00:20:42.147299+00:00"
+        },
+        {
+          "ts": "2026-03-27T00:20:44.172425+00:00"
+        },
+        {
+          "ts": "2026-03-27T00:20:46.245711+00:00"
+        },
+        {
+          "ts": "2026-03-27T00:20:48.282311+00:00"
+        },
+        {
+          "ts": "2026-03-27T00:20:50.303629+00:00"
+        },
+        {
+          "ts": "2026-03-27T00:20:52.348301+00:00"
+        },
+        {
+          "ts": "2026-03-27T00:20:54.348457+00:00"
+        },
+        {
+          "ts": "2026-03-27T00:20:56.441187+00:00"
+        },
+        {
+          "ts": "2026-03-27T00:20:58.504127+00:00"
+        },
+        {
+          "ts": "2026-03-27T00:21:00.507130+00:00"
+        },
+        {
+          "ts": "2026-03-27T00:21:02.507625+00:00"
+        },
+        {
+          "ts": "2026-03-27T00:21:04.545935+00:00"
+        },
+        {
+          "ts": "2026-03-27T00:21:06.554538+00:00"
+        },
+        {
+          "ts": "2026-03-27T00:21:08.556807+00:00"
+        },
+        {
+          "ts": "2026-03-27T00:21:10.641201+00:00"
+        },
+        {
+          "ts": "2026-03-27T00:21:12.652817+00:00"
+        },
+        {
+          "ts": "2026-03-27T00:21:14.654911+00:00"
+        },
+        {
+          "ts": "2026-03-27T00:21:16.665110+00:00"
+        },
+        {
+          "ts": "2026-03-27T00:21:18.666631+00:00"
+        },
+        {
+          "ts": "2026-03-27T00:21:20.747710+00:00"
+        },
+        {
+          "ts": "2026-03-27T00:21:22.751600+00:00"
+        },
+        {
+          "ts": "2026-03-27T00:21:24.761106+00:00"
+        },
+        {
+          "ts": "2026-03-27T00:21:26.761676+00:00"
+        }
+      ],
+      "metrics_summary": {
+        "backend_cpu_peak_percent": 0.0,
+        "backend_rss_peak_mb": 0.0,
+        "backend_threads_peak": 0.0,
+        "db_total_connections_peak": 0.0,
+        "db_active_connections_peak": 0.0,
+        "db_waiting_connections_peak": 0.0,
+        "db_longest_active_seconds_peak": 0.0
+      },
+      "artifacts": {
+        "stats_csv": "load-tests\\results\\phase-auth-split-login\\scenario_login_u80_stats.csv",
+        "stats_history_csv": "load-tests\\results\\phase-auth-split-login\\scenario_login_u80_stats_history.csv",
+        "failures_csv": "load-tests\\results\\phase-auth-split-login\\scenario_login_u80_failures.csv",
+        "profile_summary_json": "load-tests\\results\\phase-auth-split-login\\scenario_login_u80_profile_summary.json",
+        "report_html": "load-tests\\results\\phase-auth-split-login\\scenario_login_u80.html"
+      },
+      "capacity_pass": false
+    },
+    {
+      "scenario": "LOGIN",
+      "users": 100,
+      "started_at": "2026-03-27T00:21:28.135166+00:00",
+      "finished_at": "2026-03-27T00:23:30.113523+00:00",
+      "command": [
+        "C:\\Users\\harae\\Desktop\\ui migration\\proyecto1\\.venv\\Scripts\\locust.exe",
+        "-f",
+        "C:\\Users\\harae\\Desktop\\ui migration\\proyecto1\\load-tests\\locustfile.py",
+        "--host",
+        "http://127.0.0.1:5000",
+        "--users",
+        "100",
+        "--spawn-rate",
+        "5.0",
+        "--run-time",
+        "2m",
+        "--csv",
+        "load-tests\\results\\phase-auth-split-login\\scenario_login_u100",
+        "--html",
+        "load-tests\\results\\phase-auth-split-login\\scenario_login_u100.html",
+        "--headless",
+        "--only-summary"
+      ],
+      "exit_code": 0,
+      "stdout_tail": "",
+      "stderr_tail": "[2026-03-26 19:21:30,527] DESKTOP-9DI2UJR/INFO/locust.main: Starting Locust 2.43.3\n[2026-03-26 19:21:30,532] DESKTOP-9DI2UJR/INFO/locust.main: Run time limit set to 120 seconds\n[2026-03-26 19:21:30,535] DESKTOP-9DI2UJR/INFO/locust.runners: Ramping to 100 users at a rate of 5.00 per second\n[2026-03-26 19:21:50,192] DESKTOP-9DI2UJR/INFO/locust.runners: All users spawned: {\"CuadernoUser\": 100} (100 total users)\n[2026-03-26 19:23:29,335] DESKTOP-9DI2UJR/INFO/locust.main: --run-time limit reached, shutting down\n[2026-03-26 19:23:29,841] DESKTOP-9DI2UJR/INFO/locust.main: writing html report to file: load-tests\\results\\phase-auth-split-login\\scenario_login_u100.html\n[2026-03-26 19:23:29,849] DESKTOP-9DI2UJR/INFO/locust.main: Shutting down (exit code 0)\nType     Name                                                                          # reqs      # fails |    Avg     Min     Max    Med |   req/s  failures/s\n--------|----------------------------------------------------------------------------|-------|-------------|-------|-------|-------|-------|--------|-----------\nGET      auth.bootstrap                                                                   357     0(0.00%) |   6328    2601   14659   6100 |    3.03        0.00\nPOST     auth.login                                                                       357     0(0.00%) |  19396   13625   25634  19000 |    3.03        0.00\n--------|----------------------------------------------------------------------------|-------|-------------|-------|-------|-------|-------|--------|-----------\n         Aggregated                                                                       714     0(0.00%) |  12862    2601   25634  14000 |    6.05        0.00\n\nResponse time percentiles (approximated)\nType     Name                                                                                  50%    66%    75%    80%    90%    95%    98%    99%  99.9% 99.99%   100% # reqs\n--------|--------------------------------------------------------------------------------|--------|------|------|------|------|------|------|------|------|------|------|------\nGET      auth.bootstrap                                                                       6100   6600   7600   8300   8900   9400  11000  11000  15000  15000  15000    357\nPOST     auth.login                                                                          19000  21000  21000  22000  22000  23000  24000  25000  26000  26000  26000    357\n--------|--------------------------------------------------------------------------------|--------|------|------|------|------|------|------|------|------|------|------|------\n         Aggregated                                                                          15000  18000  19000  20000  22000  22000  24000  24000  26000  26000  26000    714\n\n",
+      "stats_summary": {
+        "requests": 714,
+        "failures": 0,
+        "median_ms": 14000.0,
+        "avg_ms": 12862.346733053262,
+        "min_ms": 2601.307800010545,
+        "max_ms": 25634.165300012683,
+        "avg_size": 2626.0,
+        "rps": 6.051543083007211,
+        "failures_per_sec": 0.0,
+        "p50_ms": 15000.0,
+        "p95_ms": 22000.0,
+        "p99_ms": 24000.0,
+        "slowest_endpoint": {
+          "name": "auth.login",
+          "method": "POST",
+          "avg_ms": 19396.451324369908,
+          "p95_ms": 23000.0,
+          "p99_ms": 25000.0,
+          "rps": 3.0257715415036057
+        },
+        "endpoint_metrics": {
+          "auth.login": {
+            "avg_ms": 19396.451324369908,
+            "p95_ms": 23000.0,
+            "rps": 3.0257715415036057,
+            "failures": 0,
+            "requests": 357
+          },
+          "auth.select_context": {
+            "avg_ms": 0.0,
+            "p95_ms": 0.0,
+            "rps": 0.0,
+            "failures": 0,
+            "requests": 0
+          },
+          "auth.bootstrap": {
+            "avg_ms": 6328.2421417365995,
+            "p95_ms": 9400.0,
+            "rps": 3.0257715415036057,
+            "failures": 0,
+            "requests": 357
+          },
+          "read.dashboard": {
+            "avg_ms": 0.0,
+            "p95_ms": 0.0,
+            "rps": 0.0,
+            "failures": 0,
+            "requests": 0
+          },
+          "read.summary": {
+            "avg_ms": 0.0,
+            "p95_ms": 0.0,
+            "rps": 0.0,
+            "failures": 0,
+            "requests": 0
+          }
+        }
+      },
+      "distribution": {
+        "p50_estimated_ms": 12865.005878985508,
+        "p95_estimated_ms": 13511.09266556299,
+        "p99_estimated_ms": 13511.09266556299,
+        "avg_rps_window": 4.725862068965517,
+        "max_rps_window": 11.2,
+        "final_failure_count": 0.0
+      },
+      "profile_summary": {
+        "auth.login": {
+          "samples": 394,
+          "query_count_avg": 62.0,
+          "query_count_p95": 62.0,
+          "sql_time_ms_avg": 13835.483,
+          "sql_time_ms_p95": 16331.348,
+          "wall_time_ms_avg": 19215.102,
+          "wall_time_ms_p95": 22620.232,
+          "cache_hit_count": 0
+        },
+        "auth.bootstrap": {
+          "samples": 357,
+          "query_count_avg": 4.0,
+          "query_count_p95": 4.0,
+          "sql_time_ms_avg": 823.001,
+          "sql_time_ms_p95": 1784.513,
+          "wall_time_ms_avg": 591.715,
+          "wall_time_ms_p95": 1566.855,
+          "cache_hit_count": 0
+        }
+      },
+      "failures_rows": 1,
+      "error_rate": 0.0,
+      "metrics_samples": [
+        {
+          "ts": "2026-03-27T00:21:28.171421+00:00"
+        },
+        {
+          "ts": "2026-03-27T00:21:30.181604+00:00"
+        },
+        {
+          "ts": "2026-03-27T00:21:32.181982+00:00"
+        },
+        {
+          "ts": "2026-03-27T00:21:34.181739+00:00"
+        },
+        {
+          "ts": "2026-03-27T00:21:36.250035+00:00"
+        },
+        {
+          "ts": "2026-03-27T00:21:38.263526+00:00"
+        },
+        {
+          "ts": "2026-03-27T00:21:40.321731+00:00"
+        },
+        {
+          "ts": "2026-03-27T00:21:42.322180+00:00"
+        },
+        {
+          "ts": "2026-03-27T00:21:44.324361+00:00"
+        },
+        {
+          "ts": "2026-03-27T00:21:46.324442+00:00"
+        },
+        {
+          "ts": "2026-03-27T00:21:48.325133+00:00"
+        },
+        {
+          "ts": "2026-03-27T00:21:50.325236+00:00"
+        },
+        {
+          "ts": "2026-03-27T00:21:52.359237+00:00"
+        },
+        {
+          "ts": "2026-03-27T00:21:54.383492+00:00"
+        },
+        {
+          "ts": "2026-03-27T00:21:56.401218+00:00"
+        },
+        {
+          "ts": "2026-03-27T00:21:58.402420+00:00"
+        },
+        {
+          "ts": "2026-03-27T00:22:00.408188+00:00"
+        },
+        {
+          "ts": "2026-03-27T00:22:02.409561+00:00"
+        },
+        {
+          "ts": "2026-03-27T00:22:04.420935+00:00"
+        },
+        {
+          "ts": "2026-03-27T00:22:06.420944+00:00"
+        },
+        {
+          "ts": "2026-03-27T00:22:08.500739+00:00"
+        },
+        {
+          "ts": "2026-03-27T00:22:10.506419+00:00"
+        },
+        {
+          "ts": "2026-03-27T00:22:12.514966+00:00"
+        },
+        {
+          "ts": "2026-03-27T00:22:14.515559+00:00"
+        },
+        {
+          "ts": "2026-03-27T00:22:16.539543+00:00"
+        },
+        {
+          "ts": "2026-03-27T00:22:18.558963+00:00"
+        },
+        {
+          "ts": "2026-03-27T00:22:20.560558+00:00"
+        },
+        {
+          "ts": "2026-03-27T00:22:22.653756+00:00"
+        },
+        {
+          "ts": "2026-03-27T00:22:24.655402+00:00"
+        },
+        {
+          "ts": "2026-03-27T00:22:26.666336+00:00"
+        },
+        {
+          "ts": "2026-03-27T00:22:28.667281+00:00"
+        },
+        {
+          "ts": "2026-03-27T00:22:30.682946+00:00"
+        },
+        {
+          "ts": "2026-03-27T00:22:32.740411+00:00"
+        },
+        {
+          "ts": "2026-03-27T00:22:34.742989+00:00"
+        },
+        {
+          "ts": "2026-03-27T00:22:36.743194+00:00"
+        },
+        {
+          "ts": "2026-03-27T00:22:38.746569+00:00"
+        },
+        {
+          "ts": "2026-03-27T00:22:40.748036+00:00"
+        },
+        {
+          "ts": "2026-03-27T00:22:42.760593+00:00"
+        },
+        {
+          "ts": "2026-03-27T00:22:44.783847+00:00"
+        },
+        {
+          "ts": "2026-03-27T00:22:46.792063+00:00"
+        },
+        {
+          "ts": "2026-03-27T00:22:48.793603+00:00"
+        },
+        {
+          "ts": "2026-03-27T00:22:50.793506+00:00"
+        },
+        {
+          "ts": "2026-03-27T00:22:52.794583+00:00"
+        },
+        {
+          "ts": "2026-03-27T00:22:54.817493+00:00"
+        },
+        {
+          "ts": "2026-03-27T00:22:56.821075+00:00"
+        },
+        {
+          "ts": "2026-03-27T00:22:58.821132+00:00"
+        },
+        {
+          "ts": "2026-03-27T00:23:00.827652+00:00"
+        },
+        {
+          "ts": "2026-03-27T00:23:02.828365+00:00"
+        },
+        {
+          "ts": "2026-03-27T00:23:04.851372+00:00"
+        },
+        {
+          "ts": "2026-03-27T00:23:06.882121+00:00"
+        },
+        {
+          "ts": "2026-03-27T00:23:08.883949+00:00"
+        },
+        {
+          "ts": "2026-03-27T00:23:10.884543+00:00"
+        },
+        {
+          "ts": "2026-03-27T00:23:12.890159+00:00"
+        },
+        {
+          "ts": "2026-03-27T00:23:14.948407+00:00"
+        },
+        {
+          "ts": "2026-03-27T00:23:16.958708+00:00"
+        },
+        {
+          "ts": "2026-03-27T00:23:18.992820+00:00"
+        },
+        {
+          "ts": "2026-03-27T00:23:21.001595+00:00"
+        },
+        {
+          "ts": "2026-03-27T00:23:23.005167+00:00"
+        },
+        {
+          "ts": "2026-03-27T00:23:25.005264+00:00"
+        },
+        {
+          "ts": "2026-03-27T00:23:27.028034+00:00"
+        },
+        {
+          "ts": "2026-03-27T00:23:29.119747+00:00"
+        }
+      ],
+      "metrics_summary": {
+        "backend_cpu_peak_percent": 0.0,
+        "backend_rss_peak_mb": 0.0,
+        "backend_threads_peak": 0.0,
+        "db_total_connections_peak": 0.0,
+        "db_active_connections_peak": 0.0,
+        "db_waiting_connections_peak": 0.0,
+        "db_longest_active_seconds_peak": 0.0
+      },
+      "artifacts": {
+        "stats_csv": "load-tests\\results\\phase-auth-split-login\\scenario_login_u100_stats.csv",
+        "stats_history_csv": "load-tests\\results\\phase-auth-split-login\\scenario_login_u100_stats_history.csv",
+        "failures_csv": "load-tests\\results\\phase-auth-split-login\\scenario_login_u100_failures.csv",
+        "profile_summary_json": "load-tests\\results\\phase-auth-split-login\\scenario_login_u100_profile_summary.json",
+        "report_html": "load-tests\\results\\phase-auth-split-login\\scenario_login_u100.html"
+      },
+      "capacity_pass": false
+    }
+  ]
+}

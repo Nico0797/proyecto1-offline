@@ -9,7 +9,7 @@ interface InsightsPanelProps {
 export const InsightsPanel: React.FC<InsightsPanelProps> = ({ insights }) => {
   if (!insights || insights.length === 0) {
     return (
-      <div className="bg-white dark:bg-gray-800 rounded-xl p-6 text-center border border-gray-200 dark:border-gray-700 h-full flex flex-col justify-center items-center">
+      <div className="app-surface flex h-full flex-col items-center justify-center rounded-xl p-6 text-center">
         <div className="w-12 h-12 bg-green-100 dark:bg-green-900/20 text-green-600 dark:text-green-400 rounded-full flex items-center justify-center mb-3">
           <Info className="w-6 h-6" />
         </div>
@@ -62,8 +62,8 @@ export const InsightsPanel: React.FC<InsightsPanelProps> = ({ insights }) => {
         metric: 'text-blue-600 dark:text-blue-400'
       };
       default: return {
-        bg: 'bg-gray-50 dark:bg-gray-800',
-        border: 'border-gray-100 dark:border-gray-700',
+        bg: 'bg-gray-50 dark:bg-gray-900/40',
+        border: 'border-gray-200 dark:border-gray-700',
         iconBg: 'bg-gray-500',
         text: 'text-gray-900 dark:text-gray-100',
         metric: 'text-gray-600 dark:text-gray-400'
@@ -101,7 +101,7 @@ export const InsightsPanel: React.FC<InsightsPanelProps> = ({ insights }) => {
                                     {insight.title}
                                 </h4>
                                 {insight.metric && (
-                                    <span className={`text-sm font-bold ${styles.metric} bg-white/50 dark:bg-black/20 px-2 py-0.5 rounded whitespace-nowrap`}>
+                                    <span className={`text-sm font-bold ${styles.metric} rounded border border-current/10 bg-white/50 px-2 py-0.5 whitespace-nowrap dark:bg-black/20`}>
                                         {insight.metric}
                                     </span>
                                 )}

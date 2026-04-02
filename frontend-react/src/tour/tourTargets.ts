@@ -57,6 +57,8 @@ export const TOUR_TARGETS = {
   payments: {
     panel: 'payments.panel',
     filters: 'payments.filters',
+    search: 'payments.search',
+    kpis: 'payments.kpis',
     table: 'payments.table',
     primaryAction: {
         desktop: 'payments.primaryAction.desktop',
@@ -162,6 +164,27 @@ export const TOUR_TARGETS = {
     sales: 'reports.sales',
     inventory: 'reports.inventory',
   },
+  invoices: {
+    panel: 'invoices.panel',
+    filters: 'invoices.filters',
+    summary: 'invoices.summary',
+    table: 'invoices.table',
+    primaryAction: 'invoices.primaryAction',
+    settings: 'invoices.settings',
+    receivables: 'invoices.receivables',
+    sync: 'invoices.sync',
+  },
+  invoiceReceivables: {
+    panel: 'invoice-receivables.panel',
+    filters: 'invoice-receivables.filters',
+    summary: 'invoice-receivables.summary',
+    table: 'invoice-receivables.table',
+  },
+  invoiceSync: {
+    panel: 'invoice-sync.panel',
+    summary: 'invoice-sync.summary',
+    table: 'invoice-sync.table',
+  },
   alerts: {
     panel: 'alerts.panel',
     list: 'alerts.list',
@@ -174,8 +197,26 @@ export const TOUR_TARGETS = {
     panel: 'settings.panel',
     profile: 'settings.profile',
     business: 'settings.business',
+    personalization: 'settings.personalization',
+    team: 'settings.team',
+    roles: 'settings.roles',
+    templates: 'settings.templates',
+    membership: 'settings.membership',
+    personalizationPanel: 'settings.personalization.panel',
+    personalizationBase: 'settings.personalization.base',
+    personalizationModules: 'settings.personalization.modules',
+    personalizationMenu: 'settings.personalization.menu',
+    personalizationPreview: 'settings.personalization.preview',
     whatsapp: 'settings.whatsapp',
     billing: 'settings.billing',
+  },
+  rawInventory: {
+    panel: 'raw-inventory.panel',
+    primaryAction: 'raw-inventory.primaryAction',
+    filters: 'raw-inventory.filters',
+    list: 'raw-inventory.list',
+    detail: 'raw-inventory.detail',
+    movement: 'raw-inventory.movement',
   },
 };
 

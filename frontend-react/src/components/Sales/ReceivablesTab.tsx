@@ -12,20 +12,7 @@ interface ReceivablesTabProps {
 export const ReceivablesTab: React.FC<ReceivablesTabProps> = ({ sales, onView }) => {
   const receivables = sales.filter(s => !s.paid && (s.balance || 0) > 0);
   
-  const [filter, setFilter] = useState<'all' | 'overdue' | 'upcoming'>('all');
-
-  const filteredReceivables = receivables.filter(sale => {
-    // Basic logic for overdue - in real app would compare due date
-    // Assuming if not paid and older than 30 days is overdue for this example
-    const saleDate = new Date(sale.sale_date);
-    const diffTime = Math.abs(new Date().getTime() - saleDate.getTime());
-    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)); 
-    const isOverdue = diffDays > 30; // Example logic
-
-    if (filter === 'overdue') return isOverdue;
-    if (filter === 'upcoming') return !isOverdue;
-    return true;
-  });
+  const [filter, setFilter] = useState<'all'>('all');
 
   // Helper for timezone-safe date formatting
   const formatDate = (dateString: string) => {
@@ -37,7 +24,7 @@ export const ReceivablesTab: React.FC<ReceivablesTabProps> = ({ sales, onView })
 
   if (receivables.length === 0) {
     return (
-      <div className="flex flex-col items-center justify-center p-12 text-center bg-white dark:bg-gray-800 rounded-xl border border-dashed border-gray-300 dark:border-gray-700">
+      <div className="app-empty-state flex flex-col items-center justify-center p-12 text-center">
         <div className="w-16 h-16 bg-green-100 dark:bg-green-900 rounded-full flex items-center justify-center mb-4">
           <Check className="w-8 h-8 text-green-600 dark:text-green-400" />
         </div>
@@ -57,12 +44,11 @@ export const ReceivablesTab: React.FC<ReceivablesTabProps> = ({ sales, onView })
           >
             Todas ({receivables.length})
           </Button>
-          {/* Add more filter logic if needed */}
        </div>
 
        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {filteredReceivables.map(sale => (
-             <div key={sale.id} className="bg-white dark:bg-gray-800 p-4 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-md transition-shadow">
+          {receivables.map(sale => (
+             <div key={sale.id} className="app-surface p-4 rounded-xl transition-shadow hover:shadow-md">
                 <div className="flex justify-between items-start mb-3">
                    <div>
                       <h4 className="font-bold text-gray-900 dark:text-white text-lg">

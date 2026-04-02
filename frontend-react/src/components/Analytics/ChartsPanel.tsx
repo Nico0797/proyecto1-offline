@@ -119,7 +119,7 @@ export const ChartsPanel: React.FC<ChartsPanelProps> = ({ salesTrend, expensesBy
   return (
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
       {/* Gráfico Principal: Tendencia de Ingresos */}
-      <div className="bg-white dark:bg-gray-800 p-6 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm col-span-1 lg:col-span-2">
+      <div className="app-surface col-span-1 rounded-xl p-6 shadow-sm lg:col-span-2">
         <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Tendencia de Ingresos</h3>
         <div className="h-80 w-full">
           <Line options={commonOptions} data={lineChartData} />
@@ -127,7 +127,7 @@ export const ChartsPanel: React.FC<ChartsPanelProps> = ({ salesTrend, expensesBy
       </div>
 
       {/* Gráfico Secundario: Gastos por Categoría */}
-      <div className="bg-white dark:bg-gray-800 p-6 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm">
+      <div className="app-surface rounded-xl p-6 shadow-sm">
         <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Distribución de Gastos</h3>
         <div className="h-64 w-full flex justify-center">
           <Doughnut 
@@ -143,7 +143,7 @@ export const ChartsPanel: React.FC<ChartsPanelProps> = ({ salesTrend, expensesBy
       </div>
 
       {/* Gráfico Terciario: Top Productos */}
-      <div className="bg-white dark:bg-gray-800 p-6 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm">
+      <div className="app-surface rounded-xl p-6 shadow-sm">
         <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Productos Más Vendidos</h3>
         <div className="h-64 w-full">
           <Bar options={commonOptions} data={barChartData} />

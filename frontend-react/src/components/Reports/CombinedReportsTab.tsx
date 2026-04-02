@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import { 
-  FileText, 
   Download, 
   Users, 
   ShoppingBag, 
@@ -8,15 +7,12 @@ import {
   DollarSign, 
   AlertCircle, 
   Calendar,
-  Package,
   Activity,
-  CreditCard,
-  PieChart
 } from 'lucide-react';
 import { Button } from '../ui/Button';
 import { Card } from '../ui/Card';
 import { analyticsService } from '../../services/analyticsService';
-import { downloadFile, generateFilename } from '../../utils/downloadHelper';
+import { generateFilename, saveBlobFile } from '../../utils/downloadHelper';
 import { useBusinessStore } from '../../store/businessStore';
 import { toast } from 'react-hot-toast';
 
@@ -50,9 +46,30 @@ const REPORT_TYPES = [
   {
     id: 'finance_full',
     title: 'Reporte Financiero',
-    description: 'Balance general, desglose detallado de gastos por categoría y flujo de caja simple.',
+    description: 'Separa caja real, gasto operativo ejecutado, pagos operativos, deuda financiera y pendientes sin mezclar pagado con por pagar.',
     icon: DollarSign,
     color: 'text-emerald-600 bg-emerald-100 dark:bg-emerald-900/30 dark:text-emerald-400',
+  },
+  {
+    id: 'profit_full',
+    title: 'Rentabilidad Real',
+    description: 'Análisis de márgenes por producto y categoría. Crucial para definir precios y descuentos.',
+    icon: TrendingUp,
+    color: 'text-pink-600 bg-pink-100 dark:bg-pink-900/30 dark:text-pink-400',
+  },
+  {
+    id: 'aged_receivables',
+    title: 'Cartera por Edades',
+    description: 'Clasificación de deuda por vencimiento (0-30, 30-60, +90 días). Prioriza tu gestión de cobro.',
+    icon: AlertCircle,
+    color: 'text-red-600 bg-red-100 dark:bg-red-900/30 dark:text-red-400',
+  },
+  {
+    id: 'cashflow_full',
+    title: 'Flujo de Caja Detallado',
+    description: 'Entradas y salidas reales día a día, separando gasto operativo, pagos a proveedores, obligaciones operativas y deuda financiera.',
+    icon: Calendar,
+    color: 'text-cyan-600 bg-cyan-100 dark:bg-cyan-900/30 dark:text-cyan-400',
   }
 ];
 
@@ -65,18 +82,14 @@ export const CombinedReportsTab: React.FC<CombinedReportsTabProps> = ({ dateRang
     
     setDownloading(reportId);
     try {
-      // 1. Get URL from backend
-      const url = await analyticsService.getExportUrl(activeBusiness.id, 'combined', {
+      const blob = await analyticsService.downloadExportReport(activeBusiness.id, 'combined', {
         type: reportId,
         startDate: dateRange.start,
         endDate: dateRange.end
       });
 
-      // 2. Download file using helper
       const filename = generateFilename(title.toLowerCase().replace(/ /g, '_'), dateRange.start, dateRange.end);
-      const token = localStorage.getItem('token') || undefined;
-      
-      await downloadFile(url, { filename }, token);
+      await saveBlobFile(blob, { filename });
 
     } catch (error) {
       console.error('Error downloading report:', error);

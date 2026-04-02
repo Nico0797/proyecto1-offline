@@ -1,14 +1,20 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { createPortal } from 'react-dom';
-import { Calendar, ChevronDown } from 'lucide-react';
-import { DateRange, PeriodPreset, getPeriodRange, savePeriodPreference, getPeriodPreference } from '../../utils/dateRange.utils';
-import { Button } from './Button';
+import React, { useEffect, useMemo, useState } from 'react';
+import { format } from 'date-fns';
+import { es } from 'date-fns/locale';
+import {
+  DateRange,
+  PeriodPreset,
+  getPeriodPreference,
+  getPeriodRange,
+  savePeriodPreference,
+  shiftPeriodRange,
+} from '../../utils/dateRange.utils';
 import { Input } from './Input';
-import { cn } from '../../utils/cn';
+import { PeriodRibbon, type PeriodRibbonOption } from './PeriodRibbon';
 
 interface PeriodFilterProps {
-  moduleId: string; // Key for localStorage persistence
-  value?: DateRange; // Controlled component if needed, otherwise uses internal state + persistence
+  moduleId: string;
+  value?: DateRange;
   onChange: (range: DateRange) => void;
   className?: string;
   buttonClassName?: string;
@@ -16,222 +22,162 @@ interface PeriodFilterProps {
   mode?: 'full' | 'customOnly';
 }
 
-export const PeriodFilter: React.FC<PeriodFilterProps> = ({ 
-  moduleId, 
-  value, 
+const PERIOD_OPTIONS: Array<PeriodRibbonOption<PeriodPreset>> = [
+  { id: 'today', label: 'Dia' },
+  { id: 'week', label: 'Semana' },
+  { id: 'biweekly', label: 'Quincenal' },
+  { id: 'month', label: 'Mensual' },
+  { id: 'year', label: 'Anual' },
+  { id: 'custom', label: 'Personalizado' },
+];
+
+const buildLegacyFallback = (range: DateRange): DateRange => {
+  if (range.preset === '7d') return { ...getPeriodRange('week'), preset: 'week' };
+  if (range.preset === '15d') return { ...getPeriodRange('biweekly'), preset: 'biweekly' };
+  if (range.preset === '30d') return { ...getPeriodRange('month'), preset: 'month' };
+  return range;
+};
+
+export const PeriodFilter: React.FC<PeriodFilterProps> = ({
+  moduleId,
+  value,
   onChange,
   className = '',
-  buttonClassName = '',
-  iconOnly = false,
-  mode = 'full'
+  mode = 'full',
 }) => {
-  const [isOpen, setIsOpen] = useState(false);
-  const [menuPos, setMenuPos] = useState<{top:number; left:number; width:number}>({ top: 0, left: 0, width: 256 });
-  const [internalRange, setInternalRange] = useState<DateRange>(() => getPeriodPreference(moduleId));
-  const containerRef = useRef<HTMLDivElement>(null);
-  const menuRef = useRef<HTMLDivElement>(null);
+  const [internalRange, setInternalRange] = useState<DateRange>(() => buildLegacyFallback(getPeriodPreference(moduleId)));
+  const [isCustomRangeOpen, setIsCustomRangeOpen] = useState(false);
 
-  // Sync with prop if provided
   useEffect(() => {
     if (value) {
-      setInternalRange(value);
+      const normalizedRange = buildLegacyFallback(value);
+      setInternalRange(normalizedRange);
+      if (
+        normalizedRange.preset !== value.preset ||
+        normalizedRange.start !== value.start ||
+        normalizedRange.end !== value.end
+      ) {
+        onChange(normalizedRange);
+      }
     }
   }, [value]);
 
-  // Initial load effect to notify parent of default value if not controlled
   useEffect(() => {
     if (!value) {
       onChange(internalRange);
     }
   }, []);
 
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      const t = event.target as Node;
-      if (
-        containerRef.current &&
-        !containerRef.current.contains(t) &&
-        (!menuRef.current || !menuRef.current.contains(t))
-      ) {
-        setIsOpen(false);
-      }
-    };
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, []);
-
-  // Positioning for portal menu
-  const updateMenuPos = () => {
-    const el = containerRef.current;
-    if (!el) return;
-    const rect = el.getBoundingClientRect();
-    const top = rect.bottom + 8; // below button
-    const left = Math.min(
-      Math.max(8, rect.left),
-      Math.max(0, (window.innerWidth || document.documentElement.clientWidth) - 272 - 8)
-    );
-    setMenuPos({ top, left, width: 256 });
+  const applyRange = (nextRange: DateRange, shouldPersist = true) => {
+    setInternalRange(nextRange);
+    if (shouldPersist) {
+      savePeriodPreference(
+        moduleId,
+        nextRange.preset,
+        nextRange.preset === 'custom'
+          ? { start: nextRange.start, end: nextRange.end }
+          : undefined,
+      );
+    }
+    onChange(nextRange);
   };
-
-  useEffect(() => {
-    if (!isOpen) return;
-    updateMenuPos();
-    const onResize = () => updateMenuPos();
-    window.addEventListener('resize', onResize);
-    window.addEventListener('scroll', onResize, true);
-    return () => {
-      window.removeEventListener('resize', onResize);
-      window.removeEventListener('scroll', onResize, true);
-    };
-  }, [isOpen]);
 
   const handlePresetChange = (preset: PeriodPreset) => {
     if (preset === 'custom') {
-      const newRange = { ...internalRange, preset: 'custom' as PeriodPreset };
-      setInternalRange(newRange);
-      // Don't close dropdown yet, let user pick dates
-    } else {
-      const { start, end } = getPeriodRange(preset);
-      const newRange = { start, end, preset };
-      setInternalRange(newRange);
-      savePeriodPreference(moduleId, preset);
-      onChange(newRange);
-      setIsOpen(false);
-    }
-  };
-
-  const handleCustomDateChange = (field: 'start' | 'end', val: string) => {
-    const newRange = { ...internalRange, [field]: val, preset: 'custom' as PeriodPreset };
-    setInternalRange(newRange);
-  };
-
-  const applyCustomRange = () => {
-    // Validate
-    if (new Date(internalRange.start) > new Date(internalRange.end)) {
-      alert('La fecha de inicio no puede ser mayor a la fecha fin');
+      const nextRange = { ...internalRange, preset: 'custom' as PeriodPreset };
+      setInternalRange(nextRange);
+      setIsCustomRangeOpen(true);
       return;
     }
-    savePeriodPreference(moduleId, 'custom', { start: internalRange.start, end: internalRange.end });
-    onChange(internalRange);
-    setIsOpen(false);
+
+    const periodRange = getPeriodRange(preset);
+    applyRange({ ...periodRange, preset });
+    setIsCustomRangeOpen(false);
   };
 
-  const getLabel = () => {
-    switch (internalRange.preset) {
-      case 'today': return 'Hoy';
-      case '7d': return 'Últimos 7 días';
-      case '15d': return 'Últimos 15 días';
-      case '30d': return 'Últimos 30 días';
-      case 'month': return 'Este Mes';
-      case 'year': return 'Este Año';
-      case 'custom': return `${internalRange.start} - ${internalRange.end}`;
-      default: return 'Periodo';
-    }
+  const handleShift = (direction: 'prev' | 'next') => {
+    if (internalRange.preset === 'custom') return;
+    const shifted = shiftPeriodRange(
+      internalRange.preset,
+      { start: internalRange.start, end: internalRange.end },
+      direction,
+    );
+    applyRange({ ...shifted, preset: internalRange.preset });
   };
+
+  const formatVisibleRange = useMemo(() => {
+    const start = new Date(`${internalRange.start}T12:00:00`);
+    const end = new Date(`${internalRange.end}T12:00:00`);
+
+    switch (internalRange.preset) {
+      case 'today':
+        return format(start, "d 'de' MMMM yyyy", { locale: es });
+      case 'week':
+        return `${format(start, "d MMM", { locale: es })} - ${format(end, "d MMM yyyy", { locale: es })}`;
+      case 'biweekly':
+        return `${format(start, "d MMM", { locale: es })} - ${format(end, "d MMM yyyy", { locale: es })}`;
+      case 'month':
+        return format(start, 'MMMM yyyy', { locale: es });
+      case 'year':
+        return format(start, 'yyyy', { locale: es });
+      case 'custom':
+        return `${format(start, 'dd/MM/yyyy')} - ${format(end, 'dd/MM/yyyy')}`;
+      default:
+        return `${format(start, 'dd/MM/yyyy')} - ${format(end, 'dd/MM/yyyy')}`;
+    }
+  }, [internalRange.end, internalRange.preset, internalRange.start]);
+
+  const customRangeContent = (
+    <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+      <Input
+        label="Desde"
+        type="date"
+        value={internalRange.start}
+        onChange={(event) => {
+          const nextRange = { ...internalRange, start: event.target.value, preset: 'custom' as PeriodPreset };
+          setInternalRange(nextRange);
+          applyRange(nextRange, false);
+        }}
+      />
+      <Input
+        label="Hasta"
+        type="date"
+        value={internalRange.end}
+        onChange={(event) => {
+          const nextRange = { ...internalRange, end: event.target.value, preset: 'custom' as PeriodPreset };
+          setInternalRange(nextRange);
+          applyRange(nextRange, false);
+        }}
+      />
+    </div>
+  );
+
+  const resolvedOptions = mode === 'customOnly'
+    ? PERIOD_OPTIONS.filter((option) => option.id === 'custom')
+    : PERIOD_OPTIONS;
 
   return (
-    <div className={`relative ${className}`} ref={containerRef}>
-      <Button 
-        variant="secondary" 
-        onClick={() => { 
-          if (!isOpen && mode === 'customOnly') {
-            setInternalRange(prev => ({ ...prev, preset: 'custom' as PeriodPreset }));
-          }
-          setIsOpen(!isOpen); 
-        }}
-        className={cn(
-          iconOnly 
-            ? "flex items-center justify-center h-10 w-10 p-0 rounded-full" 
-            : "flex items-center gap-2 min-w-[180px] justify-between",
-          buttonClassName
-        )}
-        aria-label="Filtrar por período"
-      >
-        {iconOnly ? (
-          <Calendar className="w-5 h-5" />
-        ) : (
-          <>
-            <div className="flex items-center gap-2">
-              <Calendar className="w-4 h-4 text-gray-500" />
-              <span className="text-sm">{getLabel()}</span>
-            </div>
-            <ChevronDown className={`w-4 h-4 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
-          </>
-        )}
-      </Button>
-
-      {isOpen && createPortal(
-        <div 
-          ref={menuRef}
-          style={{ position: 'fixed', top: menuPos.top, left: menuPos.left, width: menuPos.width, zIndex: 9999 }}
-          className="bg-white dark:bg-gray-800 rounded-xl shadow-xl border border-gray-100 dark:border-gray-700 overflow-hidden"
-        >
-          {mode === 'full' && (
-            <div className="p-2 flex flex-col gap-1">
-              {[
-                { id: 'today', label: 'Diario (Hoy)' },
-                { id: '7d', label: 'Últimos 7 días' },
-                { id: '15d', label: 'Últimos 15 días' },
-                { id: '30d', label: 'Últimos 30 días' },
-                { id: 'month', label: 'Este Mes' },
-                { id: 'year', label: 'Este Año' },
-              ].map((opt) => (
-                <button
-                  key={opt.id}
-                  onClick={() => handlePresetChange(opt.id as PeriodPreset)}
-                  className={`text-left px-3 py-2 rounded-lg text-sm transition-colors ${
-                    internalRange.preset === opt.id 
-                      ? 'bg-blue-50 text-blue-600 dark:bg-blue-900/20 dark:text-blue-400' 
-                      : 'text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700'
-                  }`}
-                >
-                  {opt.label}
-                </button>
-              ))}
-              
-              <button
-                onClick={() => handlePresetChange('custom')}
-                className={`text-left px-3 py-2 rounded-lg text-sm transition-colors ${
-                  internalRange.preset === 'custom'
-                    ? 'bg-blue-50 text-blue-600 dark:bg-blue-900/20 dark:text-blue-400'
-                    : 'text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700'
-                }`}
-              >
-                Personalizado
-              </button>
-            </div>
-          )}
-
-          {internalRange.preset === 'custom' && (
-            <div className="p-3 border-t border-gray-100 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50">
-              <div className="flex flex-col gap-2">
-                <div className="flex flex-col gap-1">
-                  <label className="text-xs text-gray-500">Desde</label>
-                  <Input 
-                    type="date" 
-                    value={internalRange.start} 
-                    onChange={(e) => handleCustomDateChange('start', e.target.value)}
-                    className="h-8 text-sm"
-                  />
-                </div>
-                <div className="flex flex-col gap-1">
-                  <label className="text-xs text-gray-500">Hasta</label>
-                  <Input 
-                    type="date" 
-                    value={internalRange.end} 
-                    onChange={(e) => handleCustomDateChange('end', e.target.value)}
-                    className="h-8 text-sm"
-                  />
-                </div>
-                <Button size="sm" onClick={applyCustomRange} className="mt-2 w-full">
-                  Aplicar
-                </Button>
-              </div>
-            </div>
-          )}
-        </div>,
-        document.body
-      )}
-    </div>
+    <PeriodRibbon
+      value={mode === 'customOnly' ? 'custom' : internalRange.preset}
+      options={resolvedOptions}
+      label="Granularidad del periodo"
+      rangeLabel={formatVisibleRange}
+      onChange={handlePresetChange}
+      onPrev={internalRange.preset === 'custom' ? undefined : () => handleShift('prev')}
+      onNext={internalRange.preset === 'custom' ? undefined : () => handleShift('next')}
+      onOpenCalendar={() => {
+        if (internalRange.preset !== 'custom') {
+          const nextRange = { ...internalRange, preset: 'custom' as PeriodPreset };
+          setInternalRange(nextRange);
+        }
+      }}
+      customRangeContent={customRangeContent}
+      isCustomOpen={isCustomRangeOpen || internalRange.preset === 'custom'}
+      onCustomOpenChange={setIsCustomRangeOpen}
+      canNavigate={internalRange.preset !== 'custom'}
+      className={className}
+      menuTitle="Seleccionar periodo"
+      calendarLabel="Rango"
+    />
   );
 };

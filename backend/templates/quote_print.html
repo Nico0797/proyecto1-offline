@@ -1,0 +1,379 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cotización {{ quote.quote_code }}</title>
+    <style>
+        @page {
+            size: A4;
+            margin: 18mm 14mm;
+        }
+        body {
+            font-family: Helvetica, Arial, sans-serif;
+            font-size: 12px;
+            color: #1f2937;
+            background: #f3f4f6;
+            margin: 0;
+            padding: 24px;
+            line-height: 1.5;
+        }
+        .page {
+            max-width: 880px;
+            margin: 0 auto;
+            background: #ffffff;
+            border: 1px solid #e5e7eb;
+            border-radius: 18px;
+            overflow: hidden;
+            box-shadow: 0 18px 50px rgba(15, 23, 42, 0.08);
+        }
+        .topbar {
+            height: 6px;
+            background: linear-gradient(90deg, #2563eb, #0f172a);
+        }
+        .content {
+            padding: 28px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        .header-table td {
+            vertical-align: top;
+        }
+        .business-name {
+            font-size: 24px;
+            font-weight: bold;
+            color: #0f172a;
+            margin-bottom: 4px;
+        }
+        .business-meta,
+        .muted {
+            color: #6b7280;
+            font-size: 11px;
+        }
+        .logo {
+            max-width: 110px;
+            max-height: 70px;
+            margin-bottom: 12px;
+        }
+        .doc-title {
+            font-size: 24px;
+            font-weight: bold;
+            color: #0f172a;
+            text-align: right;
+        }
+        .doc-code {
+            font-size: 13px;
+            font-weight: bold;
+            text-align: right;
+            color: #2563eb;
+            margin-top: 4px;
+        }
+        .status-pill {
+            display: inline-block;
+            padding: 6px 10px;
+            border-radius: 999px;
+            background: #eff6ff;
+            color: #1d4ed8;
+            font-size: 11px;
+            font-weight: bold;
+            margin-top: 10px;
+        }
+        .section-table {
+            margin-top: 20px;
+        }
+        .card {
+            width: 48.5%;
+            vertical-align: top;
+            background: #f8fafc;
+            border: 1px solid #e5e7eb;
+            border-radius: 12px;
+            padding: 14px;
+        }
+        .card-title {
+            font-size: 10px;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            color: #64748b;
+            font-weight: bold;
+            margin-bottom: 8px;
+        }
+        .card strong {
+            color: #0f172a;
+        }
+        .items-table {
+            margin-top: 22px;
+            border: 1px solid #e5e7eb;
+            border-radius: 12px;
+            overflow: hidden;
+        }
+        .items-table th {
+            background: #f8fafc;
+            color: #334155;
+            font-size: 10px;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            padding: 12px 10px;
+            border-bottom: 1px solid #e5e7eb;
+            text-align: left;
+        }
+        .items-table td {
+            padding: 12px 10px;
+            border-bottom: 1px solid #eef2f7;
+            vertical-align: top;
+        }
+        .items-table tr:last-child td {
+            border-bottom: none;
+        }
+        .text-right {
+            text-align: right;
+        }
+        .summary-table {
+            margin-top: 18px;
+            margin-left: auto;
+            width: 320px;
+        }
+        .summary-table td {
+            padding: 6px 0;
+        }
+        .summary-total td {
+            font-size: 18px;
+            font-weight: bold;
+            color: #0f172a;
+            border-top: 2px solid #cbd5e1;
+            padding-top: 10px;
+        }
+        .section-block {
+            margin-top: 22px;
+            background: #f8fafc;
+            border: 1px solid #e5e7eb;
+            border-radius: 12px;
+            padding: 16px;
+        }
+        .section-label {
+            font-size: 10px;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            color: #64748b;
+            font-weight: bold;
+            margin-bottom: 8px;
+        }
+        .converted-box {
+            margin-top: 18px;
+            padding: 12px 14px;
+            border-radius: 12px;
+            border: 1px solid #ddd6fe;
+            background: #f5f3ff;
+            color: #5b21b6;
+            font-size: 12px;
+        }
+        .actions {
+            margin-top: 24px;
+            text-align: right;
+        }
+        .btn {
+            display: inline-block;
+            padding: 10px 14px;
+            border-radius: 10px;
+            text-decoration: none;
+            font-size: 12px;
+            font-weight: bold;
+            margin-left: 8px;
+        }
+        .btn-primary {
+            background: #2563eb;
+            color: #ffffff;
+        }
+        .btn-secondary {
+            background: #e2e8f0;
+            color: #0f172a;
+        }
+        .footer {
+            margin-top: 26px;
+            padding-top: 14px;
+            border-top: 1px solid #e5e7eb;
+            color: #94a3b8;
+            font-size: 10px;
+            text-align: center;
+        }
+        @media screen and (max-width: 768px) {
+            body {
+                padding: 0;
+                background: #ffffff;
+            }
+            .page {
+                border-radius: 0;
+                border: none;
+                box-shadow: none;
+            }
+            .content {
+                padding: 18px;
+            }
+            .doc-title,
+            .doc-code {
+                text-align: left;
+                margin-top: 12px;
+            }
+            .header-table,
+            .header-table tbody,
+            .header-table tr,
+            .header-table td,
+            .section-table,
+            .section-table tbody,
+            .section-table tr,
+            .section-table td {
+                display: block;
+                width: 100% !important;
+            }
+            .card {
+                margin-bottom: 12px;
+            }
+            .summary-table {
+                width: 100%;
+            }
+            .actions {
+                text-align: left;
+            }
+            .btn {
+                margin: 0 8px 8px 0;
+            }
+        }
+        @media print {
+            body {
+                background: #ffffff;
+                padding: 0;
+            }
+            .page {
+                max-width: 100%;
+                border: none;
+                border-radius: 0;
+                box-shadow: none;
+            }
+            .actions {
+                display: none;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="page">
+        <div class="topbar"></div>
+        <div class="content">
+            <table class="header-table">
+                <tr>
+                    <td width="58%">
+                        {% if logo_url %}
+                        <img src="{{ logo_url }}" alt="Logo {{ business.name }}" class="logo">
+                        {% endif %}
+                        <div class="business-name">{{ business.name }}</div>
+                        <div class="business-meta">
+                            {% if business_tax_id %}<div>NIT / ID: {{ business_tax_id }}</div>{% endif %}
+                            {% if business_phone %}<div>Tel: {{ business_phone }}</div>{% endif %}
+                            {% if business_address %}<div>{{ business_address }}</div>{% endif %}
+                        </div>
+                    </td>
+                    <td width="42%">
+                        <div class="doc-title">COTIZACIÓN</div>
+                        <div class="doc-code">{{ quote.quote_code }}</div>
+                        <div class="status-pill">{{ quote_status_label }}</div>
+                    </td>
+                </tr>
+            </table>
+
+            <table class="section-table" cellspacing="0" cellpadding="0">
+                <tr>
+                    <td class="card">
+                        <div class="card-title">Cliente</div>
+                        {% if customer %}
+                        <div><strong>{{ customer.name }}</strong></div>
+                        {% if customer.phone %}<div>{{ customer.phone }}</div>{% endif %}
+                        {% if customer.address %}<div>{{ customer.address }}</div>{% endif %}
+                        {% else %}
+                        <div><strong>Cliente no especificado</strong></div>
+                        {% endif %}
+                    </td>
+                    <td width="3%"></td>
+                    <td class="card">
+                        <div class="card-title">Datos de la cotización</div>
+                        <div><strong>Emisión:</strong> {{ issue_date_display }}</div>
+                        {% if expiry_date_display %}<div><strong>Vencimiento:</strong> {{ expiry_date_display }}</div>{% endif %}
+                        <div><strong>Generada:</strong> {{ generated_at_display }}</div>
+                        {% if quote.created_by_name %}<div><strong>Creada por:</strong> {{ quote.created_by_name }}</div>{% endif %}
+                    </td>
+                </tr>
+            </table>
+
+            {% if quote.converted_sale_id %}
+            <div class="converted-box">
+                Esta cotización ya fue convertida a la venta <strong>#{{ quote.converted_sale_id }}</strong>.
+            </div>
+            {% endif %}
+
+            <table class="items-table">
+                <thead>
+                    <tr>
+                        <th width="40%">Descripción</th>
+                        <th width="22%">Producto</th>
+                        <th width="12%" class="text-right">Cant.</th>
+                        <th width="13%" class="text-right">Unitario</th>
+                        <th width="13%" class="text-right">Subtotal</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in items %}
+                    <tr>
+                        <td>{{ item.description }}</td>
+                        <td>{{ item.product_name }}</td>
+                        <td class="text-right">{{ item.quantity_display }}</td>
+                        <td class="text-right">${{ item.unit_price_display }}</td>
+                        <td class="text-right">${{ item.subtotal_display }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+
+            <table class="summary-table">
+                <tr>
+                    <td>Subtotal</td>
+                    <td class="text-right">${{ subtotal_display }}</td>
+                </tr>
+                {% if quote.discount and quote.discount > 0 %}
+                <tr>
+                    <td>Descuento</td>
+                    <td class="text-right">-${{ discount_display }}</td>
+                </tr>
+                {% endif %}
+                <tr class="summary-total">
+                    <td>Total</td>
+                    <td class="text-right">${{ total_display }}</td>
+                </tr>
+            </table>
+
+            {% if quote.notes %}
+            <div class="section-block">
+                <div class="section-label">Notas</div>
+                <div>{{ quote.notes }}</div>
+            </div>
+            {% endif %}
+
+            {% if quote.terms %}
+            <div class="section-block">
+                <div class="section-label">Términos</div>
+                <div>{{ quote.terms }}</div>
+            </div>
+            {% endif %}
+
+            {% if show_actions %}
+            <div class="actions">
+                <a href="javascript:window.print()" class="btn btn-primary">Imprimir / Guardar PDF</a>
+            </div>
+            {% endif %}
+
+            <div class="footer">
+                Documento comercial generado desde EnCaja App.
+            </div>
+        </div>
+    </div>
+</body>
+</html>

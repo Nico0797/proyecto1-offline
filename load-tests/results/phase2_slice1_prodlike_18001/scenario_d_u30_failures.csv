@@ -1,0 +1,2 @@
+Method,Name,Error,Occurrences
+GET,read.payments,HTTPError('404 Client Error: NOT FOUND for url: read.payments'),69

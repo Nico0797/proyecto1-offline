@@ -1,9 +1,28 @@
-import React, { useState, useEffect } from 'react';
-import { ChevronLeft, ChevronRight } from 'lucide-react';
-import { format, startOfMonth, endOfMonth, startOfYear, endOfYear, addDays, addMonths, addYears, subDays, subMonths, subYears } from 'date-fns';
+import React, { useEffect, useState } from 'react';
+import {
+  addDays,
+  addMonths,
+  addWeeks,
+  addYears,
+  endOfDay,
+  endOfMonth,
+  endOfWeek,
+  endOfYear,
+  format,
+  startOfDay,
+  startOfMonth,
+  startOfWeek,
+  startOfYear,
+  subDays,
+  subMonths,
+  subWeeks,
+  subYears,
+} from 'date-fns';
 import { es } from 'date-fns/locale';
+import { Input } from '../ui/Input';
+import { PeriodRibbon, type PeriodRibbonOption } from '../ui/PeriodRibbon';
 
-export type PeriodType = 'daily' | 'biweekly' | 'monthly' | 'yearly' | 'custom';
+export type PeriodType = 'daily' | 'weekly' | 'biweekly' | 'monthly' | 'yearly' | 'custom';
 
 interface PeriodSelectorProps {
   period: PeriodType;
@@ -13,20 +32,59 @@ interface PeriodSelectorProps {
   onChangeDateRange: (start: Date, end: Date) => void;
 }
 
+const PERIOD_OPTIONS: Array<PeriodRibbonOption<PeriodType>> = [
+  { id: 'daily', label: 'Dia' },
+  { id: 'weekly', label: 'Semana' },
+  { id: 'biweekly', label: 'Quincenal' },
+  { id: 'monthly', label: 'Mensual' },
+  { id: 'yearly', label: 'Anual' },
+  { id: 'custom', label: 'Personalizado' },
+];
+
 export const PeriodSelector: React.FC<PeriodSelectorProps> = ({
   period,
   onChangePeriod,
   startDate,
   endDate,
-  onChangeDateRange
+  onChangeDateRange,
 }) => {
   const [anchorDate, setAnchorDate] = useState(new Date());
+  const [isCustomRangeOpen, setIsCustomRangeOpen] = useState(period === 'custom');
 
-  // Reset anchor when period changes
-  useEffect(() => {
-    setAnchorDate(new Date());
-    calculateRange(new Date(), period);
-  }, [period]);
+  const parseDateInput = (value: string) => {
+    const [year, month, day] = value.split('-').map(Number);
+    if (!year || !month || !day) return null;
+    return new Date(year, month - 1, day, 12, 0, 0, 0);
+  };
+
+  const getBiweeklyRange = (baseDate: Date) => {
+    if (baseDate.getDate() <= 15) {
+      return {
+        start: new Date(baseDate.getFullYear(), baseDate.getMonth(), 1, 0, 0, 0, 0),
+        end: new Date(baseDate.getFullYear(), baseDate.getMonth(), 15, 23, 59, 59, 999),
+      };
+    }
+
+    return {
+      start: new Date(baseDate.getFullYear(), baseDate.getMonth(), 16, 0, 0, 0, 0),
+      end: endOfMonth(baseDate),
+    };
+  };
+
+  const shiftBiweeklyAnchor = (currentAnchor: Date, direction: 'prev' | 'next') => {
+    const day = currentAnchor.getDate();
+    if (direction === 'prev') {
+      if (day <= 15) {
+        return new Date(currentAnchor.getFullYear(), currentAnchor.getMonth() - 1, 16, 12, 0, 0, 0);
+      }
+      return new Date(currentAnchor.getFullYear(), currentAnchor.getMonth(), 1, 12, 0, 0, 0);
+    }
+
+    if (day <= 15) {
+      return new Date(currentAnchor.getFullYear(), currentAnchor.getMonth(), 16, 12, 0, 0, 0);
+    }
+    return new Date(currentAnchor.getFullYear(), currentAnchor.getMonth() + 1, 1, 12, 0, 0, 0);
+  };
 
   const calculateRange = (baseDate: Date, type: PeriodType) => {
     let start = baseDate;
@@ -37,14 +95,12 @@ export const PeriodSelector: React.FC<PeriodSelectorProps> = ({
         start = startOfDay(baseDate);
         end = endOfDay(baseDate);
         break;
+      case 'weekly':
+        start = startOfWeek(baseDate, { locale: es, weekStartsOn: 1 });
+        end = endOfWeek(baseDate, { locale: es, weekStartsOn: 1 });
+        break;
       case 'biweekly':
-        if (baseDate.getDate() <= 15) {
-            start = startOfMonth(baseDate);
-            end = new Date(baseDate.getFullYear(), baseDate.getMonth(), 15, 23, 59, 59);
-        } else {
-            start = new Date(baseDate.getFullYear(), baseDate.getMonth(), 16, 0, 0, 0);
-            end = endOfMonth(baseDate);
-        }
+        ({ start, end } = getBiweeklyRange(baseDate));
         break;
       case 'monthly':
         start = startOfMonth(baseDate);
@@ -55,104 +111,140 @@ export const PeriodSelector: React.FC<PeriodSelectorProps> = ({
         end = endOfYear(baseDate);
         break;
       case 'custom':
-        // Keep existing range or do nothing
         return;
     }
+
     onChangeDateRange(start, end);
   };
 
+  useEffect(() => {
+    if (period === 'custom') {
+      setIsCustomRangeOpen(true);
+      return;
+    }
+
+    const currentDate = new Date();
+    setAnchorDate(currentDate);
+    setIsCustomRangeOpen(false);
+    calculateRange(currentDate, period);
+  }, [period]);
+
   const handlePrev = () => {
     let newDate = new Date(anchorDate);
+
     switch (period) {
-      case 'daily': newDate = subDays(newDate, 1); break;
-      case 'biweekly': newDate = subDays(newDate, 15); break; // Rough approx, refine logic if needed
-      case 'monthly': newDate = subMonths(newDate, 1); break;
-      case 'yearly': newDate = subYears(newDate, 1); break;
+      case 'daily':
+        newDate = subDays(newDate, 1);
+        break;
+      case 'weekly':
+        newDate = subWeeks(newDate, 1);
+        break;
+      case 'biweekly':
+        newDate = shiftBiweeklyAnchor(newDate, 'prev');
+        break;
+      case 'monthly':
+        newDate = subMonths(newDate, 1);
+        break;
+      case 'yearly':
+        newDate = subYears(newDate, 1);
+        break;
+      default:
+        return;
     }
+
     setAnchorDate(newDate);
     calculateRange(newDate, period);
   };
 
   const handleNext = () => {
     let newDate = new Date(anchorDate);
+
     switch (period) {
-      case 'daily': newDate = addDays(newDate, 1); break;
-      case 'biweekly': newDate = addDays(newDate, 15); break;
-      case 'monthly': newDate = addMonths(newDate, 1); break;
-      case 'yearly': newDate = addYears(newDate, 1); break;
+      case 'daily':
+        newDate = addDays(newDate, 1);
+        break;
+      case 'weekly':
+        newDate = addWeeks(newDate, 1);
+        break;
+      case 'biweekly':
+        newDate = shiftBiweeklyAnchor(newDate, 'next');
+        break;
+      case 'monthly':
+        newDate = addMonths(newDate, 1);
+        break;
+      case 'yearly':
+        newDate = addYears(newDate, 1);
+        break;
+      default:
+        return;
     }
+
     setAnchorDate(newDate);
     calculateRange(newDate, period);
   };
 
   const getLabel = () => {
-    if (period === 'daily') return format(anchorDate, "EEEE, d 'de' MMMM", { locale: es });
+    if (period === 'daily') return format(anchorDate, "d 'de' MMMM yyyy", { locale: es });
+    if (period === 'weekly') {
+      return `${format(startDate, "d MMM", { locale: es })} - ${format(endDate, "d MMM yyyy", { locale: es })}`;
+    }
     if (period === 'biweekly') {
-        const isFirstHalf = anchorDate.getDate() <= 15;
-        return `${isFirstHalf ? '1ª Quincena' : '2ª Quincena'} de ${format(anchorDate, 'MMMM yyyy', { locale: es })}`;
+      const isFirstHalf = anchorDate.getDate() <= 15;
+      return `${isFirstHalf ? '1ra quincena' : '2da quincena'} de ${format(anchorDate, 'MMMM yyyy', { locale: es })}`;
     }
     if (period === 'monthly') return format(anchorDate, 'MMMM yyyy', { locale: es });
     if (period === 'yearly') return format(anchorDate, 'yyyy', { locale: es });
-    if (period === 'custom') return `${format(startDate, 'dd/MM/yy')} - ${format(endDate, 'dd/MM/yy')}`;
-    return '';
+    return `${format(startDate, 'dd/MM/yyyy')} - ${format(endDate, 'dd/MM/yyyy')}`;
   };
 
-  return (
-    <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-4 shadow-sm mb-6">
-      <div className="flex flex-col md:flex-row justify-between items-center gap-4">
-        {/* Period Tabs */}
-        <div className="flex bg-gray-100 dark:bg-gray-700/50 p-1 rounded-lg overflow-x-auto max-w-full">
-          {(['daily', 'biweekly', 'monthly', 'yearly', 'custom'] as PeriodType[]).map((p) => (
-            <button
-              key={p}
-              onClick={() => onChangePeriod(p)}
-              className={`px-3 py-1.5 text-sm font-medium rounded-md transition-all whitespace-nowrap ${
-                period === p
-                  ? 'bg-white dark:bg-gray-600 text-blue-600 dark:text-blue-400 shadow-sm'
-                  : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200'
-              }`}
-            >
-              {p === 'daily' ? 'Diario' : 
-               p === 'biweekly' ? 'Quincenal' : 
-               p === 'monthly' ? 'Mensual' : 
-               p === 'yearly' ? 'Anual' : 'Personalizado'}
-            </button>
-          ))}
-        </div>
-
-        {/* Date Slider Controls */}
-        {period !== 'custom' ? (
-          <div className="flex items-center gap-4 bg-gray-50 dark:bg-gray-700/30 px-4 py-2 rounded-lg border border-gray-200 dark:border-gray-700/50 w-full md:w-auto justify-between md:justify-center">
-            <button onClick={handlePrev} className="p-1 hover:bg-gray-200 dark:hover:bg-gray-600 rounded-full transition-colors">
-              <ChevronLeft className="w-5 h-5 text-gray-600 dark:text-gray-300" />
-            </button>
-            
-            <span className="text-sm font-semibold text-gray-800 dark:text-white capitalize min-w-[150px] text-center">
-              {getLabel()}
-            </span>
-
-            <button onClick={handleNext} className="p-1 hover:bg-gray-200 dark:hover:bg-gray-600 rounded-full transition-colors">
-              <ChevronRight className="w-5 h-5 text-gray-600 dark:text-gray-300" />
-            </button>
-          </div>
-        ) : (
-          <div className="flex items-center gap-2">
-            <input 
-              type="date" 
-              value={format(startDate, 'yyyy-MM-dd')}
-              onChange={(e) => onChangeDateRange(new Date(e.target.value), endDate)}
-              className="bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 text-sm"
-            />
-            <span className="text-gray-400">-</span>
-            <input 
-              type="date" 
-              value={format(endDate, 'yyyy-MM-dd')}
-              onChange={(e) => onChangeDateRange(startDate, new Date(e.target.value))}
-              className="bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 text-sm"
-            />
-          </div>
-        )}
-      </div>
+  const customRangeContent = (
+    <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+      <Input
+        label="Desde"
+        type="date"
+        value={format(startDate, 'yyyy-MM-dd')}
+        onChange={(event) => {
+          const parsed = parseDateInput(event.target.value);
+          if (parsed) onChangeDateRange(parsed, endDate);
+        }}
+      />
+      <Input
+        label="Hasta"
+        type="date"
+        value={format(endDate, 'yyyy-MM-dd')}
+        onChange={(event) => {
+          const parsed = parseDateInput(event.target.value);
+          if (parsed) onChangeDateRange(startDate, parsed);
+        }}
+      />
     </div>
+  );
+
+  return (
+    <PeriodRibbon
+      value={period}
+      options={PERIOD_OPTIONS}
+      label="Granularidad del periodo"
+      rangeLabel={getLabel()}
+      onChange={(nextPeriod) => {
+        onChangePeriod(nextPeriod);
+        if (nextPeriod === 'custom') {
+          setIsCustomRangeOpen(true);
+        }
+      }}
+      onPrev={period === 'custom' ? undefined : handlePrev}
+      onNext={period === 'custom' ? undefined : handleNext}
+      onOpenCalendar={() => {
+        if (period !== 'custom') {
+          onChangePeriod('custom');
+        }
+      }}
+      customRangeContent={customRangeContent}
+      isCustomOpen={isCustomRangeOpen}
+      onCustomOpenChange={setIsCustomRangeOpen}
+      canNavigate={period !== 'custom'}
+      menuTitle="Seleccionar periodo"
+      calendarLabel="Rango"
+    />
   );
 };

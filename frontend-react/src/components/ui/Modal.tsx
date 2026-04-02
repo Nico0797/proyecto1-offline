@@ -35,16 +35,16 @@ export const Modal: React.FC<ModalProps> = ({
   if (!isOpen) return null;
 
   const modalContent = (
-    <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 sm:p-6">
+    <div className="fixed inset-0 z-[9999] flex items-end justify-center p-0 sm:items-center sm:p-6">
       <div 
-        className="fixed inset-0 bg-black/50 dark:bg-black/70 transition-opacity backdrop-blur-sm" 
+        className="fixed inset-0 bg-slate-950/40 dark:bg-black/70 transition-opacity backdrop-blur-sm" 
         onClick={onClose}
         aria-hidden="true"
       />
       
       <div 
         className={cn(
-          "relative w-full bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl shadow-2xl transform transition-all flex flex-col max-h-[90vh]",
+          "app-surface relative flex max-h-[calc(100dvh-0.5rem)] w-full flex-col overflow-hidden rounded-t-[28px] shadow-2xl transition-all sm:max-h-[90vh] sm:rounded-[28px]",
           maxWidth,
           className
         )}
@@ -52,16 +52,16 @@ export const Modal: React.FC<ModalProps> = ({
         aria-modal="true"
         aria-labelledby="modal-title"
       >
-        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200 dark:border-gray-800">
+        <div className="app-page-header sticky top-0 z-10 flex items-center justify-between border-b app-divider px-4 py-3.5 backdrop-blur sm:px-6 sm:py-4">
           <h3 
             id="modal-title"
-            className="text-lg font-semibold text-gray-900 dark:text-white"
+            className="pr-4 text-base font-semibold app-text sm:text-lg"
           >
             {title}
           </h3>
           <button
             onClick={onClose}
-            className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-white transition-colors"
+            className="app-icon-button rounded-lg p-2 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 focus-visible:ring-offset-[color:var(--app-surface-elevated)]"
             aria-label="Close modal"
             data-tour="modal.close"
           >
@@ -69,7 +69,7 @@ export const Modal: React.FC<ModalProps> = ({
           </button>
         </div>
         
-        <div className="p-6 overflow-y-auto custom-scrollbar">
+        <div className="custom-scrollbar overflow-y-auto p-4 pb-[calc(1rem+env(safe-area-inset-bottom))] sm:p-6 sm:pb-6">
           {children}
         </div>
       </div>

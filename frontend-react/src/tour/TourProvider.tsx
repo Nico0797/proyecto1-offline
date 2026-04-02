@@ -1,13 +1,16 @@
 import { useEffect, useState, createContext, useContext, ReactNode } from 'react';
 import { createPortal } from 'react-dom';
 import { useLocation, useNavigate } from 'react-router-dom';
+import { LearningCenterOnboarding } from '../components/Help/LearningCenterOnboarding';
 import { useTourStore } from './tourStore';
 import { TourOverlay } from './TourOverlay';
-import { tours } from './tourRegistry';
+import type { ResolvedTutorialSession } from './tutorialCatalog';
+import { resolveTutorialSession } from './tutorialResolver';
+import { useTutorialRuntimeContext } from './tutorialContext';
 import { useBreakpoint } from './useBreakpoint';
 
 type TourContextType = {
-  start: (tourId: string) => void;
+  start: (tourId: string, options?: { manual?: boolean }) => boolean;
 };
 
 const TourContext = createContext<TourContextType | null>(null);
@@ -21,11 +24,18 @@ export const useTour = () => {
 };
 
 export const TourProvider = ({ children }: { children?: ReactNode }) => {
-  const { isActive, start: startStoreTour } = useTourStore();
-  const [pendingTourId, setPendingTourId] = useState<string | null>(null);
+  const { isActive, startSession: startStoreTour } = useTourStore();
+  const [pendingTour, setPendingTour] = useState<{ session: ResolvedTutorialSession; manual?: boolean } | null>(null);
   const location = useLocation();
   const navigate = useNavigate();
   const { isMobile } = useBreakpoint();
+  const tutorialContext = useTutorialRuntimeContext();
+
+  const isCurrentRoute = (targetRoute?: string) => {
+    if (!targetRoute) return true;
+    const currentRoute = `${location.pathname}${location.search}`;
+    return currentRoute === targetRoute || location.pathname === targetRoute;
+  };
 
   // Helper: waitForSelector
   const waitForSelector = (selector: string, timeout = 4000): Promise<Element | null> => {
@@ -65,11 +75,11 @@ export const TourProvider = ({ children }: { children?: ReactNode }) => {
     });
   };
 
-  const runTourWhenReady = async (tourId: string) => {
-    const tour = tours[tourId];
+  const runTourWhenReady = async (session: ResolvedTutorialSession, options?: { manual?: boolean }) => {
+    const tour = session;
     if (!tour) return;
 
-    console.log(`[Tour] Starting tour: ${tourId}`);
+    console.log(`[Tour] Starting tour: ${tour.id}`);
 
     // Always start the tour. The Overlay will handle missing steps.
     // We only wait for the first step if it has a selector, just to be nice,
@@ -91,48 +101,46 @@ export const TourProvider = ({ children }: { children?: ReactNode }) => {
       await waitForSelector(selector, 2000); 
     }
     
-    startStoreTour(tourId);
+    startStoreTour(session, options);
   };
 
-  const start = (tourId: string) => {
-    const tour = tours[tourId];
-    if (!tour) {
-      console.warn(`[Tour] Tour ${tourId} not found`);
-      return;
+  const start = (tourId: string, options?: { manual?: boolean }) => {
+    const session = resolveTutorialSession(tourId, tutorialContext);
+    if (!session || session.steps.length === 0) {
+      console.warn(`[Tour] Tour ${tourId} has no applicable steps for the current context`);
+      return false;
     }
 
-    const firstStep = tour.steps[0];
+    const firstStep = session.steps[0];
     const targetRoute = firstStep?.route;
 
     // Check if we need to navigate
-    if (targetRoute && location.pathname !== targetRoute) {
+    if (targetRoute && !isCurrentRoute(targetRoute)) {
       console.log(`[Tour] Navigating to ${targetRoute} for tour ${tourId}`);
-      setPendingTourId(tourId);
+      setPendingTour({ session, manual: Boolean(options?.manual) });
       navigate(targetRoute);
+      return true;
     } else {
-      // Already on route or no route required
-      runTourWhenReady(tourId);
+      runTourWhenReady(session, options);
+      return true;
     }
   };
 
   // Effect to handle pending tour on route change
   useEffect(() => {
-    if (pendingTourId) {
-      const tour = tours[pendingTourId];
+    if (pendingTour) {
+      const tour = pendingTour.session;
       if (tour) {
-        // Check if we are on the correct route
-        // We use startsWith to handle sub-routes if necessary, but exact match is safer for now
-        // Or if the tour step route matches current location
         const targetRoute = tour.steps[0].route;
-        if (targetRoute && location.pathname === targetRoute) {
-            runTourWhenReady(pendingTourId);
-            setPendingTourId(null);
+        if (isCurrentRoute(targetRoute)) {
+            runTourWhenReady(pendingTour.session, { manual: Boolean(pendingTour.manual) });
+            setPendingTour(null);
         }
       } else {
-          setPendingTourId(null);
+          setPendingTour(null);
       }
     }
-  }, [location.pathname, pendingTourId]);
+  }, [isCurrentRoute, location.pathname, location.search, pendingTour]);
 
   // Ensure tour root exists
   useEffect(() => {
@@ -149,6 +157,7 @@ export const TourProvider = ({ children }: { children?: ReactNode }) => {
   return (
     <TourContext.Provider value={{ start }}>
       {children}
+      <LearningCenterOnboarding />
       {root && isActive && createPortal(<TourOverlay />, root)}
     </TourContext.Provider>
   );

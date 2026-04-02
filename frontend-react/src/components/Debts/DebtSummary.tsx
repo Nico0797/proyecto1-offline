@@ -29,21 +29,21 @@ export const DebtSummary: React.FC<DebtSummaryProps> = ({ summary }) => {
       border: 'border-orange-200 dark:border-orange-800/30'
     },
     {
+      label: 'Por vencer',
+      value: formatCOP(Number(summary.due_today_total || 0) + Number(summary.due_soon_total || 0)),
+      sub: 'Hoy y próximos días',
+      icon: Calendar,
+      color: 'text-blue-600 dark:text-blue-400',
+      bg: 'bg-blue-100 dark:bg-blue-900/20',
+      border: 'border-blue-200 dark:border-blue-800/30'
+    },
+    {
       label: 'Pagado Mes',
       value: formatCOP(summary.paid_this_month),
       icon: CheckCircle,
       color: 'text-green-600 dark:text-green-400',
       bg: 'bg-green-100 dark:bg-green-900/20',
       border: 'border-green-200 dark:border-green-800/30'
-    },
-    {
-      label: 'Próximo Venc.',
-      value: summary.next_due ? summary.next_due.name : 'No hay',
-      sub: summary.next_due ? summary.next_due.due_date : null,
-      icon: Calendar,
-      color: 'text-blue-600 dark:text-blue-400',
-      bg: 'bg-blue-100 dark:bg-blue-900/20',
-      border: 'border-blue-200 dark:border-blue-800/30'
     }
   ];
 

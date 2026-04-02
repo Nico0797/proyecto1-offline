@@ -1,0 +1,3096 @@
+{
+  "base_url": "http://127.0.0.1:5000",
+  "business_id": 16,
+  "users": [
+    20,
+    40,
+    60,
+    80,
+    100
+  ],
+  "scenarios": [
+    "LOGIN"
+  ],
+  "run_time": "2m",
+  "spawn_rate": 5.0,
+  "fixture": null,
+  "runs": [
+    {
+      "scenario": "LOGIN",
+      "users": 20,
+      "started_at": "2026-03-27T02:56:36.148990+00:00",
+      "finished_at": "2026-03-27T02:58:37.887062+00:00",
+      "command": [
+        "C:\\Users\\harae\\Desktop\\ui migration\\proyecto1\\.venv\\Scripts\\locust.exe",
+        "-f",
+        "C:\\Users\\harae\\Desktop\\ui migration\\proyecto1\\load-tests\\locustfile.py",
+        "--host",
+        "http://127.0.0.1:5000",
+        "--users",
+        "20",
+        "--spawn-rate",
+        "5.0",
+        "--run-time",
+        "2m",
+        "--csv",
+        "load-tests\\results\\phase-auth-login-remnant\\scenario_login_u20",
+        "--html",
+        "load-tests\\results\\phase-auth-login-remnant\\scenario_login_u20.html",
+        "--headless",
+        "--only-summary"
+      ],
+      "exit_code": 0,
+      "stdout_tail": "",
+      "stderr_tail": "[2026-03-26 21:56:38,417] DESKTOP-9DI2UJR/INFO/locust.main: Starting Locust 2.43.3\n[2026-03-26 21:56:38,421] DESKTOP-9DI2UJR/INFO/locust.main: Run time limit set to 120 seconds\n[2026-03-26 21:56:38,424] DESKTOP-9DI2UJR/INFO/locust.runners: Ramping to 20 users at a rate of 5.00 per second\n[2026-03-26 21:56:41,477] DESKTOP-9DI2UJR/INFO/locust.runners: All users spawned: {\"CuadernoUser\": 20} (20 total users)\n[2026-03-26 21:58:37,127] DESKTOP-9DI2UJR/INFO/locust.main: --run-time limit reached, shutting down\n[2026-03-26 21:58:37,536] DESKTOP-9DI2UJR/INFO/locust.main: writing html report to file: load-tests\\results\\phase-auth-login-remnant\\scenario_login_u20.html\n[2026-03-26 21:58:37,599] DESKTOP-9DI2UJR/INFO/locust.main: Shutting down (exit code 0)\nType     Name                                                                          # reqs      # fails |    Avg     Min     Max    Med |   req/s  failures/s\n--------|----------------------------------------------------------------------------|-------|-------------|-------|-------|-------|-------|--------|-----------\nGET      auth.bootstrap                                                                   686     0(0.00%) |    543      18    2907    300 |    5.84        0.00\nPOST     auth.login                                                                       686     0(0.00%) |   2319     358    4115   2200 |    5.84        0.00\n--------|----------------------------------------------------------------------------|-------|-------------|-------|-------|-------|-------|--------|-----------\n         Aggregated                                                                      1372     0(0.00%) |   1431      18    4115   1400 |   11.68        0.00\n\nResponse time percentiles (approximated)\nType     Name                                                                                  50%    66%    75%    80%    90%    95%    98%    99%  99.9% 99.99%   100% # reqs\n--------|--------------------------------------------------------------------------------|--------|------|------|------|------|------|------|------|------|------|------|------\nGET      auth.bootstrap                                                                        300    580    680    730   1300   1800   2300   2700   2900   2900   2900    686\nPOST     auth.login                                                                           2200   2500   2700   2800   3200   3600   3900   4000   4100   4100   4100    686\n--------|--------------------------------------------------------------------------------|--------|------|------|------|------|------|------|------|------|------|------|------\n         Aggregated                                                                           1500   2100   2300   2400   2800   3200   3700   3900   4100   4100   4100   1372\n\n",
+      "stats_summary": {
+        "requests": 1372,
+        "failures": 0,
+        "median_ms": 1400.0,
+        "avg_ms": 1431.6752999271016,
+        "min_ms": 18.440399988321587,
+        "max_ms": 4115.381299998262,
+        "avg_size": 1923.5,
+        "rps": 11.678970423331586,
+        "failures_per_sec": 0.0,
+        "p50_ms": 1500.0,
+        "p95_ms": 3200.0,
+        "p99_ms": 3900.0,
+        "slowest_endpoint": {
+          "name": "auth.login",
+          "method": "POST",
+          "avg_ms": 2319.894347959023,
+          "p95_ms": 3600.0,
+          "p99_ms": 4000.0,
+          "rps": 5.839485211665793
+        },
+        "endpoint_metrics": {
+          "auth.login": {
+            "avg_ms": 2319.894347959023,
+            "p95_ms": 3600.0,
+            "rps": 5.839485211665793,
+            "failures": 0,
+            "requests": 686
+          },
+          "auth.select_context": {
+            "avg_ms": 0.0,
+            "p95_ms": 0.0,
+            "rps": 0.0,
+            "failures": 0,
+            "requests": 0
+          },
+          "auth.bootstrap": {
+            "avg_ms": 543.4562518951761,
+            "p95_ms": 1800.0,
+            "rps": 5.839485211665793,
+            "failures": 0,
+            "requests": 686
+          },
+          "read.dashboard": {
+            "avg_ms": 0.0,
+            "p95_ms": 0.0,
+            "rps": 0.0,
+            "failures": 0,
+            "requests": 0
+          },
+          "read.summary": {
+            "avg_ms": 0.0,
+            "p95_ms": 0.0,
+            "rps": 0.0,
+            "failures": 0,
+            "requests": 0
+          }
+        }
+      },
+      "distribution": {
+        "p50_estimated_ms": 1439.264273950684,
+        "p95_estimated_ms": 1534.751092702838,
+        "p99_estimated_ms": 1966.4967749959033,
+        "avg_rps_window": 11.419047630630631,
+        "max_rps_window": 16.0,
+        "final_failure_count": 0.0
+      },
+      "profile_summary": {
+        "auth.login": {
+          "samples": 689,
+          "query_count_avg": 4.0,
+          "query_count_p95": 4.0,
+          "sql_time_ms_avg": 1162.819,
+          "sql_time_ms_p95": 2359.692,
+          "wall_time_ms_avg": 1861.801,
+          "wall_time_ms_p95": 3116.103,
+          "python_time_ms_avg": 698.982,
+          "python_time_ms_p95": 1246.878,
+          "instrumented_wall_ms_avg": 1861.611,
+          "instrumented_wall_ms_p95": 3115.899,
+          "unaccounted_wall_ms_avg": 0.19,
+          "unaccounted_wall_ms_p95": 0.275,
+          "cache_hit_count": 0,
+          "stage_metrics": {
+            "fetch_user": {
+              "samples": 689,
+              "wall_ms_avg": 413.48,
+              "wall_ms_p95": 1232.173,
+              "sql_time_ms_avg": 286.797,
+              "sql_time_ms_p95": 960.225,
+              "python_time_ms_avg": 126.684,
+              "python_time_ms_p95": 444.23,
+              "query_count_avg": 1.0,
+              "query_count_p95": 1.0
+            },
+            "password_verify": {
+              "samples": 689,
+              "wall_ms_avg": 568.074,
+              "wall_ms_p95": 1077.668,
+              "sql_time_ms_avg": 0.0,
+              "sql_time_ms_p95": 0.0,
+              "python_time_ms_avg": 568.074,
+              "python_time_ms_p95": 1077.668,
+              "query_count_avg": 0.0,
+              "query_count_p95": 0.0
+            },
+            "resolve_accessible_contexts": {
+              "samples": 689,
+              "wall_ms_avg": 879.613,
+              "wall_ms_p95": 2034.65,
+              "sql_time_ms_avg": 876.022,
+              "sql_time_ms_p95": 2030.941,
+              "python_time_ms_avg": 3.591,
+              "python_time_ms_p95": 4.622,
+              "query_count_avg": 3.0,
+              "query_count_p95": 3.0
+            },
+            "resolve_active_context": {
+              "samples": 689,
+              "wall_ms_avg": 0.036,
+              "wall_ms_p95": 0.043,
+              "sql_time_ms_avg": 0.0,
+              "sql_time_ms_p95": 0.0,
+              "python_time_ms_avg": 0.036,
+              "python_time_ms_p95": 0.043,
+              "query_count_avg": 0.0,
+              "query_count_p95": 0.0
+            },
+            "serialization_response": {
+              "samples": 689,
+              "wall_ms_avg": 0.1,
+              "wall_ms_p95": 0.128,
+              "sql_time_ms_avg": 0.0,
+              "sql_time_ms_p95": 0.0,
+              "python_time_ms_avg": 0.1,
+              "python_time_ms_p95": 0.128,
+              "query_count_avg": 0.0,
+              "query_count_p95": 0.0
+            },
+            "token_session_creation": {
+              "samples": 689,
+              "wall_ms_avg": 0.307,
+              "wall_ms_p95": 0.493,
+              "sql_time_ms_avg": 0.0,
+              "sql_time_ms_p95": 0.0,
+              "python_time_ms_avg": 0.307,
+              "python_time_ms_p95": 0.493,
+              "query_count_avg": 0.0,
+              "query_count_p95": 0.0
+            }
+          }
+        },
+        "auth.bootstrap": {
+          "samples": 686,
+          "query_count_avg": 4.0,
+          "query_count_p95": 4.0,
+          "sql_time_ms_avg": 356.413,
+          "sql_time_ms_p95": 1229.247,
+          "wall_time_ms_avg": 226.393,
+          "wall_time_ms_p95": 642.066,
+          "python_time_ms_avg": 0.019,
+          "python_time_ms_p95": 0.0,
+          "instrumented_wall_ms_avg": 226.062,
+          "instrumented_wall_ms_p95": 641.734,
+          "unaccounted_wall_ms_avg": 0.331,
+          "unaccounted_wall_ms_p95": 0.395,
+          "cache_hit_count": 0,
+          "stage_metrics": {
+            "bootstrap_membership_lookup": {
+              "samples": 686,
+              "wall_ms_avg": 82.527,
+              "wall_ms_p95": 302.999,
+              "sql_time_ms_avg": 81.244,
+              "sql_time_ms_p95": 301.375,
+              "python_time_ms_avg": 1.282,
+              "python_time_ms_p95": 1.576,
+              "query_count_avg": 1.0,
+              "query_count_p95": 1.0
+            },
+            "bootstrap_modules_lookup": {
+              "samples": 686,
+              "wall_ms_avg": 59.327,
+              "wall_ms_p95": 253.919,
+              "sql_time_ms_avg": 58.619,
+              "sql_time_ms_p95": 253.232,
+              "python_time_ms_avg": 0.708,
+              "python_time_ms_p95": 0.889,
+              "query_count_avg": 1.0,
+              "query_count_p95": 1.0
+            },
+            "bootstrap_owned_businesses_lookup": {
+              "samples": 686,
+              "wall_ms_avg": 84.208,
+              "wall_ms_p95": 289.751,
+              "sql_time_ms_avg": 83.28,
+              "sql_time_ms_p95": 288.751,
+              "python_time_ms_avg": 0.927,
+              "python_time_ms_p95": 1.107,
+              "query_count_avg": 1.0,
+              "query_count_p95": 1.0
+            }
+          }
+        }
+      },
+      "failures_rows": 1,
+      "error_rate": 0.0,
+      "metrics_samples": [
+        {
+          "ts": "2026-03-27T02:56:36.149799+00:00",
+          "backend_cpu_percent": 0.0,
+          "backend_rss_mb": 3.25,
+          "backend_threads": 1
+        },
+        {
+          "ts": "2026-03-27T02:56:38.188452+00:00",
+          "backend_cpu_percent": 0.0,
+          "backend_rss_mb": 3.25,
+          "backend_threads": 1
+        },
+        {
+          "ts": "2026-03-27T02:56:40.251111+00:00",
+          "backend_cpu_percent": 0.0,
+          "backend_rss_mb": 3.25,
+          "backend_threads": 1
+        },
+        {
+          "ts": "2026-03-27T02:56:42.257125+00:00",
+          "backend_cpu_percent": 0.0,
+          "backend_rss_mb": 3.25,
+          "backend_threads": 1
+        },
+        {
+          "ts": "2026-03-27T02:56:44.280484+00:00",
+          "backend_cpu_percent": 0.0,
+          "backend_rss_mb": 3.25,
+          "backend_threads": 1
+        },
+        {
+          "ts": "2026-03-27T02:56:46.306419+00:00",
+          "backend_cpu_percent": 0.0,
+          "backend_rss_mb": 3.25,
+          "backend_threads": 1
+        },
+        {
+          "ts": "2026-03-27T02:56:48.394405+00:00",
+          "backend_cpu_percent": 0.0,
+          "backend_rss_mb": 3.25,
+          "backend_threads": 1
+        },
+        {
+          "ts": "2026-03-27T02:56:50.408837+00:00",
+          "backend_cpu_percent": 0.0,
+          "backend_rss_mb": 3.25,
+          "backend_threads": 1
+        },
+        {
+          "ts": "2026-03-27T02:56:52.444314+00:00",
+          "backend_cpu_percent": 0.0,
+          "backend_rss_mb": 3.25,
+          "backend_threads": 1
+        },
+        {
+          "ts": "2026-03-27T02:56:54.477608+00:00",
+          "backend_cpu_percent": 0.0,
+          "backend_rss_mb": 3.25,
+          "backend_threads": 1
+        },
+        {
+          "ts": "2026-03-27T02:56:56.482937+00:00",
+          "backend_cpu_percent": 0.0,
+          "backend_rss_mb": 3.25,
+          "backend_threads": 1
+        },
+        {
+          "ts": "2026-03-27T02:56:58.501680+00:00",
+          "backend_cpu_percent": 0.0,
+          "backend_rss_mb": 3.25,
+          "backend_threads": 1
+        },
+        {
+          "ts": "2026-03-27T02:57:00.552067+00:00",
+          "backend_cpu_percent": 0.0,
+          "backend_rss_mb": 3.25,
+          "backend_threads": 1
+        },
+        {
+          "ts": "2026-03-27T02:57:02.583572+00:00",
+          "backend_cpu_percent": 0.0,
+          "backend_rss_mb": 3.25,
+          "backend_threads": 1
+        },
+        {
+          "ts": "2026-03-27T02:57:04.651639+00:00",
+          "backend_cpu_percent": 0.0,
+          "backend_rss_mb": 3.25,
+          "backend_threads": 1
+        },
+        {
+          "ts": "2026-03-27T02:57:06.675726+00:00",
+          "backend_cpu_percent": 0.0,
+          "backend_rss_mb": 3.25,
+          "backend_threads": 1
+        },
+        {
+          "ts": "2026-03-27T02:57:08.729187+00:00",
+          "backend_cpu_percent": 0.0,
+          "backend_rss_mb": 3.25,
+          "backend_threads": 1
+        },
+        {
+          "ts": "2026-03-27T02:57:10.795864+00:00",
+          "backend_cpu_percent": 0.0,
+          "backend_rss_mb": 3.25,
+          "backend_threads": 1
+        },
+        {
+          "ts": "2026-03-27T02:57:12.804946+00:00",
+          "backend_cpu_percent": 0.0,
+          "backend_rss_mb": 3.25,
+          "backend_threads": 1
+        },
+        {
+          "ts": "2026-03-27T02:57:14.828354+00:00",
+          "backend_cpu_percent": 0.0,
+          "backend_rss_mb": 3.25,
+          "backend_threads": 1
+        },
+        {
+          "ts": "2026-03-27T02:57:16.846261+00:00",
+          "backend_cpu_percent": 0.0,
+          "backend_rss_mb": 3.25,
+          "backend_threads": 1
+        },
+        {
+          "ts": "2026-03-27T02:57:18.854914+00:00",
+          "backend_cpu_percent": 0.0,
+          "backend_rss_mb": 3.25,
+          "backend_threads": 1
+        },
+        {
+          "ts": "2026-03-27T02:57:20.921158+00:00",
+          "backend_cpu_percent": 0.0,
+          "backend_rss_mb": 3.25,
+          "backend_threads": 1
+        },
+        {
+          "ts": "2026-03-27T02:57:22.943530+00:00",
+          "backend_cpu_percent": 0.0,
+          "backend_rss_mb": 3.25,
+          "backend_threads": 1
+        },
+        {
+          "ts": "2026-03-27T02:57:24.952375+00:00",
+          "backend_cpu_percent": 0.0,
+          "backend_rss_mb": 3.25,
+          "backend_threads": 1
+        },
+        {
+          "ts": "2026-03-27T02:57:27.000976+00:00",
+          "backend_cpu_percent": 0.0,
+          "backend_rss_mb": 3.25,
+          "backend_threads": 1
+        },
+        {
+          "ts": "2026-03-27T02:57:29.006501+00:00",
+          "backend_cpu_percent": 0.0,
+          "backend_rss_mb": 3.25,
+          "backend_threads": 1
+        },
+        {
+          "ts": "2026-03-27T02:57:31.038303+00:00",
+          "backend_cpu_percent": 0.0,
+          "backend_rss_mb": 3.25,
+          "backend_threads": 1
+        },
+        {
+          "ts": "2026-03-27T02:57:33.055700+00:00",
+          "backend_cpu_percent": 0.0,
+          "backend_rss_mb": 3.25,
+          "backend_threads": 1
+        },
+        {
+          "ts": "2026-03-27T02:57:35.072804+00:00",
+          "backend_cpu_percent": 0.0,
+          "backend_rss_mb": 3.25,
+          "backend_threads": 1
+        },
+        {
+          "ts": "2026-03-27T02:57:37.120056+00:00",
+          "backend_cpu_percent": 0.0,
+          "backend_rss_mb": 3.25,
+          "backend_threads": 1
+        },
+        {
+          "ts": "2026-03-27T02:57:39.142576+00:00",
+          "backend_cpu_percent": 0.0,
+          "backend_rss_mb": 3.25,
+          "backend_threads": 1
+        },
+        {
+          "ts": "2026-03-27T02:57:41.190335+00:00",
+          "backend_cpu_percent": 0.0,
+          "backend_rss_mb": 3.25,
+          "backend_threads": 1
+        },
+        {
+          "ts": "2026-03-27T02:57:43.200866+00:00",
+          "backend_cpu_percent": 0.0,
+          "backend_rss_mb": 3.25,
+          "backend_threads": 1
+        },
+        {
+          "ts": "2026-03-27T02:57:45.208123+00:00",
+          "backend_cpu_percent": 0.0,
+          "backend_rss_mb": 3.25,
+          "backend_threads": 1
+        },
+        {
+          "ts": "2026-03-27T02:57:47.277384+00:00",
+          "backend_cpu_percent": 0.0,
+          "backend_rss_mb": 3.25,
+          "backend_threads": 1
+        },
+        {
+          "ts": "2026-03-27T02:57:49.306142+00:00",
+          "backend_cpu_percent": 0.0,
+          "backend_rss_mb": 3.25,
+          "backend_threads": 1
+        },
+        {
+          "ts": "2026-03-27T02:57:51.323727+00:00",
+          "backend_cpu_percent": 0.0,
+          "backend_rss_mb": 3.25,
+          "backend_threads": 1
+        },
+        {
+          "ts": "2026-03-27T02:57:53.418422+00:00",
+          "backend_cpu_percent": 0.0,
+          "backend_rss_mb": 3.25,
+          "backend_threads": 1
+        },
+        {
+          "ts": "2026-03-27T02:57:55.443709+00:00",
+          "backend_cpu_percent": 0.0,
+          "backend_rss_mb": 3.25,
+          "backend_threads": 1
+        },
+        {
+          "ts": "2026-03-27T02:57:57.448098+00:00",
+          "backend_cpu_percent": 0.0,
+          "backend_rss_mb": 3.25,
+          "backend_threads": 1
+        },
+        {
+          "ts": "2026-03-27T02:57:59.475877+00:00",
+          "backend_cpu_percent": 0.0,
+          "backend_rss_mb": 3.25,
+          "backend_threads": 1
+        },
+        {
+          "ts": "2026-03-27T02:58:01.558966+00:00",
+          "backend_cpu_percent": 0.0,
+          "backend_rss_mb": 3.25,
+          "backend_threads": 1
+        },
+        {
+          "ts": "2026-03-27T02:58:03.596938+00:00",
+          "backend_cpu_percent": 0.0,
+          "backend_rss_mb": 3.25,
+          "backend_threads": 1
+        },
+        {
+          "ts": "2026-03-27T02:58:05.617212+00:00",
+          "backend_cpu_percent": 0.0,
+          "backend_rss_mb": 3.25,
+          "backend_threads": 1
+        },
+        {
+          "ts": "2026-03-27T02:58:07.723993+00:00",
+          "backend_cpu_percent": 0.0,
+          "backend_rss_mb": 3.25,
+          "backend_threads": 1
+        },
+        {
+          "ts": "2026-03-27T02:58:09.753152+00:00",
+          "backend_cpu_percent": 0.0,
+          "backend_rss_mb": 3.25,
+          "backend_threads": 1
+        },
+        {
+          "ts": "2026-03-27T02:58:11.783935+00:00",
+          "backend_cpu_percent": 0.0,
+          "backend_rss_mb": 3.25,
+          "backend_threads": 1
+        },
+        {
+          "ts": "2026-03-27T02:58:13.820564+00:00",
+          "backend_cpu_percent": 0.0,
+          "backend_rss_mb": 3.25,
+          "backend_threads": 1
+        },
+        {
+          "ts": "2026-03-27T02:58:15.848236+00:00",
+          "backend_cpu_percent": 0.0,
+          "backend_rss_mb": 3.25,
+          "backend_threads": 1
+        },
+        {
+          "ts": "2026-03-27T02:58:17.870415+00:00",
+          "backend_cpu_percent": 0.0,
+          "backend_rss_mb": 3.25,
+          "backend_threads": 1
+        },
+        {
+          "ts": "2026-03-27T02:58:19.935857+00:00",
+          "backend_cpu_percent": 0.0,
+          "backend_rss_mb": 3.25,
+          "backend_threads": 1
+        },
+        {
+          "ts": "2026-03-27T02:58:21.984229+00:00",
+          "backend_cpu_percent": 0.0,
+          "backend_rss_mb": 3.25,
+          "backend_threads": 1
+        },
+        {
+          "ts": "2026-03-27T02:58:24.075084+00:00",
+          "backend_cpu_percent": 0.0,
+          "backend_rss_mb": 3.25,
+          "backend_threads": 1
+        },
+        {
+          "ts": "2026-03-27T02:58:26.102711+00:00",
+          "backend_cpu_percent": 0.0,
+          "backend_rss_mb": 3.25,
+          "backend_threads": 1
+        },
+        {
+          "ts": "2026-03-27T02:58:28.110184+00:00",
+          "backend_cpu_percent": 0.0,
+          "backend_rss_mb": 3.25,
+          "backend_threads": 1
+        },
+        {
+          "ts": "2026-03-27T02:58:30.141489+00:00",
+          "backend_cpu_percent": 0.0,
+          "backend_rss_mb": 3.25,
+          "backend_threads": 1
+        },
+        {
+          "ts": "2026-03-27T02:58:32.178075+00:00",
+          "backend_cpu_percent": 0.0,
+          "backend_rss_mb": 3.25,
+          "backend_threads": 1
+        },
+        {
+          "ts": "2026-03-27T02:58:34.198646+00:00",
+          "backend_cpu_percent": 0.0,
+          "backend_rss_mb": 3.25,
+          "backend_threads": 1
+        },
+        {
+          "ts": "2026-03-27T02:58:36.214893+00:00",
+          "backend_cpu_percent": 0.0,
+          "backend_rss_mb": 3.25,
+          "backend_threads": 1
+        }
+      ],
+      "metrics_summary": {
+        "backend_cpu_peak_percent": 0.0,
+        "backend_rss_peak_mb": 3.25,
+        "backend_threads_peak": 1,
+        "db_total_connections_peak": 0.0,
+        "db_active_connections_peak": 0.0,
+        "db_waiting_connections_peak": 0.0,
+        "db_longest_active_seconds_peak": 0.0
+      },
+      "artifacts": {
+        "stats_csv": "load-tests\\results\\phase-auth-login-remnant\\scenario_login_u20_stats.csv",
+        "stats_history_csv": "load-tests\\results\\phase-auth-login-remnant\\scenario_login_u20_stats_history.csv",
+        "failures_csv": "load-tests\\results\\phase-auth-login-remnant\\scenario_login_u20_failures.csv",
+        "profile_summary_json": "load-tests\\results\\phase-auth-login-remnant\\scenario_login_u20_profile_summary.json",
+        "report_html": "load-tests\\results\\phase-auth-login-remnant\\scenario_login_u20.html"
+      },
+      "capacity_pass": false
+    },
+    {
+      "scenario": "LOGIN",
+      "users": 40,
+      "started_at": "2026-03-27T02:58:37.891117+00:00",
+      "finished_at": "2026-03-27T03:00:40.715869+00:00",
+      "command": [
+        "C:\\Users\\harae\\Desktop\\ui migration\\proyecto1\\.venv\\Scripts\\locust.exe",
+        "-f",
+        "C:\\Users\\harae\\Desktop\\ui migration\\proyecto1\\load-tests\\locustfile.py",
+        "--host",
+        "http://127.0.0.1:5000",
+        "--users",
+        "40",
+        "--spawn-rate",
+        "5.0",
+        "--run-time",
+        "2m",
+        "--csv",
+        "load-tests\\results\\phase-auth-login-remnant\\scenario_login_u40",
+        "--html",
+        "load-tests\\results\\phase-auth-login-remnant\\scenario_login_u40.html",
+        "--headless",
+        "--only-summary"
+      ],
+      "exit_code": 0,
+      "stdout_tail": "",
+      "stderr_tail": "[2026-03-26 21:58:40,803] DESKTOP-9DI2UJR/INFO/locust.main: Starting Locust 2.43.3\n[2026-03-26 21:58:40,806] DESKTOP-9DI2UJR/INFO/locust.main: Run time limit set to 120 seconds\n[2026-03-26 21:58:40,813] DESKTOP-9DI2UJR/INFO/locust.runners: Ramping to 40 users at a rate of 5.00 per second\n[2026-03-26 21:58:47,916] DESKTOP-9DI2UJR/INFO/locust.runners: All users spawned: {\"CuadernoUser\": 40} (40 total users)\n[2026-03-26 22:00:39,936] DESKTOP-9DI2UJR/INFO/locust.main: --run-time limit reached, shutting down\n[2026-03-26 22:00:40,268] DESKTOP-9DI2UJR/INFO/locust.main: writing html report to file: load-tests\\results\\phase-auth-login-remnant\\scenario_login_u40.html\n[2026-03-26 22:00:40,333] DESKTOP-9DI2UJR/INFO/locust.main: Shutting down (exit code 0)\nType     Name                                                                          # reqs      # fails |    Avg     Min     Max    Med |   req/s  failures/s\n--------|----------------------------------------------------------------------------|-------|-------------|-------|-------|-------|-------|--------|-----------\nGET      auth.bootstrap                                                                   628     0(0.00%) |   1398      29    5955    740 |    5.42        0.00\nPOST     auth.login                                                                       628     0(0.00%) |   5246     658    8179   5500 |    5.42        0.00\n--------|----------------------------------------------------------------------------|-------|-------------|-------|-------|-------|-------|--------|-----------\n         Aggregated                                                                      1256     0(0.00%) |   3322      29    8179   3300 |   10.84        0.00\n\nResponse time percentiles (approximated)\nType     Name                                                                                  50%    66%    75%    80%    90%    95%    98%    99%  99.9% 99.99%   100% # reqs\n--------|--------------------------------------------------------------------------------|--------|------|------|------|------|------|------|------|------|------|------|------\nGET      auth.bootstrap                                                                        740   1100   2200   2800   3600   4300   5000   5600   6000   6000   6000    628\nPOST     auth.login                                                                           5500   5800   6100   6500   7500   7800   8000   8100   8200   8200   8200    628\n--------|--------------------------------------------------------------------------------|--------|------|------|------|------|------|------|------|------|------|------|------\n         Aggregated                                                                           3300   4900   5500   5700   6500   7500   7900   8000   8200   8200   8200   1256\n\n",
+      "stats_summary": {
+        "requests": 1256,
+        "failures": 0,
+        "median_ms": 3300.0,
+        "avg_ms": 3322.4575369423114,
+        "min_ms": 29.38170000561513,
+        "max_ms": 8179.465799999889,
+        "avg_size": 1923.5,
+        "rps": 10.837167494504135,
+        "failures_per_sec": 0.0,
+        "p50_ms": 3300.0,
+        "p95_ms": 7500.0,
+        "p99_ms": 8000.0,
+        "slowest_endpoint": {
+          "name": "auth.login",
+          "method": "POST",
+          "avg_ms": 5246.227625477214,
+          "p95_ms": 7800.0,
+          "p99_ms": 8100.0,
+          "rps": 5.418583747252067
+        },
+        "endpoint_metrics": {
+          "auth.login": {
+            "avg_ms": 5246.227625477214,
+            "p95_ms": 7800.0,
+            "rps": 5.418583747252067,
+            "failures": 0,
+            "requests": 628
+          },
+          "auth.select_context": {
+            "avg_ms": 0.0,
+            "p95_ms": 0.0,
+            "rps": 0.0,
+            "failures": 0,
+            "requests": 0
+          },
+          "auth.bootstrap": {
+            "avg_ms": 1398.6874484073999,
+            "p95_ms": 4300.0,
+            "rps": 5.418583747252067,
+            "failures": 0,
+            "requests": 628
+          },
+          "read.dashboard": {
+            "avg_ms": 0.0,
+            "p95_ms": 0.0,
+            "rps": 0.0,
+            "failures": 0,
+            "requests": 0
+          },
+          "read.summary": {
+            "avg_ms": 0.0,
+            "p95_ms": 0.0,
+            "rps": 0.0,
+            "failures": 0,
+            "requests": 0
+          }
+        }
+      },
+      "distribution": {
+        "p50_estimated_ms": 3151.1452941772964,
+        "p95_estimated_ms": 3412.699193798845,
+        "p99_estimated_ms": 3476.1630908116485,
+        "avg_rps_window": 8.19832375862069,
+        "max_rps_window": 14.4,
+        "final_failure_count": 0.0
+      },
+      "profile_summary": {
+        "auth.login": {
+          "samples": 631,
+          "query_count_avg": 4.0,
+          "query_count_p95": 4.0,
+          "sql_time_ms_avg": 3110.342,
+          "sql_time_ms_p95": 6226.779,
+          "wall_time_ms_avg": 4155.759,
+          "wall_time_ms_p95": 7128.68,
+          "python_time_ms_avg": 1045.416,
+          "python_time_ms_p95": 2029.472,
+          "instrumented_wall_ms_avg": 4155.582,
+          "instrumented_wall_ms_p95": 7128.525,
+          "unaccounted_wall_ms_avg": 0.177,
+          "unaccounted_wall_ms_p95": 0.264,
+          "cache_hit_count": 0,
+          "stage_metrics": {
+            "fetch_user": {
+              "samples": 631,
+              "wall_ms_avg": 1320.012,
+              "wall_ms_p95": 3560.44,
+              "sql_time_ms_avg": 899.896,
+              "sql_time_ms_p95": 2567.525,
+              "python_time_ms_avg": 420.116,
+              "python_time_ms_p95": 1468.771,
+              "query_count_avg": 1.0,
+              "query_count_p95": 1.0
+            },
+            "password_verify": {
+              "samples": 631,
+              "wall_ms_avg": 621.098,
+              "wall_ms_p95": 1192.072,
+              "sql_time_ms_avg": 0.0,
+              "sql_time_ms_p95": 0.0,
+              "python_time_ms_avg": 621.098,
+              "python_time_ms_p95": 1192.072,
+              "query_count_avg": 0.0,
+              "query_count_p95": 0.0
+            },
+            "resolve_accessible_contexts": {
+              "samples": 631,
+              "wall_ms_avg": 2214.055,
+              "wall_ms_p95": 4614.5,
+              "sql_time_ms_avg": 2210.446,
+              "sql_time_ms_p95": 4610.913,
+              "python_time_ms_avg": 3.609,
+              "python_time_ms_p95": 4.841,
+              "query_count_avg": 3.0,
+              "query_count_p95": 3.0
+            },
+            "resolve_active_context": {
+              "samples": 631,
+              "wall_ms_avg": 0.038,
+              "wall_ms_p95": 0.046,
+              "sql_time_ms_avg": 0.0,
+              "sql_time_ms_p95": 0.0,
+              "python_time_ms_avg": 0.038,
+              "python_time_ms_p95": 0.046,
+              "query_count_avg": 0.0,
+              "query_count_p95": 0.0
+            },
+            "serialization_response": {
+              "samples": 631,
+              "wall_ms_avg": 0.103,
+              "wall_ms_p95": 0.124,
+              "sql_time_ms_avg": 0.0,
+              "sql_time_ms_p95": 0.0,
+              "python_time_ms_avg": 0.103,
+              "python_time_ms_p95": 0.124,
+              "query_count_avg": 0.0,
+              "query_count_p95": 0.0
+            },
+            "token_session_creation": {
+              "samples": 631,
+              "wall_ms_avg": 0.276,
+              "wall_ms_p95": 0.422,
+              "sql_time_ms_avg": 0.0,
+              "sql_time_ms_p95": 0.0,
+              "python_time_ms_avg": 0.276,
+              "python_time_ms_p95": 0.422,
+              "query_count_avg": 0.0,
+              "query_count_p95": 0.0
+            }
+          }
+        },
+        "auth.bootstrap": {
+          "samples": 628,
+          "query_count_avg": 4.0,
+          "query_count_p95": 4.0,
+          "sql_time_ms_avg": 966.173,
+          "sql_time_ms_p95": 2931.533,
+          "wall_time_ms_avg": 683.036,
+          "wall_time_ms_p95": 2481.674,
+          "python_time_ms_avg": 0.0,
+          "python_time_ms_p95": 0.0,
+          "instrumented_wall_ms_avg": 682.711,
+          "instrumented_wall_ms_p95": 2481.355,
+          "unaccounted_wall_ms_avg": 0.325,
+          "unaccounted_wall_ms_p95": 0.388,
+          "cache_hit_count": 0,
+          "stage_metrics": {
+            "bootstrap_membership_lookup": {
+              "samples": 628,
+              "wall_ms_avg": 230.523,
+              "wall_ms_p95": 840.238,
+              "sql_time_ms_avg": 229.259,
+              "sql_time_ms_p95": 838.829,
+              "python_time_ms_avg": 1.264,
+              "python_time_ms_p95": 1.503,
+              "query_count_avg": 1.0,
+              "query_count_p95": 1.0
+            },
+            "bootstrap_modules_lookup": {
+              "samples": 628,
+              "wall_ms_avg": 219.494,
+              "wall_ms_p95": 860.642,
+              "sql_time_ms_avg": 218.785,
+              "sql_time_ms_p95": 859.982,
+              "python_time_ms_avg": 0.709,
+              "python_time_ms_p95": 0.869,
+              "query_count_avg": 1.0,
+              "query_count_p95": 1.0
+            },
+            "bootstrap_owned_businesses_lookup": {
+              "samples": 628,
+              "wall_ms_avg": 232.694,
+              "wall_ms_p95": 848.54,
+              "sql_time_ms_avg": 231.791,
+              "sql_time_ms_p95": 847.768,
+              "python_time_ms_avg": 0.903,
+              "python_time_ms_p95": 1.098,
+              "query_count_avg": 1.0,
+              "query_count_p95": 1.0
+            }
+          }
+        }
+      },
+      "failures_rows": 1,
+      "error_rate": 0.0,
+      "metrics_samples": [
+        {
+          "ts": "2026-03-27T02:58:37.978946+00:00",
+          "backend_cpu_percent": 0.0,
+          "backend_rss_mb": 3.25,
+          "backend_threads": 1
+        },
+        {
+          "ts": "2026-03-27T02:58:39.985664+00:00",
+          "backend_cpu_percent": 0.0,
+          "backend_rss_mb": 3.25,
+          "backend_threads": 1
+        },
+        {
+          "ts": "2026-03-27T02:58:42.031676+00:00",
+          "backend_cpu_percent": 0.0,
+          "backend_rss_mb": 3.25,
+          "backend_threads": 1
+        },
+        {
+          "ts": "2026-03-27T02:58:44.081360+00:00",
+          "backend_cpu_percent": 0.0,
+          "backend_rss_mb": 3.25,
+          "backend_threads": 1
+        },
+        {
+          "ts": "2026-03-27T02:58:46.105766+00:00",
+          "backend_cpu_percent": 0.0,
+          "backend_rss_mb": 3.25,
+          "backend_threads": 1
+        },
+        {
+          "ts": "2026-03-27T02:58:48.119876+00:00",
+          "backend_cpu_percent": 0.0,
+          "backend_rss_mb": 3.25,
+          "backend_threads": 1
+        },
+        {
+          "ts": "2026-03-27T02:58:50.152858+00:00",
+          "backend_cpu_percent": 0.0,
+          "backend_rss_mb": 3.25,
+          "backend_threads": 1
+        },
+        {
+          "ts": "2026-03-27T02:58:52.169636+00:00",
+          "backend_cpu_percent": 0.0,
+          "backend_rss_mb": 3.25,
+          "backend_threads": 1
+        },
+        {
+          "ts": "2026-03-27T02:58:54.191269+00:00",
+          "backend_cpu_percent": 0.0,
+          "backend_rss_mb": 3.25,
+          "backend_threads": 1
+        },
+        {
+          "ts": "2026-03-27T02:58:56.220135+00:00",
+          "backend_cpu_percent": 0.0,
+          "backend_rss_mb": 3.25,
+          "backend_threads": 1
+        },
+        {
+          "ts": "2026-03-27T02:58:58.266131+00:00",
+          "backend_cpu_percent": 0.0,
+          "backend_rss_mb": 3.25,
+          "backend_threads": 1
+        },
+        {
+          "ts": "2026-03-27T02:59:00.272926+00:00",
+          "backend_cpu_percent": 0.0,
+          "backend_rss_mb": 3.25,
+          "backend_threads": 1
+        },
+        {
+          "ts": "2026-03-27T02:59:02.283027+00:00",
+          "backend_cpu_percent": 0.0,
+          "backend_rss_mb": 3.25,
+          "backend_threads": 1
+        },
+        {
+          "ts": "2026-03-27T02:59:04.398604+00:00",
+          "backend_cpu_percent": 0.0,
+          "backend_rss_mb": 3.25,
+          "backend_threads": 1
+        },
+        {
+          "ts": "2026-03-27T02:59:06.457937+00:00",
+          "backend_cpu_percent": 0.0,
+          "backend_rss_mb": 3.25,
+          "backend_threads": 1
+        },
+        {
+          "ts": "2026-03-27T02:59:08.466714+00:00",
+          "backend_cpu_percent": 0.0,
+          "backend_rss_mb": 3.25,
+          "backend_threads": 1
+        },
+        {
+          "ts": "2026-03-27T02:59:10.516717+00:00",
+          "backend_cpu_percent": 0.0,
+          "backend_rss_mb": 3.25,
+          "backend_threads": 1
+        },
+        {
+          "ts": "2026-03-27T02:59:12.536808+00:00",
+          "backend_cpu_percent": 0.0,
+          "backend_rss_mb": 3.25,
+          "backend_threads": 1
+        },
+        {
+          "ts": "2026-03-27T02:59:14.553732+00:00",
+          "backend_cpu_percent": 0.0,
+          "backend_rss_mb": 3.25,
+          "backend_threads": 1
+        },
+        {
+          "ts": "2026-03-27T02:59:16.608412+00:00",
+          "backend_cpu_percent": 0.0,
+          "backend_rss_mb": 3.25,
+          "backend_threads": 1
+        },
+        {
+          "ts": "2026-03-27T02:59:18.633782+00:00",
+          "backend_cpu_percent": 0.0,
+          "backend_rss_mb": 3.25,
+          "backend_threads": 1
+        },
+        {
+          "ts": "2026-03-27T02:59:20.703013+00:00",
+          "backend_cpu_percent": 0.0,
+          "backend_rss_mb": 3.25,
+          "backend_threads": 1
+        },
+        {
+          "ts": "2026-03-27T02:59:22.737443+00:00",
+          "backend_cpu_percent": 0.0,
+          "backend_rss_mb": 3.25,
+          "backend_threads": 1
+        },
+        {
+          "ts": "2026-03-27T02:59:24.765277+00:00",
+          "backend_cpu_percent": 0.0,
+          "backend_rss_mb": 3.25,
+          "backend_threads": 1
+        },
+        {
+          "ts": "2026-03-27T02:59:26.802464+00:00",
+          "backend_cpu_percent": 0.0,
+          "backend_rss_mb": 3.25,
+          "backend_threads": 1
+        },
+        {
+          "ts": "2026-03-27T02:59:28.807933+00:00",
+          "backend_cpu_percent": 0.0,
+          "backend_rss_mb": 3.25,
+          "backend_threads": 1
+        },
+        {
+          "ts": "2026-03-27T02:59:30.846861+00:00",
+          "backend_cpu_percent": 0.0,
+          "backend_rss_mb": 3.25,
+          "backend_threads": 1
+        },
+        {
+          "ts": "2026-03-27T02:59:32.863766+00:00",
+          "backend_cpu_percent": 0.0,
+          "backend_rss_mb": 3.25,
+          "backend_threads": 1
+        },
+        {
+          "ts": "2026-03-27T02:59:34.938704+00:00",
+          "backend_cpu_percent": 0.0,
+          "backend_rss_mb": 3.25,
+          "backend_threads": 1
+        },
+        {
+          "ts": "2026-03-27T02:59:36.994633+00:00",
+          "backend_cpu_percent": 0.0,
+          "backend_rss_mb": 3.25,
+          "backend_threads": 1
+        },
+        {
+          "ts": "2026-03-27T02:59:39.037249+00:00",
+          "backend_cpu_percent": 0.0,
+          "backend_rss_mb": 3.25,
+          "backend_threads": 1
+        },
+        {
+          "ts": "2026-03-27T02:59:41.117220+00:00",
+          "backend_cpu_percent": 0.0,
+          "backend_rss_mb": 3.25,
+          "backend_threads": 1
+        },
+        {
+          "ts": "2026-03-27T02:59:43.122130+00:00",
+          "backend_cpu_percent": 0.0,
+          "backend_rss_mb": 3.25,
+          "backend_threads": 1
+        },
+        {
+          "ts": "2026-03-27T02:59:45.131922+00:00",
+          "backend_cpu_percent": 0.0,
+          "backend_rss_mb": 3.25,
+          "backend_threads": 1
+        },
+        {
+          "ts": "2026-03-27T02:59:47.165764+00:00",
+          "backend_cpu_percent": 0.0,
+          "backend_rss_mb": 3.25,
+          "backend_threads": 1
+        },
+        {
+          "ts": "2026-03-27T02:59:49.186254+00:00",
+          "backend_cpu_percent": 0.0,
+          "backend_rss_mb": 3.25,
+          "backend_threads": 1
+        },
+        {
+          "ts": "2026-03-27T02:59:51.234567+00:00",
+          "backend_cpu_percent": 0.0,
+          "backend_rss_mb": 3.25,
+          "backend_threads": 1
+        },
+        {
+          "ts": "2026-03-27T02:59:53.247239+00:00",
+          "backend_cpu_percent": 0.0,
+          "backend_rss_mb": 3.25,
+          "backend_threads": 1
+        },
+        {
+          "ts": "2026-03-27T02:59:55.273988+00:00",
+          "backend_cpu_percent": 0.0,
+          "backend_rss_mb": 3.25,
+          "backend_threads": 1
+        },
+        {
+          "ts": "2026-03-27T02:59:57.446274+00:00",
+          "backend_cpu_percent": 0.0,
+          "backend_rss_mb": 3.25,
+          "backend_threads": 1
+        },
+        {
+          "ts": "2026-03-27T02:59:59.471939+00:00",
+          "backend_cpu_percent": 0.0,
+          "backend_rss_mb": 3.25,
+          "backend_threads": 1
+        },
+        {
+          "ts": "2026-03-27T03:00:01.475823+00:00",
+          "backend_cpu_percent": 0.0,
+          "backend_rss_mb": 3.25,
+          "backend_threads": 1
+        },
+        {
+          "ts": "2026-03-27T03:00:03.523176+00:00",
+          "backend_cpu_percent": 0.0,
+          "backend_rss_mb": 3.25,
+          "backend_threads": 1
+        },
+        {
+          "ts": "2026-03-27T03:00:05.569909+00:00",
+          "backend_cpu_percent": 0.0,
+          "backend_rss_mb": 3.25,
+          "backend_threads": 1
+        },
+        {
+          "ts": "2026-03-27T03:00:07.608232+00:00",
+          "backend_cpu_percent": 0.0,
+          "backend_rss_mb": 3.25,
+          "backend_threads": 1
+        },
+        {
+          "ts": "2026-03-27T03:00:09.613734+00:00",
+          "backend_cpu_percent": 0.0,
+          "backend_rss_mb": 3.25,
+          "backend_threads": 1
+        },
+        {
+          "ts": "2026-03-27T03:00:11.621674+00:00",
+          "backend_cpu_percent": 0.0,
+          "backend_rss_mb": 3.25,
+          "backend_threads": 1
+        },
+        {
+          "ts": "2026-03-27T03:00:13.699653+00:00",
+          "backend_cpu_percent": 0.0,
+          "backend_rss_mb": 3.29,
+          "backend_threads": 3
+        },
+        {
+          "ts": "2026-03-27T03:00:15.924590+00:00",
+          "backend_cpu_percent": 0.0,
+          "backend_rss_mb": 3.29,
+          "backend_threads": 3
+        },
+        {
+          "ts": "2026-03-27T03:00:17.964735+00:00",
+          "backend_cpu_percent": 0.0,
+          "backend_rss_mb": 3.29,
+          "backend_threads": 3
+        },
+        {
+          "ts": "2026-03-27T03:00:20.075274+00:00",
+          "backend_cpu_percent": 0.0,
+          "backend_rss_mb": 3.29,
+          "backend_threads": 3
+        },
+        {
+          "ts": "2026-03-27T03:00:22.140526+00:00",
+          "backend_cpu_percent": 0.0,
+          "backend_rss_mb": 3.29,
+          "backend_threads": 3
+        },
+        {
+          "ts": "2026-03-27T03:00:24.146359+00:00",
+          "backend_cpu_percent": 0.0,
+          "backend_rss_mb": 3.29,
+          "backend_threads": 3
+        },
+        {
+          "ts": "2026-03-27T03:00:26.170127+00:00",
+          "backend_cpu_percent": 0.0,
+          "backend_rss_mb": 3.29,
+          "backend_threads": 3
+        },
+        {
+          "ts": "2026-03-27T03:00:28.215370+00:00",
+          "backend_cpu_percent": 0.0,
+          "backend_rss_mb": 3.29,
+          "backend_threads": 3
+        },
+        {
+          "ts": "2026-03-27T03:00:30.219390+00:00",
+          "backend_cpu_percent": 0.0,
+          "backend_rss_mb": 3.29,
+          "backend_threads": 3
+        },
+        {
+          "ts": "2026-03-27T03:00:32.331576+00:00",
+          "backend_cpu_percent": 0.0,
+          "backend_rss_mb": 3.29,
+          "backend_threads": 3
+        },
+        {
+          "ts": "2026-03-27T03:00:34.338218+00:00",
+          "backend_cpu_percent": 0.0,
+          "backend_rss_mb": 3.29,
+          "backend_threads": 3
+        },
+        {
+          "ts": "2026-03-27T03:00:36.347728+00:00",
+          "backend_cpu_percent": 0.0,
+          "backend_rss_mb": 3.29,
+          "backend_threads": 3
+        },
+        {
+          "ts": "2026-03-27T03:00:38.371688+00:00",
+          "backend_cpu_percent": 0.0,
+          "backend_rss_mb": 3.29,
+          "backend_threads": 3
+        },
+        {
+          "ts": "2026-03-27T03:00:40.397561+00:00",
+          "backend_cpu_percent": 0.0,
+          "backend_rss_mb": 3.29,
+          "backend_threads": 3
+        }
+      ],
+      "metrics_summary": {
+        "backend_cpu_peak_percent": 0.0,
+        "backend_rss_peak_mb": 3.29,
+        "backend_threads_peak": 3,
+        "db_total_connections_peak": 0.0,
+        "db_active_connections_peak": 0.0,
+        "db_waiting_connections_peak": 0.0,
+        "db_longest_active_seconds_peak": 0.0
+      },
+      "artifacts": {
+        "stats_csv": "load-tests\\results\\phase-auth-login-remnant\\scenario_login_u40_stats.csv",
+        "stats_history_csv": "load-tests\\results\\phase-auth-login-remnant\\scenario_login_u40_stats_history.csv",
+        "failures_csv": "load-tests\\results\\phase-auth-login-remnant\\scenario_login_u40_failures.csv",
+        "profile_summary_json": "load-tests\\results\\phase-auth-login-remnant\\scenario_login_u40_profile_summary.json",
+        "report_html": "load-tests\\results\\phase-auth-login-remnant\\scenario_login_u40.html"
+      },
+      "capacity_pass": false
+    },
+    {
+      "scenario": "LOGIN",
+      "users": 60,
+      "started_at": "2026-03-27T03:00:40.719761+00:00",
+      "finished_at": "2026-03-27T03:02:44.314906+00:00",
+      "command": [
+        "C:\\Users\\harae\\Desktop\\ui migration\\proyecto1\\.venv\\Scripts\\locust.exe",
+        "-f",
+        "C:\\Users\\harae\\Desktop\\ui migration\\proyecto1\\load-tests\\locustfile.py",
+        "--host",
+        "http://127.0.0.1:5000",
+        "--users",
+        "60",
+        "--spawn-rate",
+        "5.0",
+        "--run-time",
+        "2m",
+        "--csv",
+        "load-tests\\results\\phase-auth-login-remnant\\scenario_login_u60",
+        "--html",
+        "load-tests\\results\\phase-auth-login-remnant\\scenario_login_u60.html",
+        "--headless",
+        "--only-summary"
+      ],
+      "exit_code": 0,
+      "stdout_tail": "",
+      "stderr_tail": "[2026-03-26 22:00:44,652] DESKTOP-9DI2UJR/INFO/locust.main: Starting Locust 2.43.3\n[2026-03-26 22:00:44,655] DESKTOP-9DI2UJR/INFO/locust.main: Run time limit set to 120 seconds\n[2026-03-26 22:00:44,657] DESKTOP-9DI2UJR/INFO/locust.runners: Ramping to 60 users at a rate of 5.00 per second\n[2026-03-26 22:00:55,743] DESKTOP-9DI2UJR/INFO/locust.runners: All users spawned: {\"CuadernoUser\": 60} (60 total users)\n[2026-03-26 22:02:43,836] DESKTOP-9DI2UJR/INFO/locust.main: --run-time limit reached, shutting down\n[2026-03-26 22:02:44,048] DESKTOP-9DI2UJR/INFO/locust.main: writing html report to file: load-tests\\results\\phase-auth-login-remnant\\scenario_login_u60.html\n[2026-03-26 22:02:44,084] DESKTOP-9DI2UJR/INFO/locust.main: Shutting down (exit code 0)\nType     Name                                                                          # reqs      # fails |    Avg     Min     Max    Med |   req/s  failures/s\n--------|----------------------------------------------------------------------------|-------|-------------|-------|-------|-------|-------|--------|-----------\nGET      auth.bootstrap                                                                   636     0(0.00%) |   3874      29   10862   3900 |    5.35        0.00\nPOST     auth.login                                                                       636     0(0.00%) |   6107     579   12518   5600 |    5.35        0.00\n--------|----------------------------------------------------------------------------|-------|-------------|-------|-------|-------|-------|--------|-----------\n         Aggregated                                                                      1272     0(0.00%) |   4991      29   12518   4700 |   10.70        0.00\n\nResponse time percentiles (approximated)\nType     Name                                                                                  50%    66%    75%    80%    90%    95%    98%    99%  99.9% 99.99%   100% # reqs\n--------|--------------------------------------------------------------------------------|--------|------|------|------|------|------|------|------|------|------|------|------\nGET      auth.bootstrap                                                                       3900   4500   5000   5400   6400   9700  11000  11000  11000  11000  11000    636\nPOST     auth.login                                                                           5600   6900   7700   8300   9300  11000  12000  12000  13000  13000  13000    636\n--------|--------------------------------------------------------------------------------|--------|------|------|------|------|------|------|------|------|------|------|------\n         Aggregated                                                                           4700   5600   6300   7000   8600  10000  11000  12000  12000  13000  13000   1272\n\n",
+      "stats_summary": {
+        "requests": 1248,
+        "failures": 0,
+        "median_ms": 4700.0,
+        "avg_ms": 5015.23674126592,
+        "min_ms": 29.41969998937566,
+        "max_ms": 12518.650099998922,
+        "avg_size": 1923.5,
+        "rps": 10.502528469076882,
+        "failures_per_sec": 0.0,
+        "p50_ms": 4700.0,
+        "p95_ms": 10000.0,
+        "p99_ms": 12000.0,
+        "slowest_endpoint": {
+          "name": "auth.login",
+          "method": "POST",
+          "avg_ms": 6106.2781863780765,
+          "p95_ms": 11000.0,
+          "p99_ms": 12000.0,
+          "rps": 5.251264234538441
+        },
+        "endpoint_metrics": {
+          "auth.login": {
+            "avg_ms": 6106.2781863780765,
+            "p95_ms": 11000.0,
+            "rps": 5.251264234538441,
+            "failures": 0,
+            "requests": 624
+          },
+          "auth.select_context": {
+            "avg_ms": 0.0,
+            "p95_ms": 0.0,
+            "rps": 0.0,
+            "failures": 0,
+            "requests": 0
+          },
+          "auth.bootstrap": {
+            "avg_ms": 3924.1952961537636,
+            "p95_ms": 9700.0,
+            "rps": 5.251264234538441,
+            "failures": 0,
+            "requests": 624
+          },
+          "read.dashboard": {
+            "avg_ms": 0.0,
+            "p95_ms": 0.0,
+            "rps": 0.0,
+            "failures": 0,
+            "requests": 0
+          },
+          "read.summary": {
+            "avg_ms": 0.0,
+            "p95_ms": 0.0,
+            "rps": 0.0,
+            "failures": 0,
+            "requests": 0
+          }
+        }
+      },
+      "distribution": {
+        "p50_estimated_ms": 4507.707887360465,
+        "p95_estimated_ms": 4765.689537649957,
+        "p99_estimated_ms": 4910.710685953067,
+        "avg_rps_window": 9.99679801724138,
+        "max_rps_window": 16.2,
+        "final_failure_count": 0.0
+      },
+      "profile_summary": {
+        "auth.login": {
+          "samples": 658,
+          "query_count_avg": 4.0,
+          "query_count_p95": 4.0,
+          "sql_time_ms_avg": 3898.728,
+          "sql_time_ms_p95": 7134.621,
+          "wall_time_ms_avg": 4925.229,
+          "wall_time_ms_p95": 7867.2,
+          "python_time_ms_avg": 1026.501,
+          "python_time_ms_p95": 2097.044,
+          "instrumented_wall_ms_avg": 4925.047,
+          "instrumented_wall_ms_p95": 7867.02,
+          "unaccounted_wall_ms_avg": 0.182,
+          "unaccounted_wall_ms_p95": 0.243,
+          "cache_hit_count": 0,
+          "stage_metrics": {
+            "fetch_user": {
+              "samples": 658,
+              "wall_ms_avg": 1541.78,
+              "wall_ms_p95": 3631.639,
+              "sql_time_ms_avg": 1036.661,
+              "sql_time_ms_p95": 2775.296,
+              "python_time_ms_avg": 505.119,
+              "python_time_ms_p95": 1638.885,
+              "query_count_avg": 1.0,
+              "query_count_p95": 1.0
+            },
+            "password_verify": {
+              "samples": 658,
+              "wall_ms_avg": 517.109,
+              "wall_ms_p95": 849.007,
+              "sql_time_ms_avg": 0.0,
+              "sql_time_ms_p95": 0.0,
+              "python_time_ms_avg": 517.109,
+              "python_time_ms_p95": 849.007,
+              "query_count_avg": 0.0,
+              "query_count_p95": 0.0
+            },
+            "resolve_accessible_contexts": {
+              "samples": 658,
+              "wall_ms_avg": 2865.651,
+              "wall_ms_p95": 5798.583,
+              "sql_time_ms_avg": 2862.066,
+              "sql_time_ms_p95": 5795.27,
+              "python_time_ms_avg": 3.585,
+              "python_time_ms_p95": 4.794,
+              "query_count_avg": 3.0,
+              "query_count_p95": 3.0
+            },
+            "resolve_active_context": {
+              "samples": 658,
+              "wall_ms_avg": 0.037,
+              "wall_ms_p95": 0.047,
+              "sql_time_ms_avg": 0.0,
+              "sql_time_ms_p95": 0.0,
+              "python_time_ms_avg": 0.037,
+              "python_time_ms_p95": 0.047,
+              "query_count_avg": 0.0,
+              "query_count_p95": 0.0
+            },
+            "serialization_response": {
+              "samples": 658,
+              "wall_ms_avg": 0.101,
+              "wall_ms_p95": 0.121,
+              "sql_time_ms_avg": 0.0,
+              "sql_time_ms_p95": 0.0,
+              "python_time_ms_avg": 0.101,
+              "python_time_ms_p95": 0.121,
+              "query_count_avg": 0.0,
+              "query_count_p95": 0.0
+            },
+            "token_session_creation": {
+              "samples": 658,
+              "wall_ms_avg": 0.368,
+              "wall_ms_p95": 0.559,
+              "sql_time_ms_avg": 0.0,
+              "sql_time_ms_p95": 0.0,
+              "python_time_ms_avg": 0.368,
+              "python_time_ms_p95": 0.559,
+              "query_count_avg": 0.0,
+              "query_count_p95": 0.0
+            }
+          }
+        },
+        "auth.bootstrap": {
+          "samples": 636,
+          "query_count_avg": 4.0,
+          "query_count_p95": 4.0,
+          "sql_time_ms_avg": 2958.103,
+          "sql_time_ms_p95": 7452.593,
+          "wall_time_ms_avg": 2098.732,
+          "wall_time_ms_p95": 5144.7,
+          "python_time_ms_avg": 0.0,
+          "python_time_ms_p95": 0.0,
+          "instrumented_wall_ms_avg": 2098.403,
+          "instrumented_wall_ms_p95": 5144.385,
+          "unaccounted_wall_ms_avg": 0.33,
+          "unaccounted_wall_ms_p95": 0.392,
+          "cache_hit_count": 0,
+          "stage_metrics": {
+            "bootstrap_membership_lookup": {
+              "samples": 636,
+              "wall_ms_avg": 797.924,
+              "wall_ms_p95": 2394.593,
+              "sql_time_ms_avg": 796.634,
+              "sql_time_ms_p95": 2393.349,
+              "python_time_ms_avg": 1.29,
+              "python_time_ms_p95": 1.521,
+              "query_count_avg": 1.0,
+              "query_count_p95": 1.0
+            },
+            "bootstrap_modules_lookup": {
+              "samples": 636,
+              "wall_ms_avg": 645.96,
+              "wall_ms_p95": 2002.005,
+              "sql_time_ms_avg": 645.228,
+              "sql_time_ms_p95": 2001.343,
+              "python_time_ms_avg": 0.732,
+              "python_time_ms_p95": 0.886,
+              "query_count_avg": 1.0,
+              "query_count_p95": 1.0
+            },
+            "bootstrap_owned_businesses_lookup": {
+              "samples": 636,
+              "wall_ms_avg": 654.519,
+              "wall_ms_p95": 2040.803,
+              "sql_time_ms_avg": 653.585,
+              "sql_time_ms_p95": 2039.822,
+              "python_time_ms_avg": 0.934,
+              "python_time_ms_p95": 1.13,
+              "query_count_avg": 1.0,
+              "query_count_p95": 1.0
+            }
+          }
+        }
+      },
+      "failures_rows": 1,
+      "error_rate": 0.0,
+      "metrics_samples": [
+        {
+          "ts": "2026-03-27T03:00:40.837706+00:00",
+          "backend_cpu_percent": 0.0,
+          "backend_rss_mb": 3.29,
+          "backend_threads": 3
+        },
+        {
+          "ts": "2026-03-27T03:00:42.883081+00:00",
+          "backend_cpu_percent": 0.0,
+          "backend_rss_mb": 3.29,
+          "backend_threads": 3
+        },
+        {
+          "ts": "2026-03-27T03:00:44.931061+00:00",
+          "backend_cpu_percent": 0.0,
+          "backend_rss_mb": 3.29,
+          "backend_threads": 3
+        },
+        {
+          "ts": "2026-03-27T03:00:46.940163+00:00",
+          "backend_cpu_percent": 0.0,
+          "backend_rss_mb": 3.29,
+          "backend_threads": 3
+        },
+        {
+          "ts": "2026-03-27T03:00:48.977289+00:00",
+          "backend_cpu_percent": 0.0,
+          "backend_rss_mb": 3.29,
+          "backend_threads": 3
+        },
+        {
+          "ts": "2026-03-27T03:00:51.021190+00:00",
+          "backend_cpu_percent": 0.0,
+          "backend_rss_mb": 3.29,
+          "backend_threads": 3
+        },
+        {
+          "ts": "2026-03-27T03:00:53.032996+00:00",
+          "backend_cpu_percent": 0.0,
+          "backend_rss_mb": 3.29,
+          "backend_threads": 3
+        },
+        {
+          "ts": "2026-03-27T03:00:55.047004+00:00",
+          "backend_cpu_percent": 0.0,
+          "backend_rss_mb": 3.29,
+          "backend_threads": 3
+        },
+        {
+          "ts": "2026-03-27T03:00:57.110022+00:00",
+          "backend_cpu_percent": 0.0,
+          "backend_rss_mb": 3.29,
+          "backend_threads": 3
+        },
+        {
+          "ts": "2026-03-27T03:00:59.151276+00:00",
+          "backend_cpu_percent": 0.0,
+          "backend_rss_mb": 3.29,
+          "backend_threads": 3
+        },
+        {
+          "ts": "2026-03-27T03:01:01.175531+00:00",
+          "backend_cpu_percent": 0.0,
+          "backend_rss_mb": 3.29,
+          "backend_threads": 3
+        },
+        {
+          "ts": "2026-03-27T03:01:03.222514+00:00",
+          "backend_cpu_percent": 0.0,
+          "backend_rss_mb": 3.29,
+          "backend_threads": 3
+        },
+        {
+          "ts": "2026-03-27T03:01:05.247596+00:00",
+          "backend_cpu_percent": 0.0,
+          "backend_rss_mb": 3.29,
+          "backend_threads": 3
+        },
+        {
+          "ts": "2026-03-27T03:01:07.278624+00:00",
+          "backend_cpu_percent": 0.0,
+          "backend_rss_mb": 3.29,
+          "backend_threads": 3
+        },
+        {
+          "ts": "2026-03-27T03:01:09.332728+00:00",
+          "backend_cpu_percent": 0.0,
+          "backend_rss_mb": 3.29,
+          "backend_threads": 3
+        },
+        {
+          "ts": "2026-03-27T03:01:11.401552+00:00",
+          "backend_cpu_percent": 0.0,
+          "backend_rss_mb": 3.29,
+          "backend_threads": 3
+        },
+        {
+          "ts": "2026-03-27T03:01:13.431854+00:00",
+          "backend_cpu_percent": 0.0,
+          "backend_rss_mb": 3.29,
+          "backend_threads": 3
+        },
+        {
+          "ts": "2026-03-27T03:01:15.460090+00:00",
+          "backend_cpu_percent": 0.0,
+          "backend_rss_mb": 3.29,
+          "backend_threads": 3
+        },
+        {
+          "ts": "2026-03-27T03:01:17.473967+00:00",
+          "backend_cpu_percent": 0.0,
+          "backend_rss_mb": 3.29,
+          "backend_threads": 3
+        },
+        {
+          "ts": "2026-03-27T03:01:19.491818+00:00",
+          "backend_cpu_percent": 0.0,
+          "backend_rss_mb": 3.29,
+          "backend_threads": 3
+        },
+        {
+          "ts": "2026-03-27T03:01:21.496485+00:00",
+          "backend_cpu_percent": 0.0,
+          "backend_rss_mb": 3.29,
+          "backend_threads": 3
+        },
+        {
+          "ts": "2026-03-27T03:01:23.522469+00:00",
+          "backend_cpu_percent": 0.0,
+          "backend_rss_mb": 3.29,
+          "backend_threads": 3
+        },
+        {
+          "ts": "2026-03-27T03:01:25.535624+00:00",
+          "backend_cpu_percent": 0.0,
+          "backend_rss_mb": 3.29,
+          "backend_threads": 3
+        },
+        {
+          "ts": "2026-03-27T03:01:27.599255+00:00",
+          "backend_cpu_percent": 0.0,
+          "backend_rss_mb": 3.29,
+          "backend_threads": 3
+        },
+        {
+          "ts": "2026-03-27T03:01:29.612655+00:00",
+          "backend_cpu_percent": 0.0,
+          "backend_rss_mb": 3.29,
+          "backend_threads": 3
+        },
+        {
+          "ts": "2026-03-27T03:01:31.635141+00:00",
+          "backend_cpu_percent": 0.0,
+          "backend_rss_mb": 3.29,
+          "backend_threads": 3
+        },
+        {
+          "ts": "2026-03-27T03:01:33.709761+00:00",
+          "backend_cpu_percent": 0.0,
+          "backend_rss_mb": 3.29,
+          "backend_threads": 3
+        },
+        {
+          "ts": "2026-03-27T03:01:35.730327+00:00",
+          "backend_cpu_percent": 0.0,
+          "backend_rss_mb": 3.29,
+          "backend_threads": 3
+        },
+        {
+          "ts": "2026-03-27T03:01:37.774724+00:00",
+          "backend_cpu_percent": 0.0,
+          "backend_rss_mb": 3.29,
+          "backend_threads": 3
+        },
+        {
+          "ts": "2026-03-27T03:01:39.808894+00:00",
+          "backend_cpu_percent": 0.0,
+          "backend_rss_mb": 3.29,
+          "backend_threads": 3
+        },
+        {
+          "ts": "2026-03-27T03:01:41.928954+00:00",
+          "backend_cpu_percent": 0.0,
+          "backend_rss_mb": 3.29,
+          "backend_threads": 3
+        },
+        {
+          "ts": "2026-03-27T03:01:43.973663+00:00",
+          "backend_cpu_percent": 0.0,
+          "backend_rss_mb": 3.29,
+          "backend_threads": 3
+        },
+        {
+          "ts": "2026-03-27T03:01:45.990657+00:00",
+          "backend_cpu_percent": 0.0,
+          "backend_rss_mb": 3.29,
+          "backend_threads": 3
+        },
+        {
+          "ts": "2026-03-27T03:01:48.020090+00:00",
+          "backend_cpu_percent": 0.0,
+          "backend_rss_mb": 3.29,
+          "backend_threads": 3
+        },
+        {
+          "ts": "2026-03-27T03:01:50.026393+00:00",
+          "backend_cpu_percent": 0.0,
+          "backend_rss_mb": 3.29,
+          "backend_threads": 3
+        },
+        {
+          "ts": "2026-03-27T03:01:52.140178+00:00",
+          "backend_cpu_percent": 0.0,
+          "backend_rss_mb": 3.29,
+          "backend_threads": 3
+        },
+        {
+          "ts": "2026-03-27T03:01:54.168764+00:00",
+          "backend_cpu_percent": 0.0,
+          "backend_rss_mb": 3.29,
+          "backend_threads": 3
+        },
+        {
+          "ts": "2026-03-27T03:01:56.180563+00:00",
+          "backend_cpu_percent": 0.0,
+          "backend_rss_mb": 3.27,
+          "backend_threads": 1
+        },
+        {
+          "ts": "2026-03-27T03:01:58.211404+00:00",
+          "backend_cpu_percent": 0.0,
+          "backend_rss_mb": 3.27,
+          "backend_threads": 1
+        },
+        {
+          "ts": "2026-03-27T03:02:00.231296+00:00",
+          "backend_cpu_percent": 0.0,
+          "backend_rss_mb": 3.27,
+          "backend_threads": 1
+        },
+        {
+          "ts": "2026-03-27T03:02:02.241716+00:00",
+          "backend_cpu_percent": 0.0,
+          "backend_rss_mb": 3.27,
+          "backend_threads": 1
+        },
+        {
+          "ts": "2026-03-27T03:02:04.249643+00:00",
+          "backend_cpu_percent": 0.0,
+          "backend_rss_mb": 3.27,
+          "backend_threads": 1
+        },
+        {
+          "ts": "2026-03-27T03:02:06.308495+00:00",
+          "backend_cpu_percent": 0.0,
+          "backend_rss_mb": 3.27,
+          "backend_threads": 1
+        },
+        {
+          "ts": "2026-03-27T03:02:08.343507+00:00",
+          "backend_cpu_percent": 0.0,
+          "backend_rss_mb": 3.27,
+          "backend_threads": 1
+        },
+        {
+          "ts": "2026-03-27T03:02:10.394422+00:00",
+          "backend_cpu_percent": 0.0,
+          "backend_rss_mb": 3.27,
+          "backend_threads": 1
+        },
+        {
+          "ts": "2026-03-27T03:02:12.463979+00:00",
+          "backend_cpu_percent": 0.0,
+          "backend_rss_mb": 3.27,
+          "backend_threads": 1
+        },
+        {
+          "ts": "2026-03-27T03:02:14.504042+00:00",
+          "backend_cpu_percent": 0.0,
+          "backend_rss_mb": 3.27,
+          "backend_threads": 1
+        },
+        {
+          "ts": "2026-03-27T03:02:16.588981+00:00",
+          "backend_cpu_percent": 0.0,
+          "backend_rss_mb": 3.27,
+          "backend_threads": 1
+        },
+        {
+          "ts": "2026-03-27T03:02:18.699745+00:00",
+          "backend_cpu_percent": 0.0,
+          "backend_rss_mb": 3.27,
+          "backend_threads": 1
+        },
+        {
+          "ts": "2026-03-27T03:02:20.772886+00:00",
+          "backend_cpu_percent": 0.0,
+          "backend_rss_mb": 3.27,
+          "backend_threads": 1
+        },
+        {
+          "ts": "2026-03-27T03:02:22.838169+00:00",
+          "backend_cpu_percent": 0.0,
+          "backend_rss_mb": 3.27,
+          "backend_threads": 1
+        },
+        {
+          "ts": "2026-03-27T03:02:24.855033+00:00",
+          "backend_cpu_percent": 0.0,
+          "backend_rss_mb": 3.27,
+          "backend_threads": 1
+        },
+        {
+          "ts": "2026-03-27T03:02:26.869419+00:00",
+          "backend_cpu_percent": 0.0,
+          "backend_rss_mb": 3.27,
+          "backend_threads": 1
+        },
+        {
+          "ts": "2026-03-27T03:02:28.885180+00:00",
+          "backend_cpu_percent": 0.0,
+          "backend_rss_mb": 3.27,
+          "backend_threads": 1
+        },
+        {
+          "ts": "2026-03-27T03:02:30.898349+00:00",
+          "backend_cpu_percent": 0.0,
+          "backend_rss_mb": 3.27,
+          "backend_threads": 1
+        },
+        {
+          "ts": "2026-03-27T03:02:32.942307+00:00",
+          "backend_cpu_percent": 0.0,
+          "backend_rss_mb": 3.27,
+          "backend_threads": 1
+        },
+        {
+          "ts": "2026-03-27T03:02:35.069480+00:00",
+          "backend_cpu_percent": 0.0,
+          "backend_rss_mb": 3.27,
+          "backend_threads": 1
+        },
+        {
+          "ts": "2026-03-27T03:02:37.123853+00:00",
+          "backend_cpu_percent": 0.0,
+          "backend_rss_mb": 3.27,
+          "backend_threads": 1
+        },
+        {
+          "ts": "2026-03-27T03:02:39.218459+00:00",
+          "backend_cpu_percent": 0.0,
+          "backend_rss_mb": 3.27,
+          "backend_threads": 1
+        },
+        {
+          "ts": "2026-03-27T03:02:41.292786+00:00",
+          "backend_cpu_percent": 0.0,
+          "backend_rss_mb": 3.27,
+          "backend_threads": 1
+        },
+        {
+          "ts": "2026-03-27T03:02:43.311846+00:00",
+          "backend_cpu_percent": 0.0,
+          "backend_rss_mb": 3.27,
+          "backend_threads": 1
+        }
+      ],
+      "metrics_summary": {
+        "backend_cpu_peak_percent": 0.0,
+        "backend_rss_peak_mb": 3.29,
+        "backend_threads_peak": 3,
+        "db_total_connections_peak": 0.0,
+        "db_active_connections_peak": 0.0,
+        "db_waiting_connections_peak": 0.0,
+        "db_longest_active_seconds_peak": 0.0
+      },
+      "artifacts": {
+        "stats_csv": "load-tests\\results\\phase-auth-login-remnant\\scenario_login_u60_stats.csv",
+        "stats_history_csv": "load-tests\\results\\phase-auth-login-remnant\\scenario_login_u60_stats_history.csv",
+        "failures_csv": "load-tests\\results\\phase-auth-login-remnant\\scenario_login_u60_failures.csv",
+        "profile_summary_json": "load-tests\\results\\phase-auth-login-remnant\\scenario_login_u60_profile_summary.json",
+        "report_html": "load-tests\\results\\phase-auth-login-remnant\\scenario_login_u60.html"
+      },
+      "capacity_pass": false
+    },
+    {
+      "scenario": "LOGIN",
+      "users": 80,
+      "started_at": "2026-03-27T03:02:44.318805+00:00",
+      "finished_at": "2026-03-27T03:04:46.043239+00:00",
+      "command": [
+        "C:\\Users\\harae\\Desktop\\ui migration\\proyecto1\\.venv\\Scripts\\locust.exe",
+        "-f",
+        "C:\\Users\\harae\\Desktop\\ui migration\\proyecto1\\load-tests\\locustfile.py",
+        "--host",
+        "http://127.0.0.1:5000",
+        "--users",
+        "80",
+        "--spawn-rate",
+        "5.0",
+        "--run-time",
+        "2m",
+        "--csv",
+        "load-tests\\results\\phase-auth-login-remnant\\scenario_login_u80",
+        "--html",
+        "load-tests\\results\\phase-auth-login-remnant\\scenario_login_u80.html",
+        "--headless",
+        "--only-summary"
+      ],
+      "exit_code": 0,
+      "stdout_tail": "",
+      "stderr_tail": "[2026-03-26 22:02:46,945] DESKTOP-9DI2UJR/INFO/locust.main: Starting Locust 2.43.3\n[2026-03-26 22:02:46,948] DESKTOP-9DI2UJR/INFO/locust.main: Run time limit set to 120 seconds\n[2026-03-26 22:02:46,969] DESKTOP-9DI2UJR/INFO/locust.runners: Ramping to 80 users at a rate of 5.00 per second\n[2026-03-26 22:03:02,346] DESKTOP-9DI2UJR/INFO/locust.runners: All users spawned: {\"CuadernoUser\": 80} (80 total users)\n[2026-03-26 22:04:45,321] DESKTOP-9DI2UJR/INFO/locust.main: --run-time limit reached, shutting down\n[2026-03-26 22:04:45,679] DESKTOP-9DI2UJR/INFO/locust.main: writing html report to file: load-tests\\results\\phase-auth-login-remnant\\scenario_login_u80.html\n[2026-03-26 22:04:45,698] DESKTOP-9DI2UJR/INFO/locust.main: Shutting down (exit code 0)\nType     Name                                                                          # reqs      # fails |    Avg     Min     Max    Med |   req/s  failures/s\n--------|----------------------------------------------------------------------------|-------|-------------|-------|-------|-------|-------|--------|-----------\nGET      auth.bootstrap                                                                   618     0(0.00%) |   4025      40   12405   3700 |    5.70        0.00\nPOST     auth.login                                                                       618     0(0.00%) |   8354     768   12948   8500 |    5.70        0.00\n--------|----------------------------------------------------------------------------|-------|-------------|-------|-------|-------|-------|--------|-----------\n         Aggregated                                                                      1236     0(0.00%) |   6189      40   12948   5800 |   11.41        0.00\n\nResponse time percentiles (approximated)\nType     Name                                                                                  50%    66%    75%    80%    90%    95%    98%    99%  99.9% 99.99%   100% # reqs\n--------|--------------------------------------------------------------------------------|--------|------|------|------|------|------|------|------|------|------|------|------\nGET      auth.bootstrap                                                                       3700   4200   4900   5200   6700   8200   9600  10000  12000  12000  12000    618\nPOST     auth.login                                                                           8500   9700  10000  11000  12000  12000  13000  13000  13000  13000  13000    618\n--------|--------------------------------------------------------------------------------|--------|------|------|------|------|------|------|------|------|------|------|------\n         Aggregated                                                                           5800   7800   8600   9300  11000  12000  12000  13000  13000  13000  13000   1236\n\n",
+      "stats_summary": {
+        "requests": 1236,
+        "failures": 0,
+        "median_ms": 5800.0,
+        "avg_ms": 6189.680229611965,
+        "min_ms": 40.60010000830516,
+        "max_ms": 12948.657400003867,
+        "avg_size": 1923.5,
+        "rps": 11.405130875630057,
+        "failures_per_sec": 0.0,
+        "p50_ms": 5800.0,
+        "p95_ms": 12000.0,
+        "p99_ms": 13000.0,
+        "slowest_endpoint": {
+          "name": "auth.login",
+          "method": "POST",
+          "avg_ms": 8354.277953074561,
+          "p95_ms": 12000.0,
+          "p99_ms": 13000.0,
+          "rps": 5.702565437815029
+        },
+        "endpoint_metrics": {
+          "auth.login": {
+            "avg_ms": 8354.277953074561,
+            "p95_ms": 12000.0,
+            "rps": 5.702565437815029,
+            "failures": 0,
+            "requests": 618
+          },
+          "auth.select_context": {
+            "avg_ms": 0.0,
+            "p95_ms": 0.0,
+            "rps": 0.0,
+            "failures": 0,
+            "requests": 0
+          },
+          "auth.bootstrap": {
+            "avg_ms": 4025.082506149375,
+            "p95_ms": 8200.0,
+            "rps": 5.702565437815029,
+            "failures": 0,
+            "requests": 618
+          },
+          "read.dashboard": {
+            "avg_ms": 0.0,
+            "p95_ms": 0.0,
+            "rps": 0.0,
+            "failures": 0,
+            "requests": 0
+          },
+          "read.summary": {
+            "avg_ms": 0.0,
+            "p95_ms": 0.0,
+            "rps": 0.0,
+            "failures": 0,
+            "requests": 0
+          }
+        }
+      },
+      "distribution": {
+        "p50_estimated_ms": 5926.533817931238,
+        "p95_estimated_ms": 6293.802031481805,
+        "p99_estimated_ms": 6297.333135239686,
+        "avg_rps_window": 9.545495495495496,
+        "max_rps_window": 17.6,
+        "final_failure_count": 0.0
+      },
+      "profile_summary": {
+        "auth.login": {
+          "samples": 668,
+          "query_count_avg": 4.0,
+          "query_count_p95": 4.0,
+          "sql_time_ms_avg": 5127.265,
+          "sql_time_ms_p95": 8842.523,
+          "wall_time_ms_avg": 7452.447,
+          "wall_time_ms_p95": 11285.866,
+          "python_time_ms_avg": 2325.182,
+          "python_time_ms_p95": 5595.894,
+          "instrumented_wall_ms_avg": 7452.263,
+          "instrumented_wall_ms_p95": 11285.723,
+          "unaccounted_wall_ms_avg": 0.184,
+          "unaccounted_wall_ms_p95": 0.26,
+          "cache_hit_count": 0,
+          "stage_metrics": {
+            "fetch_user": {
+              "samples": 668,
+              "wall_ms_avg": 3154.988,
+              "wall_ms_p95": 6532.783,
+              "sql_time_ms_avg": 1402.061,
+              "sql_time_ms_p95": 3469.763,
+              "python_time_ms_avg": 1752.927,
+              "python_time_ms_p95": 5067.162,
+              "query_count_avg": 1.0,
+              "query_count_p95": 1.0
+            },
+            "password_verify": {
+              "samples": 668,
+              "wall_ms_avg": 567.931,
+              "wall_ms_p95": 890.684,
+              "sql_time_ms_avg": 0.0,
+              "sql_time_ms_p95": 0.0,
+              "python_time_ms_avg": 567.931,
+              "python_time_ms_p95": 890.684,
+              "query_count_avg": 0.0,
+              "query_count_p95": 0.0
+            },
+            "resolve_accessible_contexts": {
+              "samples": 668,
+              "wall_ms_avg": 3728.9,
+              "wall_ms_p95": 7157.894,
+              "sql_time_ms_avg": 3725.204,
+              "sql_time_ms_p95": 7153.949,
+              "python_time_ms_avg": 3.696,
+              "python_time_ms_p95": 5.232,
+              "query_count_avg": 3.0,
+              "query_count_p95": 3.0
+            },
+            "resolve_active_context": {
+              "samples": 668,
+              "wall_ms_avg": 0.037,
+              "wall_ms_p95": 0.05,
+              "sql_time_ms_avg": 0.0,
+              "sql_time_ms_p95": 0.0,
+              "python_time_ms_avg": 0.037,
+              "python_time_ms_p95": 0.05,
+              "query_count_avg": 0.0,
+              "query_count_p95": 0.0
+            },
+            "serialization_response": {
+              "samples": 668,
+              "wall_ms_avg": 0.102,
+              "wall_ms_p95": 0.129,
+              "sql_time_ms_avg": 0.0,
+              "sql_time_ms_p95": 0.0,
+              "python_time_ms_avg": 0.102,
+              "python_time_ms_p95": 0.129,
+              "query_count_avg": 0.0,
+              "query_count_p95": 0.0
+            },
+            "token_session_creation": {
+              "samples": 668,
+              "wall_ms_avg": 0.305,
+              "wall_ms_p95": 0.609,
+              "sql_time_ms_avg": 0.0,
+              "sql_time_ms_p95": 0.0,
+              "python_time_ms_avg": 0.305,
+              "python_time_ms_p95": 0.609,
+              "query_count_avg": 0.0,
+              "query_count_p95": 0.0
+            }
+          }
+        },
+        "auth.bootstrap": {
+          "samples": 618,
+          "query_count_avg": 4.0,
+          "query_count_p95": 4.0,
+          "sql_time_ms_avg": 2033.506,
+          "sql_time_ms_p95": 5207.595,
+          "wall_time_ms_avg": 1536.479,
+          "wall_time_ms_p95": 4889.185,
+          "python_time_ms_avg": 0.0,
+          "python_time_ms_p95": 0.0,
+          "instrumented_wall_ms_avg": 1536.16,
+          "instrumented_wall_ms_p95": 4888.87,
+          "unaccounted_wall_ms_avg": 0.319,
+          "unaccounted_wall_ms_p95": 0.389,
+          "cache_hit_count": 0,
+          "stage_metrics": {
+            "bootstrap_membership_lookup": {
+              "samples": 618,
+              "wall_ms_avg": 521.041,
+              "wall_ms_p95": 1655.094,
+              "sql_time_ms_avg": 519.731,
+              "sql_time_ms_p95": 1653.684,
+              "python_time_ms_avg": 1.31,
+              "python_time_ms_p95": 1.68,
+              "query_count_avg": 1.0,
+              "query_count_p95": 1.0
+            },
+            "bootstrap_modules_lookup": {
+              "samples": 618,
+              "wall_ms_avg": 563.618,
+              "wall_ms_p95": 1961.433,
+              "sql_time_ms_avg": 562.91,
+              "sql_time_ms_p95": 1960.71,
+              "python_time_ms_avg": 0.708,
+              "python_time_ms_p95": 0.868,
+              "query_count_avg": 1.0,
+              "query_count_p95": 1.0
+            },
+            "bootstrap_owned_businesses_lookup": {
+              "samples": 618,
+              "wall_ms_avg": 451.5,
+              "wall_ms_p95": 1460.088,
+              "sql_time_ms_avg": 450.592,
+              "sql_time_ms_p95": 1459.349,
+              "python_time_ms_avg": 0.909,
+              "python_time_ms_p95": 1.153,
+              "query_count_avg": 1.0,
+              "query_count_p95": 1.0
+            }
+          }
+        }
+      },
+      "failures_rows": 1,
+      "error_rate": 0.0,
+      "metrics_samples": [
+        {
+          "ts": "2026-03-27T03:02:44.319100+00:00",
+          "backend_cpu_percent": 0.0,
+          "backend_rss_mb": 3.27,
+          "backend_threads": 1
+        },
+        {
+          "ts": "2026-03-27T03:02:46.338505+00:00",
+          "backend_cpu_percent": 0.0,
+          "backend_rss_mb": 3.27,
+          "backend_threads": 1
+        },
+        {
+          "ts": "2026-03-27T03:02:48.388425+00:00",
+          "backend_cpu_percent": 0.0,
+          "backend_rss_mb": 3.27,
+          "backend_threads": 1
+        },
+        {
+          "ts": "2026-03-27T03:02:50.515267+00:00",
+          "backend_cpu_percent": 0.0,
+          "backend_rss_mb": 3.27,
+          "backend_threads": 1
+        },
+        {
+          "ts": "2026-03-27T03:02:52.603959+00:00",
+          "backend_cpu_percent": 0.0,
+          "backend_rss_mb": 3.27,
+          "backend_threads": 1
+        },
+        {
+          "ts": "2026-03-27T03:02:54.670772+00:00",
+          "backend_cpu_percent": 0.0,
+          "backend_rss_mb": 3.27,
+          "backend_threads": 1
+        },
+        {
+          "ts": "2026-03-27T03:02:56.773959+00:00",
+          "backend_cpu_percent": 0.0,
+          "backend_rss_mb": 3.27,
+          "backend_threads": 1
+        },
+        {
+          "ts": "2026-03-27T03:02:58.853804+00:00",
+          "backend_cpu_percent": 0.0,
+          "backend_rss_mb": 3.27,
+          "backend_threads": 1
+        },
+        {
+          "ts": "2026-03-27T03:03:00.946521+00:00",
+          "backend_cpu_percent": 0.0,
+          "backend_rss_mb": 3.27,
+          "backend_threads": 1
+        },
+        {
+          "ts": "2026-03-27T03:03:03.040596+00:00",
+          "backend_cpu_percent": 0.0,
+          "backend_rss_mb": 3.27,
+          "backend_threads": 1
+        },
+        {
+          "ts": "2026-03-27T03:03:05.123471+00:00",
+          "backend_cpu_percent": 0.0,
+          "backend_rss_mb": 3.27,
+          "backend_threads": 1
+        },
+        {
+          "ts": "2026-03-27T03:03:07.158603+00:00",
+          "backend_cpu_percent": 0.0,
+          "backend_rss_mb": 3.27,
+          "backend_threads": 1
+        },
+        {
+          "ts": "2026-03-27T03:03:09.224112+00:00",
+          "backend_cpu_percent": 0.0,
+          "backend_rss_mb": 3.27,
+          "backend_threads": 1
+        },
+        {
+          "ts": "2026-03-27T03:03:11.266674+00:00",
+          "backend_cpu_percent": 0.0,
+          "backend_rss_mb": 3.27,
+          "backend_threads": 1
+        },
+        {
+          "ts": "2026-03-27T03:03:13.331460+00:00",
+          "backend_cpu_percent": 0.0,
+          "backend_rss_mb": 3.27,
+          "backend_threads": 1
+        },
+        {
+          "ts": "2026-03-27T03:03:15.451482+00:00",
+          "backend_cpu_percent": 0.0,
+          "backend_rss_mb": 3.27,
+          "backend_threads": 1
+        },
+        {
+          "ts": "2026-03-27T03:03:17.586879+00:00",
+          "backend_cpu_percent": 0.0,
+          "backend_rss_mb": 3.27,
+          "backend_threads": 1
+        },
+        {
+          "ts": "2026-03-27T03:03:19.668186+00:00",
+          "backend_cpu_percent": 0.0,
+          "backend_rss_mb": 3.27,
+          "backend_threads": 1
+        },
+        {
+          "ts": "2026-03-27T03:03:21.753558+00:00",
+          "backend_cpu_percent": 0.0,
+          "backend_rss_mb": 3.27,
+          "backend_threads": 1
+        },
+        {
+          "ts": "2026-03-27T03:03:23.828364+00:00",
+          "backend_cpu_percent": 0.0,
+          "backend_rss_mb": 3.27,
+          "backend_threads": 1
+        },
+        {
+          "ts": "2026-03-27T03:03:25.957696+00:00",
+          "backend_cpu_percent": 0.0,
+          "backend_rss_mb": 3.27,
+          "backend_threads": 1
+        },
+        {
+          "ts": "2026-03-27T03:03:28.178924+00:00",
+          "backend_cpu_percent": 0.0,
+          "backend_rss_mb": 3.27,
+          "backend_threads": 1
+        },
+        {
+          "ts": "2026-03-27T03:03:30.264079+00:00",
+          "backend_cpu_percent": 0.0,
+          "backend_rss_mb": 3.27,
+          "backend_threads": 1
+        },
+        {
+          "ts": "2026-03-27T03:03:32.289268+00:00",
+          "backend_cpu_percent": 0.0,
+          "backend_rss_mb": 3.27,
+          "backend_threads": 1
+        },
+        {
+          "ts": "2026-03-27T03:03:34.367252+00:00",
+          "backend_cpu_percent": 0.0,
+          "backend_rss_mb": 3.27,
+          "backend_threads": 1
+        },
+        {
+          "ts": "2026-03-27T03:03:36.450474+00:00",
+          "backend_cpu_percent": 0.0,
+          "backend_rss_mb": 3.27,
+          "backend_threads": 1
+        },
+        {
+          "ts": "2026-03-27T03:03:38.468283+00:00",
+          "backend_cpu_percent": 0.0,
+          "backend_rss_mb": 3.27,
+          "backend_threads": 1
+        },
+        {
+          "ts": "2026-03-27T03:03:40.501782+00:00",
+          "backend_cpu_percent": 0.0,
+          "backend_rss_mb": 3.27,
+          "backend_threads": 1
+        },
+        {
+          "ts": "2026-03-27T03:03:42.587902+00:00",
+          "backend_cpu_percent": 0.0,
+          "backend_rss_mb": 3.27,
+          "backend_threads": 1
+        },
+        {
+          "ts": "2026-03-27T03:03:44.635864+00:00",
+          "backend_cpu_percent": 0.0,
+          "backend_rss_mb": 3.27,
+          "backend_threads": 1
+        },
+        {
+          "ts": "2026-03-27T03:03:46.727918+00:00",
+          "backend_cpu_percent": 0.0,
+          "backend_rss_mb": 3.27,
+          "backend_threads": 1
+        },
+        {
+          "ts": "2026-03-27T03:03:48.879828+00:00",
+          "backend_cpu_percent": 0.0,
+          "backend_rss_mb": 3.27,
+          "backend_threads": 1
+        },
+        {
+          "ts": "2026-03-27T03:03:50.956056+00:00",
+          "backend_cpu_percent": 0.0,
+          "backend_rss_mb": 3.27,
+          "backend_threads": 1
+        },
+        {
+          "ts": "2026-03-27T03:03:53.053916+00:00",
+          "backend_cpu_percent": 0.0,
+          "backend_rss_mb": 3.27,
+          "backend_threads": 1
+        },
+        {
+          "ts": "2026-03-27T03:03:55.133760+00:00",
+          "backend_cpu_percent": 0.0,
+          "backend_rss_mb": 3.27,
+          "backend_threads": 1
+        },
+        {
+          "ts": "2026-03-27T03:03:57.209341+00:00",
+          "backend_cpu_percent": 0.0,
+          "backend_rss_mb": 3.27,
+          "backend_threads": 1
+        },
+        {
+          "ts": "2026-03-27T03:03:59.398361+00:00",
+          "backend_cpu_percent": 0.0,
+          "backend_rss_mb": 3.27,
+          "backend_threads": 1
+        },
+        {
+          "ts": "2026-03-27T03:04:01.511647+00:00",
+          "backend_cpu_percent": 0.0,
+          "backend_rss_mb": 3.27,
+          "backend_threads": 1
+        },
+        {
+          "ts": "2026-03-27T03:04:03.595525+00:00",
+          "backend_cpu_percent": 0.0,
+          "backend_rss_mb": 3.27,
+          "backend_threads": 1
+        },
+        {
+          "ts": "2026-03-27T03:04:05.649724+00:00",
+          "backend_cpu_percent": 0.0,
+          "backend_rss_mb": 3.27,
+          "backend_threads": 1
+        },
+        {
+          "ts": "2026-03-27T03:04:07.685007+00:00",
+          "backend_cpu_percent": 0.0,
+          "backend_rss_mb": 3.27,
+          "backend_threads": 1
+        },
+        {
+          "ts": "2026-03-27T03:04:09.724335+00:00",
+          "backend_cpu_percent": 0.0,
+          "backend_rss_mb": 3.27,
+          "backend_threads": 1
+        },
+        {
+          "ts": "2026-03-27T03:04:11.805254+00:00",
+          "backend_cpu_percent": 0.0,
+          "backend_rss_mb": 3.27,
+          "backend_threads": 1
+        },
+        {
+          "ts": "2026-03-27T03:04:13.864847+00:00",
+          "backend_cpu_percent": 0.0,
+          "backend_rss_mb": 3.27,
+          "backend_threads": 1
+        },
+        {
+          "ts": "2026-03-27T03:04:15.886935+00:00",
+          "backend_cpu_percent": 0.0,
+          "backend_rss_mb": 3.27,
+          "backend_threads": 1
+        },
+        {
+          "ts": "2026-03-27T03:04:17.940278+00:00",
+          "backend_cpu_percent": 0.0,
+          "backend_rss_mb": 3.27,
+          "backend_threads": 1
+        },
+        {
+          "ts": "2026-03-27T03:04:19.972387+00:00",
+          "backend_cpu_percent": 0.0,
+          "backend_rss_mb": 3.27,
+          "backend_threads": 1
+        },
+        {
+          "ts": "2026-03-27T03:04:22.053145+00:00",
+          "backend_cpu_percent": 0.0,
+          "backend_rss_mb": 3.27,
+          "backend_threads": 1
+        },
+        {
+          "ts": "2026-03-27T03:04:24.141869+00:00",
+          "backend_cpu_percent": 0.0,
+          "backend_rss_mb": 3.27,
+          "backend_threads": 1
+        },
+        {
+          "ts": "2026-03-27T03:04:26.264234+00:00",
+          "backend_cpu_percent": 0.0,
+          "backend_rss_mb": 3.27,
+          "backend_threads": 1
+        },
+        {
+          "ts": "2026-03-27T03:04:28.331711+00:00",
+          "backend_cpu_percent": 0.0,
+          "backend_rss_mb": 3.27,
+          "backend_threads": 1
+        },
+        {
+          "ts": "2026-03-27T03:04:30.373149+00:00",
+          "backend_cpu_percent": 0.0,
+          "backend_rss_mb": 3.27,
+          "backend_threads": 1
+        },
+        {
+          "ts": "2026-03-27T03:04:32.395223+00:00",
+          "backend_cpu_percent": 0.0,
+          "backend_rss_mb": 3.27,
+          "backend_threads": 1
+        },
+        {
+          "ts": "2026-03-27T03:04:34.514882+00:00",
+          "backend_cpu_percent": 0.0,
+          "backend_rss_mb": 3.27,
+          "backend_threads": 1
+        },
+        {
+          "ts": "2026-03-27T03:04:36.653200+00:00",
+          "backend_cpu_percent": 0.0,
+          "backend_rss_mb": 3.27,
+          "backend_threads": 1
+        },
+        {
+          "ts": "2026-03-27T03:04:38.728312+00:00",
+          "backend_cpu_percent": 0.0,
+          "backend_rss_mb": 3.27,
+          "backend_threads": 1
+        },
+        {
+          "ts": "2026-03-27T03:04:40.761039+00:00",
+          "backend_cpu_percent": 0.0,
+          "backend_rss_mb": 3.27,
+          "backend_threads": 1
+        },
+        {
+          "ts": "2026-03-27T03:04:42.809617+00:00",
+          "backend_cpu_percent": 0.0,
+          "backend_rss_mb": 3.27,
+          "backend_threads": 1
+        },
+        {
+          "ts": "2026-03-27T03:04:44.886314+00:00",
+          "backend_cpu_percent": 0.0,
+          "backend_rss_mb": 3.27,
+          "backend_threads": 1
+        }
+      ],
+      "metrics_summary": {
+        "backend_cpu_peak_percent": 0.0,
+        "backend_rss_peak_mb": 3.27,
+        "backend_threads_peak": 1,
+        "db_total_connections_peak": 0.0,
+        "db_active_connections_peak": 0.0,
+        "db_waiting_connections_peak": 0.0,
+        "db_longest_active_seconds_peak": 0.0
+      },
+      "artifacts": {
+        "stats_csv": "load-tests\\results\\phase-auth-login-remnant\\scenario_login_u80_stats.csv",
+        "stats_history_csv": "load-tests\\results\\phase-auth-login-remnant\\scenario_login_u80_stats_history.csv",
+        "failures_csv": "load-tests\\results\\phase-auth-login-remnant\\scenario_login_u80_failures.csv",
+        "profile_summary_json": "load-tests\\results\\phase-auth-login-remnant\\scenario_login_u80_profile_summary.json",
+        "report_html": "load-tests\\results\\phase-auth-login-remnant\\scenario_login_u80.html"
+      },
+      "capacity_pass": false
+    },
+    {
+      "scenario": "LOGIN",
+      "users": 100,
+      "started_at": "2026-03-27T03:04:46.047718+00:00",
+      "finished_at": "2026-03-27T03:06:48.997629+00:00",
+      "command": [
+        "C:\\Users\\harae\\Desktop\\ui migration\\proyecto1\\.venv\\Scripts\\locust.exe",
+        "-f",
+        "C:\\Users\\harae\\Desktop\\ui migration\\proyecto1\\load-tests\\locustfile.py",
+        "--host",
+        "http://127.0.0.1:5000",
+        "--users",
+        "100",
+        "--spawn-rate",
+        "5.0",
+        "--run-time",
+        "2m",
+        "--csv",
+        "load-tests\\results\\phase-auth-login-remnant\\scenario_login_u100",
+        "--html",
+        "load-tests\\results\\phase-auth-login-remnant\\scenario_login_u100.html",
+        "--headless",
+        "--only-summary"
+      ],
+      "exit_code": 0,
+      "stdout_tail": "",
+      "stderr_tail": "[2026-03-26 22:04:48,774] DESKTOP-9DI2UJR/INFO/locust.main: Starting Locust 2.43.3\n[2026-03-26 22:04:48,777] DESKTOP-9DI2UJR/INFO/locust.main: Run time limit set to 120 seconds\n[2026-03-26 22:04:48,780] DESKTOP-9DI2UJR/INFO/locust.runners: Ramping to 100 users at a rate of 5.00 per second\n[2026-03-26 22:05:08,437] DESKTOP-9DI2UJR/INFO/locust.runners: All users spawned: {\"CuadernoUser\": 100} (100 total users)\n[2026-03-26 22:06:47,809] DESKTOP-9DI2UJR/INFO/locust.main: --run-time limit reached, shutting down\n[2026-03-26 22:06:48,417] DESKTOP-9DI2UJR/INFO/locust.main: writing html report to file: load-tests\\results\\phase-auth-login-remnant\\scenario_login_u100.html\n[2026-03-26 22:06:48,435] DESKTOP-9DI2UJR/INFO/locust.main: Shutting down (exit code 0)\nType     Name                                                                          # reqs      # fails |    Avg     Min     Max    Med |   req/s  failures/s\n--------|----------------------------------------------------------------------------|-------|-------------|-------|-------|-------|-------|--------|-----------\nGET      auth.bootstrap                                                                   629     0(0.00%) |   6893      58   11134   6800 |    5.30        0.00\nPOST     auth.login                                                                       629     0(0.00%) |   8370     798   12922   8600 |    5.30        0.00\n--------|----------------------------------------------------------------------------|-------|-------------|-------|-------|-------|-------|--------|-----------\n         Aggregated                                                                      1258     0(0.00%) |   7631      58   12922   7600 |   10.61        0.00\n\nResponse time percentiles (approximated)\nType     Name                                                                                  50%    66%    75%    80%    90%    95%    98%    99%  99.9% 99.99%   100% # reqs\n--------|--------------------------------------------------------------------------------|--------|------|------|------|------|------|------|------|------|------|------|------\nGET      auth.bootstrap                                                                       6800   7500   8100   8300   9200   9900  11000  11000  11000  11000  11000    629\nPOST     auth.login                                                                           8600   9300   9700  10000  11000  11000  11000  11000  13000  13000  13000    629\n--------|--------------------------------------------------------------------------------|--------|------|------|------|------|------|------|------|------|------|------|------\n         Aggregated                                                                           7600   8500   9100   9300  10000  11000  11000  11000  13000  13000  13000   1258\n\n",
+      "stats_summary": {
+        "requests": 1258,
+        "failures": 0,
+        "median_ms": 7600.0,
+        "avg_ms": 7631.989473449755,
+        "min_ms": 58.4647999930894,
+        "max_ms": 12922.15679999208,
+        "avg_size": 1923.5,
+        "rps": 10.606013966660786,
+        "failures_per_sec": 0.0,
+        "p50_ms": 7600.0,
+        "p95_ms": 11000.0,
+        "p99_ms": 11000.0,
+        "slowest_endpoint": {
+          "name": "auth.login",
+          "method": "POST",
+          "avg_ms": 8370.099062479878,
+          "p95_ms": 11000.0,
+          "p99_ms": 11000.0,
+          "rps": 5.303006983330393
+        },
+        "endpoint_metrics": {
+          "auth.login": {
+            "avg_ms": 8370.099062479878,
+            "p95_ms": 11000.0,
+            "rps": 5.303006983330393,
+            "failures": 0,
+            "requests": 629
+          },
+          "auth.select_context": {
+            "avg_ms": 0.0,
+            "p95_ms": 0.0,
+            "rps": 0.0,
+            "failures": 0,
+            "requests": 0
+          },
+          "auth.bootstrap": {
+            "avg_ms": 6893.879884419623,
+            "p95_ms": 9900.0,
+            "rps": 5.303006983330393,
+            "failures": 0,
+            "requests": 629
+          },
+          "read.dashboard": {
+            "avg_ms": 0.0,
+            "p95_ms": 0.0,
+            "rps": 0.0,
+            "failures": 0,
+            "requests": 0
+          },
+          "read.summary": {
+            "avg_ms": 0.0,
+            "p95_ms": 0.0,
+            "rps": 0.0,
+            "failures": 0,
+            "requests": 0
+          }
+        }
+      },
+      "distribution": {
+        "p50_estimated_ms": 7280.484365861577,
+        "p95_estimated_ms": 7678.538145324154,
+        "p99_estimated_ms": 7686.03236039573,
+        "avg_rps_window": 10.286398465517241,
+        "max_rps_window": 18.4,
+        "final_failure_count": 0.0
+      },
+      "profile_summary": {
+        "auth.login": {
+          "samples": 676,
+          "query_count_avg": 4.0,
+          "query_count_p95": 4.0,
+          "sql_time_ms_avg": 4197.149,
+          "sql_time_ms_p95": 7004.378,
+          "wall_time_ms_avg": 7579.668,
+          "wall_time_ms_p95": 10153.189,
+          "python_time_ms_avg": 3382.519,
+          "python_time_ms_p95": 5615.656,
+          "instrumented_wall_ms_avg": 7579.494,
+          "instrumented_wall_ms_p95": 10153.022,
+          "unaccounted_wall_ms_avg": 0.174,
+          "unaccounted_wall_ms_p95": 0.276,
+          "cache_hit_count": 0,
+          "stage_metrics": {
+            "fetch_user": {
+              "samples": 676,
+              "wall_ms_avg": 3935.612,
+              "wall_ms_p95": 6219.404,
+              "sql_time_ms_avg": 1053.666,
+              "sql_time_ms_p95": 2031.913,
+              "python_time_ms_avg": 2881.946,
+              "python_time_ms_p95": 5061.443,
+              "query_count_avg": 1.0,
+              "query_count_p95": 1.0
+            },
+            "password_verify": {
+              "samples": 676,
+              "wall_ms_avg": 496.407,
+              "wall_ms_p95": 699.396,
+              "sql_time_ms_avg": 0.0,
+              "sql_time_ms_p95": 0.0,
+              "python_time_ms_avg": 496.407,
+              "python_time_ms_p95": 699.396,
+              "query_count_avg": 0.0,
+              "query_count_p95": 0.0
+            },
+            "resolve_accessible_contexts": {
+              "samples": 676,
+              "wall_ms_avg": 3147.041,
+              "wall_ms_p95": 5259.998,
+              "sql_time_ms_avg": 3143.483,
+              "sql_time_ms_p95": 5256.795,
+              "python_time_ms_avg": 3.558,
+              "python_time_ms_p95": 4.909,
+              "query_count_avg": 3.0,
+              "query_count_p95": 3.0
+            },
+            "resolve_active_context": {
+              "samples": 676,
+              "wall_ms_avg": 0.037,
+              "wall_ms_p95": 0.046,
+              "sql_time_ms_avg": 0.0,
+              "sql_time_ms_p95": 0.0,
+              "python_time_ms_avg": 0.037,
+              "python_time_ms_p95": 0.046,
+              "query_count_avg": 0.0,
+              "query_count_p95": 0.0
+            },
+            "serialization_response": {
+              "samples": 676,
+              "wall_ms_avg": 0.106,
+              "wall_ms_p95": 0.131,
+              "sql_time_ms_avg": 0.0,
+              "sql_time_ms_p95": 0.0,
+              "python_time_ms_avg": 0.106,
+              "python_time_ms_p95": 0.131,
+              "query_count_avg": 0.0,
+              "query_count_p95": 0.0
+            },
+            "token_session_creation": {
+              "samples": 676,
+              "wall_ms_avg": 0.292,
+              "wall_ms_p95": 0.517,
+              "sql_time_ms_avg": 0.0,
+              "sql_time_ms_p95": 0.0,
+              "python_time_ms_avg": 0.292,
+              "python_time_ms_p95": 0.517,
+              "query_count_avg": 0.0,
+              "query_count_p95": 0.0
+            }
+          }
+        },
+        "auth.bootstrap": {
+          "samples": 629,
+          "query_count_avg": 4.0,
+          "query_count_p95": 4.0,
+          "sql_time_ms_avg": 3382.442,
+          "sql_time_ms_p95": 5620.173,
+          "wall_time_ms_avg": 2546.329,
+          "wall_time_ms_p95": 4289.844,
+          "python_time_ms_avg": 0.0,
+          "python_time_ms_p95": 0.0,
+          "instrumented_wall_ms_avg": 2546.004,
+          "instrumented_wall_ms_p95": 4289.57,
+          "unaccounted_wall_ms_avg": 0.325,
+          "unaccounted_wall_ms_p95": 0.405,
+          "cache_hit_count": 0,
+          "stage_metrics": {
+            "bootstrap_membership_lookup": {
+              "samples": 629,
+              "wall_ms_avg": 862.439,
+              "wall_ms_p95": 1695.253,
+              "sql_time_ms_avg": 861.159,
+              "sql_time_ms_p95": 1694.186,
+              "python_time_ms_avg": 1.281,
+              "python_time_ms_p95": 1.556,
+              "query_count_avg": 1.0,
+              "query_count_p95": 1.0
+            },
+            "bootstrap_modules_lookup": {
+              "samples": 629,
+              "wall_ms_avg": 882.565,
+              "wall_ms_p95": 1873.459,
+              "sql_time_ms_avg": 881.853,
+              "sql_time_ms_p95": 1872.84,
+              "python_time_ms_avg": 0.712,
+              "python_time_ms_p95": 0.883,
+              "query_count_avg": 1.0,
+              "query_count_p95": 1.0
+            },
+            "bootstrap_owned_businesses_lookup": {
+              "samples": 629,
+              "wall_ms_avg": 801.0,
+              "wall_ms_p95": 1725.03,
+              "sql_time_ms_avg": 800.083,
+              "sql_time_ms_p95": 1724.12,
+              "python_time_ms_avg": 0.916,
+              "python_time_ms_p95": 1.135,
+              "query_count_avg": 1.0,
+              "query_count_p95": 1.0
+            }
+          }
+        }
+      },
+      "failures_rows": 1,
+      "error_rate": 0.0,
+      "metrics_samples": [
+        {
+          "ts": "2026-03-27T03:04:46.048177+00:00",
+          "backend_cpu_percent": 0.0,
+          "backend_rss_mb": 3.27,
+          "backend_threads": 1
+        },
+        {
+          "ts": "2026-03-27T03:04:48.055388+00:00",
+          "backend_cpu_percent": 0.0,
+          "backend_rss_mb": 3.27,
+          "backend_threads": 1
+        },
+        {
+          "ts": "2026-03-27T03:04:50.150741+00:00",
+          "backend_cpu_percent": 0.0,
+          "backend_rss_mb": 3.27,
+          "backend_threads": 1
+        },
+        {
+          "ts": "2026-03-27T03:04:52.354129+00:00",
+          "backend_cpu_percent": 0.0,
+          "backend_rss_mb": 3.27,
+          "backend_threads": 1
+        },
+        {
+          "ts": "2026-03-27T03:04:54.447008+00:00",
+          "backend_cpu_percent": 0.0,
+          "backend_rss_mb": 3.27,
+          "backend_threads": 1
+        },
+        {
+          "ts": "2026-03-27T03:04:56.542603+00:00",
+          "backend_cpu_percent": 0.0,
+          "backend_rss_mb": 3.27,
+          "backend_threads": 1
+        },
+        {
+          "ts": "2026-03-27T03:04:58.594855+00:00",
+          "backend_cpu_percent": 0.0,
+          "backend_rss_mb": 3.27,
+          "backend_threads": 1
+        },
+        {
+          "ts": "2026-03-27T03:05:00.691056+00:00",
+          "backend_cpu_percent": 0.0,
+          "backend_rss_mb": 3.27,
+          "backend_threads": 1
+        },
+        {
+          "ts": "2026-03-27T03:05:02.754402+00:00",
+          "backend_cpu_percent": 0.0,
+          "backend_rss_mb": 3.27,
+          "backend_threads": 1
+        },
+        {
+          "ts": "2026-03-27T03:05:04.839857+00:00",
+          "backend_cpu_percent": 0.0,
+          "backend_rss_mb": 3.27,
+          "backend_threads": 1
+        },
+        {
+          "ts": "2026-03-27T03:05:06.945838+00:00",
+          "backend_cpu_percent": 0.0,
+          "backend_rss_mb": 3.27,
+          "backend_threads": 1
+        },
+        {
+          "ts": "2026-03-27T03:05:09.024389+00:00",
+          "backend_cpu_percent": 0.0,
+          "backend_rss_mb": 3.27,
+          "backend_threads": 1
+        },
+        {
+          "ts": "2026-03-27T03:05:11.101433+00:00",
+          "backend_cpu_percent": 0.0,
+          "backend_rss_mb": 3.27,
+          "backend_threads": 1
+        },
+        {
+          "ts": "2026-03-27T03:05:13.157869+00:00",
+          "backend_cpu_percent": 0.0,
+          "backend_rss_mb": 3.27,
+          "backend_threads": 1
+        },
+        {
+          "ts": "2026-03-27T03:05:15.209606+00:00",
+          "backend_cpu_percent": 0.0,
+          "backend_rss_mb": 3.28,
+          "backend_threads": 2
+        },
+        {
+          "ts": "2026-03-27T03:05:17.248056+00:00",
+          "backend_cpu_percent": 0.0,
+          "backend_rss_mb": 3.28,
+          "backend_threads": 2
+        },
+        {
+          "ts": "2026-03-27T03:05:19.273238+00:00",
+          "backend_cpu_percent": 0.0,
+          "backend_rss_mb": 3.28,
+          "backend_threads": 2
+        },
+        {
+          "ts": "2026-03-27T03:05:21.280225+00:00",
+          "backend_cpu_percent": 0.0,
+          "backend_rss_mb": 3.28,
+          "backend_threads": 2
+        },
+        {
+          "ts": "2026-03-27T03:05:23.299680+00:00",
+          "backend_cpu_percent": 0.0,
+          "backend_rss_mb": 3.28,
+          "backend_threads": 2
+        },
+        {
+          "ts": "2026-03-27T03:05:25.311526+00:00",
+          "backend_cpu_percent": 0.0,
+          "backend_rss_mb": 3.28,
+          "backend_threads": 2
+        },
+        {
+          "ts": "2026-03-27T03:05:27.328252+00:00",
+          "backend_cpu_percent": 0.0,
+          "backend_rss_mb": 3.28,
+          "backend_threads": 2
+        },
+        {
+          "ts": "2026-03-27T03:05:29.358773+00:00",
+          "backend_cpu_percent": 0.0,
+          "backend_rss_mb": 3.28,
+          "backend_threads": 2
+        },
+        {
+          "ts": "2026-03-27T03:05:31.368203+00:00",
+          "backend_cpu_percent": 0.0,
+          "backend_rss_mb": 3.28,
+          "backend_threads": 2
+        },
+        {
+          "ts": "2026-03-27T03:05:33.417996+00:00",
+          "backend_cpu_percent": 0.0,
+          "backend_rss_mb": 3.28,
+          "backend_threads": 2
+        },
+        {
+          "ts": "2026-03-27T03:05:35.479421+00:00",
+          "backend_cpu_percent": 0.0,
+          "backend_rss_mb": 3.28,
+          "backend_threads": 2
+        },
+        {
+          "ts": "2026-03-27T03:05:37.506073+00:00",
+          "backend_cpu_percent": 0.0,
+          "backend_rss_mb": 3.28,
+          "backend_threads": 2
+        },
+        {
+          "ts": "2026-03-27T03:05:39.515843+00:00",
+          "backend_cpu_percent": 0.0,
+          "backend_rss_mb": 3.28,
+          "backend_threads": 2
+        },
+        {
+          "ts": "2026-03-27T03:05:41.553670+00:00",
+          "backend_cpu_percent": 0.0,
+          "backend_rss_mb": 3.28,
+          "backend_threads": 2
+        },
+        {
+          "ts": "2026-03-27T03:05:43.562933+00:00",
+          "backend_cpu_percent": 0.0,
+          "backend_rss_mb": 3.28,
+          "backend_threads": 2
+        },
+        {
+          "ts": "2026-03-27T03:05:45.587208+00:00",
+          "backend_cpu_percent": 0.0,
+          "backend_rss_mb": 3.28,
+          "backend_threads": 2
+        },
+        {
+          "ts": "2026-03-27T03:05:47.637778+00:00",
+          "backend_cpu_percent": 0.0,
+          "backend_rss_mb": 3.28,
+          "backend_threads": 2
+        },
+        {
+          "ts": "2026-03-27T03:05:49.734329+00:00",
+          "backend_cpu_percent": 0.0,
+          "backend_rss_mb": 3.28,
+          "backend_threads": 2
+        },
+        {
+          "ts": "2026-03-27T03:05:51.758529+00:00",
+          "backend_cpu_percent": 0.0,
+          "backend_rss_mb": 3.28,
+          "backend_threads": 2
+        },
+        {
+          "ts": "2026-03-27T03:05:53.815656+00:00",
+          "backend_cpu_percent": 0.0,
+          "backend_rss_mb": 3.28,
+          "backend_threads": 2
+        },
+        {
+          "ts": "2026-03-27T03:05:55.850318+00:00",
+          "backend_cpu_percent": 0.0,
+          "backend_rss_mb": 3.28,
+          "backend_threads": 2
+        },
+        {
+          "ts": "2026-03-27T03:05:57.901747+00:00",
+          "backend_cpu_percent": 0.0,
+          "backend_rss_mb": 3.28,
+          "backend_threads": 2
+        },
+        {
+          "ts": "2026-03-27T03:05:59.914049+00:00",
+          "backend_cpu_percent": 0.0,
+          "backend_rss_mb": 3.28,
+          "backend_threads": 2
+        },
+        {
+          "ts": "2026-03-27T03:06:01.952191+00:00",
+          "backend_cpu_percent": 0.0,
+          "backend_rss_mb": 3.28,
+          "backend_threads": 2
+        },
+        {
+          "ts": "2026-03-27T03:06:03.980790+00:00",
+          "backend_cpu_percent": 0.0,
+          "backend_rss_mb": 3.28,
+          "backend_threads": 2
+        },
+        {
+          "ts": "2026-03-27T03:06:05.988494+00:00",
+          "backend_cpu_percent": 0.0,
+          "backend_rss_mb": 3.28,
+          "backend_threads": 2
+        },
+        {
+          "ts": "2026-03-27T03:06:08.094320+00:00",
+          "backend_cpu_percent": 0.0,
+          "backend_rss_mb": 3.28,
+          "backend_threads": 2
+        },
+        {
+          "ts": "2026-03-27T03:06:10.103710+00:00",
+          "backend_cpu_percent": 0.0,
+          "backend_rss_mb": 3.28,
+          "backend_threads": 2
+        },
+        {
+          "ts": "2026-03-27T03:06:12.144041+00:00",
+          "backend_cpu_percent": 0.0,
+          "backend_rss_mb": 3.28,
+          "backend_threads": 2
+        },
+        {
+          "ts": "2026-03-27T03:06:14.187761+00:00",
+          "backend_cpu_percent": 0.0,
+          "backend_rss_mb": 3.28,
+          "backend_threads": 2
+        },
+        {
+          "ts": "2026-03-27T03:06:16.220931+00:00",
+          "backend_cpu_percent": 0.0,
+          "backend_rss_mb": 3.28,
+          "backend_threads": 2
+        },
+        {
+          "ts": "2026-03-27T03:06:18.227214+00:00",
+          "backend_cpu_percent": 0.0,
+          "backend_rss_mb": 3.28,
+          "backend_threads": 2
+        },
+        {
+          "ts": "2026-03-27T03:06:20.283415+00:00",
+          "backend_cpu_percent": 0.0,
+          "backend_rss_mb": 3.28,
+          "backend_threads": 2
+        },
+        {
+          "ts": "2026-03-27T03:06:22.295091+00:00",
+          "backend_cpu_percent": 0.0,
+          "backend_rss_mb": 3.28,
+          "backend_threads": 2
+        },
+        {
+          "ts": "2026-03-27T03:06:24.387815+00:00",
+          "backend_cpu_percent": 0.0,
+          "backend_rss_mb": 3.27,
+          "backend_threads": 1
+        },
+        {
+          "ts": "2026-03-27T03:06:26.451860+00:00",
+          "backend_cpu_percent": 0.0,
+          "backend_rss_mb": 3.27,
+          "backend_threads": 1
+        },
+        {
+          "ts": "2026-03-27T03:06:28.502813+00:00",
+          "backend_cpu_percent": 0.0,
+          "backend_rss_mb": 3.27,
+          "backend_threads": 1
+        },
+        {
+          "ts": "2026-03-27T03:06:30.573764+00:00",
+          "backend_cpu_percent": 0.0,
+          "backend_rss_mb": 3.27,
+          "backend_threads": 1
+        },
+        {
+          "ts": "2026-03-27T03:06:32.586652+00:00",
+          "backend_cpu_percent": 0.0,
+          "backend_rss_mb": 3.27,
+          "backend_threads": 1
+        },
+        {
+          "ts": "2026-03-27T03:06:34.652857+00:00",
+          "backend_cpu_percent": 0.0,
+          "backend_rss_mb": 3.27,
+          "backend_threads": 1
+        },
+        {
+          "ts": "2026-03-27T03:06:36.713339+00:00",
+          "backend_cpu_percent": 0.0,
+          "backend_rss_mb": 3.27,
+          "backend_threads": 1
+        },
+        {
+          "ts": "2026-03-27T03:06:38.758847+00:00",
+          "backend_cpu_percent": 0.0,
+          "backend_rss_mb": 3.27,
+          "backend_threads": 1
+        },
+        {
+          "ts": "2026-03-27T03:06:40.805470+00:00",
+          "backend_cpu_percent": 0.0,
+          "backend_rss_mb": 3.27,
+          "backend_threads": 1
+        },
+        {
+          "ts": "2026-03-27T03:06:42.818963+00:00",
+          "backend_cpu_percent": 0.0,
+          "backend_rss_mb": 3.27,
+          "backend_threads": 1
+        },
+        {
+          "ts": "2026-03-27T03:06:44.875549+00:00",
+          "backend_cpu_percent": 0.0,
+          "backend_rss_mb": 3.27,
+          "backend_threads": 1
+        },
+        {
+          "ts": "2026-03-27T03:06:46.924953+00:00",
+          "backend_cpu_percent": 0.0,
+          "backend_rss_mb": 3.27,
+          "backend_threads": 1
+        },
+        {
+          "ts": "2026-03-27T03:06:48.967410+00:00",
+          "backend_cpu_percent": 0.0,
+          "backend_rss_mb": 3.27,
+          "backend_threads": 1
+        }
+      ],
+      "metrics_summary": {
+        "backend_cpu_peak_percent": 0.0,
+        "backend_rss_peak_mb": 3.28,
+        "backend_threads_peak": 2,
+        "db_total_connections_peak": 0.0,
+        "db_active_connections_peak": 0.0,
+        "db_waiting_connections_peak": 0.0,
+        "db_longest_active_seconds_peak": 0.0
+      },
+      "artifacts": {
+        "stats_csv": "load-tests\\results\\phase-auth-login-remnant\\scenario_login_u100_stats.csv",
+        "stats_history_csv": "load-tests\\results\\phase-auth-login-remnant\\scenario_login_u100_stats_history.csv",
+        "failures_csv": "load-tests\\results\\phase-auth-login-remnant\\scenario_login_u100_failures.csv",
+        "profile_summary_json": "load-tests\\results\\phase-auth-login-remnant\\scenario_login_u100_profile_summary.json",
+        "report_html": "load-tests\\results\\phase-auth-login-remnant\\scenario_login_u100.html"
+      },
+      "capacity_pass": false
+    }
+  ]
+}

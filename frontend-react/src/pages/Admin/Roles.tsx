@@ -5,11 +5,14 @@ import {
   Edit2, 
   Trash2
 } from 'lucide-react';
+import toast from 'react-hot-toast';
 import api from '../../services/api';
 import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
 import { Modal } from '../../components/ui/Modal';
 import { cn } from '../../utils/cn';
+import { AdminPageHeader } from '../../components/Admin/ui/AdminPageHeader';
+import { StatusBadge } from '../../components/Admin/ui/StatusBadge';
 
 interface Role {
   id: number;
@@ -54,6 +57,7 @@ export const AdminRoles = () => {
       setPermissions(permsRes.data.permissions || []);
     } catch (err) {
       console.error(err);
+      toast.error('Error al cargar roles y permisos');
     }
   };
 
@@ -85,13 +89,15 @@ export const AdminRoles = () => {
     try {
       if (editingRole) {
         await api.put(`/admin/roles/${editingRole.id}`, formData);
+        toast.success('Rol actualizado exitosamente');
       } else {
         await api.post('/admin/roles', formData);
+        toast.success('Rol creado exitosamente');
       }
       setIsModalOpen(false);
       fetchData();
     } catch (err: any) {
-      alert(err.response?.data?.error || 'Error al guardar rol');
+      toast.error(err.response?.data?.error || 'Error al guardar rol');
     }
   };
 
@@ -99,9 +105,10 @@ export const AdminRoles = () => {
     if (confirm('¿Estás seguro de eliminar este rol?')) {
       try {
         await api.delete(`/admin/roles/${id}`);
+        toast.success('Rol eliminado');
         fetchData();
       } catch (err: any) {
-        alert(err.response?.data?.error || 'Error al eliminar rol');
+        toast.error(err.response?.data?.error || 'Error al eliminar rol');
       }
     }
   };
@@ -126,26 +133,28 @@ export const AdminRoles = () => {
 
   return (
     <div className="space-y-6">
-      <div className="flex justify-between items-center">
-        <div>
-          <h1 className="text-2xl font-bold text-white">Roles y Permisos</h1>
-          <p className="text-slate-400 text-sm">Gestiona los roles de acceso al sistema</p>
-        </div>
-        <Button onClick={() => handleOpenModal()} className="flex items-center gap-2">
-          <Plus size={18} /> Nuevo Rol
-        </Button>
-      </div>
+      <AdminPageHeader 
+        title="Roles y Permisos" 
+        description="Gestiona los roles de acceso al sistema y sus privilegios."
+        actions={
+          <Button onClick={() => handleOpenModal()} className="flex items-center gap-2">
+            <Plus size={18} /> Nuevo Rol
+          </Button>
+        }
+      />
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {roles.map((role) => (
-          <div key={role.id} className="bg-slate-800 border border-white/10 rounded-xl p-6">
+          <div key={role.id} className="bg-slate-800 border border-white/10 rounded-xl p-6 shadow-sm hover:border-blue-500/30 transition-colors">
             <div className="flex justify-between items-start mb-4">
               <div>
                 <div className="flex items-center gap-2">
-                  <Shield className="text-blue-400" size={20} />
+                  <div className="p-2 bg-blue-500/10 rounded-lg text-blue-400">
+                    <Shield size={20} />
+                  </div>
                   <h3 className="font-bold text-white text-lg">{role.name}</h3>
                 </div>
-                <p className="text-slate-400 text-sm mt-1">{role.description}</p>
+                <p className="text-slate-400 text-sm mt-2 ml-1">{role.description}</p>
               </div>
               <div className="flex gap-2">
                 {!role.is_system && (
@@ -153,25 +162,27 @@ export const AdminRoles = () => {
                     <button 
                       onClick={() => handleOpenModal(role)}
                       className="p-2 text-blue-400 hover:bg-blue-500/10 rounded-lg transition-colors"
+                      title="Editar"
                     >
                       <Edit2 size={18} />
                     </button>
                     <button 
                       onClick={() => handleDelete(role.id)}
                       className="p-2 text-red-400 hover:bg-red-500/10 rounded-lg transition-colors"
+                      title="Eliminar"
                     >
                       <Trash2 size={18} />
                     </button>
                   </>
                 )}
                 {role.is_system && (
-                   <span className="px-2 py-1 bg-slate-700 text-slate-300 text-xs rounded border border-slate-600">Sistema</span>
+                   <StatusBadge variant="neutral">Sistema</StatusBadge>
                 )}
               </div>
             </div>
             
             <div className="border-t border-white/10 pt-4">
-              <h4 className="text-xs font-semibold text-slate-500 uppercase mb-3">Permisos ({role.permissions.length})</h4>
+              <h4 className="text-xs font-semibold text-slate-500 uppercase mb-3 tracking-wider">Permisos ({role.permissions.length})</h4>
               <div className="flex flex-wrap gap-2">
                 {role.permissions.slice(0, 8).map(perm => (
                   <span key={perm} className="px-2 py-1 bg-slate-900 text-slate-300 text-xs rounded border border-slate-700">
@@ -213,7 +224,7 @@ export const AdminRoles = () => {
 
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">Permisos</label>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 max-h-[60vh] overflow-y-auto pr-2">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 max-h-[60vh] overflow-y-auto pr-2 custom-scrollbar">
               {Object.entries(groupedPermissions).map(([category, perms]) => (
                 <div key={category} className="bg-slate-900/50 rounded-lg p-4 border border-slate-700">
                   <h4 className="font-semibold text-white capitalize mb-3 pb-2 border-b border-slate-700">

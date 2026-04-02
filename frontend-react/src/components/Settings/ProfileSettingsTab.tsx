@@ -1,12 +1,40 @@
-import React, { useState, useEffect } from 'react';
-import { useAuthStore } from '../../store/authStore';
+import { useEffect, useState, type ChangeEvent, type FormEvent } from 'react';
 import { Button } from '../ui/Button';
 import { Input } from '../ui/Input';
 import { settingsService, ProfileSettings } from '../../services/settingsService';
-import { User, Mail, Phone, Save } from 'lucide-react';
+import { Mail, Monitor, Moon, Phone, Save, Sun, User } from 'lucide-react';
+import { toast } from 'react-hot-toast';
+import { useThemeStore } from '../../store/themeStore';
+import { ThemePreference } from '../../utils/theme';
+import { cn } from '../../utils/cn';
+
+const THEME_OPTIONS: Array<{
+  value: ThemePreference;
+  label: string;
+  description: string;
+  icon: typeof Sun;
+}> = [
+  {
+    value: 'light',
+    label: 'Light',
+    description: 'Interfaz clara y nítida para el día.',
+    icon: Sun,
+  },
+  {
+    value: 'dark',
+    label: 'Dark',
+    description: 'Menos brillo y mejor contraste nocturno.',
+    icon: Moon,
+  },
+  {
+    value: 'system',
+    label: 'System',
+    description: 'Sigue la preferencia del dispositivo.',
+    icon: Monitor,
+  },
+];
 
 export const ProfileSettingsTab = () => {
-  useAuthStore(); // Keep hook if needed for auth check, or remove if unused. Error says 'user' is unused.
   const [formData, setFormData] = useState<ProfileSettings>({
     name: '',
     email: '',
@@ -14,35 +42,37 @@ export const ProfileSettingsTab = () => {
     currency: 'COP'
   });
   const [loading, setLoading] = useState(false);
+  const theme = useThemeStore((state) => state.theme);
+  const resolvedTheme = useThemeStore((state) => state.resolvedTheme);
+  const setTheme = useThemeStore((state) => state.setTheme);
 
   useEffect(() => {
     const profile = settingsService.getProfile();
     setFormData(profile);
   }, []);
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleChange = (e: ChangeEvent<HTMLInputElement>) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     setLoading(true);
     try {
       await settingsService.updateProfile(formData);
-      alert('Perfil actualizado correctamente');
-      // Force reload or state update if needed
+      toast.success('Perfil actualizado correctamente');
       window.location.reload(); 
     } catch (error) {
       console.error(error);
-      alert('Error al actualizar perfil');
+      toast.error('Error al actualizar perfil');
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="bg-gray-800 border border-gray-700 rounded-xl p-6 max-w-2xl animate-in fade-in duration-300">
-      <h3 className="text-xl font-bold text-white mb-6 flex items-center gap-2">
+    <div className="app-surface max-w-3xl animate-in fade-in space-y-6 p-6 duration-300">
+      <h3 className="mb-6 flex items-center gap-2 text-xl font-bold app-text">
         <User className="w-6 h-6 text-blue-500" />
         Información Personal
       </h3>
@@ -55,7 +85,6 @@ export const ProfileSettingsTab = () => {
             value={formData.name}
             onChange={handleChange}
             icon={User}
-            className="bg-gray-700 border-gray-600 text-white"
             placeholder="Tu nombre"
           />
           <Input
@@ -65,7 +94,6 @@ export const ProfileSettingsTab = () => {
             onChange={handleChange}
             icon={Mail}
             type="email"
-            className="bg-gray-700 border-gray-600 text-white"
             placeholder="tu@email.com"
             disabled // Often email is unique ID
           />
@@ -75,16 +103,15 @@ export const ProfileSettingsTab = () => {
             value={formData.phone}
             onChange={handleChange}
             icon={Phone}
-            className="bg-gray-700 border-gray-600 text-white"
             placeholder="+57 300 123 4567"
           />
           <div>
-            <label className="block text-sm font-medium text-gray-300 mb-1">Moneda Principal</label>
+            <label className="mb-1 block text-sm font-medium app-text-secondary">Moneda Principal</label>
             <select 
                 name="currency"
                 value={formData.currency}
                 onChange={(e) => setFormData({...formData, currency: e.target.value})}
-                className="w-full bg-gray-700 border border-gray-600 rounded-lg p-2.5 text-white focus:border-blue-500 focus:outline-none"
+                className="app-select rounded-lg py-2.5"
             >
                 <option value="COP">Peso Colombiano (COP)</option>
                 <option value="USD">Dólar (USD)</option>
@@ -92,8 +119,58 @@ export const ProfileSettingsTab = () => {
           </div>
         </div>
 
-        <div className="pt-4 border-t border-gray-700 flex justify-end">
-          <Button type="submit" disabled={loading} className="bg-blue-600 hover:bg-blue-700">
+        <div className="app-muted-panel rounded-2xl p-4">
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+            <div>
+              <h4 className="text-base font-semibold app-text">Apariencia</h4>
+              <p className="mt-1 text-sm app-text-muted">
+                Elige cómo quieres ver la app. Tu selección se guarda en este dispositivo.
+              </p>
+            </div>
+            <span className="app-chip rounded-full px-3 py-1 text-xs font-medium">
+              Activo: {resolvedTheme === 'dark' ? 'Dark' : 'Light'}
+            </span>
+          </div>
+
+          <div className="mt-4 grid gap-3 md:grid-cols-3">
+            {THEME_OPTIONS.map(({ value, label, description, icon: Icon }) => {
+              const isActive = theme === value;
+
+              return (
+                <button
+                  key={value}
+                  type="button"
+                  onClick={() => setTheme(value)}
+                  aria-pressed={isActive}
+                  className={cn(
+                    'rounded-2xl border p-4 text-left transition-all',
+                    isActive
+                      ? 'border-blue-500 bg-blue-50 text-blue-900 shadow-sm dark:border-blue-400/60 dark:bg-blue-500/10 dark:text-blue-100'
+                      : 'app-soft-surface app-text-secondary hover:border-gray-300 hover:bg-gray-50'
+                  )}
+                >
+                  <div className="flex items-center gap-3">
+                    <div className={cn(
+                      'rounded-xl p-2',
+                      isActive
+                        ? 'bg-blue-100 text-blue-700 dark:bg-blue-500/20 dark:text-blue-200'
+                        : 'bg-gray-100 app-text-muted'
+                    )}>
+                      <Icon className="h-5 w-5" />
+                    </div>
+                    <div>
+                      <div className="font-semibold">{label}</div>
+                      <div className="mt-1 text-xs app-text-muted">{description}</div>
+                    </div>
+                  </div>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        <div className="app-divider flex justify-end border-t pt-4">
+          <Button type="submit" disabled={loading}>
             {loading ? 'Guardando...' : 'Guardar Cambios'}
             <Save className="w-4 h-4 ml-2" />
           </Button>

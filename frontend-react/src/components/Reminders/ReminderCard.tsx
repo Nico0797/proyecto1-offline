@@ -19,31 +19,31 @@ export const ReminderCard: React.FC<ReminderCardProps> = ({ reminder, onUpdate, 
     low: 'bg-blue-500/20 text-blue-400 border-blue-500/30',
   };
 
-  const handleToggleComplete = () => {
-    reminderService.toggleComplete(reminder.businessId, id);
+  const handleToggleComplete = async () => {
+    await reminderService.toggleComplete(reminder.businessId, id, status);
     onUpdate();
   };
 
-  const handleTogglePin = (e: React.MouseEvent) => {
+  const handleTogglePin = async (e: React.MouseEvent) => {
     e.stopPropagation();
-    reminderService.togglePin(reminder.businessId, id);
+    await reminderService.togglePin(reminder.businessId, id, pinned);
     onUpdate();
   };
 
-  const handleArchive = () => {
-    reminderService.archive(reminder.businessId, id);
+  const handleArchive = async () => {
+    await reminderService.archive(reminder.businessId, id);
     onUpdate();
   };
 
-  const handleDelete = () => {
+  const handleDelete = async () => {
     if (window.confirm('¿Estás seguro de eliminar este recordatorio?')) {
-      reminderService.delete(reminder.businessId, id);
+      await reminderService.delete(reminder.businessId, id);
       onUpdate();
     }
   };
 
-  const handleRestore = () => {
-    reminderService.restore(reminder.businessId, id);
+  const handleRestore = async () => {
+    await reminderService.restore(reminder.businessId, id);
     onUpdate();
   };
 
@@ -133,11 +133,22 @@ export const ReminderCard: React.FC<ReminderCardProps> = ({ reminder, onUpdate, 
           )}
         </div>
         
-        {status === 'archived' && (
-           <Button variant="secondary" size="sm" onClick={handleRestore} className="h-6 text-xs px-2">
-             <RotateCcw className="w-3 h-3 mr-1" /> Restaurar
-           </Button>
-        )}
+        <div className="flex items-center gap-2">
+            {reminder.created_by_name && (
+                <div className="text-[10px] text-gray-400 flex items-center gap-1" title={reminder.created_by_role}>
+                    <span>Por:</span>
+                    <span className="font-medium text-gray-600 dark:text-gray-300 truncate max-w-[80px]">
+                        {reminder.created_by_name.split(' ')[0]}
+                    </span>
+                </div>
+            )}
+            
+            {status === 'archived' && (
+            <Button variant="secondary" size="sm" onClick={handleRestore} className="h-6 text-xs px-2 ml-2">
+                <RotateCcw className="w-3 h-3 mr-1" /> Restaurar
+            </Button>
+            )}
+        </div>
       </div>
     </div>
   );

@@ -1,209 +1,243 @@
-import React from 'react';
-import { Check, Zap, BarChart, Bell, Calendar, Smartphone, Globe, MessageCircle } from 'lucide-react';
+import React, { useEffect, useMemo, useState } from 'react';
+import { Check, MessageCircle, Star, Briefcase, Loader2 } from 'lucide-react';
 import { Button } from '../components/ui/Button';
 import { useNavigate } from 'react-router-dom';
-import { membershipService } from '../services/membershipService';
+import { getCycleKey, membershipService, PlanCode, Pricing } from '../services/membershipService';
+import { cn } from '../utils/cn';
+import { useAuthStore } from '../store/authStore';
 
 const ProPage: React.FC = () => {
+  const { user } = useAuthStore();
   const navigate = useNavigate();
+  const [billingCycle, setBillingCycle] = useState<'monthly' | 'quarterly' | 'annual'>('quarterly');
+  const [pricing, setPricing] = useState<Pricing | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [processingPlan, setProcessingPlan] = useState<PlanCode | null>(null);
 
-  const handleSubscribe = async (planCode: 'pro_monthly'|'pro_quarterly'|'pro_annual') => {
+  useEffect(() => {
+    const loadPricing = async () => {
+      try {
+        const data = await membershipService.getPricing();
+        setPricing(data);
+      } catch (e) {
+        console.error('Error loading pricing', e);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadPricing();
+  }, []);
+
+  const cycleOptions = useMemo(() => {
+    if (!pricing) return [];
+    return pricing.cycle_order.map((cycle) => ({
+      key: cycle,
+      label: pricing.plans.pro.cycles[cycle].label,
+      discountLabel: pricing.plans.pro.cycles[cycle].discount_label,
+    }));
+  }, [pricing]);
+
+  if (user?.account_type === 'team_member') {
+    return (
+        <div className="app-canvas min-h-screen flex flex-col items-center justify-center p-4 text-center">
+            <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-2">Acceso Restringido</h2>
+            <p className="text-gray-500 dark:text-gray-400 mb-4">Esta sección es exclusiva para la gestión de la cuenta principal.</p>
+            <Button onClick={() => navigate('/dashboard')}>Volver al Dashboard</Button>
+        </div>
+    );
+  }
+
+  const handleSubscribe = async (planCode: PlanCode) => {
     try {
+      setProcessingPlan(planCode);
       const url = await membershipService.createCheckout(planCode, 'card');
-      window.open(url, '_blank');
+      if (url) {
+        window.open(url, '_blank');
+      } else {
+        alert('Próximamente: Integración de pagos directa.');
+      }
     } catch (e: any) {
       alert(e?.message || 'No se pudo iniciar el pago');
+    } finally {
+      setProcessingPlan(null);
     }
   };
 
-  const features = [
-    { icon: BarChart, text: 'Analíticas avanzadas y reportes detallados' },
-    { icon: Calendar, text: 'Recordatorios automáticos de cobro' },
-    { icon: Bell, text: 'Alertas de stock y vencimientos' },
-    { icon: Zap, text: 'Gestión de gastos recurrentes' },
-    { icon: Smartphone, text: 'Plantillas de WhatsApp personalizadas' },
-    { icon: Globe, text: 'Múltiples negocios en una cuenta' },
-  ];
+  if (loading) {
+    return (
+      <div className="app-canvas min-h-screen flex items-center justify-center text-gray-900 dark:text-white">
+        <Loader2 className="w-6 h-6 animate-spin mr-3" />
+        Cargando planes...
+      </div>
+    );
+  }
 
-  const plans = [
-    {
-      name: 'Gratis',
-      price: 0,
-      period: '/siempre',
-      description: 'Ideal para probar la plataforma',
-      savings: null,
-      recommended: false,
-      features: [
-        '1 Negocio',
-        'Hasta 10 Clientes',
-        'Hasta 5 Productos',
-        'Hasta 30 Ventas/mes',
-        'Hasta 30 Gastos/mes',
-        'Soporte Básico',
-      ]
-    },
-    {
-      name: 'Mensual',
-      price: 5.99,
-      period: '/mes',
-      description: 'Facturado mensualmente',
-      savings: null,
-      recommended: false,
-      features: [
-        'Negocios Ilimitados',
-        'Clientes Ilimitados',
-        'Productos Ilimitados',
-        'Ventas Ilimitadas',
-        'Gastos Ilimitados',
-        'Reportes Avanzados',
-        'Alertas de Stock',
-        'Gastos Recurrentes',
-        'Plantillas WhatsApp',
-        'Soporte Prioritario',
-      ]
-    },
-    {
-      name: 'Trimestral',
-      price: 16.17, // 3 * 5.99 * 0.90
-      period: '/trimestre',
-      description: 'Facturado cada 3 meses',
-      savings: '10% OFF',
-      recommended: true,
-      perMonth: '5.39',
-      features: [
-        'Todo lo del plan Mensual',
-        'Ahorro del 10%',
-      ]
-    },
-    {
-      name: 'Anual',
-      price: 61.10, // 12 * 5.99 * 0.85
-      period: '/año',
-      description: 'Facturado anualmente',
-      savings: '15% OFF',
-      recommended: false,
-      perMonth: '5.09',
-      features: [
-        'Todo lo del plan Mensual',
-        'Ahorro del 15%',
-        'Mejor precio garantizado',
-      ]
-    },
-  ];
+  if (!pricing) {
+    return (
+      <div className="app-canvas min-h-screen flex flex-col items-center justify-center p-4 text-center">
+        <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-2">No se pudieron cargar los planes</h2>
+        <p className="text-gray-500 dark:text-gray-400 mb-4">Intenta nuevamente en unos segundos.</p>
+        <Button onClick={() => window.location.reload()}>Reintentar</Button>
+      </div>
+    );
+  }
+
+  const selectedCycle = getCycleKey(billingCycle);
+  const basicPlan = pricing.plans.basic;
+  const paidPlans = [pricing.plans.pro, pricing.plans.business];
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 py-12 px-4 sm:px-6 lg:px-8">
+    <div className="app-canvas min-h-screen py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-7xl mx-auto">
-        <div className="text-center mb-16">
+        <div className="text-center mb-12">
           <h1 className="text-4xl font-extrabold text-gray-900 dark:text-white sm:text-5xl sm:tracking-tight lg:text-6xl">
-            Potencia tu negocio con <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-500 to-purple-600">Pro</span>
+            Elige el plan perfecto para tu negocio
           </h1>
-          <p className="mt-5 max-w-xl mx-auto text-xl text-gray-500 dark:text-gray-400">
-            Desbloquea todas las herramientas que necesitas para crecer, organizar y automatizar tu emprendimiento.
+          <p className="mt-5 max-w-2xl mx-auto text-xl text-gray-500 dark:text-gray-400">
+            Pricing centralizado, ciclos claros y funciones alineadas con la operación real de tu negocio.
           </p>
         </div>
 
-        {/* Features Grid */}
-        <div className="grid grid-cols-1 gap-8 sm:grid-cols-2 lg:grid-cols-3 mb-16">
-          {features.map((feature, index) => (
-            <div key={index} className="flex items-center space-x-4 bg-white dark:bg-gray-800 p-6 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 hover:shadow-md transition-shadow">
-              <div className="flex-shrink-0">
-                <div className="flex items-center justify-center h-12 w-12 rounded-md bg-indigo-500 text-white">
-                  <feature.icon className="h-6 w-6" aria-hidden="true" />
-                </div>
-              </div>
-              <div className="flex-1">
-                <p className="text-lg font-medium text-gray-900 dark:text-white">{feature.text}</p>
-              </div>
-            </div>
-          ))}
-        </div>
-
-        {/* Pricing Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 max-w-7xl mx-auto">
-          {plans.map((plan) => (
-            <div 
-              key={plan.name} 
-              className={`relative flex flex-col bg-white dark:bg-gray-800 rounded-2xl shadow-xl overflow-hidden border ${plan.recommended ? 'border-indigo-500 ring-2 ring-indigo-500 ring-opacity-50' : 'border-gray-200 dark:border-gray-700'}`}
-            >
-              {plan.recommended && (
-                <div className="absolute top-0 right-0 bg-indigo-500 text-white text-xs font-bold px-3 py-1 rounded-bl-lg">
-                  RECOMENDADO
-                </div>
-              )}
-              {plan.savings && (
-                <div className="absolute top-0 left-0 bg-green-500 text-white text-xs font-bold px-3 py-1 rounded-br-lg">
-                  AHORRA {plan.savings}
-                </div>
-              )}
-              
-              <div className="p-8 flex-1">
-                <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">{plan.name}</h3>
-                <p className="text-gray-500 dark:text-gray-400 text-sm mb-6">{plan.description}</p>
-                
-                <div className="flex items-baseline mb-2">
-                  <span className="text-4xl font-extrabold text-gray-900 dark:text-white">
-                      {plan.price === 0 ? 'Gratis' : `$${plan.price.toFixed(2)}`}
-                  </span>
-                  {plan.price > 0 && <span className="text-gray-500 dark:text-gray-400 ml-2">{plan.period}</span>}
-                </div>
-                {plan.perMonth && (
-                  <p className="text-sm text-indigo-600 dark:text-indigo-400 font-medium mb-6">
-                    Equivale a ${plan.perMonth}/mes
-                  </p>
+        <div className="flex justify-center mb-16">
+          <div className="app-muted-panel p-1 rounded-xl flex flex-wrap justify-center gap-1">
+            {cycleOptions.map((option) => (
+              <button
+                key={option.key}
+                onClick={() => setBillingCycle(option.key)}
+                className={cn(
+                  'px-6 py-2 rounded-lg text-sm font-medium transition-all relative',
+                  billingCycle === option.key
+                    ? 'app-surface shadow text-gray-900 dark:text-white'
+                    : 'text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
                 )}
-                {!plan.perMonth && <div className="mb-6 h-5"></div>}
-
-                <ul className="space-y-4 mb-8">
-                  {plan.features?.map((feature, idx) => (
-                    <li key={idx} className="flex items-start">
-                        <Check className="flex-shrink-0 h-5 w-5 text-green-500" />
-                        <span className="ml-3 text-sm text-gray-700 dark:text-gray-300">{feature}</span>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-              
-              <div className="p-8 bg-gray-50 dark:bg-gray-700/50">
-                <Button 
-                  onClick={
-                    plan.price === 0 
-                      ? () => navigate('/dashboard') 
-                      : () => {
-                          const code = plan.name === 'Mensual' ? 'pro_monthly' : plan.name === 'Trimestral' ? 'pro_quarterly' : 'pro_annual';
-                          handleSubscribe(code as any);
-                        }
-                  }
-                  className={`w-full py-3 text-lg font-semibold rounded-xl shadow-md transition-transform hover:scale-105 ${plan.recommended ? 'bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white border-none' : 'bg-white dark:bg-gray-800 text-indigo-600 border border-indigo-200 hover:bg-indigo-50 dark:hover:bg-gray-700'}`}
-                >
-                  {plan.price === 0 ? 'Plan Actual' : 'Actualizar ahora'}
-                </Button>
-              </div>
-            </div>
-          ))}
+              >
+                {option.label}
+                {option.discountLabel && (
+                  <span className="absolute -top-3 -right-2 bg-green-500 text-white text-[10px] px-1.5 py-0.5 rounded-full font-bold">
+                    {option.discountLabel}
+                  </span>
+                )}
+              </button>
+            ))}
+          </div>
         </div>
 
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-7xl mx-auto">
+          <div className="app-surface relative flex flex-col rounded-2xl shadow-xl overflow-hidden">
+            <div className="p-8 flex-1">
+              <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">{basicPlan.display_name}</h3>
+              <p className="text-gray-500 dark:text-gray-400 text-sm mb-6">{basicPlan.tagline}</p>
+              <div className="flex items-baseline mb-2">
+                <span className="text-4xl font-extrabold text-gray-900 dark:text-white">${basicPlan.cycles[selectedCycle].total_usd.toFixed(2)}</span>
+                <span className="text-gray-500 dark:text-gray-400 ml-2">
+                  /{selectedCycle === 'monthly' ? 'mes' : selectedCycle === 'quarterly' ? 'trimestre' : 'año'}
+                </span>
+              </div>
+              <p className="text-sm text-gray-500 dark:text-gray-400 font-medium mb-6">{basicPlan.short_description}</p>
 
-        {/* FAQ Section */}
+              <ul className="space-y-4 mb-8">
+                {basicPlan.features.map((feature, idx) => (
+                  <li key={idx} className="flex items-start">
+                    <Check className="flex-shrink-0 h-5 w-5 text-gray-400" />
+                    <span className="ml-3 text-sm text-gray-700 dark:text-gray-300">{feature}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+            <div className="app-soft-surface rounded-none border-x-0 border-b-0 p-8">
+              <Button
+                onClick={() => handleSubscribe(basicPlan.cycles[selectedCycle].checkout_plan_code)}
+                variant="secondary"
+                className="w-full"
+                disabled={!!processingPlan}
+              >
+                {processingPlan === basicPlan.cycles[selectedCycle].checkout_plan_code ? 'Procesando...' : basicPlan.cta_label}
+              </Button>
+            </div>
+          </div>
+
+          {paidPlans.map((plan) => {
+            const cycle = plan.cycles[selectedCycle];
+            const isPro = plan.key === 'pro';
+            const isProcessing = processingPlan === cycle.checkout_plan_code;
+            const borderClass = isPro
+              ? 'border-indigo-500 ring-4 ring-indigo-500/10'
+              : 'border-purple-500/50';
+            const accentText = isPro ? 'text-indigo-600 dark:text-indigo-400' : 'text-purple-600 dark:text-purple-400';
+            const accentButton = isPro ? 'bg-indigo-600 hover:bg-indigo-700' : 'bg-purple-600 hover:bg-purple-700';
+            const accentBg = isPro ? 'bg-indigo-50 dark:bg-indigo-900/20' : 'bg-purple-50 dark:bg-purple-900/20';
+
+            return (
+              <div key={plan.key} className={cn('app-surface relative flex flex-col rounded-2xl shadow-xl overflow-hidden', borderClass, isPro && 'transform scale-105 z-10')}>
+                {plan.badge && (
+                  <div className={cn('absolute top-0 right-0 text-white text-xs font-bold px-3 py-1 rounded-bl-lg', isPro ? 'bg-indigo-500' : 'bg-purple-600')}>
+                    {plan.badge}
+                  </div>
+                )}
+                <div className="p-8 flex-1">
+                  <div className="flex items-center gap-2 mb-2">
+                    {isPro ? (
+                      <Star className="w-5 h-5 text-indigo-500 fill-indigo-500" />
+                    ) : (
+                      <Briefcase className="w-5 h-5 text-purple-600" />
+                    )}
+                    <h3 className="text-xl font-semibold text-gray-900 dark:text-white">{plan.display_name}</h3>
+                  </div>
+                  <p className="text-gray-500 dark:text-gray-400 text-sm mb-6">{plan.tagline}</p>
+                  <div className="flex items-baseline mb-2">
+                    <span className="text-4xl font-extrabold text-gray-900 dark:text-white">
+                      ${cycle.total_usd.toFixed(2)}
+                    </span>
+                    <span className="text-gray-500 dark:text-gray-400 ml-2">
+                      /{selectedCycle === 'monthly' ? 'mes' : selectedCycle === 'quarterly' ? 'trimestre' : 'año'}
+                    </span>
+                  </div>
+                  <p className={cn('text-sm font-medium mb-6', accentText)}>
+                    Equivale a ${cycle.monthly_equivalent_usd.toFixed(2)}/mes
+                  </p>
+
+                  <ul className="space-y-4 mb-8">
+                    {plan.features.map((feature, idx) => (
+                      <li key={idx} className="flex items-start">
+                        <Check className={cn('flex-shrink-0 h-5 w-5', isPro ? 'text-indigo-500' : 'text-purple-600')} />
+                        <span className="ml-3 text-sm text-gray-700 dark:text-gray-300">{feature}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+                <div className={cn('p-8', accentBg)}>
+                  <Button
+                    onClick={() => handleSubscribe(cycle.checkout_plan_code)}
+                    className={cn('w-full text-white', accentButton)}
+                    disabled={!!processingPlan}
+                  >
+                    {isProcessing ? 'Procesando...' : plan.cta_label}
+                  </Button>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+
         <div className="mt-20 max-w-3xl mx-auto">
           <h2 className="text-3xl font-bold text-center text-gray-900 dark:text-white mb-10">Preguntas Frecuentes</h2>
           <div className="space-y-8">
             <div>
-              <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">¿Puedo cancelar en cualquier momento?</h3>
-              <p className="text-gray-500 dark:text-gray-400">Sí, puedes cancelar tu suscripción en cualquier momento. Seguirás teniendo acceso a las funciones Pro hasta el final de tu periodo de facturación actual.</p>
+              <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">¿Puedo cambiar de plan?</h3>
+              <p className="text-gray-500 dark:text-gray-400">Sí. Puedes pasar de Básica a Pro o Business, y ajustar el ciclo de facturación según tu etapa.</p>
             </div>
             <div>
-              <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">¿Qué pasa con mis datos si vuelvo al plan Gratis?</h3>
-              <p className="text-gray-500 dark:text-gray-400">Tus datos se mantendrán seguros, pero algunas funciones se bloquearán. Por ejemplo, no podrás ver reportes históricos más allá del límite gratuito o crear nuevos negocios adicionales.</p>
+              <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">¿Cómo funcionan los descuentos?</h3>
+              <p className="text-gray-500 dark:text-gray-400">Ahorras un 10% con pago trimestral y un 15% con pago anual, frente al precio mensual.</p>
             </div>
             <div>
-              <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">¿Ofrecen reembolsos?</h3>
-              <p className="text-gray-500 dark:text-gray-400">Ofrecemos una garantía de devolución de dinero de 7 días si no estás satisfecho con el servicio Pro.</p>
+              <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">¿Qué pasa con usuarios de planes legacy?</h3>
+              <p className="text-gray-500 dark:text-gray-400">Se mantienen compatibles y se muestran como Básica, sin romper su acceso actual.</p>
             </div>
           </div>
         </div>
 
-        {/* Support CTA */}
         <div className="mt-20 text-center flex flex-col items-center">
           <p className="text-gray-500 dark:text-gray-400 mb-4">
             ¿Tienes más preguntas?

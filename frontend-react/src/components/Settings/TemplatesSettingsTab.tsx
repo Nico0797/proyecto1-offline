@@ -1,8 +1,10 @@
-import React, { useState, useEffect } from 'react';
+import { useEffect, useState, type ChangeEvent } from 'react';
 import { useBusinessStore } from '../../store/businessStore';
 import { Button } from '../ui/Button';
 import { settingsService } from '../../services/settingsService';
 import { LayoutTemplate, Play, RefreshCcw } from 'lucide-react';
+import { cn } from '../../utils/cn';
+import { toast } from 'react-hot-toast';
 
 export const TemplatesSettingsTab = () => {
   const { activeBusiness } = useBusinessStore();
@@ -17,7 +19,7 @@ export const TemplatesSettingsTab = () => {
     }
   }, [activeBusiness]);
 
-  const handleChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+  const handleChange = (e: ChangeEvent<HTMLTextAreaElement>) => {
     setTemplates({ ...templates, [activeType]: e.target.value });
   };
 
@@ -26,8 +28,7 @@ export const TemplatesSettingsTab = () => {
     setLoading(true);
     try {
       await settingsService.updateTemplates(activeBusiness.id, templates);
-      // In real scenario, also update backend via api
-      alert('Plantillas guardadas');
+      toast.success('Plantillas guardadas');
     } catch (error) {
       console.error(error);
     } finally {
@@ -59,8 +60,8 @@ export const TemplatesSettingsTab = () => {
   };
 
   return (
-    <div className="bg-gray-800 border border-gray-700 rounded-xl p-6 max-w-4xl animate-in fade-in duration-300">
-      <h3 className="text-xl font-bold text-white mb-6 flex items-center gap-2">
+    <div className="app-surface max-w-4xl animate-in fade-in p-6 duration-300">
+      <h3 className="mb-6 flex items-center gap-2 text-xl font-bold text-gray-900 dark:text-white">
         <LayoutTemplate className="w-6 h-6 text-green-500" />
         Plantillas de Mensajes
       </h3>
@@ -69,46 +70,46 @@ export const TemplatesSettingsTab = () => {
         <div className="lg:col-span-1 space-y-2">
             <button 
                 onClick={() => setActiveType('sale')}
-                className={`w-full text-left p-3 rounded-lg transition-colors ${activeType === 'sale' ? 'bg-green-600 text-white' : 'bg-gray-700 text-gray-300 hover:bg-gray-600'}`}
+                className={cn('w-full rounded-lg p-3 text-left transition-colors', activeType === 'sale' ? 'bg-green-600 text-white' : 'app-surface text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-800')}
             >
                 Comprobante de Venta
             </button>
             <button 
                 onClick={() => setActiveType('debt')}
-                className={`w-full text-left p-3 rounded-lg transition-colors ${activeType === 'debt' ? 'bg-green-600 text-white' : 'bg-gray-700 text-gray-300 hover:bg-gray-600'}`}
+                className={cn('w-full rounded-lg p-3 text-left transition-colors', activeType === 'debt' ? 'bg-green-600 text-white' : 'app-surface text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-800')}
             >
                 Recordatorio de Deuda
             </button>
             <button 
                 onClick={() => setActiveType('welcome')}
-                className={`w-full text-left p-3 rounded-lg transition-colors ${activeType === 'welcome' ? 'bg-green-600 text-white' : 'bg-gray-700 text-gray-300 hover:bg-gray-600'}`}
+                className={cn('w-full rounded-lg p-3 text-left transition-colors', activeType === 'welcome' ? 'bg-green-600 text-white' : 'app-surface text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-800')}
             >
                 Bienvenida Cliente
             </button>
             <button 
                 onClick={() => setActiveType('payment')}
-                className={`w-full text-left p-3 rounded-lg transition-colors ${activeType === 'payment' ? 'bg-green-600 text-white' : 'bg-gray-700 text-gray-300 hover:bg-gray-600'}`}
+                className={cn('w-full rounded-lg p-3 text-left transition-colors', activeType === 'payment' ? 'bg-green-600 text-white' : 'app-surface text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-800')}
             >
                 Confirmación de Abono
             </button>
         </div>
 
         <div className="lg:col-span-2 space-y-4">
-            <div className="bg-gray-700/50 p-4 rounded-lg border border-gray-600">
-                <p className="text-sm text-gray-400 mb-2">Editor de Plantilla</p>
+            <div className="app-muted-panel rounded-lg p-4">
+                <p className="mb-2 text-sm text-gray-500 dark:text-gray-400">Editor de Plantilla</p>
                 <textarea 
                     value={templates[activeType]}
                     onChange={handleChange}
-                    className="w-full h-32 bg-gray-900 border border-gray-700 rounded-lg p-3 text-white font-mono text-sm focus:border-green-500 focus:outline-none resize-none"
+                    className="app-textarea h-32 resize-none font-mono"
                     placeholder="Escribe tu mensaje aquí..."
                 />
-                <div className="flex justify-between items-center mt-2 text-xs text-gray-500">
+                <div className="mt-2 flex items-center justify-between text-xs text-gray-500 dark:text-gray-400">
                     <div className="flex gap-2 flex-wrap">
-                        <span className="bg-gray-700 px-1.5 py-0.5 rounded cursor-pointer hover:text-white" onClick={() => setTemplates({...templates, [activeType]: templates[activeType] + '{cliente}'})}>{`{cliente}`}</span>
-                        <span className="bg-gray-700 px-1.5 py-0.5 rounded cursor-pointer hover:text-white" onClick={() => setTemplates({...templates, [activeType]: templates[activeType] + '{negocio}'})}>{`{negocio}`}</span>
-                        <span className="bg-gray-700 px-1.5 py-0.5 rounded cursor-pointer hover:text-white" onClick={() => setTemplates({...templates, [activeType]: templates[activeType] + '{total}'})}>{`{total}`}</span>
-                        <span className="bg-gray-700 px-1.5 py-0.5 rounded cursor-pointer hover:text-white" onClick={() => setTemplates({...templates, [activeType]: templates[activeType] + '{monto}'})}>{`{monto}`}</span>
-                        <span className="bg-gray-700 px-1.5 py-0.5 rounded cursor-pointer hover:text-white" onClick={() => setTemplates({...templates, [activeType]: templates[activeType] + '{saldo}'})}>{`{saldo}`}</span>
+                        <span className="app-chip cursor-pointer rounded px-1.5 py-0.5 hover:text-gray-900 dark:hover:text-white" onClick={() => setTemplates({...templates, [activeType]: templates[activeType] + '{cliente}'})}>{`{cliente}`}</span>
+                        <span className="app-chip cursor-pointer rounded px-1.5 py-0.5 hover:text-gray-900 dark:hover:text-white" onClick={() => setTemplates({...templates, [activeType]: templates[activeType] + '{negocio}'})}>{`{negocio}`}</span>
+                        <span className="app-chip cursor-pointer rounded px-1.5 py-0.5 hover:text-gray-900 dark:hover:text-white" onClick={() => setTemplates({...templates, [activeType]: templates[activeType] + '{total}'})}>{`{total}`}</span>
+                        <span className="app-chip cursor-pointer rounded px-1.5 py-0.5 hover:text-gray-900 dark:hover:text-white" onClick={() => setTemplates({...templates, [activeType]: templates[activeType] + '{monto}'})}>{`{monto}`}</span>
+                        <span className="app-chip cursor-pointer rounded px-1.5 py-0.5 hover:text-gray-900 dark:hover:text-white" onClick={() => setTemplates({...templates, [activeType]: templates[activeType] + '{saldo}'})}>{`{saldo}`}</span>
                     </div>
                     <button onClick={handleReset} className="flex items-center gap-1 hover:text-red-400 transition-colors">
                         <RefreshCcw className="w-3 h-3" /> Restaurar
@@ -120,9 +121,9 @@ export const TemplatesSettingsTab = () => {
                 <p className="text-xs font-bold text-green-500 mb-2 flex items-center gap-1 uppercase tracking-wider">
                     <Play className="w-3 h-3" /> Vista Previa en Vivo
                 </p>
-                <div className="bg-white text-gray-900 p-3 rounded-lg rounded-tl-none shadow-sm text-sm relative max-w-[80%]">
+                <div className="app-surface text-gray-900 p-3 rounded-lg rounded-tl-none shadow-sm text-sm relative max-w-[80%] dark:text-white">
                     {getPreview()}
-                    <div className="absolute top-0 left-[-8px] w-0 h-0 border-t-[0px] border-r-[10px] border-b-[10px] border-transparent border-r-white"></div>
+                    <div className="absolute top-0 left-[-8px] h-0 w-0 border-b-[10px] border-r-[10px] border-t-[0px] border-transparent border-r-white dark:border-r-gray-900"></div>
                 </div>
             </div>
 

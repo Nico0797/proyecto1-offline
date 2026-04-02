@@ -333,7 +333,7 @@ export const offlineApi = {
         if (method === 'delete') return handleCollectionDelete(bizId, 'recurring_expenses', id, cfg);
       }
     }
-    if (rest.startsWith('/sales')) {
+    if (rest.startsWith('/sales') && !rest.includes('sales-goals')) {
       if (method === 'get') return handleCollectionGet(bizId, 'sales', cfg);
       if (method === 'post') return handleCollectionPost(bizId, 'sales', cfg.data && typeof cfg.data === 'string' ? JSON.parse(cfg.data) : cfg.data, cfg);
       const idm = rest.match(/\/sales\/(\d+)/);

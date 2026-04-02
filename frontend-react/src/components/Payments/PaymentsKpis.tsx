@@ -60,7 +60,7 @@ export const PaymentsKpis: React.FC<KpiProps> = ({
       <div className="md:hidden mb-2">
         <button
           onClick={() => setOpen(o => !o)}
-          className="w-full flex items-center justify-between px-3 py-2 rounded-xl bg-white/70 dark:bg-gray-800/70 backdrop-blur border border-gray-200 dark:border-gray-700 text-left shadow-sm"
+          className="app-soft-surface w-full flex items-center justify-between px-3 py-2 text-left shadow-sm backdrop-blur"
         >
           <div className="flex items-center gap-2">
             <div className="p-1 bg-blue-100 dark:bg-blue-900/30 rounded-lg text-blue-600 dark:text-blue-400">
@@ -79,7 +79,7 @@ export const PaymentsKpis: React.FC<KpiProps> = ({
       {open && (
         <div className="grid grid-cols-2 gap-2 mb-2 md:hidden">
           {kpis.map((kpi, index) => (
-            <div key={index} className="bg-white/70 dark:bg-gray-800/70 backdrop-blur p-2 rounded-lg border border-gray-200 dark:border-gray-700 flex items-center justify-between">
+            <div key={index} className="app-soft-surface flex items-center justify-between rounded-lg p-2 backdrop-blur">
               <div className="flex items-center gap-2">
                 <div className={cn("p-1 rounded-lg", kpi.bg)}>
                   <kpi.icon className={cn("w-3 h-3", kpi.color)} />
@@ -97,7 +97,7 @@ export const PaymentsKpis: React.FC<KpiProps> = ({
       {/* Desktop View - Cards */}
       <div className="hidden md:grid md:grid-cols-4 gap-3 mb-6">
         {kpis.map((kpi, index) => (
-          <div key={index} className={cn("bg-white dark:bg-gray-800 p-3 rounded-xl shadow-sm border transition-all hover:shadow-md cursor-pointer", kpi.border)}>
+          <div key={index} className={cn("app-stat-card rounded-xl p-3 transition-all hover:shadow-md cursor-pointer", kpi.border)}>
              <div className="flex items-center justify-between">
               <div>
                 <p className="text-xs font-medium text-gray-500 dark:text-gray-400">{kpi.label}</p>

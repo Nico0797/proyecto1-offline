@@ -1,0 +1,892 @@
+{
+  "base_url": "http://127.0.0.1:18010",
+  "business_id": 16,
+  "users": [
+    30,
+    40,
+    60
+  ],
+  "scenarios": [
+    "D"
+  ],
+  "run_time": "2m",
+  "spawn_rate": 5.0,
+  "fixture": {
+    "safety": {
+      "environment": "development",
+      "db_uri": "postgresql://postgres:Liana102816@localhost:5432/cuaderno",
+      "db_host": "localhost",
+      "is_local_db": true
+    },
+    "credentials": {
+      "email": "qa.loadtest@cuaderno.local",
+      "password": "qa-loadtest-123"
+    },
+    "user": {
+      "id": 44,
+      "email": "qa.loadtest@cuaderno.local",
+      "plan": "pro"
+    },
+    "business": {
+      "id": 16,
+      "name": "QA LOADTEST Business"
+    },
+    "dataset": {
+      "customers": 40,
+      "products": 12,
+      "paid_sales_per_customer": 4,
+      "pending_sales_per_customer": 12,
+      "default_cash_account_id": 7,
+      "default_transfer_account_id": 8,
+      "customer_ids": [
+        37,
+        38,
+        39,
+        40,
+        41,
+        42,
+        43,
+        44,
+        45,
+        46,
+        47,
+        48,
+        49,
+        50,
+        51,
+        52,
+        53,
+        54,
+        55,
+        56
+      ],
+      "product_ids": [
+        28,
+        29,
+        30,
+        31,
+        32,
+        33,
+        34,
+        35,
+        36,
+        37,
+        38,
+        39
+      ]
+    },
+    "created": {
+      "user": false,
+      "business": false
+    }
+  },
+  "runs": [
+    {
+      "scenario": "D",
+      "users": 30,
+      "started_at": "2026-03-26T16:45:11.635746+00:00",
+      "finished_at": "2026-03-26T16:47:12.742083+00:00",
+      "command": [
+        "C:\\Users\\harae\\Desktop\\ui migration\\proyecto1\\.venv\\Scripts\\locust.exe",
+        "-f",
+        "C:\\Users\\harae\\Desktop\\ui migration\\proyecto1\\load-tests\\locustfile.py",
+        "--host",
+        "http://127.0.0.1:18010",
+        "--users",
+        "30",
+        "--spawn-rate",
+        "5.0",
+        "--run-time",
+        "2m",
+        "--csv",
+        "load-tests\\results\\slice10-dirty-lazy-stage1\\scenario_d_u30",
+        "--html",
+        "load-tests\\results\\slice10-dirty-lazy-stage1\\scenario_d_u30.html",
+        "--headless",
+        "--only-summary"
+      ],
+      "exit_code": 0,
+      "stdout_tail": "",
+      "stderr_tail": "oyecto1\\load-tests\\locustfile.py\", line 153, in _bootstrap_login_cycle\n    raise RuntimeError(\n        f\"bootstrap select-context failed status={select_response.status_code} payload={select_payload}\"\n    )\nRuntimeError: bootstrap select-context failed status=403 payload={'error': 'No tienes acceso a este negocio'}\n2026-03-26T16:45:23Z <Greenlet at 0x2415c099da0: run_user(<locustfile.CuadernoUser object at 0x000002415C0F1)> failed with RuntimeError\n\n[2026-03-26 11:45:23,773] DESKTOP-9DI2UJR/ERROR/locust.user.users: bootstrap select-context failed status=403 payload={'error': 'No tienes acceso a este negocio'}\nTraceback (most recent call last):\n  File \"C:\\Users\\harae\\Desktop\\ui migration\\proyecto1\\.venv\\Lib\\site-packages\\locust\\user\\users.py\", line 160, in run\n    self.on_start()\n    ~~~~~~~~~~~~~^^\n  File \"C:\\Users\\harae\\Desktop\\ui migration\\proyecto1\\load-tests\\locustfile.py\", line 111, in on_start\n    self._bootstrap_login_cycle()\n    ~~~~~~~~~~~~~~~~~~~~~~~~~~~^^\n  File \"C:\\Users\\harae\\Desktop\\ui migration\\proyecto1\\load-tests\\locustfile.py\", line 153, in _bootstrap_login_cycle\n    raise RuntimeError(\n        f\"bootstrap select-context failed status={select_response.status_code} payload={select_payload}\"\n    )\nRuntimeError: bootstrap select-context failed status=403 payload={'error': 'No tienes acceso a este negocio'}\n\nTraceback (most recent call last):\n  File \"src/gevent/greenlet.py\", line 900, in gevent._gevent_cgreenlet.Greenlet.run\n  File \"C:\\Users\\harae\\Desktop\\ui migration\\proyecto1\\.venv\\Lib\\site-packages\\locust\\user\\users.py\", line 198, in run_user\n    user.run()\n    ~~~~~~~~^^\n  File \"C:\\Users\\harae\\Desktop\\ui migration\\proyecto1\\.venv\\Lib\\site-packages\\locust\\user\\users.py\", line 160, in run\n    self.on_start()\n    ~~~~~~~~~~~~~^^\n  File \"C:\\Users\\harae\\Desktop\\ui migration\\proyecto1\\load-tests\\locustfile.py\", line 111, in on_start\n    self._bootstrap_login_cycle()\n    ~~~~~~~~~~~~~~~~~~~~~~~~~~~^^\n  File \"C:\\Users\\harae\\Desktop\\ui migration\\proyecto1\\load-tests\\locustfile.py\", line 153, in _bootstrap_login_cycle\n    raise RuntimeError(\n        f\"bootstrap select-context failed status={select_response.status_code} payload={select_payload}\"\n    )\nRuntimeError: bootstrap select-context failed status=403 payload={'error': 'No tienes acceso a este negocio'}\n2026-03-26T16:45:23Z <Greenlet at 0x2415c099f80: run_user(<locustfile.CuadernoUser object at 0x000002415C0F0)> failed with RuntimeError\n\n[2026-03-26 11:47:12,419] DESKTOP-9DI2UJR/INFO/locust.main: --run-time limit reached, shutting down\n[2026-03-26 11:47:12,607] DESKTOP-9DI2UJR/INFO/locust.main: writing html report to file: load-tests\\results\\slice10-dirty-lazy-stage1\\scenario_d_u30.html\n[2026-03-26 11:47:12,611] DESKTOP-9DI2UJR/INFO/locust.main: Shutting down (exit code 0)\nType     Name                                                                          # reqs      # fails |    Avg     Min     Max    Med |   req/s  failures/s\n--------|----------------------------------------------------------------------------|-------|-------------|-------|-------|-------|-------|--------|-----------\n--------|----------------------------------------------------------------------------|-------|-------------|-------|-------|-------|-------|--------|-----------\n         Aggregated                                                                         0     0(0.00%) |      0       0       0      0 |    0.00        0.00\n\nResponse time percentiles (approximated)\nType     Name                                                                                  50%    66%    75%    80%    90%    95%    98%    99%  99.9% 99.99%   100% # reqs\n--------|--------------------------------------------------------------------------------|--------|------|------|------|------|------|------|------|------|------|------|------\n--------|--------------------------------------------------------------------------------|--------|------|------|------|------|------|------|------|------|------|------|------\n\n",
+      "stats_summary": {
+        "requests": 0,
+        "failures": 0,
+        "median_ms": 0.0,
+        "avg_ms": 0.0,
+        "min_ms": 0.0,
+        "max_ms": 0.0,
+        "avg_size": 0.0,
+        "rps": 0.0,
+        "failures_per_sec": 0.0,
+        "p50_ms": 0.0,
+        "p95_ms": 0.0,
+        "p99_ms": 0.0,
+        "endpoint_metrics": {
+          "read.dashboard": {
+            "avg_ms": 0.0,
+            "p95_ms": 0.0,
+            "rps": 0.0,
+            "failures": 0,
+            "requests": 0
+          },
+          "read.summary": {
+            "avg_ms": 0.0,
+            "p95_ms": 0.0,
+            "rps": 0.0,
+            "failures": 0,
+            "requests": 0
+          }
+        }
+      },
+      "distribution": {
+        "p50_estimated_ms": 0.0,
+        "p95_estimated_ms": 0.0,
+        "p99_estimated_ms": 0.0,
+        "avg_rps_window": 0.0,
+        "max_rps_window": 0.0,
+        "final_failure_count": 0.0
+      },
+      "failures_rows": 1,
+      "error_rate": 0.0,
+      "metrics_samples": [
+        {
+          "ts": "2026-03-26T16:45:11.635995+00:00"
+        },
+        {
+          "ts": "2026-03-26T16:45:13.636343+00:00"
+        },
+        {
+          "ts": "2026-03-26T16:45:15.637224+00:00"
+        },
+        {
+          "ts": "2026-03-26T16:45:17.637862+00:00"
+        },
+        {
+          "ts": "2026-03-26T16:45:19.641788+00:00"
+        },
+        {
+          "ts": "2026-03-26T16:45:21.641234+00:00"
+        },
+        {
+          "ts": "2026-03-26T16:45:23.641767+00:00"
+        },
+        {
+          "ts": "2026-03-26T16:45:25.642563+00:00"
+        },
+        {
+          "ts": "2026-03-26T16:45:27.643536+00:00"
+        },
+        {
+          "ts": "2026-03-26T16:45:29.643711+00:00"
+        },
+        {
+          "ts": "2026-03-26T16:45:31.644205+00:00"
+        },
+        {
+          "ts": "2026-03-26T16:45:33.649813+00:00"
+        },
+        {
+          "ts": "2026-03-26T16:45:35.659491+00:00"
+        },
+        {
+          "ts": "2026-03-26T16:45:37.682437+00:00"
+        },
+        {
+          "ts": "2026-03-26T16:45:39.682501+00:00"
+        },
+        {
+          "ts": "2026-03-26T16:45:41.682635+00:00"
+        },
+        {
+          "ts": "2026-03-26T16:45:43.683662+00:00"
+        },
+        {
+          "ts": "2026-03-26T16:45:45.684060+00:00"
+        },
+        {
+          "ts": "2026-03-26T16:45:47.684850+00:00"
+        },
+        {
+          "ts": "2026-03-26T16:45:49.685774+00:00"
+        },
+        {
+          "ts": "2026-03-26T16:45:51.686270+00:00"
+        },
+        {
+          "ts": "2026-03-26T16:45:53.686904+00:00"
+        },
+        {
+          "ts": "2026-03-26T16:45:55.687745+00:00"
+        },
+        {
+          "ts": "2026-03-26T16:45:57.688571+00:00"
+        },
+        {
+          "ts": "2026-03-26T16:45:59.689220+00:00"
+        },
+        {
+          "ts": "2026-03-26T16:46:01.691561+00:00"
+        },
+        {
+          "ts": "2026-03-26T16:46:03.692155+00:00"
+        },
+        {
+          "ts": "2026-03-26T16:46:05.692835+00:00"
+        },
+        {
+          "ts": "2026-03-26T16:46:07.696575+00:00"
+        },
+        {
+          "ts": "2026-03-26T16:46:09.767055+00:00"
+        },
+        {
+          "ts": "2026-03-26T16:46:11.767122+00:00"
+        },
+        {
+          "ts": "2026-03-26T16:46:13.767820+00:00"
+        },
+        {
+          "ts": "2026-03-26T16:46:15.768447+00:00"
+        },
+        {
+          "ts": "2026-03-26T16:46:17.769329+00:00"
+        },
+        {
+          "ts": "2026-03-26T16:46:19.769644+00:00"
+        },
+        {
+          "ts": "2026-03-26T16:46:21.769759+00:00"
+        },
+        {
+          "ts": "2026-03-26T16:46:23.770514+00:00"
+        },
+        {
+          "ts": "2026-03-26T16:46:25.770829+00:00"
+        },
+        {
+          "ts": "2026-03-26T16:46:27.771010+00:00"
+        },
+        {
+          "ts": "2026-03-26T16:46:29.772014+00:00"
+        },
+        {
+          "ts": "2026-03-26T16:46:31.772488+00:00"
+        },
+        {
+          "ts": "2026-03-26T16:46:33.772484+00:00"
+        },
+        {
+          "ts": "2026-03-26T16:46:35.772745+00:00"
+        },
+        {
+          "ts": "2026-03-26T16:46:37.773653+00:00"
+        },
+        {
+          "ts": "2026-03-26T16:46:39.773824+00:00"
+        },
+        {
+          "ts": "2026-03-26T16:46:41.774096+00:00"
+        },
+        {
+          "ts": "2026-03-26T16:46:43.775097+00:00"
+        },
+        {
+          "ts": "2026-03-26T16:46:45.776666+00:00"
+        },
+        {
+          "ts": "2026-03-26T16:46:47.776722+00:00"
+        },
+        {
+          "ts": "2026-03-26T16:46:49.777598+00:00"
+        },
+        {
+          "ts": "2026-03-26T16:46:51.777613+00:00"
+        },
+        {
+          "ts": "2026-03-26T16:46:53.778282+00:00"
+        },
+        {
+          "ts": "2026-03-26T16:46:55.778719+00:00"
+        },
+        {
+          "ts": "2026-03-26T16:46:57.778757+00:00"
+        },
+        {
+          "ts": "2026-03-26T16:46:59.778826+00:00"
+        },
+        {
+          "ts": "2026-03-26T16:47:01.779373+00:00"
+        },
+        {
+          "ts": "2026-03-26T16:47:03.779627+00:00"
+        },
+        {
+          "ts": "2026-03-26T16:47:05.780345+00:00"
+        },
+        {
+          "ts": "2026-03-26T16:47:07.780955+00:00"
+        },
+        {
+          "ts": "2026-03-26T16:47:09.781766+00:00"
+        },
+        {
+          "ts": "2026-03-26T16:47:11.782015+00:00"
+        }
+      ],
+      "metrics_summary": {
+        "backend_cpu_peak_percent": 0.0,
+        "backend_rss_peak_mb": 0.0,
+        "backend_threads_peak": 0.0,
+        "db_total_connections_peak": 0.0,
+        "db_active_connections_peak": 0.0,
+        "db_waiting_connections_peak": 0.0,
+        "db_longest_active_seconds_peak": 0.0
+      },
+      "artifacts": {
+        "stats_csv": "load-tests\\results\\slice10-dirty-lazy-stage1\\scenario_d_u30_stats.csv",
+        "stats_history_csv": "load-tests\\results\\slice10-dirty-lazy-stage1\\scenario_d_u30_stats_history.csv",
+        "failures_csv": "load-tests\\results\\slice10-dirty-lazy-stage1\\scenario_d_u30_failures.csv",
+        "report_html": "load-tests\\results\\slice10-dirty-lazy-stage1\\scenario_d_u30.html"
+      },
+      "capacity_pass": true
+    },
+    {
+      "scenario": "D",
+      "users": 40,
+      "started_at": "2026-03-26T16:47:12.744907+00:00",
+      "finished_at": "2026-03-26T16:49:13.807501+00:00",
+      "command": [
+        "C:\\Users\\harae\\Desktop\\ui migration\\proyecto1\\.venv\\Scripts\\locust.exe",
+        "-f",
+        "C:\\Users\\harae\\Desktop\\ui migration\\proyecto1\\load-tests\\locustfile.py",
+        "--host",
+        "http://127.0.0.1:18010",
+        "--users",
+        "40",
+        "--spawn-rate",
+        "5.0",
+        "--run-time",
+        "2m",
+        "--csv",
+        "load-tests\\results\\slice10-dirty-lazy-stage1\\scenario_d_u40",
+        "--html",
+        "load-tests\\results\\slice10-dirty-lazy-stage1\\scenario_d_u40.html",
+        "--headless",
+        "--only-summary"
+      ],
+      "exit_code": 0,
+      "stdout_tail": "",
+      "stderr_tail": "oyecto1\\load-tests\\locustfile.py\", line 153, in _bootstrap_login_cycle\n    raise RuntimeError(\n        f\"bootstrap select-context failed status={select_response.status_code} payload={select_payload}\"\n    )\nRuntimeError: bootstrap select-context failed status=403 payload={'error': 'No tienes acceso a este negocio'}\n2026-03-26T16:47:32Z <Greenlet at 0x246fb375760: run_user(<locustfile.CuadernoUser object at 0x00000246FB25B)> failed with RuntimeError\n\n[2026-03-26 11:47:32,254] DESKTOP-9DI2UJR/ERROR/locust.user.users: bootstrap select-context failed status=403 payload={'error': 'No tienes acceso a este negocio'}\nTraceback (most recent call last):\n  File \"C:\\Users\\harae\\Desktop\\ui migration\\proyecto1\\.venv\\Lib\\site-packages\\locust\\user\\users.py\", line 160, in run\n    self.on_start()\n    ~~~~~~~~~~~~~^^\n  File \"C:\\Users\\harae\\Desktop\\ui migration\\proyecto1\\load-tests\\locustfile.py\", line 111, in on_start\n    self._bootstrap_login_cycle()\n    ~~~~~~~~~~~~~~~~~~~~~~~~~~~^^\n  File \"C:\\Users\\harae\\Desktop\\ui migration\\proyecto1\\load-tests\\locustfile.py\", line 153, in _bootstrap_login_cycle\n    raise RuntimeError(\n        f\"bootstrap select-context failed status={select_response.status_code} payload={select_payload}\"\n    )\nRuntimeError: bootstrap select-context failed status=403 payload={'error': 'No tienes acceso a este negocio'}\n\nTraceback (most recent call last):\n  File \"src/gevent/greenlet.py\", line 900, in gevent._gevent_cgreenlet.Greenlet.run\n  File \"C:\\Users\\harae\\Desktop\\ui migration\\proyecto1\\.venv\\Lib\\site-packages\\locust\\user\\users.py\", line 198, in run_user\n    user.run()\n    ~~~~~~~~^^\n  File \"C:\\Users\\harae\\Desktop\\ui migration\\proyecto1\\.venv\\Lib\\site-packages\\locust\\user\\users.py\", line 160, in run\n    self.on_start()\n    ~~~~~~~~~~~~~^^\n  File \"C:\\Users\\harae\\Desktop\\ui migration\\proyecto1\\load-tests\\locustfile.py\", line 111, in on_start\n    self._bootstrap_login_cycle()\n    ~~~~~~~~~~~~~~~~~~~~~~~~~~~^^\n  File \"C:\\Users\\harae\\Desktop\\ui migration\\proyecto1\\load-tests\\locustfile.py\", line 153, in _bootstrap_login_cycle\n    raise RuntimeError(\n        f\"bootstrap select-context failed status={select_response.status_code} payload={select_payload}\"\n    )\nRuntimeError: bootstrap select-context failed status=403 payload={'error': 'No tienes acceso a este negocio'}\n2026-03-26T16:47:32Z <Greenlet at 0x246fb375b20: run_user(<locustfile.CuadernoUser object at 0x00000246FB3CC)> failed with RuntimeError\n\n[2026-03-26 11:49:13,494] DESKTOP-9DI2UJR/INFO/locust.main: --run-time limit reached, shutting down\n[2026-03-26 11:49:13,679] DESKTOP-9DI2UJR/INFO/locust.main: writing html report to file: load-tests\\results\\slice10-dirty-lazy-stage1\\scenario_d_u40.html\n[2026-03-26 11:49:13,683] DESKTOP-9DI2UJR/INFO/locust.main: Shutting down (exit code 0)\nType     Name                                                                          # reqs      # fails |    Avg     Min     Max    Med |   req/s  failures/s\n--------|----------------------------------------------------------------------------|-------|-------------|-------|-------|-------|-------|--------|-----------\n--------|----------------------------------------------------------------------------|-------|-------------|-------|-------|-------|-------|--------|-----------\n         Aggregated                                                                         0     0(0.00%) |      0       0       0      0 |    0.00        0.00\n\nResponse time percentiles (approximated)\nType     Name                                                                                  50%    66%    75%    80%    90%    95%    98%    99%  99.9% 99.99%   100% # reqs\n--------|--------------------------------------------------------------------------------|--------|------|------|------|------|------|------|------|------|------|------|------\n--------|--------------------------------------------------------------------------------|--------|------|------|------|------|------|------|------|------|------|------|------\n\n",
+      "stats_summary": {
+        "requests": 0,
+        "failures": 0,
+        "median_ms": 0.0,
+        "avg_ms": 0.0,
+        "min_ms": 0.0,
+        "max_ms": 0.0,
+        "avg_size": 0.0,
+        "rps": 0.0,
+        "failures_per_sec": 0.0,
+        "p50_ms": 0.0,
+        "p95_ms": 0.0,
+        "p99_ms": 0.0,
+        "endpoint_metrics": {
+          "read.dashboard": {
+            "avg_ms": 0.0,
+            "p95_ms": 0.0,
+            "rps": 0.0,
+            "failures": 0,
+            "requests": 0
+          },
+          "read.summary": {
+            "avg_ms": 0.0,
+            "p95_ms": 0.0,
+            "rps": 0.0,
+            "failures": 0,
+            "requests": 0
+          }
+        }
+      },
+      "distribution": {
+        "p50_estimated_ms": 0.0,
+        "p95_estimated_ms": 0.0,
+        "p99_estimated_ms": 0.0,
+        "avg_rps_window": 0.0,
+        "max_rps_window": 0.0,
+        "final_failure_count": 0.0
+      },
+      "failures_rows": 1,
+      "error_rate": 0.0,
+      "metrics_samples": [
+        {
+          "ts": "2026-03-26T16:47:12.745427+00:00"
+        },
+        {
+          "ts": "2026-03-26T16:47:14.783513+00:00"
+        },
+        {
+          "ts": "2026-03-26T16:47:16.783872+00:00"
+        },
+        {
+          "ts": "2026-03-26T16:47:18.784278+00:00"
+        },
+        {
+          "ts": "2026-03-26T16:47:20.786318+00:00"
+        },
+        {
+          "ts": "2026-03-26T16:47:22.790187+00:00"
+        },
+        {
+          "ts": "2026-03-26T16:47:24.791207+00:00"
+        },
+        {
+          "ts": "2026-03-26T16:47:26.791111+00:00"
+        },
+        {
+          "ts": "2026-03-26T16:47:28.791563+00:00"
+        },
+        {
+          "ts": "2026-03-26T16:47:30.791715+00:00"
+        },
+        {
+          "ts": "2026-03-26T16:47:32.792055+00:00"
+        },
+        {
+          "ts": "2026-03-26T16:47:34.793023+00:00"
+        },
+        {
+          "ts": "2026-03-26T16:47:36.793891+00:00"
+        },
+        {
+          "ts": "2026-03-26T16:47:38.793922+00:00"
+        },
+        {
+          "ts": "2026-03-26T16:47:40.793972+00:00"
+        },
+        {
+          "ts": "2026-03-26T16:47:42.794182+00:00"
+        },
+        {
+          "ts": "2026-03-26T16:47:44.794413+00:00"
+        },
+        {
+          "ts": "2026-03-26T16:47:46.795109+00:00"
+        },
+        {
+          "ts": "2026-03-26T16:47:48.798720+00:00"
+        },
+        {
+          "ts": "2026-03-26T16:47:50.798528+00:00"
+        },
+        {
+          "ts": "2026-03-26T16:47:52.799252+00:00"
+        },
+        {
+          "ts": "2026-03-26T16:47:54.799534+00:00"
+        },
+        {
+          "ts": "2026-03-26T16:47:56.799972+00:00"
+        },
+        {
+          "ts": "2026-03-26T16:47:58.800310+00:00"
+        },
+        {
+          "ts": "2026-03-26T16:48:00.800801+00:00"
+        },
+        {
+          "ts": "2026-03-26T16:48:02.801722+00:00"
+        },
+        {
+          "ts": "2026-03-26T16:48:04.802230+00:00"
+        },
+        {
+          "ts": "2026-03-26T16:48:06.802300+00:00"
+        },
+        {
+          "ts": "2026-03-26T16:48:08.802608+00:00"
+        },
+        {
+          "ts": "2026-03-26T16:48:10.803183+00:00"
+        },
+        {
+          "ts": "2026-03-26T16:48:12.803886+00:00"
+        },
+        {
+          "ts": "2026-03-26T16:48:14.804331+00:00"
+        },
+        {
+          "ts": "2026-03-26T16:48:16.804884+00:00"
+        },
+        {
+          "ts": "2026-03-26T16:48:18.805413+00:00"
+        },
+        {
+          "ts": "2026-03-26T16:48:20.805848+00:00"
+        },
+        {
+          "ts": "2026-03-26T16:48:22.841219+00:00"
+        },
+        {
+          "ts": "2026-03-26T16:48:24.841665+00:00"
+        },
+        {
+          "ts": "2026-03-26T16:48:26.841723+00:00"
+        },
+        {
+          "ts": "2026-03-26T16:48:28.842445+00:00"
+        },
+        {
+          "ts": "2026-03-26T16:48:30.843466+00:00"
+        },
+        {
+          "ts": "2026-03-26T16:48:32.843716+00:00"
+        },
+        {
+          "ts": "2026-03-26T16:48:34.844235+00:00"
+        },
+        {
+          "ts": "2026-03-26T16:48:36.844883+00:00"
+        },
+        {
+          "ts": "2026-03-26T16:48:38.845267+00:00"
+        },
+        {
+          "ts": "2026-03-26T16:48:40.900842+00:00"
+        },
+        {
+          "ts": "2026-03-26T16:48:42.900791+00:00"
+        },
+        {
+          "ts": "2026-03-26T16:48:44.901492+00:00"
+        },
+        {
+          "ts": "2026-03-26T16:48:46.925046+00:00"
+        },
+        {
+          "ts": "2026-03-26T16:48:48.925291+00:00"
+        },
+        {
+          "ts": "2026-03-26T16:48:50.958185+00:00"
+        },
+        {
+          "ts": "2026-03-26T16:48:52.958943+00:00"
+        },
+        {
+          "ts": "2026-03-26T16:48:54.958935+00:00"
+        },
+        {
+          "ts": "2026-03-26T16:48:56.974232+00:00"
+        },
+        {
+          "ts": "2026-03-26T16:48:58.974529+00:00"
+        },
+        {
+          "ts": "2026-03-26T16:49:00.974805+00:00"
+        },
+        {
+          "ts": "2026-03-26T16:49:02.975089+00:00"
+        },
+        {
+          "ts": "2026-03-26T16:49:04.975911+00:00"
+        },
+        {
+          "ts": "2026-03-26T16:49:07.004021+00:00"
+        },
+        {
+          "ts": "2026-03-26T16:49:09.004364+00:00"
+        },
+        {
+          "ts": "2026-03-26T16:49:11.005144+00:00"
+        },
+        {
+          "ts": "2026-03-26T16:49:13.005183+00:00"
+        }
+      ],
+      "metrics_summary": {
+        "backend_cpu_peak_percent": 0.0,
+        "backend_rss_peak_mb": 0.0,
+        "backend_threads_peak": 0.0,
+        "db_total_connections_peak": 0.0,
+        "db_active_connections_peak": 0.0,
+        "db_waiting_connections_peak": 0.0,
+        "db_longest_active_seconds_peak": 0.0
+      },
+      "artifacts": {
+        "stats_csv": "load-tests\\results\\slice10-dirty-lazy-stage1\\scenario_d_u40_stats.csv",
+        "stats_history_csv": "load-tests\\results\\slice10-dirty-lazy-stage1\\scenario_d_u40_stats_history.csv",
+        "failures_csv": "load-tests\\results\\slice10-dirty-lazy-stage1\\scenario_d_u40_failures.csv",
+        "report_html": "load-tests\\results\\slice10-dirty-lazy-stage1\\scenario_d_u40.html"
+      },
+      "capacity_pass": true
+    },
+    {
+      "scenario": "D",
+      "users": 60,
+      "started_at": "2026-03-26T16:49:13.811188+00:00",
+      "finished_at": "2026-03-26T16:51:14.876399+00:00",
+      "command": [
+        "C:\\Users\\harae\\Desktop\\ui migration\\proyecto1\\.venv\\Scripts\\locust.exe",
+        "-f",
+        "C:\\Users\\harae\\Desktop\\ui migration\\proyecto1\\load-tests\\locustfile.py",
+        "--host",
+        "http://127.0.0.1:18010",
+        "--users",
+        "60",
+        "--spawn-rate",
+        "5.0",
+        "--run-time",
+        "2m",
+        "--csv",
+        "load-tests\\results\\slice10-dirty-lazy-stage1\\scenario_d_u60",
+        "--html",
+        "load-tests\\results\\slice10-dirty-lazy-stage1\\scenario_d_u60.html",
+        "--headless",
+        "--only-summary"
+      ],
+      "exit_code": 0,
+      "stdout_tail": "",
+      "stderr_tail": "oyecto1\\load-tests\\locustfile.py\", line 153, in _bootstrap_login_cycle\n    raise RuntimeError(\n        f\"bootstrap select-context failed status={select_response.status_code} payload={select_payload}\"\n    )\nRuntimeError: bootstrap select-context failed status=403 payload={'error': 'No tienes acceso a este negocio'}\n2026-03-26T16:49:36Z <Greenlet at 0x15882171940: run_user(<locustfile.CuadernoUser object at 0x000001588216B)> failed with RuntimeError\n\n[2026-03-26 11:49:36,651] DESKTOP-9DI2UJR/ERROR/locust.user.users: bootstrap select-context failed status=403 payload={'error': 'No tienes acceso a este negocio'}\nTraceback (most recent call last):\n  File \"C:\\Users\\harae\\Desktop\\ui migration\\proyecto1\\.venv\\Lib\\site-packages\\locust\\user\\users.py\", line 160, in run\n    self.on_start()\n    ~~~~~~~~~~~~~^^\n  File \"C:\\Users\\harae\\Desktop\\ui migration\\proyecto1\\load-tests\\locustfile.py\", line 111, in on_start\n    self._bootstrap_login_cycle()\n    ~~~~~~~~~~~~~~~~~~~~~~~~~~~^^\n  File \"C:\\Users\\harae\\Desktop\\ui migration\\proyecto1\\load-tests\\locustfile.py\", line 153, in _bootstrap_login_cycle\n    raise RuntimeError(\n        f\"bootstrap select-context failed status={select_response.status_code} payload={select_payload}\"\n    )\nRuntimeError: bootstrap select-context failed status=403 payload={'error': 'No tienes acceso a este negocio'}\n\nTraceback (most recent call last):\n  File \"src/gevent/greenlet.py\", line 900, in gevent._gevent_cgreenlet.Greenlet.run\n  File \"C:\\Users\\harae\\Desktop\\ui migration\\proyecto1\\.venv\\Lib\\site-packages\\locust\\user\\users.py\", line 198, in run_user\n    user.run()\n    ~~~~~~~~^^\n  File \"C:\\Users\\harae\\Desktop\\ui migration\\proyecto1\\.venv\\Lib\\site-packages\\locust\\user\\users.py\", line 160, in run\n    self.on_start()\n    ~~~~~~~~~~~~~^^\n  File \"C:\\Users\\harae\\Desktop\\ui migration\\proyecto1\\load-tests\\locustfile.py\", line 111, in on_start\n    self._bootstrap_login_cycle()\n    ~~~~~~~~~~~~~~~~~~~~~~~~~~~^^\n  File \"C:\\Users\\harae\\Desktop\\ui migration\\proyecto1\\load-tests\\locustfile.py\", line 153, in _bootstrap_login_cycle\n    raise RuntimeError(\n        f\"bootstrap select-context failed status={select_response.status_code} payload={select_payload}\"\n    )\nRuntimeError: bootstrap select-context failed status=403 payload={'error': 'No tienes acceso a este negocio'}\n2026-03-26T16:49:36Z <Greenlet at 0x158821719e0: run_user(<locustfile.CuadernoUser object at 0x000001588216B)> failed with RuntimeError\n\n[2026-03-26 11:51:14,536] DESKTOP-9DI2UJR/INFO/locust.main: --run-time limit reached, shutting down\n[2026-03-26 11:51:14,728] DESKTOP-9DI2UJR/INFO/locust.main: writing html report to file: load-tests\\results\\slice10-dirty-lazy-stage1\\scenario_d_u60.html\n[2026-03-26 11:51:14,732] DESKTOP-9DI2UJR/INFO/locust.main: Shutting down (exit code 0)\nType     Name                                                                          # reqs      # fails |    Avg     Min     Max    Med |   req/s  failures/s\n--------|----------------------------------------------------------------------------|-------|-------------|-------|-------|-------|-------|--------|-----------\n--------|----------------------------------------------------------------------------|-------|-------------|-------|-------|-------|-------|--------|-----------\n         Aggregated                                                                         0     0(0.00%) |      0       0       0      0 |    0.00        0.00\n\nResponse time percentiles (approximated)\nType     Name                                                                                  50%    66%    75%    80%    90%    95%    98%    99%  99.9% 99.99%   100% # reqs\n--------|--------------------------------------------------------------------------------|--------|------|------|------|------|------|------|------|------|------|------|------\n--------|--------------------------------------------------------------------------------|--------|------|------|------|------|------|------|------|------|------|------|------\n\n",
+      "stats_summary": {
+        "requests": 0,
+        "failures": 0,
+        "median_ms": 0.0,
+        "avg_ms": 0.0,
+        "min_ms": 0.0,
+        "max_ms": 0.0,
+        "avg_size": 0.0,
+        "rps": 0.0,
+        "failures_per_sec": 0.0,
+        "p50_ms": 0.0,
+        "p95_ms": 0.0,
+        "p99_ms": 0.0,
+        "endpoint_metrics": {
+          "read.dashboard": {
+            "avg_ms": 0.0,
+            "p95_ms": 0.0,
+            "rps": 0.0,
+            "failures": 0,
+            "requests": 0
+          },
+          "read.summary": {
+            "avg_ms": 0.0,
+            "p95_ms": 0.0,
+            "rps": 0.0,
+            "failures": 0,
+            "requests": 0
+          }
+        }
+      },
+      "distribution": {
+        "p50_estimated_ms": 0.0,
+        "p95_estimated_ms": 0.0,
+        "p99_estimated_ms": 0.0,
+        "avg_rps_window": 0.0,
+        "max_rps_window": 0.0,
+        "final_failure_count": 0.0
+      },
+      "failures_rows": 1,
+      "error_rate": 0.0,
+      "metrics_samples": [
+        {
+          "ts": "2026-03-26T16:49:13.811640+00:00"
+        },
+        {
+          "ts": "2026-03-26T16:49:15.811920+00:00"
+        },
+        {
+          "ts": "2026-03-26T16:49:17.812404+00:00"
+        },
+        {
+          "ts": "2026-03-26T16:49:19.812672+00:00"
+        },
+        {
+          "ts": "2026-03-26T16:49:21.813784+00:00"
+        },
+        {
+          "ts": "2026-03-26T16:49:23.813754+00:00"
+        },
+        {
+          "ts": "2026-03-26T16:49:25.814772+00:00"
+        },
+        {
+          "ts": "2026-03-26T16:49:27.813885+00:00"
+        },
+        {
+          "ts": "2026-03-26T16:49:29.815236+00:00"
+        },
+        {
+          "ts": "2026-03-26T16:49:31.817590+00:00"
+        },
+        {
+          "ts": "2026-03-26T16:49:33.818287+00:00"
+        },
+        {
+          "ts": "2026-03-26T16:49:35.819116+00:00"
+        },
+        {
+          "ts": "2026-03-26T16:49:37.820646+00:00"
+        },
+        {
+          "ts": "2026-03-26T16:49:39.854328+00:00"
+        },
+        {
+          "ts": "2026-03-26T16:49:41.854846+00:00"
+        },
+        {
+          "ts": "2026-03-26T16:49:43.854883+00:00"
+        },
+        {
+          "ts": "2026-03-26T16:49:45.926011+00:00"
+        },
+        {
+          "ts": "2026-03-26T16:49:47.929954+00:00"
+        },
+        {
+          "ts": "2026-03-26T16:49:49.933409+00:00"
+        },
+        {
+          "ts": "2026-03-26T16:49:51.934726+00:00"
+        },
+        {
+          "ts": "2026-03-26T16:49:53.948546+00:00"
+        },
+        {
+          "ts": "2026-03-26T16:49:55.958590+00:00"
+        },
+        {
+          "ts": "2026-03-26T16:49:57.965995+00:00"
+        },
+        {
+          "ts": "2026-03-26T16:49:59.986489+00:00"
+        },
+        {
+          "ts": "2026-03-26T16:50:01.985941+00:00"
+        },
+        {
+          "ts": "2026-03-26T16:50:03.986967+00:00"
+        },
+        {
+          "ts": "2026-03-26T16:50:05.987984+00:00"
+        },
+        {
+          "ts": "2026-03-26T16:50:07.988942+00:00"
+        },
+        {
+          "ts": "2026-03-26T16:50:09.989357+00:00"
+        },
+        {
+          "ts": "2026-03-26T16:50:11.989552+00:00"
+        },
+        {
+          "ts": "2026-03-26T16:50:13.989902+00:00"
+        },
+        {
+          "ts": "2026-03-26T16:50:15.990090+00:00"
+        },
+        {
+          "ts": "2026-03-26T16:50:17.990669+00:00"
+        },
+        {
+          "ts": "2026-03-26T16:50:19.991504+00:00"
+        },
+        {
+          "ts": "2026-03-26T16:50:21.992412+00:00"
+        },
+        {
+          "ts": "2026-03-26T16:50:23.992806+00:00"
+        },
+        {
+          "ts": "2026-03-26T16:50:25.993461+00:00"
+        },
+        {
+          "ts": "2026-03-26T16:50:27.994218+00:00"
+        },
+        {
+          "ts": "2026-03-26T16:50:30.042633+00:00"
+        },
+        {
+          "ts": "2026-03-26T16:50:32.048405+00:00"
+        },
+        {
+          "ts": "2026-03-26T16:50:34.048322+00:00"
+        },
+        {
+          "ts": "2026-03-26T16:50:36.048795+00:00"
+        },
+        {
+          "ts": "2026-03-26T16:50:38.049318+00:00"
+        },
+        {
+          "ts": "2026-03-26T16:50:40.049876+00:00"
+        },
+        {
+          "ts": "2026-03-26T16:50:42.050060+00:00"
+        },
+        {
+          "ts": "2026-03-26T16:50:44.050106+00:00"
+        },
+        {
+          "ts": "2026-03-26T16:50:46.050706+00:00"
+        },
+        {
+          "ts": "2026-03-26T16:50:48.051619+00:00"
+        },
+        {
+          "ts": "2026-03-26T16:50:50.051724+00:00"
+        },
+        {
+          "ts": "2026-03-26T16:50:52.052495+00:00"
+        },
+        {
+          "ts": "2026-03-26T16:50:54.052516+00:00"
+        },
+        {
+          "ts": "2026-03-26T16:50:56.052737+00:00"
+        },
+        {
+          "ts": "2026-03-26T16:50:58.053275+00:00"
+        },
+        {
+          "ts": "2026-03-26T16:51:00.054147+00:00"
+        },
+        {
+          "ts": "2026-03-26T16:51:02.055145+00:00"
+        },
+        {
+          "ts": "2026-03-26T16:51:04.055465+00:00"
+        },
+        {
+          "ts": "2026-03-26T16:51:06.055603+00:00"
+        },
+        {
+          "ts": "2026-03-26T16:51:08.056124+00:00"
+        },
+        {
+          "ts": "2026-03-26T16:51:10.056692+00:00"
+        },
+        {
+          "ts": "2026-03-26T16:51:12.057677+00:00"
+        },
+        {
+          "ts": "2026-03-26T16:51:14.057785+00:00"
+        }
+      ],
+      "metrics_summary": {
+        "backend_cpu_peak_percent": 0.0,
+        "backend_rss_peak_mb": 0.0,
+        "backend_threads_peak": 0.0,
+        "db_total_connections_peak": 0.0,
+        "db_active_connections_peak": 0.0,
+        "db_waiting_connections_peak": 0.0,
+        "db_longest_active_seconds_peak": 0.0
+      },
+      "artifacts": {
+        "stats_csv": "load-tests\\results\\slice10-dirty-lazy-stage1\\scenario_d_u60_stats.csv",
+        "stats_history_csv": "load-tests\\results\\slice10-dirty-lazy-stage1\\scenario_d_u60_stats_history.csv",
+        "failures_csv": "load-tests\\results\\slice10-dirty-lazy-stage1\\scenario_d_u60_failures.csv",
+        "report_html": "load-tests\\results\\slice10-dirty-lazy-stage1\\scenario_d_u60.html"
+      },
+      "capacity_pass": true
+    }
+  ]
+}

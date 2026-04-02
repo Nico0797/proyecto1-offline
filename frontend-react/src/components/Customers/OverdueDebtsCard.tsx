@@ -142,24 +142,24 @@ export const OverdueDebtsCard: React.FC<OverdueDebtsCardProps> = ({ customers, o
     }, [customers, filter]);
 
     return (
-        <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-6 shadow-sm">
+        <div className="app-surface rounded-xl p-6 shadow-sm">
             {/* Header & Config */}
             <div className="flex flex-col gap-4 mb-6">
                 <div className="flex justify-between items-center">
-                    <h3 className="text-lg font-bold text-gray-900 dark:text-white flex items-center gap-2">
+                    <h3 className="flex items-center gap-2 text-lg font-bold app-text">
                         <AlertTriangle className="w-5 h-5 text-red-500" />
                         Dinero Pendiente
                     </h3>
-                    <div className="flex gap-1 bg-gray-100 dark:bg-gray-700 p-1 rounded-lg">
+                    <div className="app-muted-panel flex gap-1 rounded-lg p-1">
                         <button 
                             onClick={() => setFilter('overdue')}
-                            className={`px-3 py-1 text-xs font-medium rounded-md transition-colors ${filter === 'overdue' ? 'bg-white dark:bg-gray-600 shadow text-red-600' : 'text-gray-500'}`}
+                            className={`px-3 py-1 text-xs font-medium rounded-md transition-colors ${filter === 'overdue' ? 'app-tab-active shadow-sm' : 'app-tab-idle'}`}
                         >
                             Vencidas
                         </button>
                         <button 
                             onClick={() => setFilter('all')}
-                            className={`px-3 py-1 text-xs font-medium rounded-md transition-colors ${filter === 'all' ? 'bg-white dark:bg-gray-600 shadow text-blue-600' : 'text-gray-500'}`}
+                            className={`px-3 py-1 text-xs font-medium rounded-md transition-colors ${filter === 'all' ? 'app-tab-active shadow-sm' : 'app-tab-idle'}`}
                         >
                             Todos
                         </button>
@@ -167,8 +167,8 @@ export const OverdueDebtsCard: React.FC<OverdueDebtsCardProps> = ({ customers, o
                 </div>
 
                 {/* Term Config Panel */}
-                <div className="bg-gray-50 dark:bg-gray-900/50 p-3 rounded-lg border border-gray-200 dark:border-gray-700 flex items-center justify-between text-sm">
-                    <div className="flex items-center gap-2 text-gray-600 dark:text-gray-400">
+                <div className="app-muted-panel flex items-center justify-between rounded-lg p-3 text-sm">
+                    <div className="flex items-center gap-2 app-text-secondary">
                         <Settings className="w-4 h-4" />
                         <span>Plazo vencimiento:</span>
                         {isEditingTerm ? (
@@ -182,7 +182,7 @@ export const OverdueDebtsCard: React.FC<OverdueDebtsCardProps> = ({ customers, o
                                 <span className="text-xs">días</span>
                             </div>
                         ) : (
-                            <span className="font-bold text-gray-900 dark:text-white">{debtTermDays} días</span>
+                            <span className="font-bold app-text">{debtTermDays} días</span>
                         )}
                     </div>
                     <div>
@@ -196,7 +196,7 @@ export const OverdueDebtsCard: React.FC<OverdueDebtsCardProps> = ({ customers, o
                                 </Button>
                             </div>
                         ) : (
-                            <Button size="sm" variant="ghost" onClick={() => setIsEditingTerm(true)} className="h-7 px-2 text-xs text-blue-600 hover:text-blue-700 hover:bg-blue-50">
+                            <Button size="sm" variant="ghost" onClick={() => setIsEditingTerm(true)} className="h-7 px-2 text-xs text-blue-600 hover:bg-blue-50 hover:text-blue-700 dark:hover:bg-blue-500/10">
                                 Editar plazo
                             </Button>
                         )}
@@ -212,17 +212,17 @@ export const OverdueDebtsCard: React.FC<OverdueDebtsCardProps> = ({ customers, o
                         className={`border rounded-xl p-4 transition-all hover:shadow-md ${
                             customer.is_overdue 
                             ? 'bg-red-50 dark:bg-red-900/10 border-red-100 dark:border-red-900/30' 
-                            : 'bg-white dark:bg-gray-800 border-gray-100 dark:border-gray-700'
+                            : 'app-surface'
                         }`}
                     >
                         <div className="flex justify-between items-start mb-2">
                             <div onClick={() => onSelectCustomer(customer)} className="cursor-pointer">
-                                <h4 className="font-bold text-gray-900 dark:text-white hover:underline decoration-blue-500">
+                                <h4 className="font-bold app-text hover:underline decoration-blue-500">
                                     {customer.name}
                                 </h4>
                                 <div className="flex flex-col gap-0.5 mt-1">
                                     {customer.oldest_due_date && (
-                                        <p className="text-xs text-gray-500 flex items-center gap-1">
+                                        <p className="flex items-center gap-1 text-xs app-text-muted">
                                             <Calendar className="w-3 h-3" />
                                             Desde: {customer.oldest_due_date}
                                         </p>
@@ -239,12 +239,12 @@ export const OverdueDebtsCard: React.FC<OverdueDebtsCardProps> = ({ customers, o
                             </div>
                             <div className="text-right">
                                 <p className={`font-bold text-lg ${
-                                    customer.is_overdue ? 'text-red-600 dark:text-red-400' : 'text-gray-900 dark:text-white'
+                                    customer.is_overdue ? 'text-red-600 dark:text-red-400' : 'app-text'
                                 }`}>
                                     ${customer.balance.toLocaleString()}
                                 </p>
                                 {customer.is_overdue && (
-                                    <span className="inline-block px-2 py-0.5 bg-red-100 text-red-700 text-[10px] font-bold rounded-full">
+                                    <span className="app-status-chip-danger px-2 py-0.5 text-[10px] font-bold">
                                         VENCIDA
                                     </span>
                                 )}
@@ -252,9 +252,9 @@ export const OverdueDebtsCard: React.FC<OverdueDebtsCardProps> = ({ customers, o
                         </div>
 
                         {editingGraceId === customer.id && (
-                            <div className="mt-2 p-3 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900/40">
+                            <div className="app-surface mt-2 rounded-lg p-3">
                                 <div className="flex items-center gap-3">
-                                    <span className="text-sm text-gray-600 dark:text-gray-300">No marcar como vencido hasta</span>
+                                    <span className="text-sm app-text-secondary">No marcar como vencido hasta</span>
                                     <Input type="date" value={graceUntil} onChange={(e) => setGraceUntil(e.target.value)} className="w-44 h-8" />
                                     <Button size="sm" className="h-8" onClick={(e) => { e.stopPropagation(); saveGrace(); }}>Guardar</Button>
                                     <Button size="sm" variant="ghost" className="h-8" onClick={(e) => { e.stopPropagation(); cancelGrace(); }}>Cancelar</Button>
@@ -280,7 +280,7 @@ export const OverdueDebtsCard: React.FC<OverdueDebtsCardProps> = ({ customers, o
                                 onClick={(e) => { e.stopPropagation(); openGraceEditor(customer.id); }}
                                 title="Editar plazo (gracia)"
                             >
-                                <Settings className="w-4 h-4 text-gray-500" />
+                                <Settings className="w-4 h-4 app-text-muted" />
                             </Button>
                             <Button 
                                 size="sm" 
@@ -288,7 +288,7 @@ export const OverdueDebtsCard: React.FC<OverdueDebtsCardProps> = ({ customers, o
                                 className={`h-8 w-8 p-0 flex items-center justify-center ${!customer.is_overdue ? 'w-full flex-1' : ''}`}
                                 onClick={() => onSelectCustomer(customer)}
                             >
-                                <User className="w-4 h-4 text-gray-500" />
+                                <User className="w-4 h-4 app-text-muted" />
                                 {!customer.is_overdue && <span className="ml-2 text-xs">Ver detalle</span>}
                             </Button>
                         </div>
@@ -296,8 +296,8 @@ export const OverdueDebtsCard: React.FC<OverdueDebtsCardProps> = ({ customers, o
                 ))}
 
                 {sortedList.length === 0 && (
-                    <div className="flex flex-col items-center justify-center py-12 text-gray-400">
-                        <div className="w-12 h-12 bg-green-100 dark:bg-green-900/20 rounded-full flex items-center justify-center mb-3">
+                    <div className="flex flex-col items-center justify-center py-12 app-text-muted">
+                        <div className="app-tone-icon-green flex h-12 w-12 items-center justify-center rounded-full mb-3">
                             <Check className="w-6 h-6 text-green-500" />
                         </div>
                         <p className="text-sm">
@@ -310,23 +310,23 @@ export const OverdueDebtsCard: React.FC<OverdueDebtsCardProps> = ({ customers, o
             {/* WhatsApp Preview Modal */}
             {whatsappModalOpen && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
-                    <div className="bg-white dark:bg-gray-800 rounded-xl shadow-xl w-full max-w-md p-6 animate-in fade-in zoom-in-95 duration-200">
+                    <div className="app-surface w-full max-w-md rounded-xl p-6 shadow-xl animate-in fade-in zoom-in-95 duration-200">
                         <div className="flex justify-between items-center mb-4">
-                            <h3 className="text-lg font-bold text-gray-900 dark:text-white flex items-center gap-2">
+                            <h3 className="flex items-center gap-2 text-lg font-bold app-text">
                                 <Send className="w-5 h-5 text-green-500" />
                                 Vista Previa del Mensaje
                             </h3>
-                            <button onClick={() => setWhatsappModalOpen(false)} className="text-gray-400 hover:text-gray-500">
+                            <button onClick={() => setWhatsappModalOpen(false)} className="app-text-muted transition-colors hover:text-[color:var(--app-text)]">
                                 <X className="w-5 h-5" />
                             </button>
                         </div>
                         
                         <div className="mb-4">
-                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                            <label className="mb-2 block text-sm font-medium app-text-secondary">
                                 Mensaje a enviar:
                             </label>
                             <textarea 
-                                className="w-full h-32 p-3 rounded-lg border border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-900 text-sm focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                                className="app-textarea h-32"
                                 value={whatsappMessage}
                                 onChange={e => setWhatsappMessage(e.target.value)}
                             />

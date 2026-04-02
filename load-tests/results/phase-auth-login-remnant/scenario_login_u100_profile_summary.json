@@ -1,0 +1,137 @@
+{
+  "auth.login": {
+    "samples": 676,
+    "query_count_avg": 4.0,
+    "query_count_p95": 4.0,
+    "sql_time_ms_avg": 4197.149,
+    "sql_time_ms_p95": 7004.378,
+    "wall_time_ms_avg": 7579.668,
+    "wall_time_ms_p95": 10153.189,
+    "python_time_ms_avg": 3382.519,
+    "python_time_ms_p95": 5615.656,
+    "instrumented_wall_ms_avg": 7579.494,
+    "instrumented_wall_ms_p95": 10153.022,
+    "unaccounted_wall_ms_avg": 0.174,
+    "unaccounted_wall_ms_p95": 0.276,
+    "cache_hit_count": 0,
+    "stage_metrics": {
+      "fetch_user": {
+        "samples": 676,
+        "wall_ms_avg": 3935.612,
+        "wall_ms_p95": 6219.404,
+        "sql_time_ms_avg": 1053.666,
+        "sql_time_ms_p95": 2031.913,
+        "python_time_ms_avg": 2881.946,
+        "python_time_ms_p95": 5061.443,
+        "query_count_avg": 1.0,
+        "query_count_p95": 1.0
+      },
+      "password_verify": {
+        "samples": 676,
+        "wall_ms_avg": 496.407,
+        "wall_ms_p95": 699.396,
+        "sql_time_ms_avg": 0.0,
+        "sql_time_ms_p95": 0.0,
+        "python_time_ms_avg": 496.407,
+        "python_time_ms_p95": 699.396,
+        "query_count_avg": 0.0,
+        "query_count_p95": 0.0
+      },
+      "resolve_accessible_contexts": {
+        "samples": 676,
+        "wall_ms_avg": 3147.041,
+        "wall_ms_p95": 5259.998,
+        "sql_time_ms_avg": 3143.483,
+        "sql_time_ms_p95": 5256.795,
+        "python_time_ms_avg": 3.558,
+        "python_time_ms_p95": 4.909,
+        "query_count_avg": 3.0,
+        "query_count_p95": 3.0
+      },
+      "resolve_active_context": {
+        "samples": 676,
+        "wall_ms_avg": 0.037,
+        "wall_ms_p95": 0.046,
+        "sql_time_ms_avg": 0.0,
+        "sql_time_ms_p95": 0.0,
+        "python_time_ms_avg": 0.037,
+        "python_time_ms_p95": 0.046,
+        "query_count_avg": 0.0,
+        "query_count_p95": 0.0
+      },
+      "serialization_response": {
+        "samples": 676,
+        "wall_ms_avg": 0.106,
+        "wall_ms_p95": 0.131,
+        "sql_time_ms_avg": 0.0,
+        "sql_time_ms_p95": 0.0,
+        "python_time_ms_avg": 0.106,
+        "python_time_ms_p95": 0.131,
+        "query_count_avg": 0.0,
+        "query_count_p95": 0.0
+      },
+      "token_session_creation": {
+        "samples": 676,
+        "wall_ms_avg": 0.292,
+        "wall_ms_p95": 0.517,
+        "sql_time_ms_avg": 0.0,
+        "sql_time_ms_p95": 0.0,
+        "python_time_ms_avg": 0.292,
+        "python_time_ms_p95": 0.517,
+        "query_count_avg": 0.0,
+        "query_count_p95": 0.0
+      }
+    }
+  },
+  "auth.bootstrap": {
+    "samples": 629,
+    "query_count_avg": 4.0,
+    "query_count_p95": 4.0,
+    "sql_time_ms_avg": 3382.442,
+    "sql_time_ms_p95": 5620.173,
+    "wall_time_ms_avg": 2546.329,
+    "wall_time_ms_p95": 4289.844,
+    "python_time_ms_avg": 0.0,
+    "python_time_ms_p95": 0.0,
+    "instrumented_wall_ms_avg": 2546.004,
+    "instrumented_wall_ms_p95": 4289.57,
+    "unaccounted_wall_ms_avg": 0.325,
+    "unaccounted_wall_ms_p95": 0.405,
+    "cache_hit_count": 0,
+    "stage_metrics": {
+      "bootstrap_membership_lookup": {
+        "samples": 629,
+        "wall_ms_avg": 862.439,
+        "wall_ms_p95": 1695.253,
+        "sql_time_ms_avg": 861.159,
+        "sql_time_ms_p95": 1694.186,
+        "python_time_ms_avg": 1.281,
+        "python_time_ms_p95": 1.556,
+        "query_count_avg": 1.0,
+        "query_count_p95": 1.0
+      },
+      "bootstrap_modules_lookup": {
+        "samples": 629,
+        "wall_ms_avg": 882.565,
+        "wall_ms_p95": 1873.459,
+        "sql_time_ms_avg": 881.853,
+        "sql_time_ms_p95": 1872.84,
+        "python_time_ms_avg": 0.712,
+        "python_time_ms_p95": 0.883,
+        "query_count_avg": 1.0,
+        "query_count_p95": 1.0
+      },
+      "bootstrap_owned_businesses_lookup": {
+        "samples": 629,
+        "wall_ms_avg": 801.0,
+        "wall_ms_p95": 1725.03,
+        "sql_time_ms_avg": 800.083,
+        "sql_time_ms_p95": 1724.12,
+        "python_time_ms_avg": 0.916,
+        "python_time_ms_p95": 1.135,
+        "query_count_avg": 1.0,
+        "query_count_p95": 1.0
+      }
+    }
+  }
+}

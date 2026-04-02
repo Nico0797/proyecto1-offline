@@ -1,80 +1,140 @@
-import React, { useState, useRef, useEffect } from 'react';
-import { NavLink, useLocation, useNavigate } from 'react-router-dom';
+﻿import React, { useState, useRef, useEffect, useMemo } from 'react';
+import { NavLink, useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../../store/authStore';
 import { useBusinessStore } from '../../store/businessStore';
+import api from '../../services/api';
 import { useAlertsPreferences } from '../../store/alertsPreferences.store';
 import { useAlertsSnoozeStore } from '../../store/alertsSnooze.store';
 import { useAlertsStore } from '../../store/alertsStore';
+import { useNavigationPreferences } from '../../store/navigationPreferences.store';
 import { CreateBusinessModal } from '../Business/CreateBusinessModal';
 import { UpgradeModal } from '../ui/UpgradeModal';
 import { cn } from '../../utils/cn';
-import { FEATURES, FeatureKey, canAccess } from '../../auth/plan';
+import { FEATURES, FeatureKey } from '../../auth/plan';
+import { useAccess } from '../../hooks/useAccess';
+import { useDemoPreview } from '../../hooks/useDemoPreview';
 import {
-  LayoutDashboard,
-  ShoppingCart,
-  Users,
-  Wallet,
-  Target,
-  FileBarChart,
+  NavigationItemDefinition,
+} from '../../navigation/businessNavigation';
+import { resolveBusinessNavigationState } from '../../navigation/navigationPersonalization';
+import {
   LogOut,
   Store,
   ChevronDown,
   Plus,
   Check,
-  Settings,
-  Bell,
-  HelpCircle,
+  Loader2,
   Lock,
   Sparkles,
-  CreditCard
 } from 'lucide-react';
 import logo from '../../assets/logo.png';
+import { Business } from '../../types';
 
 interface SidebarProps {
   isOpen: boolean;
   setIsOpen: (isOpen: boolean) => void;
 }
 
-type NavItem = {
-  path: string;
-  icon: React.FC<any>;
-  label: string;
-  feature?: FeatureKey;
-  adminOnly?: boolean;
-  badge?: string;
-  badgeColor?: 'default' | 'red';
-};
-
-type NavSection = {
-  title: string;
-  items: NavItem[];
-  collapsible?: boolean;
-};
-
 export const Sidebar: React.FC<SidebarProps> = ({ isOpen, setIsOpen }) => {
-  const { user, logout, isAuthenticated } = useAuthStore();
-  const { businesses, activeBusiness, setActiveBusiness, fetchBusinesses } = useBusinessStore();
-  const location = useLocation();
+  const { user, logout, accessibleContexts, login, selectContext, activeContext } = useAuthStore();
+  const { businesses, activeBusiness, fetchBusinesses, fetchAuthBootstrap } = useBusinessStore();
   const navigate = useNavigate();
   const prefs = useAlertsPreferences();
   const snooze = useAlertsSnoozeStore();
   const { alerts, fetchAlerts } = useAlertsStore();
-  
+
+  const { isDemoPreview } = useDemoPreview();
+
+  // Use centralized access hook
+  const {
+    hasPermission,
+    hasModule,
+    canAccess,
+    isLocked,
+    canUpgrade
+  } = useAccess();
+
   const [isBusinessDropdownOpen, setIsBusinessDropdownOpen] = useState(false);
   const [isCreateBusinessModalOpen, setIsCreateBusinessModalOpen] = useState(false);
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
   const [selectedFeature, setSelectedFeature] = useState<FeatureKey | undefined>(undefined);
   const [alertsCount, setAlertsCount] = useState(0);
-  
+  const [switchingBusinessId, setSwitchingBusinessId] = useState<number | null>(null);
+
   const [collapsedSections, setCollapsedSections] = useState<Record<string, boolean>>({});
 
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const getScopeKey = useNavigationPreferences((state) => state.getScopeKey);
+  // Derive plan label for display
+  const isOwner = activeBusiness?.user_id === user?.id;
+  const planLabel = isDemoPreview
+    ? 'Vista previa interactiva'
+    : isOwner
+    ? (user?.plan === 'business' ? 'Plan Business' : user?.plan === 'pro' ? 'Plan Pro' : 'Plan BÃƒÂ¡sica')
+    : (activeBusiness?.role || 'Miembro de Equipo');
+  const reportsModuleEnabled = hasModule('reports');
+  const scopeKey = getScopeKey(user?.id, activeBusiness?.id);
+  const storedNavigationPreferences = useNavigationPreferences((state) => state.preferencesByScope[scopeKey]);
+  const { visibleSections } = useMemo(
+    () =>
+      resolveBusinessNavigationState({
+        business: activeBusiness,
+        storedPreferences: storedNavigationPreferences,
+        hasPermission,
+        hasModule,
+        canAccessFeature: canAccess,
+      }),
+    [activeBusiness, canAccess, hasModule, hasPermission, storedNavigationPreferences]
+  );
 
-  useEffect(() => {
-    if (isAuthenticated) {
-      fetchBusinesses();
+  // Helper to determine effective plan for UI logic
+  const isBasicPlan = !['pro', 'business'].includes(activeBusiness?.plan || '');
+  const switcherBusinesses = useMemo(() => {
+    const merged = new Map<number, Business>();
+    const inferredOwnerId = activeBusiness?.user_id ?? user?.id ?? 0;
+
+    businesses.forEach((business) => {
+      merged.set(business.id, business);
+    });
+
+    accessibleContexts.forEach((context) => {
+      const existing = merged.get(context.business_id);
+      if (existing) {
+        merged.set(context.business_id, {
+          ...existing,
+          role: existing.role || context.role,
+          plan: existing.plan || (context.plan as Business['plan']),
+        });
+        return;
+      }
+
+      merged.set(context.business_id, {
+        id: context.business_id,
+        user_id: context.context_type === 'owned' ? inferredOwnerId : 0,
+        name: context.business_name,
+        currency: activeBusiness?.currency || 'COP',
+        created_at: activeBusiness?.created_at || '',
+        role: context.role,
+        plan: context.plan as Business['plan'],
+        permissions: [],
+        modules: activeBusiness?.modules,
+      });
+    });
+
+    if (activeBusiness && !merged.has(activeBusiness.id)) {
+      merged.set(activeBusiness.id, activeBusiness);
     }
-  }, [isAuthenticated]);
+
+    const orderedIds = [
+      ...(accessibleContexts.map((context) => context.business_id)),
+      ...businesses.map((business) => business.id),
+      ...(activeBusiness ? [activeBusiness.id] : []),
+    ];
+
+    return Array.from(new Set(orderedIds))
+      .map((businessId) => merged.get(businessId))
+      .filter((business): business is Business => Boolean(business));
+  }, [accessibleContexts, activeBusiness, businesses, user?.id]);
 
   useEffect(() => {
     const updateCount = () => {
@@ -96,11 +156,26 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, setIsOpen }) => {
 
   useEffect(() => {
     if (activeBusiness) {
-      fetchAlerts(activeBusiness.id);
-      const interval = setInterval(() => fetchAlerts(activeBusiness.id), 60000);
+      if (!reportsModuleEnabled) {
+        setAlertsCount(0);
+        return;
+      }
+      fetchAlerts(activeBusiness);
+      const interval = setInterval(() => fetchAlerts(activeBusiness), 60000);
       return () => clearInterval(interval);
     }
-  }, [activeBusiness, prefs.preferences]);
+  }, [activeBusiness, prefs.preferences, reportsModuleEnabled]);
+
+  useEffect(() => {
+    if (!user || businesses.length > 0) return;
+    void fetchBusinesses(activeContext?.business_id ?? activeBusiness?.id ?? null);
+  }, [activeBusiness?.id, activeContext?.business_id, businesses.length, fetchBusinesses, user]);
+
+  useEffect(() => {
+    if (!isBusinessDropdownOpen) return;
+    if (switcherBusinesses.length > 0) return;
+    void fetchBusinesses(activeContext?.business_id ?? activeBusiness?.id ?? null);
+  }, [activeBusiness?.id, activeContext?.business_id, fetchBusinesses, isBusinessDropdownOpen, switcherBusinesses.length]);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -115,64 +190,47 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, setIsOpen }) => {
     };
   }, []);
 
-  const navSections: NavSection[] = [
-    {
-      title: 'Principal',
-      items: [
-        { path: '/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
-      ]
-    },
-    {
-      title: 'Operación',
-      items: [
-        { path: '/sales', icon: ShoppingCart, label: 'Ventas' },
-        { path: '/orders', icon: Store, label: 'Pedidos', feature: FEATURES.ORDERS, badge: 'PRO' },
-        { path: '/payments', icon: Wallet, label: 'Pagos/Abonos' },
-      ],
-      collapsible: true
-    },
-    {
-      title: 'Clientes & Catálogo',
-      items: [
-        { path: '/customers', icon: Users, label: 'Clientes' },
-        { path: '/products', icon: Store, label: 'Productos & Servicios' },
-      ],
-      collapsible: true
-    },
-    {
-      title: 'Finanzas',
-      items: [
-        { path: '/expenses', icon: Wallet, label: 'Gastos' },
-        { path: '/debts', icon: CreditCard, label: 'Deudas' },
-        { path: '/reports', icon: FileBarChart, label: 'Reportes', feature: FEATURES.REPORTS, badge: 'PRO' },
-        { path: '/alerts', icon: Bell, label: 'Alertas', feature: FEATURES.ALERTS, badge: alertsCount > 0 ? String(alertsCount) : 'PRO', badgeColor: alertsCount > 0 ? 'red' : 'default' },
-      ],
-      collapsible: true
-    },
-    {
-      title: 'Crecimiento',
-      items: [
-        { path: '/sales-goals', icon: Target, label: 'Metas de ventas', feature: FEATURES.REPORTS, badge: 'PRO' },
-      ],
-      collapsible: true
-    },
-    {
-      title: 'Configuración',
-      items: [
-        { path: '/settings', icon: Settings, label: 'Configuración' },
-        { path: '/help', icon: HelpCircle, label: 'Ayuda' },
-      ],
-      collapsible: true
-    }
-  ];
-
   const handleLogout = () => {
     logout();
   };
 
-  const handleSwitchBusiness = (business: any) => {
-    setActiveBusiness(business);
-    setIsBusinessDropdownOpen(false);
+  const handleSwitchBusiness = async (business: Business) => {
+    if (switchingBusinessId || activeBusiness?.id === business.id) {
+      setIsBusinessDropdownOpen(false);
+      return;
+    }
+
+    setSwitchingBusinessId(business.id);
+
+    try {
+      const response = await api.post('/auth/select-context', {
+        business_id: business.id,
+      });
+
+      const { active_context, access_token, refresh_token, user: updatedUser } = response.data;
+
+      if (!active_context) {
+        return;
+      }
+
+      if (access_token) {
+        login(updatedUser || user!, access_token, active_context, accessibleContexts);
+        if (refresh_token) {
+          localStorage.setItem('refresh_token', refresh_token);
+        }
+      } else {
+        selectContext(active_context);
+      }
+
+      await fetchAuthBootstrap(active_context.business_id);
+      setIsBusinessDropdownOpen(false);
+      setIsOpen(false);
+      navigate('/dashboard', { replace: true });
+    } catch (error) {
+      console.error('Error switching business:', error);
+    } finally {
+      setSwitchingBusinessId(null);
+    }
   };
 
   const toggleSection = (title: string) => {
@@ -182,38 +240,113 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, setIsOpen }) => {
     }));
   };
 
-  const handleItemClick = (e: React.MouseEvent, item: NavItem) => {
-    if (item.feature && !canAccess(item.feature, user)) {
-      e.preventDefault();
-      setSelectedFeature(item.feature);
-      setShowUpgradeModal(true);
-      return;
+  const handleItemClick = (e: React.MouseEvent, item: NavigationItemDefinition) => {
+    // If it's locked, logic depends on user type
+    const locked = item.feature && isLocked(item.feature);
+
+    if (locked) {
+      // Only show upgrade modal if user is allowed to upgrade (Personal account)
+      if (canUpgrade) {
+          e.preventDefault();
+          setSelectedFeature(item.feature);
+          setShowUpgradeModal(true);
+          return;
+      }
+      // If cannot upgrade (team member), allow navigation to show the ProGate UI
     }
     setIsOpen(false);
   };
 
   const handleCreateBusinessClick = () => {
     setIsBusinessDropdownOpen(false);
-    
+
     // Check if user can create more businesses
     // For free plan, limit is 1 business
-    if (user?.plan === 'free' && businesses.length >= 1) {
-      setSelectedFeature(FEATURES.MULTI_BUSINESS);
-      setShowUpgradeModal(true);
+    const ownedBusinesses = accessibleContexts.length > 0
+      ? accessibleContexts.filter((context) => context.context_type === 'owned')
+      : businesses.filter((business) => business.user_id === user?.id);
+    if (!['pro', 'business'].includes(user?.plan || '') && ownedBusinesses.length >= 1) {
+      if (canUpgrade) {
+          setSelectedFeature(FEATURES.MULTI_BUSINESS);
+          setShowUpgradeModal(true);
+      }
       return;
     }
-    
+
+    // Employees cannot create businesses
+    if (!canUpgrade) return;
+
     setIsCreateBusinessModalOpen(true);
+  };
+
+  const renderBadge = (item: NavigationItemDefinition, locked: boolean) => {
+    const badge =
+      item.path === '/alerts' && alertsCount > 0
+        ? { label: String(alertsCount), tone: 'red' as const }
+        : item.feature && isBasicPlan
+          ? { label: 'PRO', tone: 'default' as const }
+          : null;
+
+    if (!badge) return null;
+
+    return (
+      <span className={cn(
+        'ml-auto',
+        locked
+          ? 'app-sidebar-badge-pro opacity-80'
+          : badge.tone === 'red'
+            ? 'app-sidebar-badge-alert'
+            : 'app-sidebar-badge-pro'
+      )}>
+        {badge.label}
+      </span>
+    );
+  };
+
+  const renderNavigationItem = (item: NavigationItemDefinition) => {
+    const locked = Boolean(item.feature && isLocked(item.feature));
+    const Icon = item.icon;
+
+    return (
+      <NavLink
+        key={`nav-${item.path}`}
+        to={(locked && canUpgrade) ? '#' : item.path}
+        className={({ isActive }) =>
+          cn(
+            'app-sidebar-nav-item relative group flex items-center rounded-xl px-2.5 py-2.5 text-sm font-medium transition-all lg:px-3',
+            isActive && !locked
+              ? 'app-sidebar-nav-item-active'
+              : '',
+            locked && 'opacity-75 hover:opacity-100'
+          )
+        }
+        onClick={(e) => handleItemClick(e, item)}
+      >
+        <Icon
+          className={cn(
+            'app-sidebar-nav-icon mr-3 h-5 w-5 transition-colors'
+          )}
+        />
+
+        <span className="flex-1">{item.label}</span>
+
+        {renderBadge(item, locked)}
+
+        {locked && (
+          <Lock className="ml-2 h-3.5 w-3.5 text-[color:var(--app-sidebar-text-muted)]" />
+        )}
+      </NavLink>
+    );
   };
 
   return (
     <>
-      <CreateBusinessModal 
-        isOpen={isCreateBusinessModalOpen} 
+      <CreateBusinessModal
+        isOpen={isCreateBusinessModalOpen}
         onClose={() => setIsCreateBusinessModalOpen(false)}
         onSuccess={() => {
             fetchBusinesses();
-        }} 
+        }}
       />
 
       <UpgradeModal
@@ -234,207 +367,162 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, setIsOpen }) => {
       {/* Sidebar */}
       <div
         className={cn(
-          'fixed top-0 left-0 bottom-0 w-64 bg-white dark:bg-gray-900 border-r border-gray-200 dark:border-gray-800 z-50 transform transition-transform lg:translate-x-0 transition-colors duration-300 flex flex-col',
+          'app-sidebar fixed top-0 left-0 bottom-0 z-50 flex w-[86vw] max-w-xs flex-col border-r app-divider transition-colors duration-300 transition-transform lg:w-64 lg:translate-x-0',
           isOpen ? 'translate-x-0' : '-translate-x-full'
         )}
       >
-        {/* App Logo */}
-        <div className="h-32 flex items-center justify-center bg-white dark:bg-gray-900 shrink-0 p-0 overflow-hidden mt-5">
-          <img src={logo} alt="App Logo" className="w-full h-full object-cover" />
-        </div>
-
-        {/* Header / Business Switcher */}
-        <div className="h-20 flex items-center px-4 border-b border-gray-200 dark:border-gray-800 relative z-50 shrink-0" ref={dropdownRef}>
-          <div 
-            className="flex-1 flex items-center gap-3 p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 cursor-pointer transition-colors relative min-w-0"
-            onClick={() => setIsBusinessDropdownOpen(!isBusinessDropdownOpen)}
-          >
-            <div className="w-10 h-10 rounded-lg bg-green-100 dark:bg-green-900/30 flex items-center justify-center flex-shrink-0">
-              <Store className="w-6 h-6 text-green-600 dark:text-green-500" />
-            </div>
-            <div className="flex-1 min-w-0">
-              <p className="text-sm font-bold text-gray-900 dark:text-white truncate">
-                {activeBusiness?.name || 'Seleccionar'}
-              </p>
-              <p className="text-xs text-gray-500 dark:text-gray-400 truncate">
-                {user?.plan === 'free' ? 'Plan Gratis' : 'Plan Pro'}
-              </p>
-            </div>
-            <ChevronDown className={cn("w-4 h-4 text-gray-400 flex-shrink-0 transition-transform duration-200", isBusinessDropdownOpen && "rotate-180")} />
+        <div className="app-sidebar-header-shell shrink-0">
+          <div className="app-sidebar-brand" aria-label="Marca EnCaja">
+            <img src={logo} alt="EnCaja" className="app-sidebar-brand-logo" />
           </div>
 
-          {/* Dropdown Menu (Absolute) */}
-          {isBusinessDropdownOpen && (
-            <div className="absolute top-full left-0 right-0 mt-2 mx-4 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl shadow-xl z-50 overflow-hidden animate-in fade-in zoom-in-95 duration-200 max-w-full">
-              <div className="max-h-60 overflow-y-auto py-1 custom-scrollbar">
-                {businesses.map((business) => (
+          <div className="app-divider relative z-50 border-b px-3 pb-4 lg:px-4 lg:pb-5" ref={dropdownRef}>
+            <button
+              type="button"
+              aria-haspopup="menu"
+              aria-expanded={isBusinessDropdownOpen}
+              className="app-sidebar-switcher relative flex min-w-0 w-full cursor-pointer items-center gap-3 rounded-2xl px-3 py-3 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 focus-visible:ring-offset-[color:var(--app-sidebar-surface-strong)] active:scale-[0.99]"
+              onClick={() => setIsBusinessDropdownOpen(!isBusinessDropdownOpen)}
+            >
+              <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl border border-[color:var(--app-sidebar-border)] bg-[color:var(--app-sidebar-surface-strong)]">
+                <Store className="w-5 h-5 text-green-600 dark:text-green-500" />
+              </div>
+              <div className="flex-1 min-w-0 text-left">
+                <p className="truncate text-sm font-bold text-[color:var(--app-sidebar-text)]">
+                  {activeBusiness?.name || 'Seleccionar'}
+                </p>
+                <p className="truncate text-xs text-[color:var(--app-sidebar-text-muted)]">
+                  {planLabel}
+                </p>
+              </div>
+              <ChevronDown className={cn("h-4 w-4 shrink-0 text-[color:var(--app-sidebar-text-muted)] transition-transform duration-200", isBusinessDropdownOpen && "rotate-180")} />
+            </button>
+
+            {/* Dropdown Menu (Absolute) */}
+            {isBusinessDropdownOpen && (
+              <div className="app-surface absolute top-full left-0 right-0 z-50 mx-3 mt-2 max-w-full overflow-hidden rounded-2xl shadow-xl animate-in fade-in zoom-in-95 duration-200 lg:mx-4">
+                <div className="max-h-60 overflow-y-auto py-1 custom-scrollbar">
+                  {switcherBusinesses.map((business) => (
+                    <button
+                      key={business.id}
+                      disabled={switchingBusinessId !== null}
+                      className={cn(
+                        "w-full flex items-center gap-3 px-3 py-2 text-left transition-colors hover:bg-[color:var(--app-surface-soft)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-inset active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-70",
+                        activeBusiness?.id === business.id && "bg-[color:var(--app-surface-soft)]"
+                      )}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        void handleSwitchBusiness(business);
+                      }}
+                    >
+                      <div className="app-muted-panel flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border">
+                        <Store className="h-4 w-4 text-[color:var(--app-sidebar-icon)]" />
+                      </div>
+                      <span className="app-text-secondary flex-1 truncate text-sm font-medium">
+                        {business.name}
+                      </span>
+                      {switchingBusinessId === business.id ? (
+                        <Loader2 className="w-4 h-4 text-blue-500 flex-shrink-0 animate-spin" />
+                      ) : activeBusiness?.id === business.id && (
+                        <Check className="w-4 h-4 text-blue-500 flex-shrink-0" />
+                      )}
+                    </button>
+                  ))}
+                </div>
+
+                {canUpgrade && !isDemoPreview && (
+                <div className="app-divider border-t p-1">
                   <button
-                    key={business.id}
-                    className={cn(
-                      "w-full flex items-center gap-3 px-3 py-2 text-left hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors",
-                      activeBusiness?.id === business.id && "bg-gray-50 dark:bg-gray-800"
-                    )}
+                    className="w-full flex items-center gap-3 px-3 py-2 text-left text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-500/10 rounded-lg transition-colors text-sm font-medium focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-inset active:scale-[0.99]"
                     onClick={(e) => {
                       e.stopPropagation();
-                      handleSwitchBusiness(business);
+                      handleCreateBusinessClick();
                     }}
                   >
-                    <div className="w-8 h-8 rounded-lg bg-gray-100 dark:bg-gray-800 flex items-center justify-center flex-shrink-0 border border-gray-200 dark:border-gray-700">
-                      <Store className="w-4 h-4 text-gray-500 dark:text-gray-400" />
-                    </div>
-                    <span className="flex-1 text-sm font-medium text-gray-700 dark:text-gray-200 truncate">
-                      {business.name}
-                    </span>
-                    {activeBusiness?.id === business.id && (
-                      <Check className="w-4 h-4 text-blue-500 flex-shrink-0" />
-                    )}
+                    <Plus className="w-4 h-4 flex-shrink-0" />
+                    <span className="truncate">Crear nuevo negocio</span>
                   </button>
-                ))}
+                </div>
+                )}
               </div>
-              <div className="border-t border-gray-200 dark:border-gray-800 p-1">
-                <button
-                  className="w-full flex items-center gap-3 px-3 py-2 text-left text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-500/10 rounded-lg transition-colors text-sm font-medium"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    handleCreateBusinessClick();
-                  }}
-                >
-                  <Plus className="w-4 h-4 flex-shrink-0" />
-                  <span className="truncate">Crear nuevo negocio</span>
-                </button>
-              </div>
-            </div>
-          )}
+            )}
+          </div>
         </div>
 
         {/* Navigation */}
-        <nav className="flex-1 overflow-y-auto py-4 px-3 space-y-6 custom-scrollbar">
-          {navSections.map((section) => (
-            <div key={section.title} className="space-y-1">
-              {/* Section Header */}
-              {section.title !== 'Principal' ? (
-                <div 
-                  className={cn(
-                    "px-3 flex items-center justify-between group cursor-pointer",
-                    !section.collapsible && "cursor-default"
-                  )}
-                  onClick={() => section.collapsible && toggleSection(section.title)}
-                >
-                  <h3 className="text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider">
-                    {section.title}
-                  </h3>
-                  {section.collapsible && (
-                    <ChevronDown 
-                      className={cn(
-                        "w-3 h-3 text-gray-400 transition-transform duration-200 opacity-0 group-hover:opacity-100",
-                        collapsedSections[section.title] && "-rotate-90"
-                      )} 
-                    />
-                  )}
-                </div>
-              ) : (
-                <div className="h-2"></div>
-              )}
+      <nav className="flex-1 overflow-y-auto py-3 px-2.5 lg:px-3 space-y-4 lg:space-y-6 custom-scrollbar">
+          {visibleSections.map((section) => (
+            <div key={section.id} className="space-y-1">
+              <div
+                className={cn(
+                  'px-2.5 lg:px-3 flex items-center justify-between group py-1',
+                  section.collapsible ? 'cursor-pointer' : 'cursor-default'
+                )}
+                onClick={() => section.collapsible && toggleSection(section.title)}
+              >
+                <h3 className="app-sidebar-section-label text-xs font-semibold uppercase tracking-[0.22em]">
+                  {section.title}
+                </h3>
+                {section.collapsible && (
+                  <ChevronDown
+                    className={cn(
+                      'h-3 w-3 text-[color:var(--app-sidebar-text-muted)] transition-transform duration-200 opacity-100',
+                      collapsedSections[section.title] && '-rotate-90'
+                    )}
+                  />
+                )}
+              </div>
 
-              {/* Items */}
-              <div className={cn(
-                "space-y-1 transition-all duration-200",
-                collapsedSections[section.title] ? "hidden" : "block"
-              )}>
-                {section.items.map((item) => {
-                  const isLocked = item.feature && !canAccess(item.feature, user);
-                  
-                  return (
-                    <NavLink
-                      key={item.path}
-                      to={isLocked ? '#' : item.path}
-                      className={({ isActive }) =>
-                        cn(
-                          'flex items-center px-3 py-2.5 rounded-lg text-sm font-medium transition-all relative group',
-                          isActive && !isLocked
-                            ? 'bg-blue-50 dark:bg-blue-600/10 text-blue-600 dark:text-blue-500'
-                            : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 hover:text-gray-900 dark:hover:text-white',
-                          isLocked && 'opacity-75 hover:opacity-100'
-                        )
-                      }
-                      onClick={(e) => handleItemClick(e, item)}
-                    >
-                      <item.icon 
-                        className={cn(
-                          'w-5 h-5 mr-3 transition-colors', 
-                          location.pathname === item.path && !isLocked
-                            ? 'text-blue-600 dark:text-blue-500' 
-                            : 'text-gray-400 group-hover:text-gray-500 dark:group-hover:text-gray-300'
-                        )} 
-                      />
-                      
-                      <span className="flex-1">{item.label}</span>
-                      
-                      {/* Badge PRO or Count */}
-                      {item.badge && (
-                        <span className={cn(
-                          "ml-auto text-[10px] font-bold px-1.5 py-0.5 rounded border",
-                          isLocked 
-                            ? "bg-gray-100 dark:bg-gray-800 text-gray-500 border-gray-200 dark:border-gray-700" 
-                            : item.badgeColor === 'red'
-                              ? "bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-500 border-red-200 dark:border-red-700/50 rounded-full"
-                              : "bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-500 border-yellow-200 dark:border-yellow-700/50"
-                        )}>
-                          {item.badge}
-                        </span>
-                      )}
-
-                      {/* Lock Icon for Free users on PRO items */}
-                      {isLocked && (
-                        <Lock className="w-3.5 h-3.5 ml-2 text-gray-400" />
-                      )}
-                    </NavLink>
-                  );
-                })}
+              <div
+                className={cn(
+                  'space-y-1 transition-all duration-200',
+                  collapsedSections[section.title] ? 'hidden' : 'block'
+                )}
+              >
+                {section.items.map((item) => renderNavigationItem(item))}
               </div>
             </div>
           ))}
-        </nav>
 
-        {/* Footer */}
-        <div className="p-4 border-t border-gray-200 dark:border-gray-800 space-y-2 shrink-0 bg-white dark:bg-gray-900 z-50">
-          {user?.plan === 'free' && (
-            <div className="mb-4 relative overflow-hidden rounded-xl bg-gradient-to-br from-indigo-600 to-purple-700 p-4 text-white shadow-lg group cursor-pointer transition-transform hover:scale-[1.02]" onClick={() => navigate('/pro')}>
-              <div className="absolute top-0 right-0 -mt-2 -mr-2 w-16 h-16 bg-white opacity-10 rounded-full blur-xl group-hover:scale-150 transition-transform duration-500"></div>
-              
-              <div className="flex items-center gap-2 mb-2">
-                <div className="p-1.5 bg-white/20 rounded-lg backdrop-blur-sm">
-                  <Sparkles className="w-4 h-4 text-yellow-300" />
-                </div>
-                <span className="font-bold text-sm tracking-wide">Actualiza a PRO</span>
-              </div>
-              
-              <p className="text-xs text-indigo-100 mb-3 leading-relaxed">
-                Desbloquea reportes, alertas y multi-negocio.
-              </p>
-              
-              <button 
-                className="w-full py-2 px-3 bg-white text-indigo-600 text-xs font-bold rounded-lg shadow-sm hover:bg-indigo-50 transition-colors flex items-center justify-center gap-1.5"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  navigate('/pro');
-                }}
+    </nav>
+
+    {/* Footer */}
+      <div className="app-sidebar app-divider z-50 shrink-0 space-y-2 border-t p-4">
+            {(isDemoPreview || (!['pro', 'business'].includes(user?.plan || '') && canUpgrade)) && (
+              <button
+                type="button"
+                data-preview-allow="true"
+                onClick={() => navigate(isDemoPreview ? '/account-access' : '/pro')}
+                className="app-sidebar-upgrade-card mb-3 flex w-full items-center justify-between gap-3 rounded-2xl px-3 py-3 text-left transition-colors hover:brightness-[0.98]"
               >
-                Ver Planes <ChevronDown className="w-3 h-3 -rotate-90" />
+                <div className="flex items-center gap-3">
+                  <div className="rounded-xl border border-[color:var(--app-sidebar-upgrade-border)] bg-[color:var(--app-sidebar-surface-strong)] p-2 text-[color:var(--app-sidebar-upgrade-text)]">
+                    <Sparkles className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <div className="text-sm font-semibold">{isDemoPreview ? 'Activar plan' : 'Actualizar plan'}</div>
+                    <div className="app-sidebar-upgrade-muted text-xs">
+                      {isDemoPreview
+                        ? 'Sal del modo vista previa y empieza con tus datos reales.'
+                        : 'Desbloquea reportes, alertas y multi-negocio.'}
+                    </div>
+                  </div>
+                </div>
+                <ChevronDown className="h-4 w-4 shrink-0 -rotate-90 text-[color:var(--app-sidebar-upgrade-text)]" />
               </button>
-            </div>
-          )}
+            )}
 
-          <button
+            <button
             type="button"
             onClick={handleLogout}
-            className="flex items-center w-full px-3 py-2.5 text-sm font-medium text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 hover:text-gray-900 dark:hover:text-white rounded-lg transition-colors"
+            className="app-text-secondary flex w-full items-center rounded-lg px-3 py-2.5 text-sm font-medium transition-colors hover:bg-[color:var(--app-surface-soft)] hover:text-[color:var(--app-text)]"
           >
             <LogOut className="w-5 h-5 mr-3" />
-            Cerrar Sesión
+            Cerrar sesión
           </button>
         </div>
       </div>
     </>
   );
 };
+

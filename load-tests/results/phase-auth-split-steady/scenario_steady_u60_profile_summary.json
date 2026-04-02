@@ -1,0 +1,22 @@
+{
+  "auth.login": {
+    "samples": 60,
+    "query_count_avg": 62.0,
+    "query_count_p95": 62.0,
+    "sql_time_ms_avg": 9143.571,
+    "sql_time_ms_p95": 11816.959,
+    "wall_time_ms_avg": 9783.942,
+    "wall_time_ms_p95": 12429.182,
+    "cache_hit_count": 0
+  },
+  "auth.bootstrap": {
+    "samples": 60,
+    "query_count_avg": 4.0,
+    "query_count_p95": 4.0,
+    "sql_time_ms_avg": 579.824,
+    "sql_time_ms_p95": 1902.616,
+    "wall_time_ms_avg": 447.351,
+    "wall_time_ms_p95": 1783.018,
+    "cache_hit_count": 0
+  }
+}

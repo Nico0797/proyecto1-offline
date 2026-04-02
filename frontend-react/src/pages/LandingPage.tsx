@@ -9,10 +9,7 @@ import { FAQ } from '../components/Landing/FAQ';
 import { Footer } from '../components/Landing/Footer';
 
 export const LandingPage = () => {
-  // Add dark mode class on mount to ensure correct styling
   useEffect(() => {
-    document.documentElement.classList.add('dark');
-    
     // Enable page scrolling on landing (global CSS locks body scroll for app pages)
     const prevHtmlOverflow = document.documentElement.style.overflow;
     const prevBodyOverflow = document.body.style.overflow;

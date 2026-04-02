@@ -71,9 +71,9 @@ export const CustomerDetailPanel: React.FC<CustomerDetailPanelProps> = ({ custom
   };
 
   return (
-    <div className="flex-1 flex flex-col h-full bg-gray-50 dark:bg-gray-900/50 overflow-y-auto">
+    <div className="app-canvas flex-1 flex flex-col h-full overflow-y-auto">
       {/* Header */}
-      <div className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 p-4 md:p-6 flex justify-between items-center sticky top-0 z-20 shadow-sm lg:shadow-none">
+      <div className="app-page-header sticky top-0 z-20 flex items-center justify-between border-b app-divider p-4 shadow-sm lg:shadow-none md:p-6">
         <div className="flex items-center gap-3">
           <button 
             onClick={(e) => {
@@ -90,6 +90,17 @@ export const CustomerDetailPanel: React.FC<CustomerDetailPanelProps> = ({ custom
             <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs md:text-sm text-gray-500 dark:text-gray-400">
               {customer.phone && <span className="flex items-center gap-1"><Phone className="w-3 h-3" /> {customer.phone}</span>}
               {customer.email && <span className="flex items-center gap-1"><Mail className="w-3 h-3" /> {customer.email}</span>}
+            </div>
+            <div className="mt-1 text-xs text-gray-400 flex items-center gap-1">
+              <span>Registrado por:</span>
+              <span className="font-medium text-gray-600 dark:text-gray-300">
+                {customer.created_by_name || 'Histórico'}
+              </span>
+              {customer.created_by_role && (
+                <span className="bg-gray-100 dark:bg-gray-700 px-1.5 py-0.5 rounded text-[10px] text-gray-500 dark:text-gray-400 border border-gray-200 dark:border-gray-600">
+                  {customer.created_by_role}
+                </span>
+              )}
             </div>
           </div>
         </div>
@@ -125,11 +136,11 @@ export const CustomerDetailPanel: React.FC<CustomerDetailPanelProps> = ({ custom
 
         {/* Quick Actions */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-          <button onClick={handleWhatsApp} className="p-3 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl flex flex-col items-center justify-center gap-2 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors text-gray-700 dark:text-gray-300">
+          <button onClick={handleWhatsApp} className="app-surface flex flex-col items-center justify-center gap-2 rounded-xl border p-3 text-gray-700 transition-colors hover:bg-gray-50 dark:text-gray-300 dark:hover:bg-gray-700">
             <MessageSquare className="w-5 h-5 text-green-500" />
             <span className="text-xs font-medium">WhatsApp</span>
           </button>
-          <button className="p-3 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl flex flex-col items-center justify-center gap-2 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors text-gray-700 dark:text-gray-300">
+          <button className="app-surface flex flex-col items-center justify-center gap-2 rounded-xl border p-3 text-gray-700 transition-colors hover:bg-gray-50 dark:text-gray-300 dark:hover:bg-gray-700">
             <CreditCard className="w-5 h-5 text-blue-500" />
             <span className="text-xs font-medium">Nueva Venta</span>
           </button>
@@ -137,7 +148,7 @@ export const CustomerDetailPanel: React.FC<CustomerDetailPanelProps> = ({ custom
 
         {/* Active Debts List */}
         {pendingSales.length > 0 && (
-            <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-6">
+            <div className="app-surface rounded-xl p-6">
                 <h3 className="font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
                     <Clock className="w-5 h-5 text-orange-500" />
                     Cuentas por Cobrar
@@ -149,11 +160,11 @@ export const CustomerDetailPanel: React.FC<CustomerDetailPanelProps> = ({ custom
                         const daysLeft = Math.ceil((dueDate.getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24));
 
                         return (
-                            <div key={sale.id} className="border border-gray-100 dark:border-gray-700 rounded-lg p-4 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">
+                            <div key={sale.id} className="app-soft-surface rounded-lg p-4 transition-colors hover:bg-gray-50 dark:hover:bg-gray-800">
                                 <div className="flex justify-between items-start mb-2">
                                     <div>
                                         <p className="font-bold text-gray-900 dark:text-white">Venta #{sale.id}</p>
-                                        <p className="text-sm text-gray-500">{formatDate(sale.sale_date)}</p>
+                                        <p className="text-sm text-gray-500 dark:text-gray-400">{formatDate(sale.sale_date)}</p>
                                     </div>
                                     <div className="text-right">
                                         <p className="font-bold text-gray-900 dark:text-white">${sale.total.toLocaleString()}</p>
@@ -178,7 +189,7 @@ export const CustomerDetailPanel: React.FC<CustomerDetailPanelProps> = ({ custom
         )}
 
         {/* History / Details Placeholder */}
-        <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-6 min-h-[300px]">
+        <div className="app-surface min-h-[300px] rounded-xl p-6">
           <h3 className="font-semibold text-gray-900 dark:text-white mb-4">Historial Reciente</h3>
           {customerSales.length > 0 ? (
              <div className="space-y-3">
@@ -186,7 +197,7 @@ export const CustomerDetailPanel: React.FC<CustomerDetailPanelProps> = ({ custom
                      <div key={sale.id} className="flex justify-between items-center py-2 border-b border-gray-100 dark:border-gray-700 last:border-0">
                          <div>
                              <p className="text-sm font-medium text-gray-900 dark:text-white">Venta #{sale.id}</p>
-                             <p className="text-xs text-gray-500">{formatDate(sale.sale_date)}</p>
+                             <p className="text-xs text-gray-500 dark:text-gray-400">{formatDate(sale.sale_date)}</p>
                          </div>
                          <p className="text-sm font-bold text-gray-900 dark:text-white">${sale.total.toLocaleString()}</p>
                      </div>

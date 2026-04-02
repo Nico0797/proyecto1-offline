@@ -10,11 +10,22 @@ services:
     ports:
       - "8000:8000"
     environment:
-      - FLASK_ENV=production
+      - APP_ENV=development
+      - FLASK_ENV=development
+      - DEBUG=false
       - DATABASE_URL=postgresql://postgres:postgres@db:5432/cuaderno
-      - SECRET_KEY=dev-secret-key-change-in-production
-      - JWT_SECRET_KEY=dev-jwt-secret-change-in-production
+      - REDIS_URL=redis://redis:6379/0
+      - SECRET_KEY=local-dev-secret-key-not-for-production-12345
+      - JWT_SECRET_KEY=local-dev-jwt-secret-key-not-for-production-12345
+      - CLIENT_URL=http://localhost:5173
+      - CORS_ORIGINS=http://localhost:5173,http://127.0.0.1:5173,http://localhost:8000
       - APP_STATIC_DIR=/app/backend/static_dist
+      - ALLOW_SQLITE_FALLBACK=false
+      - ALLOW_RUNTIME_SCHEMA_MUTATIONS=false
+      - ALLOW_STARTUP_DATA_BOOTSTRAP=false
+      - EXPOSE_ERROR_DETAILS=true
+      - GUNICORN_WORKERS=2
+      - GUNICORN_THREADS=2
     volumes:
       # Mount exports/backups for persistence
       - ./exports:/app/exports
@@ -23,6 +34,41 @@ services:
     depends_on:
       db:
         condition: service_healthy
+      redis:
+        condition: service_started
+    restart: unless-stopped
+    networks:
+      - cuaderno-network
+
+  summary-refresh-worker:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: encaja-summary-refresh-worker
+    command: ["python", "-m", "backend.workers.summary_refresh_worker"]
+    environment:
+      - APP_ENV=development
+      - FLASK_ENV=development
+      - DEBUG=false
+      - DATABASE_URL=postgresql://postgres:postgres@db:5432/cuaderno
+      - REDIS_URL=redis://redis:6379/0
+      - SECRET_KEY=local-dev-secret-key-not-for-production-12345
+      - JWT_SECRET_KEY=local-dev-jwt-secret-key-not-for-production-12345
+      - CLIENT_URL=http://localhost:5173
+      - CORS_ORIGINS=http://localhost:5173,http://127.0.0.1:5173,http://localhost:8000
+      - APP_STATIC_DIR=/app/backend/static_dist
+      - ALLOW_SQLITE_FALLBACK=false
+      - ALLOW_RUNTIME_SCHEMA_MUTATIONS=false
+      - ALLOW_STARTUP_DATA_BOOTSTRAP=false
+      - EXPOSE_ERROR_DETAILS=true
+    volumes:
+      - ./exports:/app/exports
+      - ./backups:/app/backups
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_started
     restart: unless-stopped
     networks:
       - cuaderno-network
@@ -44,6 +90,16 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+    restart: unless-stopped
+    networks:
+      - cuaderno-network
+
+  redis:
+    image: redis:7-alpine
+    container_name: encaja-redis
+    ports:
+      - "6379:6379"
+    command: ["redis-server", "--save", "", "--appendonly", "no"]
     restart: unless-stopped
     networks:
       - cuaderno-network

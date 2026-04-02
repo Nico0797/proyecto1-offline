@@ -12,6 +12,8 @@ interface SnoozeState {
   setStatus: (id: string, status: AlertStatus, until?: string) => void;
   getStatus: (id: string) => Entry | undefined;
   clear: (id: string) => void;
+  clearByStatus: (status: AlertStatus) => void;
+  resetAll: () => void;
 }
 
 export const useAlertsSnoozeStore = create<SnoozeState>()(
@@ -25,7 +27,14 @@ export const useAlertsSnoozeStore = create<SnoozeState>()(
         const e = { ...get().entries };
         delete e[id];
         set({ entries: e });
-      }
+      },
+      clearByStatus: (status) => {
+        const nextEntries = Object.fromEntries(
+          Object.entries(get().entries).filter(([, entry]) => entry.status !== status)
+        );
+        set({ entries: nextEntries });
+      },
+      resetAll: () => set({ entries: {} }),
     }),
     { name: 'alerts-snooze' }
   )

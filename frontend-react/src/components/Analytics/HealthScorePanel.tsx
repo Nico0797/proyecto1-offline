@@ -23,7 +23,7 @@ export const HealthScorePanel: React.FC<HealthScorePanelProps> = ({ score }) => 
   };
 
   return (
-    <div className="bg-white dark:bg-gray-800 rounded-xl p-6 border border-gray-200 dark:border-gray-700 shadow-sm">
+    <div className="app-surface rounded-xl p-6 shadow-sm">
       <div className="flex items-center gap-3 mb-6">
         <Heart className="w-6 h-6 text-pink-500" />
         <h3 className="text-xl font-bold text-gray-900 dark:text-white">Salud del Negocio</h3>
@@ -63,7 +63,7 @@ export const HealthScorePanel: React.FC<HealthScorePanelProps> = ({ score }) => 
 
         <div className="flex-1 space-y-4 w-full">
           {score.indicators.map((indicator, idx) => (
-            <div key={idx} className="flex items-start gap-3 p-3 bg-gray-50 dark:bg-gray-900/30 rounded-lg">
+            <div key={idx} className="app-muted-panel flex items-start gap-3 rounded-lg p-3">
               <div className="mt-0.5">{getStatusIcon(indicator.status)}</div>
               <div>
                 <p className="text-sm font-medium text-gray-900 dark:text-white">{indicator.label}</p>
