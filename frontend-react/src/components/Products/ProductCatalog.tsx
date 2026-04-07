@@ -32,7 +32,7 @@ export const ProductCatalog: React.FC = () => {
   const { getCategory } = useCategoryStore();
   
   const canCreate = usePermission('products.create');
-  const canUpdate = usePermission('products.update');
+  const canUpdate = usePermission('products.edit');
   const canDelete = usePermission('products.delete');
   
   const [activeTab, setActiveTab] = useState<'catalog' | 'inventory' | 'advanced_inventory' | 'pricing' | 'categories'>('catalog');
@@ -182,6 +182,7 @@ export const ProductCatalog: React.FC = () => {
             title: 'Catálogo',
             mobileTitle: 'Catálogo',
             icon: Package,
+            'data-tour': 'products.tabs.catalog',
             content: (
               <>
                 <div className="hidden lg:block">
@@ -191,7 +192,7 @@ export const ProductCatalog: React.FC = () => {
                       dismissible
                     />
                     <PageSummary title="Resumen rápido" description="Una lectura corta antes de editar o filtrar productos.">
-                      <div className="flex-shrink-0">
+                      <div className="flex-shrink-0" data-tour="products.kpis">
                         <ProductKpiStrip products={products} />
                       </div>
                     </PageSummary>
@@ -291,6 +292,7 @@ export const ProductCatalog: React.FC = () => {
             title: 'Inventario Avanzado',
             mobileTitle: 'Avanzado',
             icon: BarChart2,
+            'data-tour': 'products.tabs.pricing',
             content: (
               <div className="min-h-0">
                 <AdvancedInventoryTab products={filteredProducts} />
@@ -299,7 +301,7 @@ export const ProductCatalog: React.FC = () => {
           },
           {
             id: 'pricing',
-            title: 'Herramientas de Precios',
+            title: 'Precios',
             mobileTitle: 'Precios',
             icon: Calculator,
             'data-tour': 'products.tabs.pricing',
@@ -332,6 +334,7 @@ export const ProductCatalog: React.FC = () => {
         onClose={() => setIsModalOpen(false)}
         product={editingProduct}
         onSuccess={() => activeBusiness && fetchProducts(activeBusiness.id)}
+        data-tour="products.modal.form"
       />
     </PageLayout>
   );

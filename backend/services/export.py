@@ -626,7 +626,7 @@ class ExcelReportGenerator:
             
         return wb
 
-    def generate_profitability_report(self, summary_data, products_data, sales_data, alerts_data, start_date=None, end_date=None, filters=None):
+    def generate_profitability_payload_report(self, summary_data, products_data, sales_data, alerts_data, start_date=None, end_date=None, filters=None):
         summary_ws = self._create_sheet("Resumen Rentabilidad", ["Indicador", "Valor", "Contexto"], "059669")
 
         period_label = f"{start_date or 'Inicio'} a {end_date or 'Fin'}"
@@ -786,7 +786,17 @@ class ExcelReportGenerator:
 def export_combined_report(business_id, report_type, start_date=None, end_date=None):
     """Router principal de exportación"""
     normalized_type = str(report_type or "").strip().lower()
-    if normalized_type in {"sales_full", "payments_full", "finance_full", "cashflow_full"}:
+    if normalized_type in {
+        "sales_full",
+        "payments_full",
+        "finance_full",
+        "cashflow_full",
+        "general_business",
+        "customers_full",
+        "products_full",
+        "aged_receivables",
+        "profit_full",
+    }:
         from backend.services.reports.report_service import export_combined_report as professional_export_combined_report
 
         return professional_export_combined_report(business_id, report_type, start_date, end_date)

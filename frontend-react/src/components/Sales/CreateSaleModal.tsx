@@ -3,6 +3,7 @@ import { Input } from '../ui/Input';
 import { CurrencyInput } from '../ui/CurrencyInput';
 import { Button } from '../ui/Button';
 import { FormAlert } from '../ui/FormAlert';
+import { cn } from '../../utils/cn';
 import { Search, X, ShoppingCart, DollarSign, ArrowRight, Check, Clock, ScanLine, User } from 'lucide-react';
 import { Modal } from '../ui/Modal';
 import { useCustomerStore } from '../../store/customerStore';
@@ -99,7 +100,8 @@ export const CreateSaleModal = ({ isOpen, onClose, onSuccess }: { isOpen: boolea
         qty: 1,
         unit_price: product.price,
         name: product.name,
-        total: product.price
+        total: product.price,
+        fulfillment_mode: product.fulfillment_mode || (product.type === 'service' ? 'service' : undefined)
       }]);
     }
     setProductSearch('');
@@ -222,26 +224,26 @@ export const CreateSaleModal = ({ isOpen, onClose, onSuccess }: { isOpen: boolea
   return (
     <Modal isOpen={isOpen} onClose={onClose} title="Registrar venta" className="flex h-[92dvh] max-w-5xl flex-col">
       {/* Stepper Header */}
-      <div className="border-b border-gray-100 bg-gray-50 px-4 py-3 dark:border-gray-700 dark:bg-gray-900/50 sm:px-8 sm:py-4">
+      <div className="app-stepper px-4 py-3 sm:px-8 sm:py-4">
         <div className="flex items-center justify-between">
-          <div className={`flex items-center gap-2 ${step >= 1 ? 'text-blue-600 dark:text-blue-400' : 'text-gray-400'}`}>
-              <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold ${step >= 1 ? 'bg-blue-100 dark:bg-blue-900/30' : 'bg-gray-200 dark:bg-gray-700'}`}>1</div>
+          <div className={cn('flex items-center gap-2', step >= 1 ? 'text-[color:var(--app-primary)]' : 'app-text-muted')}>
+              <div className={cn('app-step-node w-8 h-8 font-bold', step >= 1 ? 'app-step-node-complete' : '')}>1</div>
               <span className="font-medium hidden sm:inline">Productos</span>
           </div>
-          <div className={`h-1 flex-1 mx-4 rounded-full ${step >= 2 ? 'bg-blue-600' : 'bg-gray-200 dark:bg-gray-700'}`} />
-          <div className={`flex items-center gap-2 ${step >= 2 ? 'text-blue-600 dark:text-blue-400' : 'text-gray-400'}`}>
-              <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold ${step >= 2 ? 'bg-blue-100 dark:bg-blue-900/30' : 'bg-gray-200 dark:bg-gray-700'}`}>2</div>
+          <div className={cn('app-step-rail flex-1 mx-4', step >= 2 ? 'app-step-rail-active' : '')} />
+          <div className={cn('flex items-center gap-2', step >= 2 ? 'text-[color:var(--app-primary)]' : 'app-text-muted')}>
+              <div className={cn('app-step-node w-8 h-8 font-bold', step >= 2 ? 'app-step-node-complete' : '')}>2</div>
               <span className="font-medium hidden sm:inline">Cliente (opcional)</span>
           </div>
-          <div className={`h-1 flex-1 mx-4 rounded-full ${step >= 3 ? 'bg-blue-600' : 'bg-gray-200 dark:bg-gray-700'}`} />
-          <div className={`flex items-center gap-2 ${step >= 3 ? 'text-blue-600 dark:text-blue-400' : 'text-gray-400'}`}>
-              <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold ${step >= 3 ? 'bg-blue-100 dark:bg-blue-900/30' : 'bg-gray-200 dark:bg-gray-700'}`}>3</div>
+          <div className={cn('app-step-rail flex-1 mx-4', step >= 3 ? 'app-step-rail-active' : '')} />
+          <div className={cn('flex items-center gap-2', step >= 3 ? 'text-[color:var(--app-primary)]' : 'app-text-muted')}>
+              <div className={cn('app-step-node w-8 h-8 font-bold', step >= 3 ? 'app-step-node-complete' : '')}>3</div>
               <span className="font-medium hidden sm:inline">Pago</span>
           </div>
         </div>
         <div className="mt-2 text-center sm:hidden">
-          <div className="text-[11px] uppercase tracking-wide text-gray-400 dark:text-gray-500">Paso {step} de 3</div>
-          <div className="text-sm font-semibold text-gray-900 dark:text-white">{step === 1 ? 'Productos' : step === 2 ? 'Cliente' : 'Cobro'}</div>
+          <div className="text-[11px] uppercase tracking-wide app-text-muted">Paso {step} de 3</div>
+          <div className="text-sm font-semibold app-text">{step === 1 ? 'Productos' : step === 2 ? 'Cliente' : 'Cobro'}</div>
         </div>
       </div>
 
@@ -261,7 +263,7 @@ export const CreateSaleModal = ({ isOpen, onClose, onSuccess }: { isOpen: boolea
                 <div className="flex flex-col gap-3 sm:gap-4">
                     <div className="relative flex gap-2">
                         <div className="relative flex-1">
-                            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+                            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 app-text-muted w-4 h-4" />
                             <Input
                                 placeholder="Buscar productos o servicios..."
                                 className="pl-10"
@@ -279,7 +281,7 @@ export const CreateSaleModal = ({ isOpen, onClose, onSuccess }: { isOpen: boolea
                             <ScanLine className="w-5 h-5" />
                         </Button>
                     </div>
-                    <div className="rounded-[22px] border border-blue-200 bg-blue-50/90 px-4 py-3.5 text-sm text-blue-800 shadow-sm dark:border-blue-900/30 dark:bg-blue-900/10 dark:text-blue-200">
+                    <div className="app-inline-panel-info px-4 py-3.5 text-sm">
                       Busca o toca un producto para empezar.
                     </div>
                     <div className="flex gap-2 overflow-x-auto no-scrollbar -mt-1 pb-1">
@@ -287,8 +289,8 @@ export const CreateSaleModal = ({ isOpen, onClose, onSuccess }: { isOpen: boolea
                         onClick={() => setCategoryFilter('')}
                         className={`px-3 py-1.5 rounded-full text-xs border ${
                           categoryFilter === ''
-                            ? 'bg-blue-600 text-white border-blue-600'
-                            : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border-gray-200 dark:border-gray-700'
+                            ? 'app-segmented-option-active text-[color:var(--app-primary)] border-transparent shadow-sm'
+                            : 'app-button-secondary'
                         }`}
                       >
                         Todas
@@ -299,8 +301,8 @@ export const CreateSaleModal = ({ isOpen, onClose, onSuccess }: { isOpen: boolea
                           onClick={() => setCategoryFilter(c.id)}
                           className={`px-3 py-1.5 rounded-full text-xs border whitespace-nowrap ${
                             categoryFilter === c.id
-                              ? 'bg-blue-600 text-white border-blue-600'
-                              : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border-gray-200 dark:border-gray-700'
+                              ? 'app-segmented-option-active text-[color:var(--app-primary)] border-transparent shadow-sm'
+                              : 'app-button-secondary'
                           }`}
                         >
                           {c.name}
@@ -313,18 +315,18 @@ export const CreateSaleModal = ({ isOpen, onClose, onSuccess }: { isOpen: boolea
                           <button
                             key={product.id}
                             onClick={() => handleAddItem(product)}
-                            className="relative flex flex-col gap-1 overflow-visible rounded-[22px] border border-gray-200 bg-white p-3 text-left shadow-sm transition-all hover:-translate-y-0.5 hover:border-blue-200 hover:shadow-md active:scale-[0.98] dark:border-gray-700 dark:bg-gray-800"
+                            className="app-elevated-card relative flex flex-col gap-1 overflow-visible p-3 text-left transition-all hover:-translate-y-0.5 hover:border-[color:var(--app-primary-soft-border)] hover:shadow-[var(--app-shadow-strong)] active:scale-[0.98]"
                           >
-                            <div className="text-sm font-medium text-gray-900 dark:text-white truncate">{product.name}</div>
-                            <div className="text-xs text-gray-500 dark:text-gray-400">Stock: {product.stock}</div>
-                            <div className="mt-1 text-blue-600 dark:text-blue-400 font-bold">{formatCOP(product.price)}</div>
-                            <div className="mt-1.5 inline-flex items-center justify-center px-2 py-1 rounded-lg bg-blue-600 text-white text-xs w-fit">
+                            <div className="text-sm font-medium app-text truncate">{product.name}</div>
+                            <div className="text-xs app-text-muted">Stock: {product.stock}</div>
+                            <div className="mt-1 text-[color:var(--app-primary)] font-bold">{formatCOP(product.price)}</div>
+                            <div className="app-button-primary mt-1.5 inline-flex items-center justify-center rounded-lg px-2 py-1 text-xs w-fit min-h-0">
                               Agregar
                             </div>
                           </button>
                         ))}
                         {filteredProducts.length === 0 && (
-                          <div className="col-span-full rounded-[22px] border border-dashed border-gray-300 bg-gray-50 px-4 py-6 text-center text-sm text-gray-500 dark:border-gray-700 dark:bg-gray-800/40 dark:text-gray-400">
+                          <div className="app-empty-state col-span-full px-4 py-6 text-center text-sm app-text-muted">
                             No encontramos productos con ese filtro. Borra la búsqueda o revisa tu catálogo.
                           </div>
                         )}
@@ -332,7 +334,7 @@ export const CreateSaleModal = ({ isOpen, onClose, onSuccess }: { isOpen: boolea
                       {filteredProducts.length > productLimit && (
                         <div className="flex justify-center mt-3">
                           <button
-                            className="px-4 py-2 text-sm rounded-lg border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800 text-gray-700 dark:text-gray-300"
+                            className="app-button-secondary px-4 py-2 text-sm rounded-lg"
                             onClick={() => setProductLimit(l => l + 24)}
                           >
                             Cargar más
@@ -341,7 +343,7 @@ export const CreateSaleModal = ({ isOpen, onClose, onSuccess }: { isOpen: boolea
                       )}
                     </div>
 
-                    <div className="flex-1 overflow-y-auto rounded-[24px] border border-gray-200 bg-gray-50/90 p-3.5 sm:p-4 dark:border-gray-700 dark:bg-gray-800/50" data-tour="sales.modal.cart">
+                    <div className="app-inline-panel flex-1 overflow-y-auto rounded-[24px] p-3.5 sm:p-4" data-tour="sales.modal.cart">
                         {saleItems.length === 0 ? (
                             <div className="h-full flex items-center justify-center">
                               <TeachingEmptyState
@@ -355,14 +357,14 @@ export const CreateSaleModal = ({ isOpen, onClose, onSuccess }: { isOpen: boolea
                         ) : (
                             <div className="space-y-2.5 sm:space-y-3">
                                 {saleItems.map((item, index) => (
-                                    <div key={index} className="flex flex-col gap-3 rounded-[20px] border border-gray-200 bg-white p-3 shadow-sm sm:flex-row sm:items-center dark:border-gray-700 dark:bg-gray-800">
+                                    <div key={index} className="app-surface flex flex-col gap-3 rounded-[20px] p-3 sm:flex-row sm:items-center">
                                         <div className="flex-1 min-w-0">
-                                            <p className="font-medium text-gray-900 dark:text-white truncate">{item.name}</p>
+                                            <p className="font-medium app-text truncate">{item.name}</p>
                                             <div className="flex items-center gap-1 mt-1">
-                                                <span className="text-xs text-gray-400">$</span>
+                                                <span className="text-xs app-text-muted">$</span>
                                                 <input 
                                                     type="number"
-                                                    className="text-sm text-blue-600 bg-transparent border-none p-0 w-24 focus:ring-0 font-medium"
+                                                    className="text-sm text-[color:var(--app-primary)] bg-transparent border-none p-0 w-24 focus:ring-0 font-medium"
                                                     value={item.unit_price}
                                                     onChange={(e) => handleUpdatePrice(index, parseFloat(e.target.value) || 0)}
                                                 />
@@ -370,25 +372,25 @@ export const CreateSaleModal = ({ isOpen, onClose, onSuccess }: { isOpen: boolea
                                         </div>
                                         
                                         <div className="flex items-center justify-between gap-4">
-                                            <div className="flex items-center bg-gray-100 dark:bg-gray-700 rounded-lg shrink-0">
+                                            <div className="app-muted-panel flex items-center rounded-lg shrink-0">
                                                 <button 
-                                                    className="w-8 h-8 flex items-center justify-center hover:bg-gray-200 dark:hover:bg-gray-600 rounded-l-lg touch-manipulation text-gray-900 dark:text-white"
+                                                    className="w-8 h-8 flex items-center justify-center hover:bg-[color:var(--app-surface-muted)] rounded-l-lg touch-manipulation app-text"
                                                     onClick={() => handleUpdateQuantity(index, item.qty - 1)}
                                                 >-</button>
-                                                <span className="w-8 text-center font-medium text-sm text-gray-900 dark:text-white">{item.qty}</span>
+                                                <span className="w-8 text-center font-medium text-sm app-text">{item.qty}</span>
                                                 <button 
-                                                    className="w-8 h-8 flex items-center justify-center hover:bg-gray-200 dark:hover:bg-gray-600 rounded-r-lg touch-manipulation text-gray-900 dark:text-white"
+                                                    className="w-8 h-8 flex items-center justify-center hover:bg-[color:var(--app-surface-muted)] rounded-r-lg touch-manipulation app-text"
                                                     onClick={() => handleUpdateQuantity(index, item.qty + 1)}
                                                 >+</button>
                                             </div>
                                             
                                             <div className="flex items-center gap-3">
-                                                <div className="w-20 sm:w-24 text-right font-bold text-gray-900 dark:text-white truncate">
+                                                <div className="w-20 sm:w-24 text-right font-bold app-text truncate">
                                                     {formatCOP(item.total)}
                                                 </div>
                                                 <button 
                                                     onClick={() => handleRemoveItem(index)}
-                                                    className="text-gray-400 hover:text-red-500 transition-colors p-1"
+                                                    className="app-text-muted hover:text-[color:var(--app-danger)] transition-colors p-1"
                                                 >
                                                     <X className="w-4 h-4" />
                                                 </button>
@@ -404,28 +406,28 @@ export const CreateSaleModal = ({ isOpen, onClose, onSuccess }: { isOpen: boolea
                 <aside className="app-elevated-card h-fit overflow-hidden p-5 sm:p-6 xl:sticky xl:top-0">
                     <div className="flex items-start justify-between gap-4">
                       <div>
-                        <h3 className="text-base font-semibold tracking-tight text-gray-900 dark:text-white sm:text-lg">Lo que llevas</h3>
-                        <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
+                        <h3 className="text-base font-semibold tracking-tight app-text sm:text-lg">Lo que llevas</h3>
+                        <p className="mt-1 text-sm app-text-muted">
                           Un resumen claro antes de pasar a cliente y cobro.
                         </p>
                       </div>
-                      <div className="inline-flex min-w-[72px] items-center justify-center rounded-full border border-blue-500/20 bg-blue-500/10 px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] text-blue-700 dark:text-blue-200">
+                      <div className="app-status-chip app-status-chip-info inline-flex min-w-[72px] items-center justify-center px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em]">
                         {saleItems.length} item{saleItems.length === 1 ? '' : 's'}
                       </div>
                     </div>
 
-                    <div className="mt-5 rounded-[26px] border border-white/10 bg-[linear-gradient(180deg,rgba(15,23,42,0.94),rgba(2,6,23,0.92))] p-4 shadow-[0_24px_60px_-38px_rgba(15,23,42,0.95)] sm:p-5">
+                    <div className="app-inline-panel mt-5 rounded-[26px] p-4 sm:p-5">
                       <div className="space-y-4 text-sm">
-                        <div className="flex items-center justify-between gap-4 text-slate-300">
+                        <div className="flex items-center justify-between gap-4 app-text-secondary">
                           <span>Subtotal</span>
-                          <span className="font-semibold text-white">{formatCOP(subtotal)}</span>
+                          <span className="font-semibold app-text">{formatCOP(subtotal)}</span>
                         </div>
 
-                        <div className="rounded-[20px] border border-white/10 bg-white/[0.03] p-3" data-tour="sales.modal.discount">
+                        <div className="app-surface rounded-[20px] p-3" data-tour="sales.modal.discount">
                           <div className="flex items-center justify-between gap-3">
                             <div>
-                              <div className="text-sm font-medium text-white">Descuento</div>
-                              <div className="mt-1 text-xs text-slate-400">
+                              <div className="text-sm font-medium app-text">Descuento</div>
+                              <div className="mt-1 text-xs app-text-muted">
                                 {hasDiscount
                                   ? discountType === 'percent'
                                     ? `${discountValue || 0}% aplicado`
@@ -435,14 +437,14 @@ export const CreateSaleModal = ({ isOpen, onClose, onSuccess }: { isOpen: boolea
                             </div>
                             <div className="flex items-center gap-2">
                               {hasDiscount ? (
-                                <span className="rounded-full bg-emerald-500/12 px-2.5 py-1 text-xs font-semibold text-emerald-300">
+                                <span className="app-status-chip app-status-chip-success px-2.5 py-1 text-xs font-semibold">
                                   -{formatCOP(discount)}
                                 </span>
                               ) : null}
                               <button
                                 type="button"
                                 onClick={() => setShowDiscountEditor((value) => !value)}
-                                className="rounded-full border border-white/10 bg-white/[0.04] px-3 py-1.5 text-xs font-semibold text-slate-200 transition hover:border-white/20 hover:bg-white/[0.08]"
+                                className="app-button-secondary rounded-full px-3 py-1.5 text-xs font-semibold"
                               >
                                 {showDiscountEditor || hasDiscount ? 'Ocultar' : 'Agregar'}
                               </button>
@@ -477,7 +479,7 @@ export const CreateSaleModal = ({ isOpen, onClose, onSuccess }: { isOpen: boolea
                                     setDiscountValue(0);
                                     setShowDiscountEditor(false);
                                   }}
-                                  className="justify-self-start text-xs font-medium text-slate-400 transition hover:text-white sm:col-span-2"
+                                  className="justify-self-start text-xs font-medium app-text-muted transition hover:text-[color:var(--app-text)] sm:col-span-2"
                                 >
                                   Quitar descuento
                                 </button>
@@ -486,19 +488,19 @@ export const CreateSaleModal = ({ isOpen, onClose, onSuccess }: { isOpen: boolea
                           )}
                         </div>
 
-                        <div className="flex items-center justify-between gap-4 text-slate-400">
+                        <div className="flex items-center justify-between gap-4 app-text-muted">
                           <span>Impuestos</span>
                           <span>$0</span>
                         </div>
                       </div>
 
-                      <div className="mt-5 rounded-[22px] bg-white px-4 py-4 shadow-[0_18px_38px_-28px_rgba(255,255,255,0.55)] dark:bg-[linear-gradient(180deg,rgba(15,23,42,0.96),rgba(30,41,59,0.92))] dark:shadow-[0_18px_38px_-28px_rgba(59,130,246,0.35)]">
-                        <div className="text-xs font-semibold uppercase tracking-[0.22em] text-slate-500 dark:text-slate-400">
+                      <div className="app-surface mt-5 rounded-[22px] px-4 py-4">
+                        <div className="text-xs font-semibold uppercase tracking-[0.22em] app-text-muted">
                           Total a cobrar
                         </div>
                         <div className="mt-2 flex items-end justify-between gap-4">
-                          <span className="text-sm font-medium text-slate-600 dark:text-slate-300">Venta actual</span>
-                          <span className="text-2xl font-black tracking-tight text-slate-950 dark:text-white sm:text-[2rem]">
+                          <span className="text-sm font-medium app-text-secondary">Venta actual</span>
+                          <span className="text-2xl font-black tracking-tight app-text sm:text-[2rem]">
                             {formatCOP(total)}
                           </span>
                         </div>
@@ -526,8 +528,8 @@ export const CreateSaleModal = ({ isOpen, onClose, onSuccess }: { isOpen: boolea
         {step === 2 && (
              <div className="max-w-2xl mx-auto space-y-4 sm:space-y-6">
                  <div className="text-center mb-4 sm:mb-8">
-                     <h2 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white mb-2">¿A nombre de quién va la venta?</h2>
-                     <p className="text-sm text-gray-500 dark:text-gray-400">Si quedará saldo pendiente, sí necesitas elegir cliente.</p>
+                     <h2 className="text-xl sm:text-2xl font-bold app-text mb-2">¿A nombre de quién va la venta?</h2>
+                     <p className="text-sm app-text-muted">Si quedará saldo pendiente, sí necesitas elegir cliente.</p>
                  </div>
 
                  <div className="space-y-4">
@@ -549,9 +551,9 @@ export const CreateSaleModal = ({ isOpen, onClose, onSuccess }: { isOpen: boolea
                      </div>
                      
                      {selectedCustomerId && (
-                        <div className="rounded-[22px] border border-blue-100 bg-blue-50/90 p-4 dark:border-blue-800 dark:bg-blue-900/20" data-tour="sales.modal.clientInfo">
-                            <p className="text-sm font-bold text-blue-800 dark:text-blue-300">Cliente seleccionado</p>
-                            <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
+                        <div className="app-inline-panel-info rounded-[22px] p-4" data-tour="sales.modal.clientInfo">
+                            <p className="text-sm font-bold">Cliente seleccionado</p>
+                            <p className="text-sm mt-1">
                               Este cliente ya tiene saldo pendiente de {formatCOP(customers.find(c => c.id === selectedCustomerId)?.balance || 0)}.
                             </p>
                         </div>
@@ -571,36 +573,36 @@ export const CreateSaleModal = ({ isOpen, onClose, onSuccess }: { isOpen: boolea
 
         {step === 3 && (
             <div className="max-w-2xl mx-auto space-y-4 sm:space-y-6">
-                <div className="mb-4 rounded-[24px] border border-blue-200 bg-gradient-to-br from-blue-50 to-white p-4 text-center shadow-sm dark:border-blue-900/30 dark:from-blue-900/20 dark:to-gray-900 sm:mb-6 sm:p-6">
-                    <p className="text-sm text-blue-600 dark:text-blue-300 uppercase font-bold tracking-wider mb-1">Total de esta venta</p>
-                    <p className="text-3xl sm:text-4xl font-black text-blue-900 dark:text-blue-100">{formatCOP(total)}</p>
+                <div className="app-inline-panel-info mb-4 rounded-[24px] p-4 text-center sm:mb-6 sm:p-6">
+                    <p className="text-sm uppercase font-bold tracking-wider mb-1">Total de esta venta</p>
+                    <p className="text-3xl sm:text-4xl font-black">{formatCOP(total)}</p>
                 </div>
 
-                <div className="rounded-[22px] border border-gray-200 bg-gray-50/90 px-4 py-3.5 text-sm text-gray-600 dark:border-gray-800 dark:bg-gray-800/60 dark:text-gray-300">
+                <div className="app-inline-panel rounded-[22px] px-4 py-3.5 text-sm">
                   Elige si hoy te pagan todo, dejan saldo pendiente o hacen un abono.
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
                     <div className="space-y-4">
-                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Cómo te van a pagar</label>
+                        <label className="block text-sm font-medium app-text-secondary">Cómo te van a pagar</label>
                         {!hasAccountsReceivable && (
-                            <div className="rounded-xl border border-amber-500/30 bg-amber-50 dark:bg-amber-900/20 px-4 py-3 text-sm text-amber-700 dark:text-amber-200">
+                            <div className="app-inline-panel-warning rounded-xl px-4 py-3 text-sm">
                                 Las ventas a crédito y los abonos están desactivados para este negocio.
                             </div>
                         )}
                         <div className="flex flex-col gap-2" data-tour="sales.modal.paymentMethods">
                             <button  
-                                className={`rounded-[22px] border px-4 py-3.5 text-left transition-all ${paymentType === 'paid' ? 'border-green-500 bg-green-50 dark:bg-green-900/20 ring-1 ring-green-500' : 'border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800'}`}
+                                className={`rounded-[22px] border px-4 py-3.5 text-left transition-all ${paymentType === 'paid' ? 'border-[color:var(--app-success)] bg-[color:var(--app-success-soft)] ring-1 ring-[color:var(--app-success)]' : 'border-[color:var(--app-border)] bg-[color:var(--app-surface-elevated)] hover:bg-[color:var(--app-surface-soft)]'}`}
                                 onClick={() => { setPaymentType('paid'); setAmountPaid(total); }}
                             >
-                                <div className="font-bold text-gray-900 dark:text-white flex items-center gap-2">
+                                <div className="font-bold app-text flex items-center gap-2">
                                     <Check className="w-4 h-4" /> Pago total hoy
                                 </div>
-                                <p className="text-xs text-gray-500 mt-1">El cliente deja esta venta totalmente pagada.</p>
+                                <p className="text-xs app-text-muted mt-1">El cliente deja esta venta totalmente pagada.</p>
                             </button>
 
                             <button 
-                                className={`rounded-[22px] border px-4 py-3.5 text-left transition-all ${paymentType === 'credit' ? 'border-red-500 bg-red-50 dark:bg-red-900/20 ring-1 ring-red-500' : 'border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800'} ${!hasAccountsReceivable ? 'opacity-50 cursor-not-allowed' : ''}`}
+                                className={`rounded-[22px] border px-4 py-3.5 text-left transition-all ${paymentType === 'credit' ? 'border-[color:var(--app-danger)] bg-[color:var(--app-danger-soft)] ring-1 ring-[color:var(--app-danger)]' : 'border-[color:var(--app-border)] bg-[color:var(--app-surface-elevated)] hover:bg-[color:var(--app-surface-soft)]'} ${!hasAccountsReceivable ? 'opacity-50 cursor-not-allowed' : ''}`}
                                 onClick={() => { 
                                     if (!hasAccountsReceivable) {
                                         setSubmitError('Las cuentas por cobrar están desactivadas para este negocio.');
@@ -615,14 +617,14 @@ export const CreateSaleModal = ({ isOpen, onClose, onSuccess }: { isOpen: boolea
                                     setAmountPaid(0); 
                                 }}
                             >
-                                <div className="font-bold text-gray-900 dark:text-white flex items-center gap-2">
+                                <div className="font-bold app-text flex items-center gap-2">
                                     <Clock className="w-4 h-4" /> Dejar saldo pendiente
                                 </div>
-                                <p className="text-xs text-gray-500 mt-1">La venta queda registrada y el cliente te debe después.</p>
+                                <p className="text-xs app-text-muted mt-1">La venta queda registrada y el cliente te debe después.</p>
                             </button>
                             
                             <button 
-                                className={`rounded-[22px] border px-4 py-3.5 text-left transition-all ${paymentType === 'partial' ? 'border-yellow-500 bg-yellow-50 dark:bg-yellow-900/20 ring-1 ring-yellow-500' : 'border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800'} ${!hasAccountsReceivable ? 'opacity-50 cursor-not-allowed' : ''}`}
+                                className={`rounded-[22px] border px-4 py-3.5 text-left transition-all ${paymentType === 'partial' ? 'border-[color:var(--app-warning)] bg-[color:var(--app-warning-soft)] ring-1 ring-[color:var(--app-warning)]' : 'border-[color:var(--app-border)] bg-[color:var(--app-surface-elevated)] hover:bg-[color:var(--app-surface-soft)]'} ${!hasAccountsReceivable ? 'opacity-50 cursor-not-allowed' : ''}`}
                                 onClick={() => { 
                                     if (!hasAccountsReceivable) {
                                         setSubmitError('Las cuentas por cobrar están desactivadas para este negocio.');
@@ -637,16 +639,16 @@ export const CreateSaleModal = ({ isOpen, onClose, onSuccess }: { isOpen: boolea
                                     setAmountPaid(total / 2); 
                                 }}
                             >
-                                <div className="font-bold text-gray-900 dark:text-white flex items-center gap-2">
+                                <div className="font-bold app-text flex items-center gap-2">
                                     <DollarSign className="w-4 h-4" /> Recibir un abono
                                 </div>
-                                <p className="text-xs text-gray-500 mt-1">El cliente paga una parte y el resto queda pendiente.</p>
+                                <p className="text-xs app-text-muted mt-1">El cliente paga una parte y el resto queda pendiente.</p>
                             </button>
                         </div>
                     </div>
 
                     <div className="space-y-4">
-                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Cómo entra el dinero</label>
+                        <label className="block text-sm font-medium app-text-secondary">Cómo entra el dinero</label>
                         <SelectField
                             value={paymentMethod}
                             onChange={(e) => setPaymentMethod(e.target.value)}
@@ -662,13 +664,13 @@ export const CreateSaleModal = ({ isOpen, onClose, onSuccess }: { isOpen: boolea
 
                         {paymentType === 'partial' && (
                              <div>
-                                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Monto a abonar hoy</label>
+                                 <label className="block text-sm font-medium app-text-secondary mb-1">Monto a abonar hoy</label>
                                  <CurrencyInput 
                                     value={amountPaid}
                                     onChange={(val) => setAmountPaid(val || 0)}
                                     max={total}
                                  />
-                                 <p className="mt-2 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-xs font-medium text-amber-700 dark:border-amber-900/30 dark:bg-amber-900/20 dark:text-amber-200">Quedan debiendo: {formatCOP(total - amountPaid)}</p>
+                                 <p className="app-inline-panel-warning mt-2 rounded-xl px-3 py-2 text-xs font-medium">Quedan debiendo: {formatCOP(total - amountPaid)}</p>
                              </div>
                         )}
 
@@ -682,9 +684,9 @@ export const CreateSaleModal = ({ isOpen, onClose, onSuccess }: { isOpen: boolea
                         ) : null}
                         
                         <div>
-                             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Nota interna (opcional)</label>
+                             <label className="block text-sm font-medium app-text-secondary mb-1">Nota interna (opcional)</label>
                              <textarea 
-                                className="min-h-[96px] w-full rounded-2xl border border-gray-300 bg-white px-4 py-3 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:border-gray-700 dark:bg-gray-800 dark:text-white dark:placeholder-gray-500"
+                                className="app-textarea min-h-[96px]"
                                 placeholder="Ej. Pagó por transferencia y pidió factura"
                                 value={note}
                                 onChange={(e) => setNote(e.target.value)}
@@ -693,7 +695,7 @@ export const CreateSaleModal = ({ isOpen, onClose, onSuccess }: { isOpen: boolea
                     </div>
                 </div>
 
-                <div className="mt-6 flex flex-col-reverse gap-2 border-t border-gray-200 pt-5 dark:border-gray-700 sm:mt-8 sm:flex-row sm:gap-4">
+                <div className="mt-6 flex flex-col-reverse gap-2 border-t app-divider pt-5 sm:mt-8 sm:flex-row sm:gap-4">
                     <Button variant="secondary" className="flex-1 py-3" onClick={() => setStep(2)}>
                         Atrás
                     </Button>

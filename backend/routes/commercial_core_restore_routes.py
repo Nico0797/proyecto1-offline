@@ -8,6 +8,7 @@ from sqlalchemy.orm import joinedload
 
 from backend.database import db
 from backend.models import Business, Customer, LedgerEntry, Order, Payment, Product, Sale, SalesGoal, TreasuryAccount, User
+from backend.services.commercial_financials import create_sale_financial_entries, delete_sale_financial_effects
 from backend.services.operational_inventory import clear_sale_origin_links, enrich_line_item_with_operational_mode, reverse_sale_operational_effects
 from backend.services.sale_inventory import apply_sale_inventory_effects
 
@@ -130,14 +131,19 @@ def register_commercial_core_restore_routes(app, *, token_required, module_requi
             items=order.items,
             actor_user=current_user,
             role_snapshot=role_snapshot,
-            raw_material_consumption_mode="fulfillment",
+            raw_material_consumption_mode="order_conversion",
         )
-        if balance > 0.01 and order.customer_id:
-            db.session.add(LedgerEntry(business_id=business.id, customer_id=order.customer_id, entry_type="charge", amount=_round(order.total or 0), entry_date=sale_date, note=f"Venta #{sale.id}", ref_type="sale", ref_id=sale.id))
-            if amount_paid > 0.01:
-                db.session.add(LedgerEntry(business_id=business.id, customer_id=order.customer_id, entry_type="payment", amount=_round(amount_paid), entry_date=sale_date, note=f"Abono inicial Venta #{sale.id}", ref_type="sale", ref_id=sale.id))
+        payment = None
         if amount_paid > 0.01 and order.customer_id:
-            db.session.add(Payment(business_id=business.id, customer_id=order.customer_id, sale_id=sale.id, payment_date=sale_date, amount=_round(amount_paid), method=sale.payment_method, treasury_account_id=treasury_account_id, note=note_tag, created_by_user_id=getattr(current_user, "id", None), created_by_name=getattr(current_user, "name", None) or "Sistema", created_by_role=role_snapshot, updated_by_user_id=getattr(current_user, "id", None)))
+            payment = Payment(business_id=business.id, customer_id=order.customer_id, sale_id=sale.id, payment_date=sale_date, amount=_round(amount_paid), method=sale.payment_method, treasury_account_id=treasury_account_id, note=note_tag, created_by_user_id=getattr(current_user, "id", None), created_by_name=getattr(current_user, "name", None) or "Sistema", created_by_role=role_snapshot, updated_by_user_id=getattr(current_user, "id", None))
+            db.session.add(payment)
+            db.session.flush()
+        if order.customer_id:
+            create_sale_financial_entries(
+                sale=sale,
+                payment=payment,
+                payment_note=f"Abono inicial Venta #{sale.id}" if payment is not None else None,
+            )
         return sale
 
     def _goal_payload(goal):
@@ -294,10 +300,10 @@ def register_commercial_core_restore_routes(app, *, token_required, module_requi
                     role_snapshot=role_snapshot,
                 )
                 clear_sale_origin_links(sale=linked_sale)
-                Payment.query.filter_by(sale_id=linked_sale.id).delete()
-                LedgerEntry.query.filter_by(ref_type="sale", ref_id=linked_sale.id).delete()
+                financial_reversal = delete_sale_financial_effects(sale=linked_sale)
                 db.session.delete(linked_sale)
                 order.status = "cancelled"
+                refresh_summary_materialized_days(business_id, *sorted({linked_sale.sale_date, *(financial_reversal.get("affected_dates") or [])}))
                 db.session.commit()
                 return jsonify({"order": _order_payload(order)})
             order.status = next_status

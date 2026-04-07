@@ -98,10 +98,10 @@ export const CostCalculator = () => {
   const { activeBusiness } = useBusinessStore();
   const { hasModule, hasPermission } = useAccess();
 
-  const canRead = hasModule('raw_inventory') && hasPermission('recipes.read');
+  const canRead = hasModule('raw_inventory') && hasPermission('recipes.view');
   const canSaveRecipe = hasModule('raw_inventory') && hasPermission('recipes.create');
-  const canUpdateRecipe = hasModule('raw_inventory') && hasPermission('recipes.update');
-  const canUpdateProduct = hasModule('products') && hasPermission('products.update');
+  const canUpdateRecipe = hasModule('raw_inventory') && hasPermission('recipes.edit');
+  const canUpdateProduct = hasModule('products') && hasPermission('products.edit');
 
   const [products, setProducts] = useState<Product[]>([]);
   const [rawMaterials, setRawMaterials] = useState<RawMaterial[]>([]);
@@ -327,7 +327,7 @@ export const CostCalculator = () => {
   }
 
   return (
-    <div className="space-y-6 px-4 sm:px-6 lg:px-8 py-4">
+    <div className="space-y-6 px-4 sm:px-6 lg:px-8 py-4" data-tour="cost-calculator.panel">
       <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
         <div>
           <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Calculadora de costos</h1>
@@ -342,7 +342,7 @@ export const CostCalculator = () => {
 
       <div className="grid grid-cols-1 gap-6 xl:grid-cols-[1.15fr_0.85fr]">
         <div className="space-y-6">
-          <div className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm dark:border-gray-800 dark:bg-gray-900">
+          <div className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm dark:border-gray-800 dark:bg-gray-900" data-tour="cost-calculator.scope">
             <div className="flex items-center gap-2 mb-4">
               <Package2 className="h-5 w-5 text-blue-600" />
               <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Qué quieres costear</h2>
@@ -385,7 +385,7 @@ export const CostCalculator = () => {
             </div>
           </div>
 
-          <div className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm dark:border-gray-800 dark:bg-gray-900">
+          <div className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm dark:border-gray-800 dark:bg-gray-900" data-tour="cost-calculator.materials">
             <div className="flex items-center justify-between gap-3 mb-4">
               <div>
                 <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Materias primas</h2>
@@ -477,7 +477,7 @@ export const CostCalculator = () => {
             </div>
           </div>
 
-          <div className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm dark:border-gray-800 dark:bg-gray-900">
+          <div className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm dark:border-gray-800 dark:bg-gray-900" data-tour="cost-calculator.actions">
             <div className="flex items-center gap-2 mb-4">
               <ArrowRightLeft className="h-5 w-5 text-blue-600" />
               <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Costos extra y precio deseado</h2>
@@ -504,7 +504,7 @@ export const CostCalculator = () => {
         </div>
 
         <div className="space-y-6">
-          <div className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm dark:border-gray-800 dark:bg-gray-900">
+          <div className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm dark:border-gray-800 dark:bg-gray-900" data-tour="cost-calculator.result">
             <div className="flex items-center gap-2 mb-4">
               <Sparkles className="h-5 w-5 text-emerald-600" />
               <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Resultado</h2>

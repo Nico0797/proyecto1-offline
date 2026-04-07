@@ -296,8 +296,8 @@ const dashboardModule: TourModule = {
         id: 'db1',
         title: 'Esta es tu vista de control',
         body: [
-          'No intenta reemplazar todos los modulos.',
-          'Te ayuda a decidir que atender primero.',
+          'No intenta reemplazar todos los módulos.',
+          'Te ayuda a decidir qué atender primero.',
         ],
         selector: tourSel(TOUR_TARGETS.dashboard.panel),
         route: '/dashboard',
@@ -307,38 +307,46 @@ const dashboardModule: TourModule = {
         id: 'db2',
         title: 'Empieza por los indicadores',
         body: [
-          'Ventas, gastos y saldos te dan una lectura rapida del momento.',
+          'Ventas, gastos y saldos te dan una lectura rápida del momento.',
+          'Haz clic en cualquier KPI para ver más detalle si lo necesitas.',
         ],
         selector: tourSel(TOUR_TARGETS.dashboard.kpis),
         placement: 'bottom',
+        allowInteraction: true,
       },
       {
         id: 'db3',
-        title: 'Cambia de vista segun la pregunta',
+        title: 'Cambia de vista según la pregunta',
         body: [
-          'Usa Caja cuando necesites operacion diaria.',
-          'Usa Analisis cuando quieras mas detalle.',
+          'Usa Caja cuando necesites operación diaria.',
+          'Usa Análisis cuando quieras más detalle.',
+          'Prueba cambiando de pestaña.',
         ],
         selector: tourSel(TOUR_TARGETS.dashboard.tabs.balance),
         placement: 'bottom',
+        allowInteraction: true,
       },
       {
         id: 'db4',
         title: 'Ventas recientes y pendientes',
         body: [
-          'Estas tarjetas te ayudan a revisar lo recien registrado y lo que aun pide seguimiento.',
+          'Estas tarjetas te ayudan a revisar lo recién registrado y lo que aún pide seguimiento.',
+          'Puedes hacer clic en una venta para ver su detalle.',
         ],
         selector: tourSel(TOUR_TARGETS.dashboard.charts),
         placement: 'top',
+        allowInteraction: true,
       },
       {
         id: 'db5',
-        title: 'Si algo exige atencion, suele aparecer aqui',
+        title: 'Si algo exige atención, suele aparecer aquí',
         body: [
           'Pendientes, alertas o recordatorios viven en esta zona del tablero.',
+          'Haz clic en una alerta para ir directamente al módulo correspondiente.',
         ],
         selector: tourSel(TOUR_TARGETS.dashboard.alerts),
         placement: 'left',
+        allowInteraction: true,
       },
     ],
   },
@@ -379,10 +387,10 @@ const salesModule: TourModule = {
       },
       {
         id: 's3',
-        title: 'Busca lo que vas a vender',
+        title: 'Busca productos o servicios',
         body: [
-          'Empieza buscando productos o servicios por nombre o SKU.',
-          'Si trabajas con escaner, este es el paso donde normalmente arrancas.',
+          'Escribe para buscar por nombre o referencia.',
+          'O escanea el codigo de barras si tienes el producto fisico.',
         ],
         selector: tourSel(TOUR_TARGETS.sales.modal.search),
         waitFor: tourSel(TOUR_TARGETS.sales.modal.search),
@@ -396,6 +404,7 @@ const salesModule: TourModule = {
           'El carrito se actualiza en esta misma pantalla mientras vas agregando items.',
         ],
         selector: tourSel(TOUR_TARGETS.sales.modal.products),
+        waitFor: tourSel(TOUR_TARGETS.sales.modal.products),
         placement: 'top',
       },
       {
@@ -406,6 +415,7 @@ const salesModule: TourModule = {
           'Si el boton para continuar aparece desactivado, primero agrega al menos un producto.',
         ],
         selector: tourSel(TOUR_TARGETS.sales.modal.cart),
+        waitFor: tourSel(TOUR_TARGETS.sales.modal.cart),
         placement: 'left',
       },
       {
@@ -479,9 +489,10 @@ const paymentsModule: TourModule = {
     steps: [
       {
         id: 'p1',
-        title: 'Aqui decides a quien cobrar primero',
+        title: 'Aquí decides a quién cobrar primero',
         body: [
           'La pantalla combina clientes con saldo, cobros registrados y cuentas por vencer.',
+          'Cada pestaña prioriza un tipo de acción.',
         ],
         selector: tourSel(TOUR_TARGETS.payments.panel),
         route: '/payments',
@@ -492,6 +503,7 @@ const paymentsModule: TourModule = {
         title: 'Mira el resumen antes de cobrar',
         body: [
           'Estos indicadores te muestran total pendiente, vencido y comportamiento de los pagos.',
+          'Si no tienes permisos de cobro, solo podrás ver.',
         ],
         selector: tourSel(TOUR_TARGETS.payments.kpis),
         placement: 'bottom',
@@ -501,37 +513,66 @@ const paymentsModule: TourModule = {
         title: 'Filtra por cliente o periodo',
         body: [
           'Usa esta barra para reducir el ruido antes de registrar un abono.',
+          'Puedes buscar por nombre y ajustar el periodo.',
         ],
-        selector: tourSel(TOUR_TARGETS.payments.search),
+        selector: tourSel(TOUR_TARGETS.payments.filters),
         placement: 'bottom',
       },
       {
         id: 'p4',
         title: 'Registrar un cobro',
         body: [
-          'Desde aqui abres el flujo para aplicar el pago al cliente correcto.',
+          'Desde aquí abres el flujo para aplicar el pago al cliente correcto.',
+          'Haz clic para continuar.',
         ],
         targets: {
           desktop: { selector: tourSel(TOUR_TARGETS.payments.primaryAction.desktop), placement: 'left' },
           mobile: { selector: tourSel(TOUR_TARGETS.payments.primaryAction.mobile), placement: 'bottom' },
         },
         placement: 'left',
+        allowInteraction: true,
+        waitFor: tourSel(TOUR_TARGETS.payments.modal.clientSearch),
       },
       {
         id: 'p5',
-        title: 'Elige el cliente y registra el valor',
+        title: 'Elige el cliente',
         body: [
-          'Primero seleccionas el cliente. Luego indicas el valor recibido y la fecha del pago.',
+          'Busca y selecciona el cliente que te está pagando.',
+          'La lista se filtra mientras escribes.',
         ],
         selector: tourSel(TOUR_TARGETS.payments.modal.clientSearch),
         waitFor: tourSel(TOUR_TARGETS.payments.modal.clientSearch),
         placement: 'bottom',
+        allowInteraction: true,
       },
       {
         id: 'p6',
+        title: 'Confirma el valor y la fecha',
+        body: [
+          'Revisa el monto recibido y ajusta la fecha si es necesario.',
+          'El sistema sugerirá el saldo pendiente.',
+        ],
+        selector: tourSel(TOUR_TARGETS.payments.modal.details),
+        waitFor: tourSel(TOUR_TARGETS.payments.modal.details),
+        placement: 'bottom',
+        allowInteraction: true,
+      },
+      {
+        id: 'p7',
+        title: 'Revisa los cobros registrados',
+        body: [
+          'Aquí puedes ver todos los abonos ya aplicados.',
+          'Útil para corregir errores o validar entradas.',
+        ],
+        selector: tourSel(TOUR_TARGETS.payments.tabs.all),
+        placement: 'bottom',
+      },
+      {
+        id: 'p8',
         title: 'No olvides revisar vencidos',
         body: [
           'Esta vista te ayuda a priorizar lo que requiere seguimiento hoy.',
+          'Puedes enviar recordatorios desde aquí.',
         ],
         selector: tourSel(TOUR_TARGETS.payments.tabs.overdue),
         placement: 'bottom',
@@ -552,9 +593,10 @@ const expensesModule: TourModule = {
     steps: [
       {
         id: 'e1',
-        title: 'Aqui quedan tus egresos',
+        title: 'Aquí quedan tus egresos',
         body: [
-          'Esta pantalla concentra el historial, las categorias y el acceso para crear gastos.',
+          'Esta pantalla concentra el historial, las categorías y el acceso para crear gastos.',
+          'Las pestañas separan lo ya ocurrido de lo programado y análisis.',
         ],
         selector: tourSel(TOUR_TARGETS.expenses.panel),
         route: '/expenses',
@@ -562,30 +604,78 @@ const expensesModule: TourModule = {
       },
       {
         id: 'e2',
-        title: 'Crear un gasto',
+        title: 'Revisa los indicadores rápidos',
         body: [
-          'Usa este acceso para registrar una salida real de dinero.',
+          'Estos KPIs te muestran comportamiento, compromisos recurrentes y deudas.',
+          'Útil antes de registrar un nuevo gasto.',
         ],
-        selector: tourSel(TOUR_TARGETS.expenses.primaryAction),
-        placement: 'left',
+        selector: tourSel(TOUR_TARGETS.expenses.kpis),
+        placement: 'top',
       },
       {
         id: 'e3',
-        title: 'Completa los datos basicos',
+        title: 'Filtra antes de buscar',
         body: [
-          'Descripcion, categoria y valor son la base para que caja y reportes queden bien.',
+          'Usa esta barra para reducir por periodo, categoría o texto.',
+          'En móvil está dentro del menú de filtros.',
         ],
-        selector: tourSel(TOUR_TARGETS.expenses.modal.description),
-        waitFor: tourSel(TOUR_TARGETS.expenses.modal.description),
+        selector: tourSel(TOUR_TARGETS.expenses.filters),
         placement: 'right',
       },
       {
         id: 'e4',
-        title: 'Revisa los indicadores y recurrentes',
+        title: 'Crear un gasto',
         body: [
-          'Despues de registrar gastos, aqui podras revisar comportamiento y compromisos repetidos.',
+          'Usa este acceso para registrar una salida real de dinero.',
+          'Haz clic para continuar.',
         ],
-        selector: tourSel(TOUR_TARGETS.expenses.kpis),
+        selector: tourSel(TOUR_TARGETS.expenses.primaryAction),
+        placement: 'left',
+        allowInteraction: true,
+        waitFor: tourSel(TOUR_TARGETS.expenses.modal.description),
+      },
+      {
+        id: 'e5',
+        title: 'Completa los datos básicos',
+        body: [
+          'Descripción, categoría y valor son la base para que caja y reportes queden bien.',
+          'Adjunta un comprobante si lo tienes.',
+        ],
+        selector: tourSel(TOUR_TARGETS.expenses.modal.description),
+        waitFor: tourSel(TOUR_TARGETS.expenses.modal.description),
+        placement: 'bottom',
+        allowInteraction: true,
+      },
+      {
+        id: 'e6',
+        title: 'Confirma el gasto',
+        body: [
+          'Revisa los datos y guarda el registro.',
+          'El sistema lo reflejará enDashboard y reportes.',
+        ],
+        selector: tourSel(TOUR_TARGETS.expenses.modal.confirm),
+        waitFor: tourSel(TOUR_TARGETS.expenses.modal.confirm),
+        placement: 'right',
+        allowInteraction: true,
+      },
+      {
+        id: 'e7',
+        title: 'Gestiona categorías',
+        body: [
+          'Aquí puedes crear o editar categorías personalizadas.',
+          'Útil para organizar mejor tus reportes.',
+        ],
+        selector: tourSel(TOUR_TARGETS.expenses.category),
+        placement: 'bottom',
+      },
+      {
+        id: 'e8',
+        title: 'Revisa programados (si aplica)',
+        body: [
+          'Si tienes el plan PRO, aquí verás gastos recurrentes.',
+          'Puedes editar o pausar compromisos mensuales.',
+        ],
+        selector: tourSel(TOUR_TARGETS.expenses.recurring),
         placement: 'bottom',
       },
     ],
@@ -606,7 +696,8 @@ const productsModule: TourModule = {
         id: 'pr1',
         title: 'Productos y servicios en un solo lugar',
         body: [
-          'Aqui organizas lo que vendes y encuentras sus herramientas operativas.',
+          'Aquí organizas lo que vendes y encuentras sus herramientas operativas.',
+          'Puedes crear, editar o archivar productos según necesites.',
         ],
         selector: tourSel(TOUR_TARGETS.products.panel),
         route: '/products',
@@ -614,30 +705,60 @@ const productsModule: TourModule = {
       },
       {
         id: 'pr2',
-        title: 'Lee el resumen del catalogo',
+        title: 'Lee el resumen del catálogo',
         body: [
-          'Los indicadores te ayudan a ver stock, archivados y valor general del catalogo.',
+          'Los indicadores te ayudan a ver stock, archivados y valor general del catálogo.',
+          'Haz clic en un KPI para ver más detalle si lo necesitas.',
         ],
         selector: tourSel(TOUR_TARGETS.products.kpis),
         placement: 'bottom',
+        allowInteraction: true,
       },
       {
         id: 'pr3',
         title: 'Filtra antes de editar',
         body: [
           'Busca por nombre o SKU y aplica filtros de estado, tipo o stock.',
+          'Escribe algo para probar cómo funciona el filtro.',
         ],
         selector: tourSel(TOUR_TARGETS.products.search),
         placement: 'bottom',
+        allowInteraction: true,
       },
       {
         id: 'pr4',
-        title: 'Usa las vistas segun la tarea',
+        title: 'Usa las vistas según la tarea',
         body: [
-          'Catalogo sirve para vender, Inventario para stock real y Precios para revisar calculos o ajustes.',
+          'Catálogo sirve para vender, Inventario para stock real y Precios para revisar cálculos o ajustes.',
+          'Prueba cambiando de pestaña para ver las diferentes vistas.',
         ],
         selector: tourSel(TOUR_TARGETS.products.tabs.inventory),
         placement: 'bottom',
+        allowInteraction: true,
+      },
+      {
+        id: 'pr5',
+        title: 'Crea un nuevo producto',
+        body: [
+          'Si necesitas agregar algo al catálogo, usa este botón.',
+          'El modal te guiará por los datos básicos necesarios.',
+        ],
+        selector: tourSel(TOUR_TARGETS.products.primaryAction),
+        placement: 'left',
+        allowInteraction: true,
+        waitFor: tourSel(TOUR_TARGETS.products.modal.form),
+      },
+      {
+        id: 'pr6',
+        title: 'Completa los datos básicos',
+        body: [
+          'Nombre, precio y tipo son los campos mínimos necesarios.',
+          'Puedes agregar más detalles después si lo requieres.',
+        ],
+        selector: tourSel(TOUR_TARGETS.products.modal.form),
+        waitFor: tourSel(TOUR_TARGETS.products.modal.form),
+        placement: 'right',
+        allowInteraction: true,
       },
     ],
   },
@@ -655,9 +776,10 @@ const invoicesModule: TourModule = {
     steps: [
       {
         id: 'i1',
-        title: 'Este modulo organiza tus documentos',
+        title: 'Este módulo organiza tus documentos',
         body: [
-          'Aqui ves el historial de facturas y los accesos para crear, configurar o revisar cartera.',
+          'Aquí ves el historial de facturas y los accesos para crear, configurar o revisar cartera.',
+          'Puedes emitir, sincronizar o hacer seguimiento desde aquí.',
         ],
         selector: tourSel(TOUR_TARGETS.invoices.panel),
         route: '/invoices',
@@ -667,37 +789,68 @@ const invoicesModule: TourModule = {
         id: 'i2',
         title: 'Filtra y revisa estados',
         body: [
-          'Usa esta zona para buscar borradores, vencidas, pagadas o un cliente especifico.',
+          'Usa esta zona para buscar borradores, vencidas, pagadas o un cliente específico.',
+          'Escribe algo para probar cómo funciona el filtro.',
         ],
         selector: tourSel(TOUR_TARGETS.invoices.filters),
         placement: 'bottom',
+        allowInteraction: true,
       },
       {
         id: 'i3',
         title: 'Lee primero el resumen',
         body: [
-          'Estos indicadores te dicen cuanto facturaste, cuanto sigue pendiente y cuantos borradores quedan.',
+          'Estos indicadores te dicen cuánto facturaste, cuánto sigue pendiente y cuántos borradores quedan.',
+          'Haz clic en una tarjeta para ver más detalle.',
         ],
         selector: tourSel(TOUR_TARGETS.invoices.summary),
         placement: 'bottom',
+        allowInteraction: true,
       },
       {
         id: 'i4',
         title: 'La tabla es tu centro de seguimiento',
         body: [
-          'Desde aqui revisas estado, saldo, cliente y acceso al detalle de cada documento.',
+          'Desde aquí revisas estado, saldo, cliente y acceso al detalle de cada documento.',
+          'Haz clic en una factura para ver su detalle.',
         ],
         selector: tourSel(TOUR_TARGETS.invoices.table),
         placement: 'top',
+        allowInteraction: true,
       },
       {
         id: 'i5',
-        title: 'Desde aqui saltas a cartera, ajustes o sync',
+        title: 'Crea una nueva factura',
         body: [
-          'No necesitas salir a buscar esas herramientas en otra parte del menu.',
+          'Usa este botón para emitir una nueva factura.',
+          'El sistema te guiará por los pasos necesarios.',
+        ],
+        selector: tourSel(TOUR_TARGETS.invoices.primaryAction),
+        placement: 'left',
+        allowInteraction: true,
+        waitFor: tourSel(TOUR_TARGETS.invoices.modal.form),
+      },
+      {
+        id: 'i6',
+        title: 'Configura ajustes de facturación',
+        body: [
+          'Aquí puedes ajustar numeración, plantillas o configuraciones específicas.',
+          'Útil si necesitas personalizar el formato.',
+        ],
+        selector: tourSel(TOUR_TARGETS.invoices.settings),
+        placement: 'left',
+        allowInteraction: true,
+      },
+      {
+        id: 'i7',
+        title: 'Accede a la cartera de facturas',
+        body: [
+          'Desde aquí saltas directamente a cartera para gestionar cobros.',
+          'No necesitas salir a buscar esa herramienta en otra parte del menú.',
         ],
         selector: tourSel(TOUR_TARGETS.invoices.receivables),
         placement: 'bottom',
+        allowInteraction: true,
       },
     ],
   },
@@ -934,6 +1087,139 @@ const personalizationModule: TourModule = {
   },
 };
 
+const treasuryModule: TourModule = {
+  id: 'treasury',
+  title: 'Caja y bancos',
+  description: 'Lee saldos, cuentas y movimientos reales sin perder trazabilidad.',
+  route: '/treasury',
+  tour: {
+    id: 'treasury.expert',
+    title: 'Leer caja y movimientos reales',
+    duration: '4 min',
+    steps: [
+      {
+        id: 'ty1',
+        title: 'Esta vista concentra el dinero real del negocio',
+        body: [
+          'Aqui lees cajas, bancos y billeteras desde el negocio activo.',
+          'Te sirve para revisar saldos y movimientos antes de tomar decisiones operativas.',
+        ],
+        selector: tourSel(TOUR_TARGETS.treasury.panel),
+        route: '/treasury',
+        placement: 'bottom',
+      },
+      {
+        id: 'ty2',
+        title: 'Filtra antes de sacar conclusiones',
+        body: [
+          'Busca por cuenta, tipo o rango de fechas para reducir ruido y revisar solo lo que importa.',
+        ],
+        selector: tourSel(TOUR_TARGETS.treasury.filters),
+        placement: 'bottom',
+      },
+      {
+        id: 'ty3',
+        title: 'Las cuentas te muestran donde vive cada saldo',
+        body: [
+          'Aqui organizas caja, bancos y billeteras, con una cuenta principal y su historial.',
+        ],
+        selector: tourSel(TOUR_TARGETS.treasury.accounts),
+        placement: 'right',
+      },
+      {
+        id: 'ty4',
+        title: 'Agrega o ajusta cuentas cuando administras tesoreria',
+        body: [
+          'Si tu rol puede operar cuentas, este acceso sirve para crear nuevas o mantenerlas actualizadas.',
+        ],
+        selector: tourSel(TOUR_TARGETS.treasury.primaryAction),
+        placement: 'left',
+        optional: true,
+      },
+      {
+        id: 'ty5',
+        title: 'Los movimientos te explican entradas y salidas',
+        body: [
+          'Aqui validas cobros, gastos, pagos y transferencias con trazabilidad por cuenta.',
+        ],
+        selector: tourSel(TOUR_TARGETS.treasury.movements),
+        placement: 'left',
+      },
+    ],
+  },
+};
+
+const teamRolesModule: TourModule = {
+  id: 'team-roles',
+  title: 'Equipo y roles',
+  description: 'Organiza colaboradores, invitaciones y permisos finos para el negocio.',
+  route: '/settings?tab=team',
+  tour: {
+    id: 'team-roles.expert',
+    title: 'Organizar equipo y permisos',
+    duration: '5 min',
+    steps: [
+      {
+        id: 'tr1',
+        title: 'Aqui administras el trabajo compartido',
+        body: [
+          'Esta vista sirve para ordenar colaboradores, invitaciones y seguimiento del equipo.',
+        ],
+        selector: tourSel(TOUR_TARGETS.teamWorkspace.panel),
+        route: '/settings?tab=team',
+        placement: 'bottom',
+      },
+      {
+        id: 'tr2',
+        title: 'Filtra antes de intervenir',
+        body: [
+          'Usa estos filtros para encontrar rapido miembros activos, invitados o un rol especifico.',
+        ],
+        selector: tourSel(TOUR_TARGETS.teamWorkspace.filters),
+        placement: 'bottom',
+      },
+      {
+        id: 'tr3',
+        title: 'Invita cuando realmente administras el equipo',
+        body: [
+          'Este acceso abre la invitacion de nuevos miembros para el negocio actual.',
+        ],
+        selector: tourSel(TOUR_TARGETS.teamWorkspace.invite),
+        placement: 'left',
+        optional: true,
+      },
+      {
+        id: 'tr4',
+        title: 'Los roles viven en una vista separada',
+        body: [
+          'Cuando el negocio usa control fino, aqui defines plantillas y permisos por rol.',
+        ],
+        selector: tourSel(TOUR_TARGETS.roleManagement.panel),
+        route: '/settings?tab=roles',
+        placement: 'bottom',
+      },
+      {
+        id: 'tr5',
+        title: 'Empieza por la lista de roles',
+        body: [
+          'Selecciona un rol primero para revisar su alcance antes de editar permisos.',
+        ],
+        selector: tourSel(TOUR_TARGETS.roleManagement.list),
+        placement: 'right',
+      },
+      {
+        id: 'tr6',
+        title: 'La matriz muestra exactamente que puede hacer cada rol',
+        body: [
+          'Aqui activas o quitas permisos por categoria para proteger areas sensibles sin improvisar.',
+        ],
+        selector: tourSel(TOUR_TARGETS.roleManagement.permissions),
+        placement: 'left',
+      },
+    ],
+  },
+};
+
 const invoiceSyncModule: TourModule = {
   id: 'invoice-sync',
   title: 'Sync de facturas',
@@ -988,9 +1274,10 @@ const customersModule: TourModule = {
     steps: [
       {
         id: 'c1',
-        title: 'Aqui administras tu base de clientes',
+        title: 'Aquí administras tu base de clientes',
         body: [
           'La lista y el detalle te ayudan a revisar historial, saldo y datos de contacto.',
+          'Puedes crear nuevos clientes o editar los existentes.',
         ],
         selector: tourSel(TOUR_TARGETS.customers.panel),
         route: '/customers',
@@ -998,21 +1285,496 @@ const customersModule: TourModule = {
       },
       {
         id: 'c2',
-        title: 'Empieza por la lista',
+        title: 'Usa los filtros para encontrar clientes',
         body: [
-          'Busca, filtra y elige un cliente para abrir su detalle.',
+          'Busca por nombre, filtra por estado o ajusta la vista.',
+          'Escribe algo para probar cómo funciona el filtro.',
         ],
-        selector: tourSel(TOUR_TARGETS.customers.table),
-        placement: 'top',
+        selector: tourSel(TOUR_TARGETS.customers.filters),
+        placement: 'bottom',
+        allowInteraction: true,
       },
       {
         id: 'c3',
+        title: 'Empieza por la lista',
+        body: [
+          'Busca, filtra y elige un cliente para abrir su detalle.',
+          'Haz clic en un cliente para ver su información completa.',
+        ],
+        selector: tourSel(TOUR_TARGETS.customers.table),
+        placement: 'top',
+        allowInteraction: true,
+      },
+      {
+        id: 'c4',
         title: 'El detalle concentra el contexto',
         body: [
-          'Historial, pagos y seguimiento viven aqui cuando seleccionas un cliente.',
+          'Historial, pagos y seguimiento viven aquí cuando seleccionas un cliente.',
+          'Puedes ver saldo, dirección y registrar pagos.',
         ],
         selector: tourSel(TOUR_TARGETS.customers.detail),
         placement: 'left',
+        allowInteraction: true,
+      },
+      {
+        id: 'c5',
+        title: 'Crea un nuevo cliente',
+        body: [
+          'Si necesitas agregar alguien nuevo, usa este botón.',
+          'El modal te guiará por los datos básicos necesarios.',
+        ],
+        targets: {
+          desktop: { selector: tourSel(TOUR_TARGETS.customers.primaryAction.desktop), placement: 'left' },
+          mobile: { selector: tourSel(TOUR_TARGETS.customers.primaryAction.mobile), placement: 'bottom' },
+        },
+        placement: 'left',
+        allowInteraction: true,
+        waitFor: tourSel(TOUR_TARGETS.customers.modal.form),
+      },
+      {
+        id: 'c6',
+        title: 'Completa los datos básicos',
+        body: [
+          'Nombre y contacto son los campos mínimos necesarios.',
+          'Puedes agregar más detalles después si lo requieres.',
+        ],
+        selector: tourSel(TOUR_TARGETS.customers.modal.form),
+        waitFor: tourSel(TOUR_TARGETS.customers.modal.form),
+        placement: 'right',
+        allowInteraction: true,
+      },
+    ],
+  },
+};
+
+const quotesModule: TourModule = {
+  id: 'quotes',
+  title: 'Cotizaciones',
+  description: 'Prepara propuestas y conviértelas a venta cuando el cliente confirme.',
+  route: '/quotes',
+  tour: {
+    id: 'quotes.expert',
+    title: 'Crear y convertir cotizaciones con contexto',
+    duration: '5 min',
+    steps: [
+      {
+        id: 'q1',
+        title: 'Aqui vives las propuestas antes de vender',
+        body: [
+          'Cotizaciones sirve para proponer, negociar y decidir antes de generar la venta real.',
+        ],
+        selector: tourSel(TOUR_TARGETS.quotes.panel),
+        route: '/quotes',
+        placement: 'bottom',
+      },
+      {
+        id: 'q2',
+        title: 'Filtra por estado, fecha o cliente',
+        body: [
+          'Usa estos filtros para separar borradores, propuestas enviadas, vencidas o convertidas.',
+        ],
+        selector: tourSel(TOUR_TARGETS.quotes.filters),
+        placement: 'bottom',
+      },
+      {
+        id: 'q3',
+        title: 'Empieza una nueva cotizacion desde aqui',
+        body: [
+          'Este acceso abre el flujo para crear la propuesta sin mezclarla aun con ventas reales.',
+        ],
+        selector: tourSel(TOUR_TARGETS.quotes.primaryAction),
+        placement: 'left',
+        allowInteraction: true,
+      },
+      {
+        id: 'q4',
+        title: 'Primero define el contexto comercial',
+        body: [
+          'Cliente, emision, vencimiento y estado te ayudan a dejar clara la propuesta desde el inicio.',
+        ],
+        selector: tourSel(TOUR_TARGETS.quotes.modal.context),
+        waitFor: tourSel(TOUR_TARGETS.quotes.modal.context),
+        placement: 'bottom',
+      },
+      {
+        id: 'q5',
+        title: 'Los items explican exactamente lo que propones',
+        body: [
+          'Puedes mezclar productos del catalogo con conceptos libres y dejar el total listo para negociar.',
+        ],
+        selector: tourSel(TOUR_TARGETS.quotes.modal.items),
+        waitFor: tourSel(TOUR_TARGETS.quotes.modal.items),
+        placement: 'top',
+      },
+      {
+        id: 'q6',
+        title: 'Guarda la propuesta cuando ya este clara',
+        body: [
+          'Despues podras enviarla, ajustar su estado o convertirla explicitamente a venta cuando el cliente confirme.',
+        ],
+        selector: tourSel(TOUR_TARGETS.quotes.modal.confirm),
+        waitFor: tourSel(TOUR_TARGETS.quotes.modal.confirm),
+        placement: 'bottom',
+      },
+    ],
+  },
+};
+
+const suppliersModule: TourModule = {
+  id: 'suppliers',
+  title: 'Proveedores',
+  description: 'Centraliza terceros operativos, compras asociadas y contexto pendiente.',
+  route: '/suppliers',
+  tour: {
+    id: 'suppliers.expert',
+    title: 'Organizar proveedores con contexto operativo',
+    duration: '4 min',
+    steps: [
+      {
+        id: 'sp1',
+        title: 'Aqui administras tus proveedores operativos',
+        body: [
+          'Esta vista te ayuda a unificar abastecimiento, compras relacionadas y saldo operativo por proveedor.',
+        ],
+        selector: tourSel(TOUR_TARGETS.suppliers.panel),
+        route: '/suppliers',
+        placement: 'bottom',
+      },
+      {
+        id: 'sp2',
+        title: 'Filtra antes de entrar al detalle',
+        body: [
+          'Busca por nombre o contacto y decide si necesitas incluir proveedores inactivos.',
+        ],
+        selector: tourSel(TOUR_TARGETS.suppliers.filters),
+        placement: 'bottom',
+      },
+      {
+        id: 'sp3',
+        title: 'La tabla resume compras y saldos',
+        body: [
+          'Aqui ves actividad reciente, compras registradas y obligaciones abiertas del proveedor.',
+        ],
+        selector: tourSel(TOUR_TARGETS.suppliers.table),
+        placement: 'top',
+      },
+      {
+        id: 'sp4',
+        title: 'Crea un proveedor cuando realmente lo necesites',
+        body: [
+          'Usa este acceso para dejar listo el tercero antes de registrar compras o obligaciones operativas.',
+        ],
+        selector: tourSel(TOUR_TARGETS.suppliers.primaryAction),
+        placement: 'left',
+        allowInteraction: true,
+      },
+      {
+        id: 'sp5',
+        title: 'Captura la identidad y el contacto base',
+        body: [
+          'Nombre, contacto y notas bastan para dejar el proveedor listo sin sobrecargar el formulario.',
+        ],
+        selector: tourSel(TOUR_TARGETS.suppliers.modal.form),
+        waitFor: tourSel(TOUR_TARGETS.suppliers.modal.form),
+        placement: 'bottom',
+      },
+      {
+        id: 'sp6',
+        title: 'Guarda y vuelve al flujo operativo',
+        body: [
+          'Despues podras asociar este proveedor en compras, obligaciones o seguimiento detallado.',
+        ],
+        selector: tourSel(TOUR_TARGETS.suppliers.modal.confirm),
+        waitFor: tourSel(TOUR_TARGETS.suppliers.modal.confirm),
+        placement: 'bottom',
+      },
+    ],
+  },
+};
+
+const rawPurchasesModule: TourModule = {
+  id: 'raw-purchases',
+  title: 'Compras de insumos',
+  description: 'Registra abastecimiento y confirma su impacto en bodega y obligaciones.',
+  route: '/raw-purchases',
+  tour: {
+    id: 'raw-purchases.expert',
+    title: 'Registrar compras de insumos con trazabilidad',
+    duration: '5 min',
+    steps: [
+      {
+        id: 'rp1',
+        title: 'Este modulo une compra, stock y traza financiera',
+        body: [
+          'Aqui registras compras de insumos antes de confirmar su impacto en bodega, caja o por pagar.',
+        ],
+        selector: tourSel(TOUR_TARGETS.rawPurchases.panel),
+        route: '/raw-purchases',
+        placement: 'bottom',
+      },
+      {
+        id: 'rp2',
+        title: 'Empieza por búsqueda y estado',
+        body: [
+          'Usa estos filtros para separar borradores, compras confirmadas o registros cancelados.',
+        ],
+        selector: tourSel(TOUR_TARGETS.rawPurchases.filters),
+        placement: 'bottom',
+      },
+      {
+        id: 'rp3',
+        title: 'Abre un borrador de compra desde aqui',
+        body: [
+          'Primero guardas el borrador y luego decides si la confirmacion impacta caja o genera una obligación operativa.',
+        ],
+        selector: tourSel(TOUR_TARGETS.rawPurchases.primaryAction),
+        placement: 'left',
+        allowInteraction: true,
+      },
+      {
+        id: 'rp4',
+        title: 'Define fecha, proveedor y contexto',
+        body: [
+          'Esta cabecera deja claro qué se está comprando, cuándo y con qué proveedor.',
+        ],
+        selector: tourSel(TOUR_TARGETS.rawPurchases.modal.form),
+        waitFor: tourSel(TOUR_TARGETS.rawPurchases.modal.form),
+        placement: 'bottom',
+      },
+      {
+        id: 'rp5',
+        title: 'Los items explican exactamente qué entra a bodega',
+        body: [
+          'Selecciona materias primas, cantidad y costo para que el total y la trazabilidad queden bien calculados.',
+        ],
+        selector: tourSel(TOUR_TARGETS.rawPurchases.modal.items),
+        waitFor: tourSel(TOUR_TARGETS.rawPurchases.modal.items),
+        placement: 'top',
+      },
+      {
+        id: 'rp6',
+        title: 'Guarda el borrador y confirma después',
+        body: [
+          'La confirmacion es el momento en que decides si la compra impacta caja o si queda por pagar.',
+        ],
+        selector: tourSel(TOUR_TARGETS.rawPurchases.modal.confirm),
+        waitFor: tourSel(TOUR_TARGETS.rawPurchases.modal.confirm),
+        placement: 'bottom',
+      },
+    ],
+  },
+};
+
+const recipesModule: TourModule = {
+  id: 'recipes',
+  title: 'Recetas',
+  description: 'Relaciona productos con insumos y registra consumos explícitos.',
+  route: '/recipes',
+  tour: {
+    id: 'recipes.expert',
+    title: 'Definir recetas y consumos con trazabilidad',
+    duration: '5 min',
+    steps: [
+      {
+        id: 'rc1',
+        title: 'Aqui defines la formula operativa del producto',
+        body: [
+          'Recetas conecta productos con materias primas para costear mejor y registrar consumos explícitos.',
+        ],
+        selector: tourSel(TOUR_TARGETS.recipes.panel),
+        route: '/recipes',
+        placement: 'bottom',
+      },
+      {
+        id: 'rc2',
+        title: 'Filtra por receta, producto o estado',
+        body: [
+          'Usa estos controles para encontrar fórmulas activas, inactivas o específicas de un producto.',
+        ],
+        selector: tourSel(TOUR_TARGETS.recipes.filters),
+        placement: 'bottom',
+      },
+      {
+        id: 'rc3',
+        title: 'Crea una receta nueva desde aqui',
+        body: [
+          'Este flujo sirve para definir la fórmula base antes de empezar a registrar consumos.',
+        ],
+        selector: tourSel(TOUR_TARGETS.recipes.primaryAction),
+        placement: 'left',
+        allowInteraction: true,
+      },
+      {
+        id: 'rc4',
+        title: 'Primero define producto y nombre',
+        body: [
+          'Empieza identificando claramente para qué producto aplica la receta y cómo la reconocerá tu equipo.',
+        ],
+        selector: tourSel(TOUR_TARGETS.recipes.modal.form),
+        waitFor: tourSel(TOUR_TARGETS.recipes.modal.form),
+        placement: 'bottom',
+      },
+      {
+        id: 'rc5',
+        title: 'Los insumos describen la formula por unidad',
+        body: [
+          'Selecciona materia prima, cantidad y notas para dejar lista la base de costo y consumo.',
+        ],
+        selector: tourSel(TOUR_TARGETS.recipes.modal.items),
+        waitFor: tourSel(TOUR_TARGETS.recipes.modal.items),
+        placement: 'top',
+      },
+      {
+        id: 'rc6',
+        title: 'Guarda la receta cuando ya esté clara',
+        body: [
+          'Luego podrás revisarla, costearla mejor o usarla para registrar consumos explícitos con trazabilidad.',
+        ],
+        selector: tourSel(TOUR_TARGETS.recipes.modal.confirm),
+        waitFor: tourSel(TOUR_TARGETS.recipes.modal.confirm),
+        placement: 'bottom',
+      },
+    ],
+  },
+};
+
+const costCalculatorModule: TourModule = {
+  id: 'cost-calculator',
+  title: 'Calculadora de costos',
+  description: 'Simula costos sin mover stock ni tocar historial.',
+  route: '/cost-calculator',
+  tour: {
+    id: 'cost-calculator.expert',
+    title: 'Simular costos antes de cambiar la operación',
+    duration: '4 min',
+    steps: [
+      {
+        id: 'cc1',
+        title: 'Esta herramienta sirve para simular con seguridad',
+        body: [
+          'La calculadora te ayuda a decidir antes de tocar recetas, stock o catálogo.',
+        ],
+        selector: tourSel(TOUR_TARGETS.costCalculator.panel),
+        route: '/cost-calculator',
+        placement: 'bottom',
+      },
+      {
+        id: 'cc2',
+        title: 'Empieza definiendo qué quieres costear',
+        body: [
+          'Puedes costear sobre un producto existente o simular primero con una referencia libre.',
+        ],
+        selector: tourSel(TOUR_TARGETS.costCalculator.scope),
+        placement: 'bottom',
+      },
+      {
+        id: 'cc3',
+        title: 'Las materias primas son la base del costeo',
+        body: [
+          'Selecciona insumos, cantidades y costos manuales solo cuando necesites corregir una referencia temporal.',
+        ],
+        selector: tourSel(TOUR_TARGETS.costCalculator.materials),
+        placement: 'top',
+      },
+      {
+        id: 'cc4',
+        title: 'Luego define extras y calcula',
+        body: [
+          'Empaque, mano de obra y precio deseado te ayudan a comparar escenarios antes de guardar algo definitivo.',
+        ],
+        selector: tourSel(TOUR_TARGETS.costCalculator.actions),
+        placement: 'top',
+      },
+      {
+        id: 'cc5',
+        title: 'Lee el resultado antes de guardar',
+        body: [
+          'Aquí comparas costo total, costo unitario, precio sugerido y faltantes antes de aplicar cambios reales.',
+        ],
+        selector: tourSel(TOUR_TARGETS.costCalculator.result),
+        placement: 'left',
+      },
+    ],
+  },
+};
+
+const reportsModule: TourModule = {
+  id: 'reports',
+  title: 'Reportes',
+  description: 'Genera y personaliza reportes para entender resultados y tomar decisiones.',
+  route: '/reports',
+  tour: {
+    id: 'reports.expert',
+    title: 'Generar reportes útiles',
+    duration: '5 min',
+    steps: [
+      {
+        id: 'r1',
+        title: 'Aquí analizas tus resultados',
+        body: [
+          'Esta pantalla te ayuda a revisar resultados, comparativos y rentabilidad sin improvisar.',
+          'Puedes generar reportes personalizados según lo que necesites analizar.',
+        ],
+        selector: tourSel(TOUR_TARGETS.reports.panel),
+        route: '/reports',
+        placement: 'bottom',
+      },
+      {
+        id: 'r2',
+        title: 'Usa los filtros para acotar el análisis',
+        body: [
+          'Filtra por periodo, tipo de reporte o categorías para enfocarte en lo relevante.',
+          'Escribe algo o selecciona opciones para probar cómo funciona.',
+        ],
+        selector: tourSel(TOUR_TARGETS.reports.filters),
+        placement: 'bottom',
+        allowInteraction: true,
+      },
+      {
+        id: 'r3',
+        title: 'Cambia de tipo de reporte',
+        body: [
+          'Ventas, gastos, rentabilidad y otros análisis están disponibles.',
+          'Prueba cambiando de pestaña para ver las diferentes vistas.',
+        ],
+        selector: tourSel(TOUR_TARGETS.reports.tabs.sales),
+        placement: 'bottom',
+        allowInteraction: true,
+      },
+      {
+        id: 'r4',
+        title: 'Genera el reporte personalizado',
+        body: [
+          'Cuando tengas los filtros listos, genera el reporte para ver los resultados.',
+          'El sistema procesará los datos y mostrará el análisis correspondiente.',
+        ],
+        selector: tourSel(TOUR_TARGETS.reports.generate),
+        placement: 'left',
+        allowInteraction: true,
+        waitFor: tourSel(TOUR_TARGETS.reports.content),
+      },
+      {
+        id: 'r5',
+        title: 'Revisa los resultados del reporte',
+        body: [
+          'Aquí verás los datos procesados según los filtros que aplicaste.',
+          'Puedes hacer clic en elementos para ver más detalle.',
+        ],
+        selector: tourSel(TOUR_TARGETS.reports.content),
+        waitFor: tourSel(TOUR_TARGETS.reports.content),
+        placement: 'top',
+        allowInteraction: true,
+      },
+      {
+        id: 'r6',
+        title: 'Exporta cuando necesites compartir',
+        body: [
+          'Usa esta opción para exportar el reporte a Excel o PDF.',
+          'Útil para presentaciones o análisis externos.',
+        ],
+        selector: tourSel(TOUR_TARGETS.reports.export),
+        placement: 'left',
+        allowInteraction: true,
       },
     ],
   },
@@ -1030,9 +1792,10 @@ const ordersModule: TourModule = {
     steps: [
       {
         id: 'o1',
-        title: 'Panel de pedidos',
+        title: 'Panel de seguimiento de pedidos',
         body: [
-          'Este modulo sirve para seguir compromisos y estados del pedido.',
+          'Este módulo sirve para seguir compromisos y estados del pedido.',
+          'Puedes ver Kanban o Lista según lo que necesites hacer.',
         ],
         selector: tourSel(TOUR_TARGETS.orders.panel),
         route: '/orders',
@@ -1040,20 +1803,90 @@ const ordersModule: TourModule = {
       },
       {
         id: 'o2',
-        title: 'Crea un pedido desde aqui',
+        title: 'Crea un nuevo pedido',
         body: [
-          'Este boton abre el flujo para cargar un pedido nuevo.',
+          'Este botón abre el flujo para cargar un pedido nuevo.',
+          'Haz clic para continuar.',
         ],
         selector: tourSel(TOUR_TARGETS.orders.primaryAction),
         placement: 'left',
+        allowInteraction: true,
+        waitFor: tourSel(TOUR_TARGETS.orders.modal.search),
       },
       {
         id: 'o3',
-        title: 'El tablero muestra el avance',
+        title: 'Busca y selecciona productos',
         body: [
-          'Usa el tablero para revisar cada estado del proceso.',
+          'Escribe para encontrar productos rápidos y agrégalos al carrito.',
+          'El sistema mostrará stock y precios.',
+        ],
+        selector: tourSel(TOUR_TARGETS.orders.modal.search),
+        waitFor: tourSel(TOUR_TARGETS.orders.modal.search),
+        placement: 'bottom',
+        allowInteraction: true,
+      },
+      {
+        id: 'o4',
+        title: 'Revisa el carrito',
+        body: [
+          'Aquí puedes ajustar cantidades o eliminar antes de continuar.',
+          'El total se actualiza en tiempo real.',
+        ],
+        selector: tourSel(TOUR_TARGETS.orders.modal.cart),
+        waitFor: tourSel(TOUR_TARGETS.orders.modal.cart),
+        placement: 'right',
+        allowInteraction: true,
+      },
+      {
+        id: 'o5',
+        title: 'Asigna el cliente',
+        body: [
+          'Selecciona el cliente que realiza el pedido.',
+          'Puedes buscar por nombre o ver los recientes.',
+        ],
+        selector: tourSel(TOUR_TARGETS.orders.modal.client),
+        waitFor: tourSel(TOUR_TARGETS.orders.modal.client),
+        placement: 'bottom',
+        allowInteraction: true,
+      },
+      {
+        id: 'o6',
+        title: 'Gestiona la configuración del módulo',
+        body: [
+          'Aquí ajustas columnas, estados y opciones del tablero.',
+          'Útil para adaptar el flujo a tu operación.',
+        ],
+        selector: tourSel(TOUR_TARGETS.orders.settings),
+        placement: 'left',
+      },
+      {
+        id: 'o7',
+        title: 'Usa filtros para reducir el ruido',
+        body: [
+          'Filtra por estado, texto o periodo para encontrar pedidos específicos.',
+          'En móvil está dentro del menú de filtros.',
+        ],
+        selector: tourSel(TOUR_TARGETS.orders.filters),
+        placement: 'bottom',
+      },
+      {
+        id: 'o8',
+        title: 'Revisa el tablero Kanban',
+        body: [
+          'Arrastra pedidos entre columnas para cambiar su estado.',
+          'Ideal para seguimiento visual rápido.',
         ],
         selector: tourSel(TOUR_TARGETS.orders.board),
+        placement: 'top',
+      },
+      {
+        id: 'o9',
+        title: 'Usa la lista para detalles',
+        body: [
+          'La vista lista muestra más datos y permite búsquedas rápidas.',
+          'Útil para auditoría o acciones masivas.',
+        ],
+        selector: tourSel(TOUR_TARGETS.orders.card),
         placement: 'top',
       },
     ],
@@ -1066,17 +1899,25 @@ export const tourModules: Record<string, TourModule> = {
   'onboarding.business': onboardingBusiness,
   dashboard: dashboardModule,
   sales: salesModule,
-  customers: customersModule,
   payments: paymentsModule,
   expenses: expensesModule,
   products: productsModule,
+  customers: customersModule,
+  quotes: quotesModule,
+  suppliers: suppliersModule,
+  'raw-purchases': rawPurchasesModule,
+  recipes: recipesModule,
+  'cost-calculator': costCalculatorModule,
   invoices: invoicesModule,
   'invoice-receivables': invoiceReceivablesModule,
   'raw-inventory': rawInventoryModule,
   settings: settingsModule,
   personalization: personalizationModule,
+  treasury: treasuryModule,
+  'team-roles': teamRolesModule,
   'invoice-sync': invoiceSyncModule,
   orders: ordersModule,
+  reports: reportsModule,
 };
 
 export const tours: Record<string, Tour> = Object.values(tourModules).reduce((acc, module) => {

@@ -37,14 +37,14 @@ export const Modal: React.FC<ModalProps> = ({
   const modalContent = (
     <div className="fixed inset-0 z-[9999] flex items-end justify-center p-0 sm:items-center sm:p-6">
       <div 
-        className="fixed inset-0 bg-slate-950/40 dark:bg-black/70 transition-opacity backdrop-blur-sm" 
+        className="app-overlay-backdrop fixed inset-0 transition-opacity" 
         onClick={onClose}
         aria-hidden="true"
       />
       
       <div 
         className={cn(
-          "app-surface relative flex max-h-[calc(100dvh-0.5rem)] w-full flex-col overflow-hidden rounded-t-[28px] shadow-2xl transition-all sm:max-h-[90vh] sm:rounded-[28px]",
+          "app-surface relative flex max-h-[calc(100dvh-0.5rem)] w-full flex-col overflow-hidden rounded-t-[28px] shadow-[var(--app-shadow-strong)] transition-all sm:max-h-[90vh] sm:rounded-[28px]",
           maxWidth,
           className
         )}

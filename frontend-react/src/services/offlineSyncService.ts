@@ -35,6 +35,7 @@ import {
   buildPendingInvoiceNumberLabel,
 } from './invoiceOfflineState';
 import { isBackendCapabilitySupported } from '../config/backendCapabilities';
+import { hasPermissionMatch } from '../auth/permissions';
 
 export const OFFLINE_SYNC_EVENT = 'encaja-offline-changed';
 export const OFFLINE_SNAPSHOT_APPLIED_EVENT = 'encaja-offline-snapshot-applied';
@@ -168,15 +169,15 @@ const hasBusinessPermission = (business: Business | null | undefined, permission
   if (!permission) return true;
 
   const user = getStoredUser();
-  const permissions = business?.permissions || [];
+  const permissions = Array.from(new Set([
+    ...(business?.permissions || []),
+    ...(business?.permissions_canonical || []),
+  ]));
   const isOwner = !!user?.id && business?.user_id === user.id;
   const isAdmin = !!(user?.is_admin || user?.permissions?.admin);
 
   if (isOwner || isAdmin) return true;
-  if (permissions.includes('*') || permissions.includes('admin.*') || permissions.includes(permission)) return true;
-
-  const [scope] = permission.split('.');
-  return permissions.includes(`${scope}.*`);
+  return hasPermissionMatch(permissions, permission);
 };
 
 const canSnapshotResource = (
@@ -1541,21 +1542,21 @@ export const offlineSyncService = {
       this.cacheBusiness(business),
     ]);
 
-    if (canSnapshotResource(business, { moduleKey: 'customers', permission: 'customers.read' })) {
+    if (canSnapshotResource(business, { moduleKey: 'customers', permission: 'customers.view' })) {
       try {
         const customersPayload = await authorizedJsonRequest<{ customers: Customer[] }>(`/businesses/${businessId}/customers`);
         await this.cacheCustomers(businessId, customersPayload.customers || []);
       } catch {}
     }
 
-    if (canSnapshotResource(business, { moduleKey: 'products', permission: 'products.read' })) {
+    if (canSnapshotResource(business, { moduleKey: 'products', permission: 'products.view' })) {
       try {
         const productsPayload = await authorizedJsonRequest<{ products: Product[] }>(`/businesses/${businessId}/products`);
         await this.cacheProducts(businessId, productsPayload.products || []);
       } catch {}
     }
 
-    if (canSnapshotResource(business, { moduleKey: 'sales', permission: 'sales.read' })) {
+    if (canSnapshotResource(business, { moduleKey: 'sales', permission: 'sales.view' })) {
       try {
         const salesPayload = await authorizedJsonRequest<{ sales: Sale[] }>(`/businesses/${businessId}/sales?include_items=true`);
         await this.cacheSales(businessId, salesPayload.sales || []);
@@ -1568,14 +1569,14 @@ export const offlineSyncService = {
       }
     }
 
-    if (canSnapshotResource(business, { moduleKey: 'accounts_receivable', permission: 'payments.read' })) {
+    if (canSnapshotResource(business, { moduleKey: 'accounts_receivable', permission: 'receivables.view' })) {
       try {
         const paymentsPayload = await authorizedJsonRequest<{ payments: Payment[] }>(`/businesses/${businessId}/payments?include_allocations=true`);
         await this.cachePayments(businessId, paymentsPayload.payments || []);
       } catch {}
     }
 
-    if (canSnapshotResource(business, { permission: 'treasury.read' }) && isBackendCapabilitySupported('treasury')) {
+    if (canSnapshotResource(business, { permission: 'treasury.view' }) && isBackendCapabilitySupported('treasury')) {
       try {
         const treasuryPayload = await authorizedJsonRequest<{ accounts: TreasuryAccount[] }>(`/businesses/${businessId}/treasury/accounts?include_inactive=1`);
         await this.cacheTreasuryAccounts(businessId, treasuryPayload.accounts || []);

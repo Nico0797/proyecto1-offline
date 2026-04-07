@@ -109,7 +109,7 @@ export const Dashboard = () => {
   const canOpenPaymentsPanel = visibleItems.some((item) => item.path === '/payments');
   const canOpenRawInventoryPanel = visibleItems.some((item) => item.path === '/raw-inventory');
   const needsBaseConfigurationReview = businessBaseState.needsReview;
-  const canViewBalance = hasReportsModule && hasPermission('summary.financial') && isBackendCapabilitySupported('treasury');
+  const canViewBalance = hasReportsModule && hasPermission('analytics.view') && isBackendCapabilitySupported('treasury');
   const canViewAnalytics = hasReportsModule && canOpenReportsPanel;
 
   useEffect(() => {
@@ -222,9 +222,9 @@ export const Dashboard = () => {
 
     setLoading(true);
     try {
-      const canViewSummary = hasPermission('summary.read') || hasPermission('summary.dashboard');
-      const canViewRawInventory = hasRawInventoryModule && hasPermission('raw_inventory.read') && isBackendCapabilitySupported('raw_inventory');
-      const canViewProfitability = hasReportsModule && canOpenReportsPanel && hasPermission('sales.read') && isBackendCapabilitySupported('profitability');
+      const canViewSummary = hasPermission('reports.view');
+      const canViewRawInventory = hasRawInventoryModule && hasPermission('raw_inventory.view') && isBackendCapabilitySupported('raw_inventory');
+      const canViewProfitability = hasReportsModule && canOpenReportsPanel && hasPermission('sales.view') && isBackendCapabilitySupported('profitability');
       const monthRange = canViewProfitability ? getPeriodRange('month') : null;
 
       const [dashboardData, remindersData, lowStockCount, profitSummary] = await Promise.all([
@@ -278,8 +278,9 @@ export const Dashboard = () => {
       if (!data.summary || typeof data.summary !== 'object') data.summary = {};
       const summary = data.summary;
 
-      const canViewSales = hasSalesModule && hasPermission('sales.read');
-      const canViewExpenses = hasPermission('expenses.read');
+      const canViewSales = hasSalesModule && hasPermission('sales.view');
+      const canViewExpenses = hasPermission('expenses.view');
+
       const needsSalesFallback = (summary.sales == null || typeof summary.sales.total !== 'number') && canViewSales;
       const needsExpensesFallback = (summary.expenses == null || typeof summary.expenses.total !== 'number') && canViewExpenses;
 

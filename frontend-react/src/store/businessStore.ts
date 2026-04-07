@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import { Business, BusinessModuleKey, BusinessModuleState } from '../types';
 import api from '../services/api';
 import { offlineSyncService } from '../services/offlineSyncService';
+import { useAccountAccessStore } from './accountAccessStore';
 
 // Helper to get initial active business from localStorage
 const getInitialActiveBusiness = (): Business | null => {
@@ -97,6 +98,7 @@ export const useBusinessStore = create<BusinessState>((set, get) => ({
         });
         const fetchedBusinesses = response.data.businesses || [];
         const fetchedActiveBusiness = response.data.active_business || null;
+        useAccountAccessStore.getState().setAccess(response.data.account_access || null);
         await get().hydrateBootstrap(fetchedBusinesses, fetchedActiveBusiness);
       } catch (error: any) {
         if (error?.response?.status === 401) {

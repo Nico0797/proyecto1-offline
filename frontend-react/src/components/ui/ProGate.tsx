@@ -29,26 +29,22 @@ export const ProGate: React.FC<ProGateProps> = ({
 
   // If user cannot upgrade (team_member), simply hide content or show generic message
   if (!canUpgrade) {
-    if (mode === 'redirect') {
-      return (
-        <div className="flex flex-col items-center justify-center h-full p-8 text-center space-y-4">
-          <div className="p-4 bg-gray-100 dark:bg-gray-800 rounded-full">
-            <Lock className="w-8 h-8 text-gray-400" />
-          </div>
-          <h3 className="text-xl font-semibold text-gray-900 dark:text-white">
-            Acceso Restringido
-          </h3>
-          <p className="text-gray-500 dark:text-gray-400 max-w-sm">
-            Esta función no está disponible en el plan actual de este negocio.
-          </p>
-          <Button onClick={() => navigate('/')}>
-            Volver al Inicio
-          </Button>
+    return (
+      <div className="flex flex-col items-center justify-center h-full p-8 text-center space-y-4">
+        <div className="p-4 bg-gray-100 dark:bg-gray-800 rounded-full">
+          <Lock className="w-8 h-8 text-gray-400" />
         </div>
-      );
-    }
-    // Block mode - Continue to render blocked UI instead of null
-    // return null; 
+        <h3 className="text-xl font-semibold text-gray-900 dark:text-white">
+          Acceso Restringido
+        </h3>
+        <p className="text-gray-500 dark:text-gray-400 max-w-sm">
+          Esta función no está disponible en el plan actual de este negocio.
+        </p>
+        <Button onClick={() => navigate('/dashboard')}>
+          Volver al inicio
+        </Button>
+      </div>
+    );
   }
 
   if (mode === 'redirect') {

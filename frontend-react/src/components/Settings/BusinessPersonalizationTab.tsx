@@ -14,6 +14,7 @@ import {
   getEnabledBusinessModules,
   getMissingRecommendedModules,
 } from '../../config/businessPersonalization';
+import { applyPresetToBusinessSettings } from '../../config/businessPresets';
 import { BUSINESS_NAVIGATION_ITEMS } from '../../navigation/businessNavigation';
 import { useNavigationPreferences } from '../../store/navigationPreferences.store';
 import { cn } from '../../utils/cn';
@@ -42,8 +43,7 @@ const buildModulesFormState = (modules?: BusinessModuleState[] | null): Record<B
 export const BusinessPersonalizationTab = () => {
   const { user } = useAuthStore();
   const { activeBusiness, updateBusiness, updateBusinessModules } = useBusinessStore();
-  const { isOwner, hasPermission, hasModule, canAccess, subscriptionPlan } = useAccess();
-  const canManageBusiness = !!activeBusiness && (isOwner || hasPermission('business.update'));
+  const { hasPermission, hasModule, canAccess, subscriptionPlan, canManageBusinessExperience: canManageBusiness } = useAccess();
   const baseState = useMemo(() => getBusinessBaseState(activeBusiness), [activeBusiness]);
   const appliedBusinessType = baseState.effectiveBusinessType;
   const appliedPreset = BUSINESS_TYPE_PRESETS[appliedBusinessType];
@@ -281,6 +281,23 @@ export const BusinessPersonalizationTab = () => {
 
     try {
       setSavingPreset(true);
+      
+      // Apply new preset-based configuration
+      const presetBasedSettings = applyPresetToBusinessSettings(
+        activeBusiness.settings || {},
+        businessType,
+        {
+          applyModules: true,
+          applyOnboarding: true,
+        }
+      );
+      
+      // Update business with new preset settings
+      await updateBusiness(activeBusiness.id, {
+        settings: presetBasedSettings,
+      });
+      
+      // Apply navigation preferences
       const result = await applyBusinessTypeConfiguration({
         business: activeBusiness,
         businessType,
@@ -291,6 +308,7 @@ export const BusinessPersonalizationTab = () => {
         updateBusiness,
         updateBusinessModules,
       });
+      
       setSelectedBusinessType(businessType);
       if (navigationMode === 'replace') {
         toast.success('La experiencia recomendada quedó aplicada y el menú volvió a su orden sugerido.');
@@ -325,7 +343,7 @@ export const BusinessPersonalizationTab = () => {
   }
 
   return (
-    <div className="space-y-5 max-w-4xl animate-in fade-in duration-300">
+    <div className="space-y-5 max-w-4xl animate-in fade-in duration-300" data-tour="settings.personalizationPanel">
       <div className="rounded-2xl border border-gray-700 bg-gray-800 p-6">
         <h3 className="flex items-center gap-2 text-xl font-bold text-white">
           <Sparkles className="w-5 h-5 text-amber-400" />
@@ -384,7 +402,7 @@ export const BusinessPersonalizationTab = () => {
         </div>
       )}
 
-      <div className="rounded-2xl border border-gray-700 bg-gray-800 p-6">
+      <div className="rounded-2xl border border-gray-700 bg-gray-800 p-6" data-tour="settings.personalizationBase">
         <div className="flex items-center gap-2">
           <Store className="w-5 h-5 text-blue-400" />
           <h4 className="text-lg font-semibold text-white">Configuración recomendada por tipo de negocio</h4>
@@ -492,7 +510,7 @@ export const BusinessPersonalizationTab = () => {
             )}
           </div>
 
-          <div className="rounded-2xl border border-blue-400/10 bg-gray-900/40 p-4">
+          <div className="rounded-2xl border border-blue-400/10 bg-gray-900/40 p-4" data-tour="settings.personalizationPreview">
             <div className="text-xs uppercase tracking-wide text-blue-100/70">Lo primero que verás</div>
             <div className="mt-3 flex flex-wrap gap-2">
               {previewNavigationItems.map((item) => (
@@ -505,7 +523,7 @@ export const BusinessPersonalizationTab = () => {
         </div>
       </div>
 
-      <div className="rounded-2xl border border-gray-700 bg-gray-800 p-6">
+      <div className="rounded-2xl border border-gray-700 bg-gray-800 p-6" data-tour="settings.personalizationModules">
         <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
           <div>
             <h4 className="text-lg font-semibold text-white">Secciones que usa tu negocio</h4>
@@ -698,7 +716,7 @@ export const BusinessPersonalizationTab = () => {
         </div>
       </div>
 
-      <div className="rounded-2xl border border-gray-700 bg-gray-800 p-4">
+      <div className="rounded-2xl border border-gray-700 bg-gray-800 p-4" data-tour="settings.personalizationMenu">
         <button
           type="button"
           onClick={() => setShowAdvancedMenuOptions((current) => !current)}

@@ -11,6 +11,7 @@ import type { Sale, Expense, Customer } from '../types';
 import api from './api';
 import { buildBusinessExpensesQueryParams, getBusinessExpensesPath } from './businessApiRoutes';
 import { balanceService } from './balanceService';
+import { requestGeneratedFile, type DownloadedFilePayload } from '../utils/downloadHelper';
 
 type AnalyticsDatasetKey = 'sales' | 'expenses' | 'customers' | 'debtors';
 
@@ -71,10 +72,10 @@ class AnalyticsService {
   private async fetchRawData(businessId: number, startDate: string, endDate: string): Promise<RawAnalyticsResult> {
     try {
       const access = getAccessSnapshot();
-      const canAccessSales = access.hasModule('sales') && access.hasPermission('sales.read');
-      const canAccessExpenses = access.hasPermission('expenses.read');
-      const canAccessCustomers = access.hasModule('customers') && access.hasPermission('customers.read');
-      const canAccessReceivables = access.hasModule('accounts_receivable') && access.hasPermission('payments.read');
+      const canAccessSales = access.hasModule('sales') && access.hasPermission('sales.view');
+      const canAccessExpenses = access.hasPermission('expenses.view');
+      const canAccessCustomers = access.hasModule('customers') && access.hasPermission('customers.view');
+      const canAccessReceivables = access.hasModule('accounts_receivable') && access.hasPermission('receivables.view');
 
       const requests: Array<Promise<any>> = [
         canAccessSales
@@ -579,7 +580,7 @@ class AnalyticsService {
    * @param reportType 'sales' | 'expenses' | 'combined'
    * @param params Query parameters (startDate, endDate, type for combined)
    */
-  async downloadExportReport(businessId: number, reportType: 'sales' | 'expenses' | 'combined', params: any = {}): Promise<Blob> {
+  async downloadExportReport(businessId: number, reportType: 'sales' | 'expenses' | 'combined', params: any = {}): Promise<DownloadedFilePayload> {
     let endpoint = '';
     
     if (reportType === 'sales') {
@@ -591,11 +592,7 @@ class AnalyticsService {
     }
 
     try {
-        const response = await api.get(endpoint, {
-          params: { ...params, direct: '1' },
-          responseType: 'blob'
-        });
-        return response.data;
+        return await requestGeneratedFile(endpoint, params, 'reporte.xlsx');
 
     } catch (error) {
         console.error('Error downloading export report:', error);

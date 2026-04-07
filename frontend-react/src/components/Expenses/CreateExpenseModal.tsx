@@ -107,7 +107,12 @@ export const CreateExpenseModal: React.FC<CreateExpenseModalProps> = ({
   };
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} title={editingExpense ? 'Editar gasto' : 'Registrar gasto'}>
+    <Modal
+      isOpen={isOpen}
+      onClose={onClose}
+      title={editingExpense ? 'Editar Gasto' : 'Registrar Gasto'}
+      data-tour="expenses.modal.form"
+    >
       <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-5">
         {submitError ? (
           <FormAlert

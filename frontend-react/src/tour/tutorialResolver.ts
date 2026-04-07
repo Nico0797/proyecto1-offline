@@ -1,19 +1,14 @@
-import { isPlanAtLeast } from '../auth/plan';
 import { getTourById, type TourStep } from './tourRegistry';
 import { tutorialCatalog, type ResolvedTutorialSession, type TutorialCatalogEntry, type TutorialGuard, type TutorialStepRule } from './tutorialCatalog';
+import { resolveTutorialAvailability } from './tutorialEligibility';
 import type { TutorialRuntimeContext } from './tutorialContext';
 
 const canUseGuard = (guard: TutorialGuard | undefined, context: TutorialRuntimeContext) => {
-  if (!guard) return true;
-  if (guard.minimumPlan && !isPlanAtLeast(context.plan, guard.minimumPlan)) return false;
-  if (guard.moduleKey && !context.hasModule(guard.moduleKey)) return false;
-  if (guard.permission && !context.hasPermission(guard.permission)) return false;
-  if (guard.visibleRoute && !context.hasRoute(guard.visibleRoute)) return false;
-  if (guard.settingsSection && !context.hasSettingsSection(guard.settingsSection)) return false;
-  if (guard.feature && !context.canAccessFeature(guard.feature)) return false;
-  if (guard.capability && !context.hasCapability(guard.capability)) return false;
-  if (guard.commercialSection && !context.hasCommercialSection(guard.commercialSection)) return false;
-  return true;
+  return resolveTutorialAvailability({
+    rules: guard,
+    context,
+    trigger: 'catalog',
+  }).eligible;
 };
 
 const normalizeStep = (
@@ -23,13 +18,25 @@ const normalizeStep = (
   rule?: TutorialStepRule
 ): TourStep | null => {
   let selector = rule?.selector ?? step.selector;
+  let title = step.title;
+  let body = step.body;
 
   if (tutorialId === 'dashboard.expert' && step.id === 'db3') {
-    selector = context.dashboardVisibleTabs.has('balance')
-      ? selector
-      : context.dashboardVisibleTabs.has('analiticas')
-        ? '[data-tour="dashboard.tabs.analytics"]'
-        : '[data-tour="dashboard.tabs.hoy"]';
+    if (context.dashboardVisibleTabs.has('balance')) {
+      selector = selector;
+    } else if (context.dashboardVisibleTabs.has('analiticas')) {
+      selector = '[data-tour="dashboard.tabs.analytics"]';
+      title = 'Usa Analisis cuando necesites mas detalle';
+      body = [
+        'Si no tienes la vista de caja disponible, esta pestaña te ayuda a profundizar en tendencias y comparativos.',
+      ];
+    } else if (context.dashboardVisibleTabs.has('recordatorios')) {
+      selector = '[data-tour="dashboard.tabs.reminders"]';
+      title = 'Usa Recordatorios para hacer seguimiento';
+      body = [
+        'Cuando tu foco es seguimiento y pendientes, esta pestaña concentra lo que requiere accion del equipo.',
+      ];
+    }
   }
 
   if (tutorialId === 'settings.expert' && step.id === 'st4') {
@@ -41,6 +48,8 @@ const normalizeStep = (
   const nextStep: TourStep = {
     ...step,
     selector,
+    title,
+    body,
     optional: rule?.optional ?? step.optional,
   };
 
@@ -90,7 +99,7 @@ export const resolveTutorialSession = (
     };
   }
 
-  if (!canUseGuard(definition.visibility, context)) {
+  if (!canUseGuard(definition.visibility, context) || !canUseGuard(definition.eligibility, context)) {
     return null;
   }
 

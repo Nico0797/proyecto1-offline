@@ -4,11 +4,12 @@ import type { BackendCapability } from '../config/backendCapabilities';
 import type { BusinessModuleKey } from '../types';
 import { TOUR_TARGETS, tourSel } from './tourTargets';
 import type { TourStep } from './tourRegistry';
+import type { TutorialBehavior, TutorialEligibilityRules, TutorialPriority, TutorialTrigger } from './tutorialEligibility';
 import type { TutorialRuntimeContext, TutorialSettingsSectionId } from './tutorialContext';
 
 export type TutorialExperience = 'initial' | 'module' | 'deep';
 
-export type TutorialGuard = {
+export type TutorialGuard = TutorialEligibilityRules & {
   minimumPlan?: 'basic' | 'pro' | 'business';
   moduleKey?: BusinessModuleKey;
   permission?: string;
@@ -35,7 +36,11 @@ type BuilderDefinition = {
   id: string;
   title: string;
   experience: TutorialExperience;
+  priority?: TutorialPriority;
+  trigger?: TutorialTrigger;
+  behavior?: TutorialBehavior;
   visibility?: TutorialGuard;
+  eligibility?: TutorialEligibilityRules;
   buildSteps: (context: TutorialRuntimeContext) => TourStep[];
 };
 
@@ -43,7 +48,11 @@ type RegistryDefinition = {
   id: string;
   title: string;
   experience: TutorialExperience;
+  priority?: TutorialPriority;
+  trigger?: TutorialTrigger;
+  behavior?: TutorialBehavior;
   visibility?: TutorialGuard;
+  eligibility?: TutorialEligibilityRules;
   baseTourId: string;
   stepRules?: Record<string, TutorialStepRule>;
 };
@@ -181,6 +190,7 @@ const includeIfVisible = (context: TutorialRuntimeContext, route: string, stepFa
 
 const buildDynamicOnboarding = (context: TutorialRuntimeContext, audience: 'basic' | 'pro' | 'business') => {
   const steps: TourStep[] = [buildWelcomeStep(context), onboardingFragments.dashboard(), onboardingFragments.sales()];
+  const onboardingProfile = context.initialSetup.onboarding_profile;
 
   if (audience === 'basic') {
     steps.push(...includeIfVisible(context, '/products', onboardingFragments.products));
@@ -197,11 +207,13 @@ const buildDynamicOnboarding = (context: TutorialRuntimeContext, audience: 'basi
   steps.push(...includeIfVisible(context, '/reports', onboardingFragments.reports));
 
   if (audience === 'business') {
-    steps.push(...includeIfVisible(context, '/raw-inventory', onboardingFragments.rawInventory));
-    if (context.hasSettingsSection('team')) {
+    if (context.hasRoute('/raw-inventory') && (context.operationalProfile.manages_raw_materials || context.operationalProfile.uses_raw_inventory || context.operationalProfile.controls_production)) {
+      steps.push(onboardingFragments.rawInventory());
+    }
+    if (context.hasSettingsSection('team') && onboardingProfile.role_setup !== 'owner_only') {
       steps.push(onboardingFragments.team());
     }
-    if (context.hasSettingsSection('roles')) {
+    if (context.hasSettingsSection('roles') && onboardingProfile.permission_control !== 'simple') {
       steps.push(onboardingFragments.roles());
     }
   }
@@ -215,28 +227,58 @@ export const tutorialCatalog: Record<string, TutorialCatalogEntry> = {
     id: 'onboarding.basic',
     title: 'Primer recorrido',
     experience: 'initial',
+    behavior: {
+      repeatable: false,
+      allowManualRestart: true,
+      dismissStopsAutoStart: true,
+    },
     buildSteps: (context) => buildDynamicOnboarding(context, 'basic'),
   },
   'onboarding.pro': {
     id: 'onboarding.pro',
     title: 'Primer recorrido',
     experience: 'initial',
+    behavior: {
+      repeatable: false,
+      allowManualRestart: true,
+      dismissStopsAutoStart: true,
+    },
     buildSteps: (context) => buildDynamicOnboarding(context, 'pro'),
   },
   'onboarding.business': {
     id: 'onboarding.business',
     title: 'Primer recorrido',
     experience: 'initial',
+    behavior: {
+      repeatable: false,
+      allowManualRestart: true,
+      dismissStopsAutoStart: true,
+    },
     buildSteps: (context) => buildDynamicOnboarding(context, 'business'),
   },
   'dashboard.expert': {
     id: 'dashboard.expert',
     title: 'Leer el inicio con criterio',
     experience: 'deep',
+    priority: 'high',
+    trigger: 'recommended',
+    behavior: {
+      repeatable: true,
+      allowManualRestart: true,
+    },
+    eligibility: {
+      requireBusinessContext: true,
+      visibleRoute: '/dashboard',
+    },
     baseTourId: 'dashboard.expert',
     stepRules: {
       db3: {
+        dashboardTabsAny: ['balance', 'analiticas', 'recordatorios'],
         selector: tourSel(TOUR_TARGETS.dashboard.tabs.balance),
+        optional: true,
+      },
+      db5: {
+        visibleRoutes: ['/alerts'],
         optional: true,
       },
     },
@@ -245,32 +287,123 @@ export const tutorialCatalog: Record<string, TutorialCatalogEntry> = {
     id: 'sales.expert',
     title: 'Registrar una venta con menos errores',
     experience: 'deep',
+    behavior: {
+      repeatable: true,
+      allowManualRestart: true,
+    },
     baseTourId: 'sales.expert',
+    eligibility: {
+      requireBusinessContext: true,
+      visibleRoute: '/sales',
+      permission: 'sales.view',
+      moduleKey: 'sales',
+    },
     visibility: {
       visibleRoute: '/sales',
-      permission: 'sales.read',
+      permission: 'sales.view',
       moduleKey: 'sales',
+    },
+    stepRules: {
+      s2: {
+        permissionsAny: ['sales.create'],
+        optional: true,
+      },
+      s3: {
+        permissionsAny: ['sales.create'],
+        optional: true,
+      },
+      s4: {
+        permissionsAny: ['sales.create'],
+        optional: true,
+      },
+      s5: {
+        permissionsAny: ['sales.create'],
+        optional: true,
+      },
+      s6: {
+        permissionsAny: ['sales.create'],
+        optional: true,
+      },
+      s7: {
+        permissionsAny: ['sales.create'],
+        optional: true,
+      },
+      s8: {
+        permissionsAny: ['sales.create'],
+        optional: true,
+      },
+      s9: {
+        permissionsAny: ['sales.create'],
+        optional: true,
+      },
+      s10: {
+        permissionsAny: ['sales.create'],
+        optional: true,
+      },
     },
   },
   'payments.expert': {
     id: 'payments.expert',
     title: 'Cobrar sin perder contexto',
     experience: 'deep',
+    behavior: {
+      repeatable: true,
+      allowManualRestart: true,
+    },
     baseTourId: 'payments.expert',
+    eligibility: {
+      requireBusinessContext: true,
+      visibleRoute: '/payments',
+      permission: 'receivables.view',
+      moduleKey: 'accounts_receivable',
+    },
     visibility: {
       visibleRoute: '/payments',
-      permission: 'payments.read',
+      permission: 'receivables.view',
       moduleKey: 'accounts_receivable',
+    },
+    stepRules: {
+      p4: {
+        permissionsAny: ['receivables.collect'],
+        optional: true,
+      },
+      p5: {
+        permissionsAny: ['receivables.collect'],
+        optional: true,
+      },
     },
   },
   'expenses.expert': {
     id: 'expenses.expert',
     title: 'Registrar un gasto completo',
     experience: 'module',
+    behavior: {
+      repeatable: true,
+      allowManualRestart: true,
+    },
     baseTourId: 'expenses.expert',
+    eligibility: {
+      requireBusinessContext: true,
+      visibleRoute: '/expenses',
+      permission: 'expenses.view',
+    },
     visibility: {
       visibleRoute: '/expenses',
-      permission: 'expenses.read',
+      permission: 'expenses.view',
+    },
+    stepRules: {
+      e2: {
+        permissionsAny: ['expenses.create'],
+        optional: true,
+      },
+      e3: {
+        permissionsAny: ['expenses.create'],
+        optional: true,
+      },
+      e4: {
+        capability: 'recurring_expenses',
+        optional: true,
+      },
     },
   },
   'products.expert': {
@@ -280,7 +413,7 @@ export const tutorialCatalog: Record<string, TutorialCatalogEntry> = {
     baseTourId: 'products.expert',
     visibility: {
       visibleRoute: '/products',
-      permission: 'products.read',
+      permission: 'products.view',
       moduleKey: 'products',
     },
   },
@@ -289,6 +422,18 @@ export const tutorialCatalog: Record<string, TutorialCatalogEntry> = {
     title: 'Entender el módulo de facturas',
     experience: 'module',
     baseTourId: 'invoices.expert',
+    behavior: {
+      repeatable: true,
+      allowManualRestart: true,
+    },
+    eligibility: {
+      requireBusinessContext: true,
+      visibleRoute: '/invoices',
+      permission: 'invoices.view',
+      moduleKey: 'sales',
+      capability: 'invoices',
+      commercialSection: 'invoices',
+    },
     visibility: {
       visibleRoute: '/invoices',
       permission: 'invoices.view',
@@ -296,12 +441,30 @@ export const tutorialCatalog: Record<string, TutorialCatalogEntry> = {
       capability: 'invoices',
       commercialSection: 'invoices',
     },
+    stepRules: {
+      i5: {
+        visibleRoute: '/invoices/receivables',
+        optional: true,
+      },
+    },
   },
   'invoice-receivables.expert': {
     id: 'invoice-receivables.expert',
     title: 'Cobrar desde la cartera de facturas',
     experience: 'deep',
+    behavior: {
+      repeatable: true,
+      allowManualRestart: true,
+    },
     baseTourId: 'invoice-receivables.expert',
+    eligibility: {
+      requireBusinessContext: true,
+      visibleRoute: '/invoices/receivables',
+      permission: 'receivables.view',
+      moduleKey: 'accounts_receivable',
+      capability: 'invoices',
+      commercialSection: 'invoices',
+    },
     visibility: {
       visibleRoute: '/invoices/receivables',
       permission: 'receivables.view',
@@ -310,16 +473,254 @@ export const tutorialCatalog: Record<string, TutorialCatalogEntry> = {
       commercialSection: 'invoices',
     },
   },
+  'quotes.expert': {
+    id: 'quotes.expert',
+    title: 'Crear y convertir cotizaciones con contexto',
+    experience: 'deep',
+    priority: 'high',
+    trigger: 'recommended',
+    behavior: {
+      repeatable: true,
+      allowManualRestart: true,
+    },
+    baseTourId: 'quotes.expert',
+    eligibility: {
+      requireBusinessContext: true,
+      visibleRoute: '/quotes',
+      permission: 'quotes.view',
+      moduleKey: 'quotes',
+      requiresQuotesSupport: true,
+    },
+    visibility: {
+      visibleRoute: '/quotes',
+      permission: 'quotes.view',
+      moduleKey: 'quotes',
+      requiresQuotesSupport: true,
+    },
+    stepRules: {
+      q3: {
+        permissionsAny: ['quotes.create'],
+        optional: true,
+      },
+      q4: {
+        permissionsAny: ['quotes.create'],
+        optional: true,
+      },
+      q5: {
+        permissionsAny: ['quotes.create'],
+        optional: true,
+      },
+      q6: {
+        permissionsAny: ['quotes.create'],
+        optional: true,
+      },
+    },
+  },
+  'suppliers.expert': {
+    id: 'suppliers.expert',
+    title: 'Ordenar proveedores sin perder contexto operativo',
+    experience: 'deep',
+    behavior: {
+      repeatable: true,
+      allowManualRestart: true,
+    },
+    baseTourId: 'suppliers.expert',
+    eligibility: {
+      requireBusinessContext: true,
+      visibleRoute: '/suppliers',
+      permission: 'suppliers.view',
+      moduleKey: 'raw_inventory',
+      capability: 'suppliers',
+      requiresRawMaterials: true,
+    },
+    visibility: {
+      visibleRoute: '/suppliers',
+      permission: 'suppliers.view',
+      moduleKey: 'raw_inventory',
+      capability: 'suppliers',
+      requiresRawMaterials: true,
+    },
+    stepRules: {
+      sp4: {
+        permissionsAny: ['suppliers.create'],
+        optional: true,
+      },
+      sp5: {
+        permissionsAny: ['suppliers.create'],
+        optional: true,
+      },
+      sp6: {
+        permissionsAny: ['suppliers.create'],
+        optional: true,
+      },
+    },
+  },
+  'raw-purchases.expert': {
+    id: 'raw-purchases.expert',
+    title: 'Registrar compras de insumos con trazabilidad',
+    experience: 'deep',
+    behavior: {
+      repeatable: true,
+      allowManualRestart: true,
+    },
+    baseTourId: 'raw-purchases.expert',
+    eligibility: {
+      requireBusinessContext: true,
+      visibleRoute: '/raw-purchases',
+      permission: 'raw_purchases.view',
+      moduleKey: 'raw_inventory',
+      capability: 'raw_purchases',
+      requiresRawMaterials: true,
+    },
+    visibility: {
+      visibleRoute: '/raw-purchases',
+      permission: 'raw_purchases.view',
+      moduleKey: 'raw_inventory',
+      capability: 'raw_purchases',
+      requiresRawMaterials: true,
+    },
+    stepRules: {
+      rp3: {
+        permissionsAny: ['raw_purchases.create'],
+        optional: true,
+      },
+      rp4: {
+        permissionsAny: ['raw_purchases.create'],
+        optional: true,
+      },
+      rp5: {
+        permissionsAny: ['raw_purchases.create'],
+        optional: true,
+      },
+      rp6: {
+        permissionsAny: ['raw_purchases.create'],
+        optional: true,
+      },
+    },
+  },
+  'recipes.expert': {
+    id: 'recipes.expert',
+    title: 'Definir recetas y consumos con trazabilidad',
+    experience: 'deep',
+    behavior: {
+      repeatable: true,
+      allowManualRestart: true,
+    },
+    baseTourId: 'recipes.expert',
+    eligibility: {
+      requireBusinessContext: true,
+      visibleRoute: '/recipes',
+      permission: 'recipes.view',
+      moduleKey: 'raw_inventory',
+      capability: 'recipes',
+      requiresRawMaterials: true,
+    },
+    visibility: {
+      visibleRoute: '/recipes',
+      permission: 'recipes.view',
+      moduleKey: 'raw_inventory',
+      capability: 'recipes',
+      requiresRawMaterials: true,
+    },
+    stepRules: {
+      rc3: {
+        permissionsAny: ['recipes.create'],
+        optional: true,
+      },
+      rc4: {
+        permissionsAny: ['recipes.create'],
+        optional: true,
+      },
+      rc5: {
+        permissionsAny: ['recipes.create'],
+        optional: true,
+      },
+      rc6: {
+        permissionsAny: ['recipes.create'],
+        optional: true,
+      },
+    },
+  },
+  'cost-calculator.expert': {
+    id: 'cost-calculator.expert',
+    title: 'Simular costos antes de cambiar la operación',
+    experience: 'deep',
+    behavior: {
+      repeatable: true,
+      allowManualRestart: true,
+    },
+    baseTourId: 'cost-calculator.expert',
+    eligibility: {
+      requireBusinessContext: true,
+      visibleRoute: '/cost-calculator',
+      permission: 'recipes.view',
+      moduleKey: 'raw_inventory',
+      capability: 'recipes',
+      requiresRawMaterials: true,
+    },
+    visibility: {
+      visibleRoute: '/cost-calculator',
+      permission: 'recipes.view',
+      moduleKey: 'raw_inventory',
+      capability: 'recipes',
+      requiresRawMaterials: true,
+    },
+  },
   'raw-inventory.expert': {
     id: 'raw-inventory.expert',
     title: 'Mover y cuidar la bodega',
     experience: 'deep',
+    priority: 'high',
+    trigger: 'recommended',
+    behavior: {
+      repeatable: true,
+      allowManualRestart: true,
+    },
     baseTourId: 'raw-inventory.expert',
-    visibility: {
+    eligibility: {
+      requireBusinessContext: true,
       visibleRoute: '/raw-inventory',
-      permission: 'raw_inventory.read',
+      permission: 'raw_inventory.view',
       moduleKey: 'raw_inventory',
       capability: 'raw_inventory',
+      inventoryModels: ['raw_materials_only', 'mixed'],
+      fulfillmentModes: ['stock', 'make_to_order', 'hybrid'],
+      requiresRawMaterials: true,
+    },
+    visibility: {
+      visibleRoute: '/raw-inventory',
+      permission: 'raw_inventory.view',
+      moduleKey: 'raw_inventory',
+      capability: 'raw_inventory',
+    },
+  },
+  'treasury.expert': {
+    id: 'treasury.expert',
+    title: 'Leer caja y movimientos reales',
+    experience: 'deep',
+    priority: 'high',
+    trigger: 'recommended',
+    behavior: {
+      repeatable: true,
+      allowManualRestart: true,
+    },
+    eligibility: {
+      requireBusinessContext: true,
+      visibleRoute: '/treasury',
+      permission: 'treasury.view',
+      capability: 'treasury',
+    },
+    visibility: {
+      visibleRoute: '/treasury',
+      permission: 'treasury.view',
+      capability: 'treasury',
+    },
+    baseTourId: 'treasury.expert',
+    stepRules: {
+      ty4: {
+        permissionsAny: ['treasury.manage_accounts', 'treasury.adjust'],
+        optional: true,
+      },
     },
   },
   'settings.expert': {
@@ -350,11 +751,64 @@ export const tutorialCatalog: Record<string, TutorialCatalogEntry> = {
     id: 'personalization.expert',
     title: 'Ajustar la experiencia del negocio',
     experience: 'deep',
+    priority: 'high',
+    trigger: 'recommended',
+    behavior: {
+      repeatable: true,
+      allowManualRestart: true,
+    },
+    eligibility: {
+      requireBusinessContext: true,
+      visibleRoute: '/settings?tab=personalization',
+      settingsSection: 'personalization',
+      permissionsAny: ['settings.edit', 'business.update'],
+    },
     baseTourId: 'personalization.expert',
     visibility: {
       visibleRoute: '/settings?tab=personalization',
       settingsSection: 'personalization',
-      permission: 'business.update',
+      permissionsAny: ['settings.edit', 'business.update'],
+    },
+  },
+  'team-roles.expert': {
+    id: 'team-roles.expert',
+    title: 'Organizar equipo y permisos',
+    experience: 'deep',
+    priority: 'high',
+    behavior: {
+      repeatable: true,
+      allowManualRestart: true,
+    },
+    eligibility: {
+      requireBusinessContext: true,
+      visibleRoute: '/settings',
+      settingsSections: ['team', 'roles'],
+      feature: 'team_management',
+      permissionsAny: ['team.edit_roles', 'team.manage_team', 'team.manage', 'team.invite', 'team.remove'],
+      onboardingRoleSetupNot: ['owner_only'],
+      onboardingPermissionControlNot: ['simple'],
+    },
+    visibility: {
+      visibleRoute: '/settings',
+      settingsSections: ['team', 'roles'],
+      feature: 'team_management',
+      permissionsAny: ['team.edit_roles', 'team.manage_team', 'team.manage', 'team.invite', 'team.remove'],
+    },
+    baseTourId: 'team-roles.expert',
+    stepRules: {
+      tr3: {
+        permissionsAny: ['team.manage_team', 'team.manage', 'team.invite'],
+        optional: true,
+      },
+      tr4: {
+        settingsSection: 'roles',
+      },
+      tr5: {
+        settingsSection: 'roles',
+      },
+      tr6: {
+        settingsSection: 'roles',
+      },
     },
   },
   'invoice-sync.expert': {
@@ -374,10 +828,20 @@ export const tutorialCatalog: Record<string, TutorialCatalogEntry> = {
     id: 'customers.expert',
     title: 'Leer mejor tu base de clientes',
     experience: 'module',
+    behavior: {
+      repeatable: true,
+      allowManualRestart: true,
+    },
     baseTourId: 'customers.expert',
+    eligibility: {
+      requireBusinessContext: true,
+      visibleRoute: '/customers',
+      permission: 'customers.view',
+      moduleKey: 'customers',
+    },
     visibility: {
       visibleRoute: '/customers',
-      permission: 'customers.read',
+      permission: 'customers.view',
       moduleKey: 'customers',
     },
   },
@@ -385,12 +849,25 @@ export const tutorialCatalog: Record<string, TutorialCatalogEntry> = {
     id: 'orders.expert',
     title: 'Gestionar pedidos sin perder seguimiento',
     experience: 'deep',
+    behavior: {
+      repeatable: true,
+      allowManualRestart: true,
+    },
     baseTourId: 'orders.expert',
+    eligibility: {
+      requireBusinessContext: true,
+      visibleRoute: '/orders',
+      permission: 'orders.view',
+      moduleKey: 'sales',
+      commercialSection: 'orders',
+      feature: 'orders',
+    },
     visibility: {
       visibleRoute: '/orders',
       permission: 'orders.view',
       moduleKey: 'sales',
       commercialSection: 'orders',
+      feature: 'orders',
     },
   },
 };

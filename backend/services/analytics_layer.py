@@ -276,6 +276,7 @@ class AnalyticsLayer:
         """
         # Estructura base
         team_stats = {}
+        end_datetime_limit = end_date + timedelta(days=1) if end_date else None
         
         def get_stat(user_id, name="Desconocido", role=""):
             if user_id not in team_stats:
@@ -362,7 +363,7 @@ class AnalyticsLayer:
         ).filter(Customer.business_id == self.business_id)
         
         if start_date: cust_q = cust_q.filter(Customer.created_at >= start_date)
-        if end_date: cust_q = cust_q.filter(Customer.created_at <= end_date)
+        if end_datetime_limit: cust_q = cust_q.filter(Customer.created_at < end_datetime_limit)
         
         for uid, uname, urole, count in cust_q.group_by(Customer.created_by_user_id, Customer.created_by_name, Customer.created_by_role).all():
             if not uid: continue
@@ -381,7 +382,7 @@ class AnalyticsLayer:
         ).filter(ProductMovement.business_id == self.business_id)
         
         if start_date: mov_q = mov_q.filter(ProductMovement.created_at >= start_date)
-        if end_date: mov_q = mov_q.filter(ProductMovement.created_at <= end_date)
+        if end_datetime_limit: mov_q = mov_q.filter(ProductMovement.created_at < end_datetime_limit)
         
         for uid, uname, urole, count in mov_q.group_by(ProductMovement.user_id, ProductMovement.created_by_name, ProductMovement.created_by_role).all():
             if not uid: continue
@@ -398,7 +399,7 @@ class AnalyticsLayer:
         ).filter(Reminder.business_id == self.business_id)
         
         if start_date: rem_q = rem_q.filter(Reminder.created_at >= start_date)
-        if end_date: rem_q = rem_q.filter(Reminder.created_at <= end_date)
+        if end_datetime_limit: rem_q = rem_q.filter(Reminder.created_at < end_datetime_limit)
         
         for uid, uname, urole, count in rem_q.group_by(Reminder.created_by_user_id, Reminder.created_by_name, Reminder.created_by_role).all():
             if not uid: continue
@@ -413,6 +414,7 @@ class AnalyticsLayer:
         Obtiene un log cronológico unificado de actividades del equipo.
         """
         activities = []
+        end_datetime_limit = end_date + timedelta(days=1) if end_date else None
         
         # 1. Ventas
         sales_q = db.session.query(Sale).filter(Sale.business_id == self.business_id)
@@ -466,7 +468,7 @@ class AnalyticsLayer:
         # 4. Clientes
         cust_q = db.session.query(Customer).filter(Customer.business_id == self.business_id)
         if start_date: cust_q = cust_q.filter(Customer.created_at >= start_date)
-        if end_date: cust_q = cust_q.filter(Customer.created_at <= end_date)
+        if end_datetime_limit: cust_q = cust_q.filter(Customer.created_at < end_datetime_limit)
         
         for c in cust_q.all():
             activities.append({
@@ -483,7 +485,7 @@ class AnalyticsLayer:
         from backend.models import ProductMovement, Reminder
         mov_q = db.session.query(ProductMovement).filter(ProductMovement.business_id == self.business_id)
         if start_date: mov_q = mov_q.filter(ProductMovement.created_at >= start_date)
-        if end_date: mov_q = mov_q.filter(ProductMovement.created_at <= end_date)
+        if end_datetime_limit: mov_q = mov_q.filter(ProductMovement.created_at < end_datetime_limit)
         
         for m in mov_q.all():
              p_name = m.product.name if m.product else 'Eliminado'
@@ -500,7 +502,7 @@ class AnalyticsLayer:
         # 6. Recordatorios
         rem_q = db.session.query(Reminder).filter(Reminder.business_id == self.business_id)
         if start_date: rem_q = rem_q.filter(Reminder.created_at >= start_date)
-        if end_date: rem_q = rem_q.filter(Reminder.created_at <= end_date)
+        if end_datetime_limit: rem_q = rem_q.filter(Reminder.created_at < end_datetime_limit)
 
         for r in rem_q.all():
              activities.append({

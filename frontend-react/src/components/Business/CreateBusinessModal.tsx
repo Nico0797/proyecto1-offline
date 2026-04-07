@@ -41,7 +41,9 @@ import { Button } from '../ui/Button';
 import { Input } from '../ui/Input';
 import { cn } from '../../utils/cn';
 import { applyBusinessTypeConfiguration } from '../../config/businessPresetApplication';
+import { getBusinessTypePresetDefinition } from '../../config/businessPersonalizationCompat';
 import { useNavigationPreferences } from '../../store/navigationPreferences.store';
+import { applyPresetToBusinessSettings } from '../../config/businessPresets';
 import {
   buildBusinessOnboardingSummary,
   buildInitialSetupSettings,
@@ -269,7 +271,7 @@ export const CreateBusinessModal: React.FC<CreateBusinessModalProps> = ({
 
   const onboardingSummary = useMemo(
     () => buildBusinessOnboardingSummary(answers, onboardingFlow),
-    [answers, isSimpleStoreOnboarding, onboardingFlow]
+    [answers, onboardingFlow]
   );
   const effectiveSummary = useMemo(() => {
     const allowedModules = onboardingSummary.activatedModules.filter((moduleKey) => canAccessModule(user?.plan, moduleKey));
@@ -311,6 +313,10 @@ export const CreateBusinessModal: React.FC<CreateBusinessModalProps> = ({
   const filteredHiddenTools = useMemo(
     () => effectiveSummary.hiddenTools.slice(0, 5),
     [effectiveSummary.hiddenTools]
+  );
+  const derivedPreset = useMemo(
+    () => getBusinessTypePresetDefinition(effectiveSummary.businessType),
+    [effectiveSummary.businessType]
   );
 
   const screenIndex = wizardScreens.indexOf(currentScreen);
@@ -406,18 +412,30 @@ export const CreateBusinessModal: React.FC<CreateBusinessModalProps> = ({
     setLoading(true);
     try {
       const draftInitialSetup = buildInitialSetupSettings(answers, effectiveSummary, null);
+      
+      // Apply preset-based settings during business creation
+      const presetBasedSettings = applyPresetToBusinessSettings(
+        {
+          initial_setup: draftInitialSetup,
+        },
+        effectiveSummary.businessType,
+        {
+          applyModules: true,
+          applyOnboarding: true,
+        }
+      );
+      
       const newBusiness = await addBusiness({
         name: answers.name.trim(),
         currency: answers.currency,
-        settings: {
-          initial_setup: draftInitialSetup,
-        },
+        settings: presetBasedSettings,
       });
 
       const completedAt = new Date().toISOString();
       const completedInitialSetup = buildInitialSetupSettings(answers, effectiveSummary, completedAt);
       const scopeKey = getScopeKey(user?.id, newBusiness.id);
 
+      // Apply navigation preferences and any remaining configuration
       await applyBusinessTypeConfiguration({
         business: newBusiness,
         businessType: effectiveSummary.businessType,
@@ -607,6 +625,14 @@ export const CreateBusinessModal: React.FC<CreateBusinessModalProps> = ({
               </div>
             </div>
 
+            {derivedPreset ? (
+              <div className="rounded-[24px] border border-emerald-400/20 bg-emerald-500/10 px-4 py-3 text-white">
+                <div className="text-xs font-semibold uppercase tracking-[0.18em] text-emerald-100/80">Base sugerida hasta ahora</div>
+                <div className="mt-2 text-lg font-semibold">{derivedPreset.label}</div>
+                <p className="mt-1 text-sm leading-6 text-emerald-50/85">{derivedPreset.shortDescription}</p>
+              </div>
+            ) : null}
+
             <div className="grid gap-4 md:grid-cols-2">
               {currentQuestion.options.map((option) => {
                 const field = QUESTION_FIELD_MAP[currentQuestion.id];
@@ -634,6 +660,14 @@ export const CreateBusinessModal: React.FC<CreateBusinessModalProps> = ({
               </div>
               <h3 className="mt-4 text-2xl font-semibold">{effectiveSummary.headline}</h3>
               <p className="mt-2 text-sm leading-6 text-slate-300 sm:text-base">{effectiveSummary.summary}</p>
+
+              {derivedPreset ? (
+                <div className="mt-5 rounded-[24px] border border-emerald-400/20 bg-emerald-500/10 p-4">
+                  <div className="text-xs font-semibold uppercase tracking-[0.18em] text-emerald-100/80">Base recomendada</div>
+                  <div className="mt-2 text-lg font-semibold text-white">{derivedPreset.label}</div>
+                  <p className="mt-1 text-sm leading-6 text-emerald-50/85">{derivedPreset.longDescription}</p>
+                </div>
+              ) : null}
 
               <div className="mt-6 grid gap-4 md:grid-cols-2">
                 <div className="rounded-[24px] border border-white/10 bg-white/5 p-4">

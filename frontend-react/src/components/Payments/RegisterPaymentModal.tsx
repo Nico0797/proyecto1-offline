@@ -29,6 +29,12 @@ const STEPS = [
   { id: 4, title: 'Confirmar' }
 ];
 
+const receivableStatusBadgeClasses: Record<'overdue' | 'due_today' | 'due_soon', string> = {
+  overdue: 'app-status-chip app-status-chip-danger !px-2 !py-0.5 !text-[10px]',
+  due_today: 'app-status-chip app-status-chip-warning !px-2 !py-0.5 !text-[10px]',
+  due_soon: 'app-status-chip app-status-chip-warning !px-2 !py-0.5 !text-[10px]',
+};
+
 export const RegisterPaymentModal: React.FC<RegisterPaymentModalProps> = ({
   isOpen,
   onClose,
@@ -150,29 +156,14 @@ export const RegisterPaymentModal: React.FC<RegisterPaymentModalProps> = ({
     
     setLoading(true);
     try {
-      // Create payment
-      // Note: Backend might not support explicit allocation array yet in /payments endpoint
-      // based on previous analysis of models.py (Payment model has single sale_id).
-      // If we want to support multi-invoice allocation, we might need to create multiple payments
-      // or just create one payment and let backend handle FIFO logic if implemented,
-      // OR store just the customer payment and handle allocation locally for display.
-      // Given the constraints "No rompas endpoints", and Payment model has `sale_id`,
-      // it seems strictly 1 payment -> 1 sale OR 1 payment -> null (account credit).
-      
-      // Strategy: 
-      // If auto/manual allocation covers multiple invoices, we technically should create multiple payment records 
-      // OR create one payment with null sale_id and let a backend process handle it.
-      // However, to keep it simple and consistent with "Register Payment" basic flow:
-      // We will create ONE payment. If it matches exactly one invoice or we want to link it to the oldest, 
-      // we can pass sale_id. But if it splits, we can't link to multiple sale_ids in one record.
-      
-      // Compromise: Create one payment for the total amount linked to the customer.
-      // In the note, we can mention allocation.
-      // Ideally, we loop and create multiple payments if we want strict linking, but that spams the transaction log.
-      // Let's just send the payment for the customer.
-      
+      const allocationEntries = Array.from(currentAllocation.entries()).filter(([, value]) => value > 0);
+      const exactSingleSaleId = allocationEntries.length === 1 && Math.abs(remainingAmount) < 0.01
+        ? allocationEntries[0][0]
+        : undefined;
+
       await createPayment(activeBusiness.id, {
         customer_id: selectedCustomerId,
+        sale_id: exactSingleSaleId,
         amount: parseFloat(amount),
         method,
         treasury_account_id: treasuryAccountId,
@@ -194,11 +185,11 @@ export const RegisterPaymentModal: React.FC<RegisterPaymentModalProps> = ({
   // Render Steps
   const renderStep1 = () => (
     <div className="space-y-3 sm:space-y-4">
-      <div className="rounded-[20px] border border-blue-200 bg-blue-50 px-3.5 py-3 text-sm text-blue-800 dark:border-blue-900/30 dark:bg-blue-900/10 dark:text-blue-200">
+      <div className="app-inline-panel-info px-3.5 py-3 text-sm">
         Elige el cliente que te está pagando hoy.
       </div>
       <div className="relative" data-tour="payments.modal.clientSearch">
-        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 app-text-muted w-4 h-4" />
         <Input
           placeholder="Busca el cliente que va a pagar"
           className="pl-10"
@@ -208,7 +199,7 @@ export const RegisterPaymentModal: React.FC<RegisterPaymentModalProps> = ({
         />
       </div>
       
-      <div className="max-h-56 overflow-y-auto rounded-[20px] border border-gray-200 divide-y divide-gray-100 dark:border-gray-800 dark:divide-gray-800" data-tour="payments.modal.clientList">
+      <div className="app-surface custom-scrollbar max-h-56 overflow-y-auto divide-y divide-[color:var(--app-divider)] rounded-[20px]" data-tour="payments.modal.clientList">
         {customers
           .filter(c => c.name.toLowerCase().includes(searchTerm.toLowerCase()))
           .map(c => (
@@ -216,17 +207,17 @@ export const RegisterPaymentModal: React.FC<RegisterPaymentModalProps> = ({
               key={c.id}
               onClick={() => setSelectedCustomerId(c.id)}
               className={cn(
-                "px-3 py-2.5 flex items-center justify-between cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors",
-                selectedCustomerId === c.id && "bg-blue-50 dark:bg-blue-900/20"
+                'px-3 py-2.5 flex items-center justify-between cursor-pointer transition-colors hover:bg-[color:var(--app-surface-soft)]',
+                selectedCustomerId === c.id && 'bg-[color:var(--app-primary-soft)]'
               )}
             >
               <div className="flex items-center gap-3">
-                <div className="w-8 h-8 rounded-full bg-gray-100 dark:bg-gray-700 flex items-center justify-center">
-                  <User className="w-4 h-4 text-gray-500" />
+                <div className="app-muted-panel w-8 h-8 rounded-full flex items-center justify-center">
+                  <User className="w-4 h-4 app-text-muted" />
                 </div>
                 <div>
-                  <p className="text-sm font-medium text-gray-900 dark:text-white">{c.name}</p>
-                  <p className="text-xs text-gray-500">Deuda: ${c.balance.toLocaleString()}</p>
+                  <p className="text-sm font-medium app-text">{c.name}</p>
+                  <p className="text-xs app-text-muted">Deuda: ${c.balance.toLocaleString()}</p>
                 </div>
               </div>
               {selectedCustomerId === c.id && <CheckCircle className="w-5 h-5 text-blue-500" />}
@@ -238,20 +229,20 @@ export const RegisterPaymentModal: React.FC<RegisterPaymentModalProps> = ({
 
   const renderStep2 = () => (
     <div className="space-y-3 sm:space-y-4">
-      <div className="flex items-center justify-between gap-3 rounded-[20px] bg-gray-50 px-3.5 py-3 dark:bg-gray-800">
-        <span className="text-sm text-gray-500">Cliente:</span>
-        <span className="font-bold text-gray-900 dark:text-white text-right">{selectedCustomer?.name}</span>
+      <div className="app-inline-panel flex items-center justify-between gap-3 px-3.5 py-3">
+        <span className="text-sm app-text-muted">Cliente:</span>
+        <span className="font-bold app-text text-right">{selectedCustomer?.name}</span>
       </div>
 
-      <div className="rounded-[20px] border border-gray-200 bg-gray-50 px-3.5 py-3 text-sm text-gray-600 dark:border-gray-800 dark:bg-gray-800/60 dark:text-gray-300">
+      <div className="app-inline-panel px-3.5 py-3 text-sm">
         Registra el valor, el medio y la cuenta donde entró.
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4" data-tour="payments.modal.details">
         <div>
-          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Monto recibido</label>
+          <label className="block text-sm font-medium app-text-secondary mb-1">Monto recibido</label>
           <div className="relative">
-            <DollarSign className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+            <DollarSign className="absolute left-3 top-1/2 transform -translate-y-1/2 app-text-muted w-4 h-4" />
             <Input
               type="number"
               className="pl-10"
@@ -263,7 +254,7 @@ export const RegisterPaymentModal: React.FC<RegisterPaymentModalProps> = ({
           </div>
         </div>
         <div>
-          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Fecha</label>
+          <label className="block text-sm font-medium app-text-secondary mb-1">Fecha</label>
           <Input
             type="date"
             value={date}
@@ -273,7 +264,7 @@ export const RegisterPaymentModal: React.FC<RegisterPaymentModalProps> = ({
       </div>
 
       <div>
-        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Forma de cobro</label>
+        <label className="block text-sm font-medium app-text-secondary mb-1">Forma de cobro</label>
         <select
           className="app-select"
           value={method}
@@ -297,7 +288,7 @@ export const RegisterPaymentModal: React.FC<RegisterPaymentModalProps> = ({
       />
 
       <div>
-        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Nota o referencia</label>
+        <label className="block text-sm font-medium app-text-secondary mb-1">Nota o referencia</label>
         <Input
           value={note}
           onChange={(e) => setNote(e.target.value)}
@@ -310,17 +301,17 @@ export const RegisterPaymentModal: React.FC<RegisterPaymentModalProps> = ({
   const renderStep3 = () => (
     <div className="space-y-3 sm:space-y-4">
       <div className="flex flex-col gap-2 sm:flex-row sm:justify-between sm:items-center mb-1">
-        <h4 className="text-sm font-semibold text-gray-900 dark:text-white">A qué ventas aplicar este cobro</h4>
-        <div className="inline-flex w-fit gap-1 rounded-full bg-gray-100 p-1 text-xs shadow-sm dark:bg-gray-800">
+        <h4 className="text-sm font-semibold app-text">A qué ventas aplicar este cobro</h4>
+        <div className="app-segmented-control w-fit text-xs shadow-sm">
           <button 
             onClick={() => setAllocationMode('auto')}
-            className={cn("px-2.5 py-1 rounded-full", allocationMode === 'auto' ? "bg-white text-blue-700 shadow-sm dark:bg-gray-700" : "text-gray-500")}
+            className={cn('app-segmented-option px-2.5 py-1', allocationMode === 'auto' ? 'app-segmented-option-active' : '')}
           >
             Sugerido
           </button>
           <button 
             onClick={() => setAllocationMode('manual')}
-            className={cn("px-2.5 py-1 rounded-full", allocationMode === 'manual' ? "bg-white text-blue-700 shadow-sm dark:bg-gray-700" : "text-gray-500")}
+            className={cn('app-segmented-option px-2.5 py-1', allocationMode === 'manual' ? 'app-segmented-option-active' : '')}
           >
             Elegir yo
           </button>
@@ -328,7 +319,7 @@ export const RegisterPaymentModal: React.FC<RegisterPaymentModalProps> = ({
       </div>
 
       {unpaidInvoices.length === 0 ? (
-        <div className="p-4 bg-gray-50 dark:bg-gray-800 rounded-lg text-center text-gray-500 text-sm">
+        <div className="app-empty-state p-4 rounded-lg text-center app-text-muted text-sm">
           Este cliente no tiene ventas pendientes. Este cobro quedará como saldo a favor.
         </div>
       ) : (
@@ -337,31 +328,31 @@ export const RegisterPaymentModal: React.FC<RegisterPaymentModalProps> = ({
             const allocated = currentAllocation.get(inv.id) || 0;
             
             return (
-              <div key={inv.id} className="flex flex-col gap-3 rounded-[20px] border border-gray-200 bg-white px-3 py-3 sm:flex-row sm:items-center sm:justify-between dark:border-gray-800 dark:bg-gray-800">
+              <div key={inv.id} className="app-surface flex flex-col gap-3 rounded-[20px] px-3 py-3 sm:flex-row sm:items-center sm:justify-between">
                 <div className="flex-1">
                   <div className="flex items-center gap-2">
-                    <span className="text-sm font-medium text-gray-900 dark:text-white">Venta #{inv.id}</span>
+                    <span className="text-sm font-medium app-text">Venta #{inv.id}</span>
                     {inv.isOverdue && (
-                      <span className="text-[10px] bg-red-100 text-red-600 px-1 rounded">Vencida</span>
+                      <span className={receivableStatusBadgeClasses.overdue}>Vencida</span>
                     )}
                     {!inv.isOverdue && inv.status === 'due_today' && (
-                      <span className="text-[10px] bg-orange-100 text-orange-700 px-1 rounded">Vence hoy</span>
+                      <span className={receivableStatusBadgeClasses.due_today}>Vence hoy</span>
                     )}
                     {!inv.isOverdue && inv.status === 'due_soon' && (
-                      <span className="text-[10px] bg-yellow-100 text-yellow-700 px-1 rounded">Por vencer</span>
+                      <span className={receivableStatusBadgeClasses.due_soon}>Por vencer</span>
                     )}
                   </div>
-                  <div className="text-xs text-gray-500">
+                  <div className="text-xs app-text-muted">
                     {new Date(inv.saleDate).toLocaleDateString()} • Vence: {new Date(inv.dueDate).toLocaleDateString()} • Saldo: ${inv.balance.toLocaleString()}
                   </div>
-                  <div className="text-xs text-gray-400">
+                  <div className="text-xs app-text-muted opacity-80">
                     Plazo: {inv.termDays} días
                   </div>
                 </div>
                 
                 <div className="w-full sm:w-32">
                   {allocationMode === 'auto' ? (
-                    <div className={cn("text-left sm:text-right font-medium", allocated > 0 ? "text-green-600" : "text-gray-400")}>
+                    <div className={cn('text-left sm:text-right font-medium', allocated > 0 ? 'text-[color:var(--app-success)]' : 'app-text-muted')}>
                       ${allocated.toLocaleString()}
                     </div>
                   ) : (
@@ -380,18 +371,18 @@ export const RegisterPaymentModal: React.FC<RegisterPaymentModalProps> = ({
         </div>
       )}
 
-      <div className="flex items-center justify-between border-t border-gray-200 pt-3 dark:border-gray-700">
-        <span className="text-sm text-gray-500">Cobro recibido:</span>
-        <span className="font-bold text-gray-900 dark:text-white">${parseFloat(amount || '0').toLocaleString()}</span>
+      <div className="flex items-center justify-between border-t app-divider pt-3">
+        <span className="text-sm app-text-muted">Cobro recibido:</span>
+        <span className="font-bold app-text">${parseFloat(amount || '0').toLocaleString()}</span>
       </div>
       <div className="flex justify-between items-center">
-        <span className="text-sm text-gray-500">Aplicado:</span>
-        <span className="font-bold text-green-600">${allocatedTotal.toLocaleString()}</span>
+        <span className="text-sm app-text-muted">Aplicado:</span>
+        <span className="font-bold text-[color:var(--app-success)]">${allocatedTotal.toLocaleString()}</span>
       </div>
       {remainingAmount !== 0 && (
         <div className="flex justify-between items-center">
-          <span className="text-sm text-gray-500">{remainingAmount > 0 ? 'Queda libre como saldo a favor:' : 'Excedido:'}</span>
-          <span className={cn("font-bold", remainingAmount > 0 ? "text-blue-500" : "text-red-500")}>
+          <span className="text-sm app-text-muted">{remainingAmount > 0 ? 'Queda libre como saldo a favor:' : 'Excedido:'}</span>
+          <span className={cn('font-bold', remainingAmount > 0 ? 'text-[color:var(--app-primary)]' : 'text-[color:var(--app-danger)]')}>
             ${Math.abs(remainingAmount).toLocaleString()}
           </span>
         </div>
@@ -401,37 +392,37 @@ export const RegisterPaymentModal: React.FC<RegisterPaymentModalProps> = ({
 
   const renderStep4 = () => (
     <div className="text-center py-2 sm:py-4 space-y-4">
-      <div className="w-16 h-16 bg-green-100 dark:bg-green-900/30 rounded-full flex items-center justify-center mx-auto mb-4">
-        <CheckCircle className="w-8 h-8 text-green-600 dark:text-green-500" />
+      <div className="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4 app-inline-panel-success">
+        <CheckCircle className="w-8 h-8 text-[color:var(--app-success)]" />
       </div>
-      <h3 className="text-xl font-bold text-gray-900 dark:text-white">Confirmar cobro</h3>
+      <h3 className="text-xl font-bold app-text">Confirmar cobro</h3>
       
-      <div className="rounded-[22px] bg-gray-50 p-3.5 text-left space-y-2 sm:p-4 dark:bg-gray-800">
+      <div className="app-inline-panel p-3.5 text-left space-y-2 sm:p-4 rounded-[22px]">
         <div className="flex justify-between gap-3">
-          <span className="text-gray-500">Cliente:</span>
-          <span className="font-medium text-gray-900 dark:text-white text-right">{selectedCustomer?.name}</span>
+          <span className="app-text-muted">Cliente:</span>
+          <span className="font-medium app-text text-right">{selectedCustomer?.name}</span>
         </div>
         <div className="flex justify-between">
-          <span className="text-gray-500">Monto:</span>
-          <span className="font-bold text-green-600 text-lg">${parseFloat(amount).toLocaleString()}</span>
+          <span className="app-text-muted">Monto:</span>
+          <span className="font-bold text-[color:var(--app-success)] text-lg">${parseFloat(amount).toLocaleString()}</span>
         </div>
         <div className="flex justify-between">
-          <span className="text-gray-500">Método:</span>
-          <span className="capitalize text-gray-900 dark:text-white">{method}</span>
+          <span className="app-text-muted">Método:</span>
+          <span className="capitalize app-text">{method}</span>
         </div>
         <div className="flex justify-between gap-3">
-          <span className="text-gray-500">Cuenta:</span>
-          <span className="text-gray-900 dark:text-white text-right">
+          <span className="app-text-muted">Cuenta:</span>
+          <span className="app-text text-right">
             {selectedTreasuryAccount ? formatTreasuryAccountLabel(selectedTreasuryAccount) : 'Por defecto del método'}
           </span>
         </div>
         <div className="flex justify-between">
-          <span className="text-gray-500">Fecha:</span>
-          <span className="text-gray-900 dark:text-white">{new Date(date).toLocaleDateString()}</span>
+          <span className="app-text-muted">Fecha:</span>
+          <span className="app-text">{new Date(date).toLocaleDateString()}</span>
         </div>
       </div>
 
-      <p className="text-sm text-gray-500">
+      <p className="text-sm app-text-muted">
         Se registrará este cobro y se actualizarán los saldos del cliente.
       </p>
     </div>
@@ -447,29 +438,29 @@ export const RegisterPaymentModal: React.FC<RegisterPaymentModalProps> = ({
       className="max-w-lg"
     >
       <div className="mb-4 sm:mb-6">
-        <div className="flex items-center justify-between px-1 sm:px-2">
+        <div className="app-stepper flex items-center justify-between rounded-[24px] px-3 py-3 sm:px-4">
         {STEPS.map((s, idx) => (
           <div key={s.id} className="flex items-center">
             <div className={cn(
-              "w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold transition-colors",
+              'app-step-node w-8 h-8 text-xs font-bold',
               step >= s.id 
-                ? "bg-blue-600 text-white" 
-                : "bg-gray-200 dark:bg-gray-700 text-gray-500"
+                ? 'app-step-node-complete'
+                : ''
             )}>
               {s.id}
             </div>
             {idx < STEPS.length - 1 && (
               <div className={cn(
-                "h-0.5 w-8 mx-2",
-                step > s.id ? "bg-blue-600" : "bg-gray-200 dark:bg-gray-700"
+                'app-step-rail w-8 mx-2',
+                step > s.id ? 'app-step-rail-active' : ''
               )} />
             )}
           </div>
         ))}
         </div>
         <div className="mt-3 text-center">
-          <div className="text-[11px] uppercase tracking-wide text-gray-400 dark:text-gray-500">Paso {step} de {STEPS.length}</div>
-          <div className="text-sm font-semibold text-gray-900 dark:text-white">{STEPS[step - 1]?.title}</div>
+          <div className="text-[11px] uppercase tracking-wide app-text-muted">Paso {step} de {STEPS.length}</div>
+          <div className="text-sm font-semibold app-text">{STEPS[step - 1]?.title}</div>
         </div>
       </div>
 
@@ -480,7 +471,7 @@ export const RegisterPaymentModal: React.FC<RegisterPaymentModalProps> = ({
         {step === 4 && renderStep4()}
       </div>
 
-      <div className="flex flex-col-reverse sm:flex-row justify-between gap-2 mt-5 pt-4 border-t border-gray-200 dark:border-gray-700">
+      <div className="flex flex-col-reverse sm:flex-row justify-between gap-2 mt-5 pt-4 border-t app-divider">
         <Button
           variant="secondary"
           className="w-full sm:w-auto"

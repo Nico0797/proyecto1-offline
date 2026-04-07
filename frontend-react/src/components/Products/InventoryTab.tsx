@@ -61,8 +61,8 @@ export const InventoryTab: React.FC<InventoryTabProps> = ({ products }) => {
   const { activeBusiness } = useBusinessStore();
   const { updateProduct, fetchProducts } = useProductStore();
   const [loadingId, setLoadingId] = useState<number | null>(null);
-  const canAdjust = usePermission('inventory.adjust');
-  const canRegisterProduction = usePermission('products.update');
+  const canAdjust = usePermission('products.adjust_stock');
+  const canRegisterProduction = usePermission('production.register');
   const [productionProduct, setProductionProduct] = useState<Product | null>(null);
   const [productionQuantity, setProductionQuantity] = useState('1');
   const [productionNotes, setProductionNotes] = useState('');

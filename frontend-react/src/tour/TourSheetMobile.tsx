@@ -56,7 +56,12 @@ export const TourSheetMobile = ({
             </h3>
             {isFallback && (
               <div className="text-amber-200/90 text-xs bg-amber-500/10 border border-amber-500/20 px-2 py-1.5 rounded mt-1">
-                No encontramos el elemento resaltado en tu pantalla.
+                No encontramos el elemento resaltado en tu pantalla. Puede estar en otra pestaña, requerir abrir un modal o no aplicar a esta vista.
+              </div>
+            )}
+            {step.allowInteraction && waitingAction && (
+              <div className="text-cyan-100 text-xs bg-cyan-500/10 border border-cyan-500/20 px-2 py-1.5 rounded mt-1">
+                Usa el elemento resaltado para seguir. Cuando abras la siguiente vista, el tour avanzará solo.
               </div>
             )}
           </div>
@@ -113,9 +118,10 @@ export const TourSheetMobile = ({
                     handleNext(e);
                   }
                 }}
+                disabled={step.allowInteraction && waitingAction}
                 className={`
                     px-5 py-3 rounded-xl text-sm font-bold flex items-center gap-2 transition-all shadow-lg
-                    bg-cyan-600 hover:bg-cyan-500 text-white shadow-cyan-900/30 active:scale-95
+                    bg-cyan-600 hover:bg-cyan-500 text-white shadow-cyan-900/30 active:scale-95 disabled:opacity-50 disabled:hover:bg-cyan-600 disabled:active:scale-100
                     touch-manipulation
                 `}
                 >

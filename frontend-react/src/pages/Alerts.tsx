@@ -597,6 +597,7 @@ export const Alerts = () => {
       title: 'Todas',
       icon: ShieldAlert,
       badge: totalActive,
+      'data-tour': 'alerts.list',
       content: renderAlertSections(groupedAlerts),
     },
     ...CATEGORY_ORDER.map((category) => ({
@@ -604,6 +605,7 @@ export const Alerts = () => {
       title: CATEGORY_META[category].label,
       icon: CATEGORY_META[category].icon,
       badge: groupedAlerts.find((group) => group.category === category)?.items.length || 0,
+      'data-tour': 'alerts.list',
       content: renderAlertSections([
         {
           category,
@@ -639,9 +641,9 @@ export const Alerts = () => {
             utilityBar={(
               <MobileUtilityBar>
                 <MobileFilterDrawer summary={mobileFilterSummary} {...mobileAlertFilters.sheetProps}>
-                  {mobileAlertsToolbarFields}
+                  <div data-tour="alerts.filters">{mobileAlertsToolbarFields}</div>
                 </MobileFilterDrawer>
-                <Button variant="secondary" size="sm" className="rounded-full" onClick={() => setIsSettingsOpen(true)}>
+                <Button variant="secondary" size="sm" className="rounded-full" onClick={() => setIsSettingsOpen(true)} data-tour="alerts.config">
                   <Settings2 className="w-4 h-4" />
                   Configurar
                 </Button>

@@ -1,5 +1,6 @@
 import { useBusinessStore } from '../store/businessStore';
 import { useAuthStore } from '../store/authStore';
+import { hasPermissionMatch } from '../auth/permissions';
 
 export const usePermission = (permission: string) => {
   const { activeBusiness } = useBusinessStore();
@@ -11,24 +12,15 @@ export const usePermission = (permission: string) => {
     ...(activeBusiness.permissions || []),
     ...(activeBusiness.permissions_canonical || []),
   ]));
-  
-  // Superuser / Owner check
-  if (permissions.includes('*')) return true;
-  
-  // Admin wildcard check
-  if (permissions.includes('admin.*')) return true;
-  
-  // Exact match
-  if (permissions.includes(permission)) return true;
-  
-  // Scope wildcard check (e.g. products.* covers products.create)
-  const [scope] = permission.split('.');
-  if (permissions.includes(`${scope}.*`)) return true;
-  
-  return false;
+
+  if (activeBusiness.user_id === user.id || user.is_admin || user.permissions?.admin) {
+    return true;
+  }
+
+  return hasPermissionMatch(permissions, permission);
 };
 
 export const useRole = () => {
-    const { activeBusiness } = useBusinessStore();
-    return activeBusiness?.role || 'MEMBER';
+  const { activeBusiness } = useBusinessStore();
+  return activeBusiness?.role || 'MEMBER';
 }

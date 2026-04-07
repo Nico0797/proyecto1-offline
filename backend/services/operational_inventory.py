@@ -169,6 +169,9 @@ def consume_recipe_stock(
     role_snapshot: str,
     notes: str | None = None,
     related_sale_id: int | None = None,
+    source_type: str | None = None,
+    source_document_type: str | None = None,
+    source_document_id: int | None = None,
 ) -> dict[str, Any]:
     if quantity <= 0:
         raise ValueError("La cantidad debe ser mayor a 0")
@@ -184,6 +187,9 @@ def consume_recipe_stock(
         recipe_id=recipe.id,
         product_id=product.id,
         related_sale_id=related_sale_id,
+        source_type=source_type or ("sale" if related_sale_id else "manual"),
+        source_document_type=source_document_type,
+        source_document_id=source_document_id,
         quantity_produced_or_sold=_safe_round(quantity),
         notes=notes,
         created_by=getattr(actor_user, "id", None),
@@ -258,6 +264,9 @@ def register_stock_production(*, business, product: Product, quantity: float, ac
         actor_user=actor_user,
         role_snapshot=role_snapshot,
         notes=consumption_note,
+        source_type="production",
+        source_document_type="product",
+        source_document_id=product.id,
     )
     previous_stock = _safe_float(product.stock, 0)
     new_stock = _safe_round(previous_stock + quantity)

@@ -110,6 +110,11 @@ def migrate():
                 add_column_if_not_exists(connection, "products", "fulfillment_mode", "VARCHAR(30)")
                 add_column_if_not_exists(connection, "quote_items", "fulfillment_mode", "VARCHAR(30)")
 
+                print("\n--- Migrating Recipe Consumption Traceability ---")
+                add_column_if_not_exists(connection, "recipe_consumptions", "source_type", "VARCHAR(40)")
+                add_column_if_not_exists(connection, "recipe_consumptions", "source_document_type", "VARCHAR(40)")
+                add_column_if_not_exists(connection, "recipe_consumptions", "source_document_id", "INTEGER")
+
                 trans.commit()
                 print("\n✅ Migration completed successfully!")
                 

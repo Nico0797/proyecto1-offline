@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuthStore } from '../store/authStore';
+import { useAccountAccessStore } from '../store/accountAccessStore';
 import api from '../services/api';
 import { Mail, Lock, Eye, EyeOff, ArrowRight, Loader2, Sparkles, Building2 } from 'lucide-react';
 
@@ -27,7 +28,7 @@ export const TeamLogin = () => {
         business_name: businessName,
         is_team_login: true 
       });
-      const { user, access_token, refresh_token, token, accessible_contexts, active_context } = response.data;
+      const { user, access_token, refresh_token, token, accessible_contexts, active_context, account_access } = response.data;
       const useToken = access_token || token;
       
       if (!useToken) {
@@ -42,6 +43,7 @@ export const TeamLogin = () => {
       await new Promise(resolve => setTimeout(resolve, 800));
       
       login(user, useToken, active_context, accessible_contexts);
+      useAccountAccessStore.getState().setAccess(account_access || null);
       
       // In team login, we expect to be in that context, so active_context should be there
       // or at least accessible_contexts should have it.

@@ -20,18 +20,20 @@ import { useAuthStore } from '../../store/authStore';
 import { useAccess } from '../../hooks/useAccess';
 import { Button } from '../ui/Button';
 import {
+  buildOperationalProfileFromPreset,
   buildPersonalizationSettingsPatch,
   type BusinessCommercialSectionKey,
-  BUSINESS_TYPE_PRESETS,
   BusinessTypeKey,
   getBusinessBaseState,
   getBusinessCommercialSections,
   getBusinessNavigationDefaults,
   getBusinessPersonalizationSettings,
+  getBusinessTypePreset,
+  getBusinessTypePresetDefinition,
   getEnabledBusinessModules,
   getMissingRecommendedModules,
   isBusinessCommercialSectionEnabled,
-} from '../../config/businessPersonalization';
+} from '../../config/businessPersonalizationCompat';
 import { BUSINESS_NAVIGATION_ITEMS, type NavigationItemDefinition } from '../../navigation/businessNavigation';
 import { resolveBusinessNavigationState } from '../../navigation/navigationPersonalization';
 import { useNavigationPreferences } from '../../store/navigationPreferences.store';
@@ -43,6 +45,11 @@ import {
   type NavigationApplicationMode,
   toNavigationPreferences,
 } from '../../config/businessPresetApplication';
+import {
+  type BusinessOperationalInventoryModel,
+  normalizeBusinessOperationalProfile,
+  type BusinessOperationalProfile,
+} from '../../config/businessOperationalProfile';
 import {
   BUSINESS_MODULE_META,
   BUSINESS_MODULE_ORDER,
@@ -58,7 +65,7 @@ const buildModulesFormState = (modules?: BusinessModuleState[] | null): Record<B
   }, {} as Record<BusinessModuleKey, boolean>);
 };
 
-const buildCommercialSectionsFormState = (business?: { settings?: Record<string, any> | null } | null) => {
+const buildCommercialSectionsFormState = (business?: Parameters<typeof getBusinessCommercialSections>[0]) => {
   return getBusinessCommercialSections(business || null);
 };
 
@@ -222,8 +229,7 @@ const MenuColumn = ({
 export const BusinessPersonalizationExperience = () => {
   const { user } = useAuthStore();
   const { activeBusiness, updateBusiness, updateBusinessModules } = useBusinessStore();
-  const { isOwner, hasPermission, hasModule, canAccess, subscriptionPlan } = useAccess();
-  const canManageBusiness = !!activeBusiness && (isOwner || hasPermission('business.update'));
+  const { hasPermission, hasModule, canAccess, subscriptionPlan, canManageBusinessExperience: canManageBusiness } = useAccess();
   const baseState = useMemo(() => getBusinessBaseState(activeBusiness), [activeBusiness]);
   const appliedBusinessType = baseState.effectiveBusinessType;
   const currentNavigationDefaults = useMemo(() => getBusinessNavigationDefaults(activeBusiness), [activeBusiness]);
@@ -263,7 +269,11 @@ export const BusinessPersonalizationExperience = () => {
     setCommercialSectionsForm(buildCommercialSectionsFormState(activeBusiness));
   }, [activeBusiness]);
 
-  const selectedPreset = BUSINESS_TYPE_PRESETS[selectedBusinessType];
+  const presetOptions = useMemo(
+    () => (['simple_store', 'services', 'production', 'wholesale'] as BusinessTypeKey[]).map((businessType) => getBusinessTypePresetDefinition(businessType)),
+    []
+  );
+  const selectedPreset = useMemo(() => getBusinessTypePresetDefinition(selectedBusinessType), [selectedBusinessType]);
   const currentModules = useMemo(() => getEnabledBusinessModules(activeBusiness), [activeBusiness]);
   const currentModulesInPlan = useMemo(
     () => currentModules.filter((moduleKey) => canAccessModule(subscriptionPlan, moduleKey)),
@@ -512,7 +522,7 @@ export const BusinessPersonalizationExperience = () => {
       if (hasCommercialSectionChanges) {
         const personalization = getBusinessPersonalizationSettings(activeBusiness);
         await updateBusiness(activeBusiness.id, {
-          settings: buildPersonalizationSettingsPatch(activeBusiness.settings, {
+          settings: buildPersonalizationSettingsPatch(activeBusiness.settings || {}, {
             ...personalization,
             commercial_sections: commercialSectionsForm,
           }),
@@ -539,7 +549,9 @@ export const BusinessPersonalizationExperience = () => {
   ) => {
     if (!activeBusiness) return;
 
-    const preset = BUSINESS_TYPE_PRESETS[businessType];
+    const preset = getBusinessTypePresetDefinition(businessType);
+    const canonicalPreset = getBusinessTypePreset(businessType);
+    if (!canonicalPreset) return;
     const allowedPresetModules = preset.recommendedModules.filter((moduleKey) => canAccessModule(subscriptionPlan, moduleKey));
     const enableCount = allowedPresetModules.filter((moduleKey) => !currentModules.includes(moduleKey)).length;
     const disableCount = currentModules.filter((moduleKey) => !allowedPresetModules.includes(moduleKey)).length;
@@ -560,17 +572,32 @@ export const BusinessPersonalizationExperience = () => {
 
     try {
       setSavingPreset(true);
+      const canonicalOperationalProfile = buildOperationalProfileFromPreset(canonicalPreset);
+      const presetOperationalProfile: Partial<BusinessOperationalProfile> = {
+        ...canonicalOperationalProfile,
+        inventory_model: (canonicalOperationalProfile.inventory_model ?? null) as BusinessOperationalInventoryModel | null,
+        fulfillment_mode: canonicalOperationalProfile.fulfillment_mode ?? null,
+        production_mode: (canonicalOperationalProfile.production_mode ?? null) as BusinessOperationalProfile['production_mode'],
+        recipe_mode: (canonicalOperationalProfile.recipe_mode ?? null) as BusinessOperationalProfile['recipe_mode'],
+        production_control_mode: (canonicalOperationalProfile.production_control_mode ?? null) as BusinessOperationalProfile['production_control_mode'],
+      };
       const result = await applyBusinessTypeConfiguration({
         business: activeBusiness,
         businessType,
+        commercialSections: canonicalPreset.commercialSections as Record<BusinessCommercialSectionKey, boolean>,
         currentNavigationPreferences: storedNavigationPreferences,
         navigationMode,
+        operationalProfile: normalizeBusinessOperationalProfile(presetOperationalProfile),
         plan: subscriptionPlan,
+        prioritizedPath: canonicalPreset.prioritizedPath || null,
+        recommendedModules: canonicalPreset.recommendedModules,
         setNavigationPreferences: (preferences) => setPreferences(scopeKey, preferences),
         updateBusiness,
         updateBusinessModules,
+        visibilityMode: canonicalPreset.simplicityLevel === 'simple' ? 'basic' : 'advanced',
       });
       setSelectedBusinessType(businessType);
+      setCommercialSectionsForm(canonicalPreset.commercialSections as Record<BusinessCommercialSectionKey, boolean>);
       if (navigationMode === 'replace') {
         toast.success('La base quedó aplicada y el menú volvió a la vista recomendada.');
       } else if (result.navigationDecision === 'preserved_manual') {
@@ -687,7 +714,7 @@ export const BusinessPersonalizationExperience = () => {
         actions={
           <>
             <Button onClick={() => handleApplyPreset(selectedBusinessType, 'preserve_manual')} isLoading={savingPreset}>
-              {selectedBusinessType === appliedBusinessType ? 'Usar esta base' : 'Aplicar esta base'}
+              {selectedBusinessType === appliedBusinessType ? 'Reaplicar sin tocar mi menú' : 'Aplicar sin tocar mi menú'}
             </Button>
             <Button variant="secondary" onClick={() => handleApplyPreset(selectedBusinessType, 'replace')} disabled={savingPreset}>
               Aplicar y dejar lo recomendado
@@ -703,9 +730,13 @@ export const BusinessPersonalizationExperience = () => {
           </div>
         ) : null}
 
+        <div className="rounded-2xl border border-emerald-500/20 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-50">
+          Cambiar la base actualiza la lógica operativa, las herramientas recomendadas y la vista sugerida. Tus datos del negocio no se borran, y tu menú manual se conserva salvo que elijas volver a lo recomendado.
+        </div>
+
         <div className="mt-5 grid grid-cols-1 gap-4 lg:grid-cols-[1.3fr_0.9fr]">
           <div className="space-y-3">
-            {Object.values(BUSINESS_TYPE_PRESETS).map((preset) => {
+            {presetOptions.map((preset) => {
               const selected = selectedBusinessType === preset.key;
               const applied = appliedBusinessType === preset.key;
               return (
@@ -745,8 +776,20 @@ export const BusinessPersonalizationExperience = () => {
             <h4 className="mt-3 text-lg font-semibold app-text">{selectedPreset.label}</h4>
             <p className="mt-2 text-sm leading-6 app-text-muted">{selectedPreset.longDescription}</p>
 
+            <div className="mt-4 flex flex-wrap gap-2">
+              {selectedPreset.coveredExperiences.map((experience) => (
+                <span key={experience} className="rounded-full border border-blue-500/20 bg-blue-500/10 px-3 py-1 text-xs text-blue-100">
+                  {experience}
+                </span>
+              ))}
+            </div>
+
             <div className="mt-4 rounded-2xl border border-white/10 bg-white/[0.03] px-4 py-3 text-sm app-text-muted">
-              Te dejaremos una base recomendada para empezar. Después podrás elegir qué dejar más a mano y qué herramientas usar.
+              Esta base controla el punto de partida del negocio: qué herramientas se recomiendan, qué tipo de operación se asume y qué vista conviene priorizar.
+            </div>
+
+            <div className="mt-4 rounded-2xl border border-white/10 bg-white/[0.03] px-4 py-3 text-sm app-text-muted">
+              Se mantiene intacto lo sensible: ventas, clientes, productos, movimientos ya registrados y ajustes manuales fuera del preset. Si ya ordenaste tu menú a mano, la opción principal intenta respetarlo.
             </div>
 
             {selectedBlockedRecommendedCount > 0 ? (
@@ -953,7 +996,7 @@ export const BusinessPersonalizationExperience = () => {
       <StepShell
         step="4"
         tourId="settings.personalization.preview"
-        title="Configuración avanzada"
+        title="Opciones avanzadas"
         description="Aquí queda el detalle fino. Si no necesitas ajustar algo específico, puedes dejar esta parte cerrada."
       >
         <div className="rounded-3xl border border-white/10 bg-white/[0.03]">

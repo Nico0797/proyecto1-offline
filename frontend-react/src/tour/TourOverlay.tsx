@@ -54,6 +54,12 @@ export const TourOverlay = () => {
   const viewport = useVisualViewport();
   const { isMobile } = useBreakpoint();
 
+  const isCurrentRoute = (targetRoute?: string) => {
+    if (!targetRoute) return true;
+    const currentRoute = `${location.pathname}${location.search}`;
+    return currentRoute === targetRoute || location.pathname === targetRoute;
+  };
+
   // We use getTourById to support the new registry structure
   const tour = useMemo(() => activeSession, [activeSession]);
 
@@ -145,11 +151,29 @@ export const TourOverlay = () => {
     };
 
     // First, check if we need to navigate
-    if (step.route && location.pathname !== step.route) {
+    if (step.route && !isCurrentRoute(step.route)) {
       console.log(`[Tour] Need to navigate to ${step.route} for step ${step.id}`);
-      navigate(step.route);
-      // Wait for navigation to complete before trying to find target
-      return;
+      try {
+        navigate(step.route);
+        // Wait for navigation to complete before trying to find target
+        // Add a small delay to ensure route change propagates
+        setTimeout(() => {
+          console.log(`[Tour] Navigation complete, now searching for target for step ${step.id}`);
+          waitForTarget();
+        }, 100);
+        return;
+      } catch (error) {
+        console.error(`[Tour] Failed to navigate to ${step.route} for step ${step.id}:`, error);
+        if (step.optional) {
+          console.log(`[Tour] Step ${step.id} is optional, skipping due to navigation failure`);
+          next();
+        } else {
+          setRect(null);
+          setTargetNotFound(true);
+          setWaitingAction(false);
+        }
+        return;
+      }
     }
     
     const onTargetFound = (el: HTMLElement) => {
@@ -231,6 +255,7 @@ export const TourOverlay = () => {
     const waitForTarget = () => {
       const waitSelector = step.waitFor || resolvedSelector;
       if (!waitSelector) {
+          console.warn(`[Tour] Step ${step.id} has no selector or waitFor condition`);
           setRect(null);
           setTargetNotFound(false);
           return;
@@ -241,6 +266,7 @@ export const TourOverlay = () => {
       if (step.waitFor && !document.querySelector(step.waitFor)) el = null; // If wait condition not met, ignore target
 
       if (el) {
+        console.log(`[Tour] Found target for step ${step.id}:`, el);
         onTargetFound(el);
         return;
       }
@@ -249,6 +275,8 @@ export const TourOverlay = () => {
       // We only observe if not found immediately
       const observerConfig = { childList: true, subtree: true, attributes: false }; // Reduced scope if possible, but usually need subtree
       
+      console.log(`[Tour] Starting observer for step ${step.id} with selector: ${resolvedSelector}`);
+      
       mutationObserver = new MutationObserver((_mutations) => {
         // Debounce or check efficiently? 
         // For now, just check again. Browser is fast enough for querySelector.
@@ -256,6 +284,7 @@ export const TourOverlay = () => {
         if (step.waitFor && !document.querySelector(step.waitFor)) found = null;
 
         if (found) {
+          console.log(`[Tour] Observer found target for step ${step.id}:`, found);
           if (mutationObserver) mutationObserver.disconnect();
           if (timeoutId) clearTimeout(timeoutId);
           onTargetFound(found);
@@ -273,6 +302,7 @@ export const TourOverlay = () => {
          if (step.waitFor && !document.querySelector(step.waitFor)) found = null;
          
          if (found) {
+            console.log(`[Tour] Polling found target for step ${step.id}:`, found);
             clearInterval(intervalId);
             if (mutationObserver) mutationObserver.disconnect();
             if (timeoutId) clearTimeout(timeoutId);
@@ -286,9 +316,13 @@ export const TourOverlay = () => {
         clearInterval(intervalId);
         if (mutationObserver) mutationObserver.disconnect();
         
+        console.warn(`[Tour] Timeout waiting for target ${resolvedSelector} on step ${step.id}`);
+        
         if (step.optional) {
+          console.log(`[Tour] Step ${step.id} is optional, skipping to next step`);
           next();
         } else {
+          console.error(`[Tour] Required step ${step.id} failed to find target: ${resolvedSelector}`);
           setRect(null);
           setTargetNotFound(true);
           setWaitingAction(false);

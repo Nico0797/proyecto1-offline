@@ -22,7 +22,7 @@ import { ProGate } from '../components/ui/ProGate';
 import { FEATURES } from '../auth/plan';
 import { SwipePager } from '../components/ui/SwipePager';
 import { useAccess } from '../hooks/useAccess';
-import { ContentSection, PageHeader, PageLayout, PageNotice, PageStack, SectionStack, SummarySection, ToolbarSection } from '../components/Layout/PageLayout';
+import { ContentSection, PageHeader, PageLayout, PageNotice, PageStack, SectionStack, SummarySection } from '../components/Layout/PageLayout';
 import {
   MobileFilterDrawer,
   MobileHelpDisclosure,
@@ -51,7 +51,7 @@ export const Expenses = () => {
   const canDelete = hasPermission('expenses.delete');
   const supportsRecurringExpenses = isBackendCapabilitySupported('recurring_expenses');
   const supportsSupplierPayables = isBackendCapabilitySupported('supplier_payables');
-  const canReadSupplierPayables = supportsSupplierPayables && hasModule('raw_inventory') && hasPermission('supplier_payables.read');
+  const canReadSupplierPayables = supportsSupplierPayables && hasModule('raw_inventory') && hasPermission('supplier_payables.view');
   
   const [activeTab, setActiveTab] = useState<ExpenseTabId>(() => normalizeExpenseTab(searchParams.get('tab')));
   const [searchTerm, setSearchTerm] = useState('');
@@ -218,8 +218,10 @@ export const Expenses = () => {
   const expensePages = [
     {
       id: 'movements',
-      title: 'Gastos',
+      title: 'Movimientos',
+      mobileTitle: 'Gastos',
       icon: ClipboardList,
+      'data-tour': 'expenses.tabs.movements',
       content: (
         <SectionStack>
           <div className="hidden lg:block">
@@ -228,8 +230,8 @@ export const Expenses = () => {
                 description="Registra aquí solo salidas que ya ocurrieron. Lo programado y lo pendiente quedan aparte para no mezclar decisiones."
                 dismissible
               />
-              <SummarySection title="Resumen rápido" description="Mira el gasto actual antes de entrar a la lista detallada.">
-                <div data-tour="expenses.kpis">
+              <SummarySection title="Resumen rápido" description="Mira el gasto actual antes de entrar a la lista detallada." data-tour="expenses.kpis">
+                <div>
                   <ExpensesKpis
                     expenses={expenses}
                     recurringExpenses={recurringExpenses}
@@ -238,7 +240,7 @@ export const Expenses = () => {
                   />
                 </div>
               </SummarySection>
-              <ToolbarSection data-tour="expenses.filters">
+              <PageStack className="app-toolbar space-y-3" data-tour="expenses.filters">
                 <ExpensesToolbar
                   search={searchTerm}
                   onSearchChange={setSearchTerm}
@@ -248,54 +250,56 @@ export const Expenses = () => {
                   onDateRangeChange={setDateRange}
                   categories={customCategories}
                 />
-              </ToolbarSection>
+              </PageStack>
             </PageStack>
           </div>
 
           <ContentSection>
             <MobileUnifiedPageShell
-            utilityBar={(
-              <MobileUtilityBar>
-                <MobileFilterDrawer summary={movementFilterSummary} {...movementMobileFilters.sheetProps}>
-                  <ExpensesToolbar
-                    search={movementMobileFilters.draft.searchTerm}
-                    onSearchChange={(value) => movementMobileFilters.setDraft((current) => ({ ...current, searchTerm: value }))}
-                    categoryFilter={movementMobileFilters.draft.categoryFilter}
-                    onCategoryFilterChange={(value) => movementMobileFilters.setDraft((current) => ({ ...current, categoryFilter: value }))}
-                    dateRange={movementMobileFilters.draft.dateRange}
-                    onDateRangeChange={(value) => movementMobileFilters.setDraft((current) => ({ ...current, dateRange: value }))}
-                    categories={customCategories}
-                  />
-                </MobileFilterDrawer>
-                <MobileSummaryDrawer summary={movementSummaryLabel}>
-                  <div data-tour="expenses.kpis">
-                    <ExpensesKpis
-                      expenses={expenses}
-                      recurringExpenses={recurringExpenses}
-                      debtsSummary={debtsSummary}
-                      supplierPayables={supplierPayables}
-                    />
-                  </div>
-                </MobileSummaryDrawer>
-                <MobileHelpDisclosure summary="Cómo registrar gastos">
-                  <p className="text-sm text-gray-600 dark:text-gray-300">
-                    Registra aquí solo salidas que ya ocurrieron. Lo programado y lo pendiente viven en otras vistas para no mezclar decisiones.
-                  </p>
-                </MobileHelpDisclosure>
-              </MobileUtilityBar>
-            )}
-          >
-            <div data-tour="expenses.table">
-              <ExpensesTable
-                expenses={filteredExpenses}
-                loading={expensesLoading}
-                canEdit={canUpdate}
-                canDelete={canDelete}
-                onCreate={canCreate ? handleNewExpense : undefined}
-                onEdit={(exp) => { setEditingExpense(exp); setIsCreateModalOpen(true); }}
-                onDelete={handleDeleteExpense}
-              />
-            </div>
+              utilityBar={(
+                <MobileUtilityBar>
+                  <MobileFilterDrawer summary={movementFilterSummary} {...movementMobileFilters.sheetProps}>
+                    <div data-tour="expenses.filters">
+                      <ExpensesToolbar
+                        search={movementMobileFilters.draft.searchTerm}
+                        onSearchChange={(value) => movementMobileFilters.setDraft((current) => ({ ...current, searchTerm: value }))}
+                        categoryFilter={movementMobileFilters.draft.categoryFilter}
+                        onCategoryFilterChange={(value) => movementMobileFilters.setDraft((current) => ({ ...current, categoryFilter: value }))}
+                        dateRange={movementMobileFilters.draft.dateRange}
+                        onDateRangeChange={(value) => movementMobileFilters.setDraft((current) => ({ ...current, dateRange: value }))}
+                        categories={customCategories}
+                      />
+                    </div>
+                  </MobileFilterDrawer>
+                  <MobileSummaryDrawer summary={movementSummaryLabel}>
+                    <div data-tour="expenses.kpis">
+                      <ExpensesKpis
+                        expenses={expenses}
+                        recurringExpenses={recurringExpenses}
+                        debtsSummary={debtsSummary}
+                        supplierPayables={supplierPayables}
+                      />
+                    </div>
+                  </MobileSummaryDrawer>
+                  <MobileHelpDisclosure summary="Cómo registrar gastos">
+                    <p className="text-sm text-gray-600 dark:text-gray-300">
+                      Registra aquí solo salidas que ya ocurrieron. Lo programado y lo pendiente viven en otras vistas para no mezclar decisiones.
+                    </p>
+                  </MobileHelpDisclosure>
+                </MobileUtilityBar>
+              )}
+            >
+              <div data-tour="expenses.table">
+                <ExpensesTable
+                  expenses={filteredExpenses}
+                  loading={expensesLoading}
+                  canEdit={canUpdate}
+                  canDelete={canDelete}
+                  onCreate={canCreate ? handleNewExpense : undefined}
+                  onEdit={(exp) => { setEditingExpense(exp); setIsCreateModalOpen(true); }}
+                  onDelete={handleDeleteExpense}
+                />
+              </div>
             </MobileUnifiedPageShell>
           </ContentSection>
         </SectionStack>
@@ -306,6 +310,7 @@ export const Expenses = () => {
       title: 'Programados',
       badge: 'PRO',
       icon: RefreshCw,
+      'data-tour': 'expenses.recurring',
       content: (
         <ProGate feature={FEATURES.RECURRING_EXPENSES} mode="block">
           <RecurringTab
@@ -320,6 +325,7 @@ export const Expenses = () => {
       title: 'Por pagar',
       badge: 'PRO',
       icon: CreditCard,
+      'data-tour': 'expenses.tabs.payables',
       content: (
         <ProGate feature={FEATURES.DEBTS} mode="block">
           <PayablesTab />
@@ -331,6 +337,7 @@ export const Expenses = () => {
       title: 'Análisis',
       badge: 'PRO',
       icon: PieChart,
+      'data-tour': 'expenses.tabs.analytics',
       content: (
         <ProGate feature={FEATURES.REPORTS} mode="block">
           <ExpensesAnalyticsTab expenses={filteredExpenses} />
@@ -341,6 +348,7 @@ export const Expenses = () => {
       id: 'categories',
       title: 'Categorías',
       icon: Tags,
+      'data-tour': 'expenses.category',
       content: (
         <CategoriesTab
           categories={customCategories}

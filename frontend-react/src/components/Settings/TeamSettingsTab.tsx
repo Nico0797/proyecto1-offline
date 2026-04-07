@@ -18,7 +18,7 @@ import { EmployeeFeedbackPanel } from './EmployeeFeedbackPanel';
 export default function TeamSettingsTab() {
   const { activeBusiness } = useBusinessStore();
   const { user } = useAuthStore();
-  const { hasPermission } = useAccess();
+  const { canManageTeam } = useAccess();
   
   const [members, setMembers] = useState<TeamMember[]>([]);
   const [loading, setLoading] = useState(true);
@@ -30,9 +30,6 @@ export default function TeamSettingsTab() {
   const [roleFilter, setRoleFilter] = useState<string>('ALL');
   const [statusFilter, setStatusFilter] = useState<string>('ALL');
 
-  // Permission Checks
-  const canManageTeam = hasPermission('team.manage');
-  
   useEffect(() => {
     if (!activeBusiness) {
       setMembers([]);
@@ -137,7 +134,7 @@ export default function TeamSettingsTab() {
   ];
 
   return (
-    <div className="space-y-6 animate-in fade-in duration-500">
+    <div className="space-y-6 animate-in fade-in duration-500" data-tour="team.panel">
       <Tab.Group>
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-gray-200 dark:border-gray-800 pb-4">
             <div>
@@ -192,7 +189,7 @@ export default function TeamSettingsTab() {
             <Tab.Panel className="outline-none">
                 <div className="space-y-6">
                     {/* Actions Bar */}
-                    <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                    <div className="flex flex-col md:flex-row md:items-center justify-between gap-4" data-tour="team.filters">
                         {/* Filters */}
                         <div className="flex flex-col sm:flex-row gap-4 flex-1">
                             <div className="relative flex-1 max-w-md">
@@ -245,6 +242,7 @@ export default function TeamSettingsTab() {
                                 </button>
                                 <button
                                     onClick={() => setIsInviteModalOpen(true)}
+                                    data-tour="team.invite"
                                     className="inline-flex items-center justify-center px-4 py-2 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 transition-colors shadow-sm whitespace-nowrap"
                                 >
                                     <Plus className="w-4 h-4 mr-2" />

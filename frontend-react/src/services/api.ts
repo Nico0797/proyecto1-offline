@@ -1,7 +1,6 @@
 import axios from 'axios';
 import toast from 'react-hot-toast';
-import { clearPersistedAuthSession, syncAuthToken, useAuthStore } from '../store/authStore';
-import { useBusinessStore } from '../store/businessStore';
+import { resetAuthSessionState, syncAuthToken } from '../store/authStore';
 import { resolveApiBaseUrl } from './apiBase';
 import {
   applyDemoPreviewOverlayToResponse,
@@ -37,8 +36,14 @@ const PREVIEW_WRITE_EXEMPT_PREFIXES = [
   '/billing/checkout',
   '/billing/confirm-wompi',
   '/billing/portal',
+  '/auth/login',
+  '/auth/register',
+  '/auth/verify-email',
+  '/auth/forgot-password',
+  '/auth/reset-password',
   '/auth/refresh',
   '/auth/logout',
+  '/invitations/register',
 ];
 const PREVIEW_HEADER_EXCLUDED_PREFIXES = [
   '/account/access',
@@ -52,6 +57,26 @@ const PREVIEW_HEADER_EXCLUDED_PREFIXES = [
   '/auth/verify-email',
   '/auth/forgot-password',
   '/auth/reset-password',
+  '/invitations/register',
+];
+const PUBLIC_AUTH_PAGE_PATHS = [
+  '/',
+  '/login',
+  '/team-login',
+  '/register',
+  '/accept-invite',
+  '/admin/login',
+];
+const PUBLIC_AUTH_REQUEST_PREFIXES = [
+  '/auth/login',
+  '/auth/register',
+  '/auth/verify-email',
+  '/auth/forgot-password',
+  '/auth/reset-password',
+  '/auth/me',
+  '/auth/refresh',
+  '/auth/logout',
+  '/invitations/register',
 ];
 
 const normalizeUrlPath = (url?: string) => {
@@ -72,6 +97,15 @@ const isPreviewWriteExempt = (path: string) =>
 
 const shouldAttachPreviewHeader = (path: string) =>
   !PREVIEW_HEADER_EXCLUDED_PREFIXES.some((prefix) => path.startsWith(prefix));
+
+const isPublicAuthPage = () => {
+  if (typeof window === 'undefined') return false;
+  const currentPath = window.location.pathname || '/';
+  return PUBLIC_AUTH_PAGE_PATHS.some((path) => currentPath === path);
+};
+
+const isPublicAuthRequest = (path: string) =>
+  PUBLIC_AUTH_REQUEST_PREFIXES.some((prefix) => path.startsWith(prefix));
 
 const notifyPreviewReadOnly = () => {
   const now = Date.now();
@@ -123,15 +157,7 @@ const isDemoPreviewActive = () => {
 };
 
 const forceLogout = () => {
-  useBusinessStore.getState().reset();
-  clearPersistedAuthSession();
-  useAuthStore.setState({
-    user: null,
-    token: null,
-    activeContext: null,
-    accessibleContexts: [],
-    isAuthenticated: false,
-  });
+  resetAuthSessionState();
 
   if (typeof window !== 'undefined' && window.location.pathname !== '/login') {
     window.location.href = '/login';
@@ -178,10 +204,15 @@ api.interceptors.request.use(
     const path = normalizeUrlPath(config.url);
     const method = String(config.method || 'get').toLowerCase();
     const isDemoPreview = isDemoPreviewActive();
+    const isPublicAuthContext = isPublicAuthPage() || isPublicAuthRequest(path);
 
     const token = localStorage.getItem('token');
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
+    }
+
+    if (isPublicAuthContext) {
+      return config;
     }
 
     if (isDemoPreview && !['get', 'head', 'options'].includes(method) && !isPreviewWriteExempt(path)) {
@@ -219,7 +250,7 @@ api.interceptors.request.use(
 
 api.interceptors.response.use(
   (response) => {
-    if (isDemoPreviewActive()) {
+    if (isDemoPreviewActive() && !isPublicAuthPage()) {
       const path = normalizeUrlPath(response.config?.url);
       response.data = applyDemoPreviewOverlayToResponse(path, response.data);
     }
@@ -283,7 +314,9 @@ api.interceptors.response.use(
         || requestUrl.includes('/auth/register')
         || requestUrl.includes('/auth/verify-email')
         || requestUrl.includes('/auth/forgot-password')
-        || requestUrl.includes('/auth/reset-password');
+        || requestUrl.includes('/auth/reset-password')
+        || requestUrl.includes('/invitations/register')
+        || isPublicAuthPage();
 
       if (!isInteractiveAuthRequest) {
         forceLogout();
@@ -292,7 +325,7 @@ api.interceptors.response.use(
     }
 
     if (error.response?.status === 403) {
-      if (error.response?.data?.code === 'preview_read_only' || error.response?.data?.code === 'preview_no_persist') {
+      if (!isPublicAuthPage() && (error.response?.data?.code === 'preview_read_only' || error.response?.data?.code === 'preview_no_persist')) {
         notifyPreviewReadOnly();
       }
       if (!suppress403Warning) {

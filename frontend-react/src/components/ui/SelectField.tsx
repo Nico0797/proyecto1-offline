@@ -35,8 +35,8 @@ export const SelectField: React.FC<SelectFieldProps> = ({
         <select
           id={id}
           className={cn(
-            'app-field-surface min-h-11 w-full appearance-none rounded-2xl px-3.5 py-3 pr-11 text-[16px] shadow-sm transition sm:text-sm',
-            'focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 dark:focus:border-blue-400 dark:focus:ring-blue-400/20',
+            'app-select min-h-11 rounded-2xl px-3.5 py-3 pr-11 text-[16px] shadow-sm transition sm:text-sm',
+            'focus:outline-none',
             'disabled:cursor-not-allowed disabled:opacity-50',
             Icon ? 'pl-11' : '',
             className,

@@ -14,7 +14,7 @@ import { SyncToastFeedback } from '../Sync/SyncToastFeedback';
 
 export const MainLayout = () => {
   const location = useLocation();
-  const { isAuthenticated, activeContext, accessibleContexts, fetchUser, user } = useAuthStore();
+  const { isAuthenticated, isHydrating, activeContext, accessibleContexts, fetchUser, user } = useAuthStore();
   const { activeBusiness, fetchAuthBootstrap } = useBusinessStore();
   const { initialize, setTrackedBusiness } = useOfflineSyncStore();
   const {
@@ -82,6 +82,14 @@ export const MainLayout = () => {
   }, [activeBusiness?.id, setTrackedBusiness]);
 
   // Check auth and context
+  if (isHydrating) {
+    return (
+      <div className="app-canvas flex min-h-[100dvh] items-center justify-center text-sm font-medium app-text">
+        Restaurando tu sesión...
+      </div>
+    );
+  }
+
   if (!isAuthenticated) {
     return <Navigate to="/login" replace />;
   }

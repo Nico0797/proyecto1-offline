@@ -614,6 +614,9 @@ class RecipeConsumption(db.Model):
     recipe_id = db.Column(db.Integer, db.ForeignKey("recipes.id"), index=True)
     product_id = db.Column(db.Integer, db.ForeignKey("products.id"), index=True)
     related_sale_id = db.Column(db.Integer, db.ForeignKey("sales.id"), index=True)
+    source_type = db.Column(db.String(40), index=True)
+    source_document_type = db.Column(db.String(40), index=True)
+    source_document_id = db.Column(db.Integer, index=True)
     quantity_produced_or_sold = db.Column(db.Float, nullable=False)
     notes = db.Column(db.Text)
     created_by = db.Column(db.Integer, db.ForeignKey("users.id"), index=True)
@@ -632,7 +635,7 @@ class RecipeConsumption(db.Model):
 
     def to_dict(self, include_items=True):
         consumption_items = self.items.order_by(RecipeConsumptionItem.id.asc()).all() if include_items else []
-        source_type = "sale" if self.related_sale_id else "manual"
+        source_type = self.source_type or ("sale" if self.related_sale_id else "manual")
         return {
             "id": self.id,
             "business_id": self.business_id,
@@ -642,6 +645,8 @@ class RecipeConsumption(db.Model):
             "product_name": self.product.name if self.product else None,
             "related_sale_id": self.related_sale_id,
             "source_type": source_type,
+            "source_document_type": self.source_document_type,
+            "source_document_id": self.source_document_id,
             "quantity_produced_or_sold": self.quantity_produced_or_sold,
             "notes": self.notes,
             "created_by": self.created_by,

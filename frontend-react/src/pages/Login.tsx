@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate, Link, useLocation } from 'react-router-dom';
 import { useAuthStore } from '../store/authStore';
+import { useAccountAccessStore } from '../store/accountAccessStore';
 import { useBusinessStore } from '../store/businessStore';
 import api from '../services/api';
 import { Mail, Lock, Eye, EyeOff, ArrowRight, Loader2, Sparkles } from 'lucide-react';
@@ -34,7 +35,7 @@ export const Login = () => {
 
     try {
       const response = await api.post('/auth/login', { email, password });
-      const { user, access_token, refresh_token, token, accessible_contexts, active_context } = response.data;
+      const { user, access_token, refresh_token, token, accessible_contexts, active_context, account_access } = response.data;
       const useToken = access_token || token;
       
       if (!useToken) {
@@ -49,6 +50,7 @@ export const Login = () => {
       await new Promise(resolve => setTimeout(resolve, 800));
        
        login(user, useToken, active_context, accessible_contexts);
+       useAccountAccessStore.getState().setAccess(account_access || null);
        if (active_context?.business_id) {
          await fetchAuthBootstrap(active_context.business_id);
        }

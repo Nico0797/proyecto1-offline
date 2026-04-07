@@ -1,11 +1,12 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useLocation } from 'react-router-dom';
-import { useAccess } from '../../hooks/useAccess';
-import { getOnboardingTutorialId } from '../../help/learningCenter';
+import { getLearningTutorialById, getOnboardingTutorialId } from '../../help/learningCenter';
 import { useAuthStore } from '../../store/authStore';
 import { useBusinessStore } from '../../store/businessStore';
 import { buildLearningScopeKey } from '../../store/learningCenterStore';
 import { useTour } from '../../tour/TourProvider';
+import { resolveTutorialAvailability } from '../../tour/tutorialEligibility';
+import { useTutorialRuntimeContext } from '../../tour/tutorialContext';
 import { useTourStore } from '../../tour/tourStore';
 
 const BLOCKED_AUTO_START_PATH_PREFIXES = ['/admin', '/auth'];
@@ -14,7 +15,7 @@ const MAX_AUTO_START_RETRIES = 8;
 export const LearningCenterOnboarding = () => {
   const { user } = useAuthStore();
   const { activeBusiness } = useBusinessStore();
-  const { subscriptionPlan } = useAccess();
+  const tutorialContext = useTutorialRuntimeContext();
   const { start } = useTour();
   const location = useLocation();
 
@@ -25,8 +26,13 @@ export const LearningCenterOnboarding = () => {
   const syncTourScope = useTourStore((state) => state.syncScope);
 
   const onboardingTutorialId = useMemo(
-    () => getOnboardingTutorialId(subscriptionPlan, activeBusiness),
-    [activeBusiness, subscriptionPlan]
+    () => getOnboardingTutorialId(tutorialContext),
+    [tutorialContext]
+  );
+
+  const onboardingDefinition = useMemo(
+    () => getLearningTutorialById(onboardingTutorialId),
+    [onboardingTutorialId]
   );
 
   const scopeKey = useMemo(
@@ -53,8 +59,15 @@ export const LearningCenterOnboarding = () => {
     if (!isAutoStartPathEligible) return;
     if (hasAutoStartedRef.current) return;
 
-    const tutorialRecord = perTour[onboardingTutorialId];
-    if (tutorialRecord?.status === 'completed' || tutorialRecord?.status === 'dismissed') {
+    const canAutoStart = resolveTutorialAvailability({
+      tutorialId: onboardingTutorialId,
+      rules: onboardingDefinition?.eligibility || onboardingDefinition?.visibility,
+      behavior: onboardingDefinition?.behavior,
+      context: tutorialContext,
+      trigger: 'auto',
+    });
+
+    if (!canAutoStart.eligible) {
       return;
     }
 
@@ -83,11 +96,15 @@ export const LearningCenterOnboarding = () => {
     activeScopeKey,
     isActive,
     isAutoStartPathEligible,
+    onboardingDefinition?.behavior,
+    onboardingDefinition?.eligibility,
+    onboardingDefinition?.visibility,
     onboardingTutorialId,
     perTour,
     retryTick,
     scopeKey,
     start,
+    tutorialContext,
     user,
   ]);
 

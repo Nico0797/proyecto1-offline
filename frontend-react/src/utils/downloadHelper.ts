@@ -8,6 +8,16 @@ interface DownloadOptions {
   filename: string;
 }
 
+interface GeneratedDownloadResponse {
+  download_url?: string;
+  filename?: string;
+}
+
+export interface DownloadedFilePayload {
+  blob: Blob;
+  filename: string;
+}
+
 export const saveBlobFile = async (
   blob: Blob,
   options: DownloadOptions
@@ -23,6 +33,53 @@ export const saveBlobFile = async (
     toast.error(error.message || 'No se pudo guardar el archivo.', { id: toastId });
     return false;
   }
+};
+
+export const requestGeneratedFile = async (
+  generationUrl: string,
+  params: Record<string, unknown> = {},
+  fallbackFilename: string
+): Promise<DownloadedFilePayload> => {
+  const response = await api.get<GeneratedDownloadResponse>(generationUrl, { params });
+  const downloadUrl = response.data?.download_url;
+  if (!downloadUrl) {
+    throw new Error('El servidor no devolvió la URL de descarga del archivo.');
+  }
+  const generatedFilename = response.data?.filename;
+  return requestDirectFile(downloadUrl, {}, generatedFilename || fallbackFilename);
+};
+
+export const requestDirectFile = async (
+  url: string,
+  params: Record<string, unknown> = {},
+  fallbackFilename: string
+): Promise<DownloadedFilePayload> => {
+  const response = await api.get(getAbsoluteUrl(url), {
+    params,
+    responseType: 'blob',
+  });
+
+  const blob = response.data instanceof Blob ? response.data : new Blob([response.data]);
+  const contentType = getHeaderValue(response.headers, 'content-type') || blob.type || '';
+  if (contentType.includes('application/json')) {
+    const text = await blob.text();
+    try {
+      const payload = JSON.parse(text);
+      throw new Error(payload?.error || 'El servidor devolvió una respuesta JSON inesperada.');
+    } catch (error) {
+      if (error instanceof Error && error.message !== 'Unexpected end of JSON input') {
+        throw error;
+      }
+      throw new Error('El servidor devolvió una respuesta JSON inesperada.');
+    }
+  }
+
+  const filename =
+    getFilenameFromContentDisposition(getHeaderValue(response.headers, 'content-disposition'))
+    || fallbackFilename
+    || getFilenameFromUrl(url);
+
+  return { blob, filename };
 };
 
 /**
@@ -142,6 +199,36 @@ const getAbsoluteUrl = (relativeUrl: string): string => {
   const cleanBase = baseURL.replace(/\/$/, '');
   const cleanPath = relativeUrl.startsWith('/') ? relativeUrl : `/${relativeUrl}`;
   return `${cleanBase}${cleanPath}`.replace('/api/api/', '/api/'); // Fix común
+};
+
+const getHeaderValue = (headers: any, name: string): string | undefined => {
+  if (!headers) return undefined;
+  if (typeof headers.get === 'function') {
+    return headers.get(name) || headers.get(name.toLowerCase()) || undefined;
+  }
+  return headers[name] || headers[name.toLowerCase()] || headers[name.toUpperCase()] || undefined;
+};
+
+const getFilenameFromContentDisposition = (contentDisposition?: string): string | undefined => {
+  if (!contentDisposition) return undefined;
+
+  const utf8Match = contentDisposition.match(/filename\*=UTF-8''([^;]+)/i);
+  if (utf8Match?.[1]) {
+    return decodeURIComponent(utf8Match[1].replace(/"/g, ''));
+  }
+
+  const asciiMatch = contentDisposition.match(/filename=([^;]+)/i);
+  if (asciiMatch?.[1]) {
+    return asciiMatch[1].trim().replace(/^"|"$/g, '');
+  }
+
+  return undefined;
+};
+
+const getFilenameFromUrl = (url: string): string => {
+  const cleanUrl = url.split('?')[0];
+  const parts = cleanUrl.split('/').filter(Boolean);
+  return parts[parts.length - 1] || `archivo_${new Date().toISOString().split('T')[0]}.bin`;
 };
 
 export const generateFilename = (prefix: string, start?: string, end?: string) => {

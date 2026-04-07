@@ -97,7 +97,7 @@ export const DebtWorkspace = ({ scope }: DebtWorkspaceProps) => {
   const canCreate = hasPermission('expenses.create');
   const canUpdate = hasPermission('expenses.update');
   const canDelete = hasPermission('expenses.delete');
-  const canReadSupplierPayables = scope === 'operational' && hasModule('raw_inventory') && hasPermission('supplier_payables.read');
+  const canReadSupplierPayables = scope === 'operational' && hasModule('raw_inventory') && hasPermission('supplier_payables.view');
 
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [isPaymentOpen, setIsPaymentOpen] = useState(false);

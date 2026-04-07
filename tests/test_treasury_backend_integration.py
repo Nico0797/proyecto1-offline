@@ -1,4 +1,6 @@
 import pytest
+from uuid import uuid4
+from sqlalchemy import text
 
 from backend.auth import create_token
 from backend.config import TestingConfig
@@ -35,7 +37,7 @@ def treasury_env():
     db.create_all()
 
     user = User(
-        email="treasury.qa@example.com",
+        email=f"treasury.qa.{uuid4().hex}@example.com",
         name="Treasury QA",
         password_hash="hash",
         email_verified=True,
@@ -165,7 +167,14 @@ def treasury_env():
     yield env
 
     db.session.remove()
-    db.drop_all()
+    table_names = [table.name for table in reversed(db.metadata.sorted_tables)]
+    if table_names:
+        db.session.execute(
+            text(
+                "TRUNCATE TABLE " + ", ".join(f'\"{table_name}\"' for table_name in table_names) + " RESTART IDENTITY CASCADE"
+            )
+        )
+        db.session.commit()
     ctx.pop()
 
 

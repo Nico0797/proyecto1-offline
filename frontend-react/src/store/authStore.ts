@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import { AuthState, User, ActiveContext, AccessibleContext } from '../types';
 import { resolveApiBaseUrl } from '../services/apiBase';
 import { useBusinessStore } from './businessStore';
+import { useAccountAccessStore } from './accountAccessStore';
 import { resetDemoPreviewSimulation } from '../services/demoPreviewSimulation';
 
 const USER_STORAGE_KEY = 'user';
@@ -10,6 +11,10 @@ const ACTIVE_CONTEXT_STORAGE_KEY = 'activeContext';
 const ACCESSIBLE_CONTEXTS_STORAGE_KEY = 'accessibleContexts';
 const REFRESH_TOKEN_STORAGE_KEY = 'refresh_token';
 const ACCOUNT_ACCESS_STORAGE_KEY = 'account_access_snapshot';
+
+const hasPersistedSession = () => Boolean(
+  localStorage.getItem(TOKEN_STORAGE_KEY) || localStorage.getItem(REFRESH_TOKEN_STORAGE_KEY)
+);
 
 const readJsonStorage = <T>(key: string, fallback: T): T => {
   try {
@@ -66,6 +71,11 @@ export const clearPersistedAuthSession = () => {
   localStorage.removeItem(ACCOUNT_ACCESS_STORAGE_KEY);
 };
 
+export const clearDerivedSessionArtifacts = () => {
+  useBusinessStore.getState().reset();
+  useAccountAccessStore.getState().clear();
+};
+
 export const syncAuthToken = (token: string | null) => {
   persistSessionSnapshot({
     user: readJsonStorage<User | null>(USER_STORAGE_KEY, null),
@@ -75,12 +85,13 @@ export const syncAuthToken = (token: string | null) => {
   useAuthStore.setState((state) => ({
     ...state,
     token,
-    isAuthenticated: Boolean(token),
+    isAuthenticated: Boolean(token || localStorage.getItem(REFRESH_TOKEN_STORAGE_KEY)),
+    isHydrating: false,
   }));
 };
 
-const clearAuthState = () => {
-  useBusinessStore.getState().reset();
+export const resetAuthSessionState = () => {
+  clearDerivedSessionArtifacts();
   clearPersistedAuthSession();
   useAuthStore.setState({
     user: null,
@@ -88,6 +99,7 @@ const clearAuthState = () => {
     activeContext: null,
     accessibleContexts: [],
     isAuthenticated: false,
+    isHydrating: false,
   });
 };
 
@@ -126,7 +138,8 @@ export const useAuthStore = create<AuthState>((set) => ({
   token: localStorage.getItem(TOKEN_STORAGE_KEY),
   activeContext: readJsonStorage<ActiveContext | null>(ACTIVE_CONTEXT_STORAGE_KEY, null),
   accessibleContexts: readJsonStorage<AccessibleContext[]>(ACCESSIBLE_CONTEXTS_STORAGE_KEY, []),
-  isAuthenticated: !!localStorage.getItem(TOKEN_STORAGE_KEY),
+  isAuthenticated: hasPersistedSession(),
+  isHydrating: hasPersistedSession(),
   login: (user: User, token: string, activeContext?: ActiveContext | null, accessibleContexts?: AccessibleContext[]) => {
     useBusinessStore.getState().reset();
     persistSessionSnapshot({
@@ -142,6 +155,7 @@ export const useAuthStore = create<AuthState>((set) => ({
       activeContext: activeContext || null,
       accessibleContexts: accessibleContexts || [],
       isAuthenticated: true,
+      isHydrating: false,
     });
   },
   selectContext: (context: ActiveContext) => {
@@ -166,9 +180,15 @@ export const useAuthStore = create<AuthState>((set) => ({
       }).catch(() => undefined);
     }
 
-    clearAuthState();
+    resetAuthSessionState();
   },
   fetchUser: async () => {
+    set((state) => ({
+      ...state,
+      isHydrating: true,
+      isAuthenticated: hasPersistedSession(),
+    }));
+
     try {
       let token = localStorage.getItem(TOKEN_STORAGE_KEY);
       const apiBaseUrl = resolveApiBaseUrl();
@@ -177,7 +197,10 @@ export const useAuthStore = create<AuthState>((set) => ({
         token = await requestTokenRefresh();
       }
 
-      if (!token) return;
+      if (!token) {
+        resetAuthSessionState();
+        return;
+      }
 
       let res = await fetch(`${apiBaseUrl}/auth/me`, {
         headers: {
@@ -190,7 +213,7 @@ export const useAuthStore = create<AuthState>((set) => ({
       if (res.status === 401 && localStorage.getItem(REFRESH_TOKEN_STORAGE_KEY)) {
         token = await requestTokenRefresh();
         if (!token) {
-          clearAuthState();
+          resetAuthSessionState();
           return;
         }
 
@@ -206,24 +229,31 @@ export const useAuthStore = create<AuthState>((set) => ({
       if (res.ok) {
         const data = await res.json();
         const userData = data.user || data;
+        useAccountAccessStore.getState().setAccess(data.account_access || null);
 
         persistSessionSnapshot({
           user: userData,
           token,
         });
-        set({ user: userData, token, isAuthenticated: Boolean(token) });
+        set({ user: userData, token, isAuthenticated: Boolean(token), isHydrating: false });
         return;
       }
 
       if (res.status === 401) {
-        clearAuthState();
+        resetAuthSessionState();
       }
     } catch (e) {
       console.error('Failed to refresh user data', e);
       const refreshStatus = (e as { status?: number })?.status;
       if (refreshStatus === 401 || !localStorage.getItem(REFRESH_TOKEN_STORAGE_KEY)) {
-        clearAuthState();
+        resetAuthSessionState();
+        return;
       }
+
+      set((state) => ({
+        ...state,
+        isHydrating: false,
+      }));
     }
   },
 }));

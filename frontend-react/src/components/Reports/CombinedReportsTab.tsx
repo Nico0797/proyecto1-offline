@@ -82,14 +82,14 @@ export const CombinedReportsTab: React.FC<CombinedReportsTabProps> = ({ dateRang
     
     setDownloading(reportId);
     try {
-      const blob = await analyticsService.downloadExportReport(activeBusiness.id, 'combined', {
+      const file = await analyticsService.downloadExportReport(activeBusiness.id, 'combined', {
         type: reportId,
         startDate: dateRange.start,
         endDate: dateRange.end
       });
 
-      const filename = generateFilename(title.toLowerCase().replace(/ /g, '_'), dateRange.start, dateRange.end);
-      await saveBlobFile(blob, { filename });
+      const filename = file.filename || generateFilename(title.toLowerCase().replace(/ /g, '_'), dateRange.start, dateRange.end);
+      await saveBlobFile(file.blob, { filename });
 
     } catch (error) {
       console.error('Error downloading report:', error);

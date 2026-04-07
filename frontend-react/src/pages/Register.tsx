@@ -5,6 +5,7 @@ import { Input } from '../components/ui/Input';
 import { Store, Check, ShieldCheck, Copy } from 'lucide-react';
 import { useNavigate, Link, useSearchParams } from 'react-router-dom';
 import { useAuthStore } from '../store/authStore';
+import { useAccountAccessStore } from '../store/accountAccessStore';
 
 export const Register = () => {
   const [searchParams] = useSearchParams();
@@ -102,7 +103,7 @@ export const Register = () => {
         code: verificationCode
       });
       
-      const { user, access_token, refresh_token, token } = res.data;
+      const { user, access_token, refresh_token, token, account_access } = res.data;
       const useToken = access_token || token;
       
       if (useToken) {
@@ -110,6 +111,7 @@ export const Register = () => {
           localStorage.setItem('refresh_token', refresh_token);
         }
         login(user, useToken);
+        useAccountAccessStore.getState().setAccess(account_access || null);
         navigate('/account-access', { replace: true });
       } else {
         setTimeout(() => navigate('/login'), 2000);

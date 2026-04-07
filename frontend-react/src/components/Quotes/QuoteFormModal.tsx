@@ -1,6 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Plus, Trash2 } from 'lucide-react';
-import { toast } from 'react-hot-toast';
 import { Modal } from '../ui/Modal';
 import { Button } from '../ui/Button';
 import { FormAlert } from '../ui/FormAlert';
@@ -73,8 +72,8 @@ export const QuoteFormModal = ({ isOpen, onClose, onSubmit, quote, isSaving = fa
   const { customers, fetchCustomers } = useCustomerStore();
   const { products, fetchProducts } = useProductStore();
   const { hasModule, hasPermission } = useAccess();
-  const canUseCustomers = hasModule('customers') && hasPermission('customers.read');
-  const canUseProducts = hasModule('products') && hasPermission('products.read');
+  const canUseCustomers = hasModule('customers') && hasPermission('customers.view');
+  const canUseProducts = hasModule('products') && hasPermission('products.view');
 
   const [customerId, setCustomerId] = useState<number | ''>('');
   const [issueDate, setIssueDate] = useState('');
@@ -239,7 +238,7 @@ export const QuoteFormModal = ({ isOpen, onClose, onSubmit, quote, isSaving = fa
             Mantén la propuesta fácil de leer, fácil de convertir y cómoda de editar desde móvil.
           </div>
         </div>
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4" data-tour="quotes.modal.context">
           <div className="md:col-span-2">
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Cliente</label>
             <select
@@ -294,7 +293,7 @@ export const QuoteFormModal = ({ isOpen, onClose, onSubmit, quote, isSaving = fa
           </div>
         </div>
 
-        <div className="space-y-3">
+        <div className="space-y-3" data-tour="quotes.modal.items">
           <div className="flex items-center justify-between">
             <div>
               <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Items</h3>
@@ -380,7 +379,7 @@ export const QuoteFormModal = ({ isOpen, onClose, onSubmit, quote, isSaving = fa
 
         <div className="flex flex-col-reverse gap-3 border-t border-gray-200 pt-3 sm:flex-row dark:border-gray-700">
           <Button variant="secondary" className="flex-1" onClick={onClose}>Cancelar</Button>
-          <Button className="flex-1" onClick={handleSubmit} isLoading={isSaving}>
+          <Button className="flex-1" onClick={handleSubmit} isLoading={isSaving} data-tour="quotes.modal.confirm">
             {quote ? 'Guardar cambios' : 'Crear cotización'}
           </Button>
         </div>

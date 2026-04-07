@@ -53,6 +53,10 @@ export const TOUR_TARGETS = {
     filterInactive: 'customers.filterInactive',
     detail: 'customers.detail',
     debtList: 'customers.debtList',
+    modal: {
+      form: 'customers.modal.form',
+      confirm: 'customers.modal.confirm',
+    },
   },
   payments: {
     panel: 'payments.panel',
@@ -117,12 +121,18 @@ export const TOUR_TARGETS = {
       quickAdjust: 'products.inventory.quickAdjust',
     },
     pricing: {
-      calculator: 'products.pricing.calculator',
-    }
+      table: 'products.pricing.table',
+      formula: 'products.pricing.formula',
+    },
+    modal: {
+      form: 'products.modal.form',
+      confirm: 'products.modal.confirm',
+    },
   },
   orders: {
     panel: 'orders.panel',
     board: 'orders.board',
+    filters: 'orders.filters',
     primaryAction: 'orders.primaryAction',
     card: 'orders.card',
     settings: 'orders.settings',
@@ -138,6 +148,56 @@ export const TOUR_TARGETS = {
       confirm: 'orders.modal.confirm',
     }
   },
+  quotes: {
+    panel: 'quotes.panel',
+    primaryAction: 'quotes.primaryAction',
+    filters: 'quotes.filters',
+    table: 'quotes.table',
+    modal: {
+      context: 'quotes.modal.context',
+      items: 'quotes.modal.items',
+      confirm: 'quotes.modal.confirm',
+    },
+  },
+  suppliers: {
+    panel: 'suppliers.panel',
+    primaryAction: 'suppliers.primaryAction',
+    filters: 'suppliers.filters',
+    table: 'suppliers.table',
+    modal: {
+      form: 'suppliers.modal.form',
+      confirm: 'suppliers.modal.confirm',
+    },
+  },
+  rawPurchases: {
+    panel: 'raw-purchases.panel',
+    primaryAction: 'raw-purchases.primaryAction',
+    filters: 'raw-purchases.filters',
+    table: 'raw-purchases.table',
+    modal: {
+      form: 'raw-purchases.modal.form',
+      items: 'raw-purchases.modal.items',
+      confirm: 'raw-purchases.modal.confirm',
+    },
+  },
+  recipes: {
+    panel: 'recipes.panel',
+    primaryAction: 'recipes.primaryAction',
+    filters: 'recipes.filters',
+    table: 'recipes.table',
+    modal: {
+      form: 'recipes.modal.form',
+      items: 'recipes.modal.items',
+      confirm: 'recipes.modal.confirm',
+    },
+  },
+  costCalculator: {
+    panel: 'cost-calculator.panel',
+    scope: 'cost-calculator.scope',
+    materials: 'cost-calculator.materials',
+    actions: 'cost-calculator.actions',
+    result: 'cost-calculator.result',
+  },
   expenses: {
     panel: 'expenses.panel',
     primaryAction: 'expenses.primaryAction',
@@ -146,7 +206,13 @@ export const TOUR_TARGETS = {
     category: 'expenses.category',
     recurring: 'expenses.recurring',
     kpis: 'expenses.kpis',
-    tabs: 'expenses.tabs',
+    tabs: {
+      movements: 'expenses.tabs.movements',
+      recurring: 'expenses.tabs.recurring',
+      payables: 'expenses.tabs.payables',
+      analytics: 'expenses.tabs.analytics',
+      categories: 'expenses.tabs.categories',
+    },
     modal: {
       description: 'expenses.modal.description',
       amount: 'expenses.modal.amount',
@@ -158,11 +224,18 @@ export const TOUR_TARGETS = {
   },
   reports: {
     panel: 'reports.panel',
-    dashboard: 'reports.dashboard',
+    dashboard: 'reports.catalog',
     export: 'reports.export',
     filters: 'reports.filters',
-    sales: 'reports.sales',
-    inventory: 'reports.inventory',
+    sales: 'reports.profitability',
+    inventory: 'reports.team',
+    tabs: {
+      sales: 'reports.tabs.sales',
+      expenses: 'reports.tabs.expenses',
+      profitability: 'reports.tabs.profitability',
+    },
+    generate: 'reports.generate',
+    content: 'reports.content',
   },
   invoices: {
     panel: 'invoices.panel',
@@ -173,6 +246,10 @@ export const TOUR_TARGETS = {
     settings: 'invoices.settings',
     receivables: 'invoices.receivables',
     sync: 'invoices.sync',
+    modal: {
+      form: 'invoices.modal.form',
+      confirm: 'invoices.modal.confirm',
+    },
   },
   invoiceReceivables: {
     panel: 'invoice-receivables.panel',
@@ -209,6 +286,23 @@ export const TOUR_TARGETS = {
     personalizationPreview: 'settings.personalization.preview',
     whatsapp: 'settings.whatsapp',
     billing: 'settings.billing',
+  },
+  treasury: {
+    panel: 'treasury.panel',
+    primaryAction: 'treasury.primaryAction',
+    filters: 'treasury.filters',
+    accounts: 'treasury.accounts',
+    movements: 'treasury.movements',
+  },
+  teamWorkspace: {
+    panel: 'team.panel',
+    filters: 'team.filters',
+    invite: 'team.invite',
+  },
+  roleManagement: {
+    panel: 'roles.panel',
+    list: 'roles.list',
+    permissions: 'roles.permissions',
   },
   rawInventory: {
     panel: 'raw-inventory.panel',

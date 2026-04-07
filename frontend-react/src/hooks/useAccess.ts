@@ -2,22 +2,25 @@ import { useAuthStore } from '../store/authStore';
 import { useBusinessStore } from '../store/businessStore';
 import { useAccountAccessStore } from '../store/accountAccessStore';
 import { canAccess as checkPlanAccess, canAccessModule, FeatureKey } from '../auth/plan';
+import { hasPermissionMatch } from '../auth/permissions';
 import { BusinessModuleKey, isBusinessModuleEnabled } from '../types';
 
 const buildAccessSnapshot = (
   user: ReturnType<typeof useAuthStore.getState>['user'],
   activeBusiness: ReturnType<typeof useBusinessStore.getState>['activeBusiness'],
-  isDemoPreview: boolean
+  access: ReturnType<typeof useAccountAccessStore.getState>['access']
 ) => {
   const accountType = user?.account_type || (activeBusiness?.user_id === user?.id ? 'personal' : 'team_member');
   const isPersonal = accountType === 'personal';
   const isTeamMember = !isPersonal;
   const isOwner = activeBusiness?.user_id === user?.id;
+  const isDemoPreview = Boolean(access?.demo_preview_active);
+  const resolvedPlan = isPersonal
+    ? (access?.plan || access?.plan_code || user?.membership_plan || user?.plan || activeBusiness?.plan || 'basic')
+    : (activeBusiness?.plan || 'basic');
   const subscriptionPlan = isDemoPreview
     ? 'business'
-    : isPersonal
-    ? (user?.plan || 'basic')
-    : (activeBusiness?.plan || 'basic');
+    : resolvedPlan;
   const workspaceRole = activeBusiness?.role || null;
   const permissions = Array.from(new Set([
     ...(activeBusiness?.permissions || []),
@@ -35,14 +38,13 @@ const buildAccessSnapshot = (
     if (!permission) return true;
     if (isOwner) return true;
     if (isAdmin) return true;
-    if (permissions.includes('*')) return true;
-    if (permissions.includes('admin.*')) return true;
-    if (permissions.includes(permission)) return true;
+    return hasPermissionMatch(permissions, permission);
+  };
 
-    const [scope] = permission.split('.');
-    if (permissions.includes(`${scope}.*`)) return true;
-
-    return false;
+  const hasAnyPermission = (requestedPermissions: Array<string | undefined | null>): boolean => {
+    return requestedPermissions
+      .filter((permission): permission is string => permission != null && permission !== '')
+      .some((permission) => hasPermission(permission));
   };
 
   const canShow = (_feature: FeatureKey | undefined, permission: string | undefined): boolean => {
@@ -65,6 +67,11 @@ const buildAccessSnapshot = (
   };
 
   const canUpgrade = isPersonal;
+  const canManageBusinessExperience = !!activeBusiness && (isOwner || hasAnyPermission(['settings.edit', 'business.update']));
+  const canViewAudit = !!activeBusiness && (isOwner || hasAnyPermission(['settings.edit', 'business.update', 'team.manage_team', 'team.manage']));
+  const canViewTeamWorkspace = !!activeBusiness;
+  const canManageTeam = !!activeBusiness && (isOwner || hasAnyPermission(['team.manage_team', 'team.manage', 'team.invite', 'team.edit_roles', 'team.remove']));
+  const canManageRoles = !!activeBusiness && (isOwner || hasAnyPermission(['team.edit_roles', 'team.manage_team', 'team.manage']));
 
   return {
     user,
@@ -81,24 +88,30 @@ const buildAccessSnapshot = (
     isAdmin,
     canAccess: canAccessFeature,
     hasPermission,
+    hasAnyPermission,
     hasModule,
     isModuleDisabled,
     canShow,
     isLocked,
     canUpgrade,
+    canManageBusinessExperience,
+    canViewAudit,
+    canViewTeamWorkspace,
+    canManageTeam,
+    canManageRoles,
   };
 };
 
 export const getAccessSnapshot = () => {
   const { user } = useAuthStore.getState();
   const { activeBusiness } = useBusinessStore.getState();
-  const isDemoPreview = Boolean(useAccountAccessStore.getState().access?.demo_preview_active);
-  return buildAccessSnapshot(user, activeBusiness, isDemoPreview);
+  const { access } = useAccountAccessStore.getState();
+  return buildAccessSnapshot(user, activeBusiness, access);
 };
 
 export const useAccess = () => {
   const { user } = useAuthStore();
   const { activeBusiness } = useBusinessStore();
-  const isDemoPreview = useAccountAccessStore((state) => Boolean(state.access?.demo_preview_active));
-  return buildAccessSnapshot(user, activeBusiness, isDemoPreview);
+  const access = useAccountAccessStore((state) => state.access);
+  return buildAccessSnapshot(user, activeBusiness, access);
 };

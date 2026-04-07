@@ -51,7 +51,7 @@ Estado: {estado}
 
 export const getOrderStatusColor = (status: string) => {
     switch (status) {
-        case 'pending': return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300';
+        case 'pending': return 'border-amber-200 bg-amber-50 text-amber-700 dark:border-amber-500/20 dark:bg-amber-500/10 dark:text-amber-200';
         case 'completed': return 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300';
         case 'cancelled': return 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300';
         case 'in_progress': return 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300'; // Optional

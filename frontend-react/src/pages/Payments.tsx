@@ -60,14 +60,14 @@ export const Payments = () => {
   const [selectedPayment, setSelectedPayment] = useState<Payment | null>(null);
   const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
   const [paymentModalMode, setPaymentModalMode] = useState<'view' | 'edit'>('view');
-  const canReadPayments = hasPermission('payments.read') || hasPermission('sales.read');
-  const canReadCustomers = hasPermission('customers.read');
-  const canCreatePayment = hasPermission('payments.create');
-  const canUpdatePayment = hasPermission('payments.update');
-  const canDeletePayment = hasPermission('payments.delete');
-  const canManageTerms = hasPermission('payments.update') || hasPermission('business.update');
-  const canConfigureTerms = hasPermission('business.update');
-  const canSendReminder = hasPermission('customers.read');
+  const canReadPayments = hasPermission('receivables.view') || hasPermission('sales.view');
+  const canReadCustomers = hasPermission('customers.view');
+  const canCreatePayment = hasPermission('receivables.collect');
+  const canUpdatePayment = hasPermission('receivables.adjust_terms');
+  const canDeletePayment = hasPermission('receivables.collect');
+  const canManageTerms = hasPermission('receivables.adjust_terms') || hasPermission('settings.edit');
+  const canConfigureTerms = hasPermission('settings.edit');
+  const canSendReminder = hasPermission('customers.view');
 
   // Load Data
   const refreshData = async () => {
@@ -256,12 +256,14 @@ export const Payments = () => {
     <MobileUtilityBar>
       <MobileFilterDrawer summary={paymentFilterSummary} {...mobilePaymentFilters.sheetProps}>
         <MobileFilterSection title="Filtrar cobros" description="Busca primero y ajusta el periodo solo cuando aporte contexto.">
-          <PaymentsToolbar
-            searchTerm={mobilePaymentFilters.draft.searchTerm}
-            onSearchChange={(value) => mobilePaymentFilters.setDraft((current) => ({ ...current, searchTerm: value }))}
-            dateRange={mobilePaymentFilters.draft.dateRange}
-            onDateRangeChange={(value) => mobilePaymentFilters.setDraft((current) => ({ ...current, dateRange: value }))}
-          />
+          <div data-tour="payments.filters">
+            <PaymentsToolbar
+              searchTerm={mobilePaymentFilters.draft.searchTerm}
+              onSearchChange={(value) => mobilePaymentFilters.setDraft((current) => ({ ...current, searchTerm: value }))}
+              dateRange={mobilePaymentFilters.draft.dateRange}
+              onDateRangeChange={(value) => mobilePaymentFilters.setDraft((current) => ({ ...current, dateRange: value }))}
+            />
+          </div>
         </MobileFilterSection>
       </MobileFilterDrawer>
       {currentTab === 'clients' ? (
@@ -288,11 +290,13 @@ export const Payments = () => {
           <CompactActionGroup
             collapseLabel="Mas"
             primary={canCreatePayment ? (
-              <Button onClick={() => { setQuickPayClient(undefined); setIsRegisterModalOpen(true); }} className="w-full sm:w-auto" data-tour="payments.primaryAction.desktop">
-                <Plus className="w-4 h-4 mr-2" />
-                <span className="hidden sm:inline">Registrar cobro</span>
-                <span className="sm:hidden">Cobro</span>
-              </Button>
+              <div data-tour="payments.primaryAction.mobile" className="w-full sm:w-auto">
+                <Button onClick={() => { setQuickPayClient(undefined); setIsRegisterModalOpen(true); }} className="w-full sm:w-auto" data-tour="payments.primaryAction.desktop">
+                  <Plus className="w-4 h-4 mr-2" />
+                  <span className="hidden sm:inline">Registrar cobro</span>
+                  <span className="sm:hidden">Cobro</span>
+                </Button>
+              </div>
             ) : undefined}
             secondary={canConfigureTerms && currentTab === 'clients' ? (
               <Button variant="secondary" onClick={() => setIsSettingsModalOpen(true)} className="w-full sm:w-auto">
@@ -329,7 +333,7 @@ export const Payments = () => {
                       <PaymentsKpis {...kpis} loading={loading} />
                     </div>
                   </PageSummary>
-                  <PageToolbarCard className="app-toolbar hidden lg:block">
+                  <PageToolbarCard className="app-toolbar hidden lg:block" data-tour="payments.filters">
                     <PaymentsToolbar 
                       searchTerm={searchTerm}
                       onSearchChange={setSearchTerm}
@@ -337,15 +341,17 @@ export const Payments = () => {
                       onDateRangeChange={setDateRange}
                     />
                   </PageToolbarCard>
-                  <ByClientTab 
-                    data={filteredClients}  
-                    loading={loading}
-                    onSelectClient={handleSelectClient}
-                    onQuickPay={handleQuickPay}
-                    onWhatsApp={handleWhatsApp}
-                    canQuickPay={canCreatePayment}
-                    canSendReminder={canSendReminder}
-                  />
+                  <div data-tour="payments.list">
+                    <ByClientTab 
+                      data={filteredClients}  
+                      loading={loading}
+                      onSelectClient={handleSelectClient}
+                      onQuickPay={handleQuickPay}
+                      onWhatsApp={handleWhatsApp}
+                      canQuickPay={canCreatePayment}
+                      canSendReminder={canSendReminder}
+                    />
+                  </div>
                 </PageStack>
               </MobileUnifiedPageShell>
             )
@@ -364,7 +370,7 @@ export const Payments = () => {
                     description={currentTabGuidance.description}
                     dismissible
                   />
-                  <PageToolbarCard className="app-toolbar hidden lg:block">
+                  <PageToolbarCard className="app-toolbar hidden lg:block" data-tour="payments.filters">
                     <PaymentsToolbar 
                       searchTerm={searchTerm}
                       onSearchChange={setSearchTerm}
@@ -372,15 +378,17 @@ export const Payments = () => {
                       onDateRangeChange={setDateRange}
                     />
                   </PageToolbarCard>
-                  <TransactionsTab 
-                    payments={filteredPayments} 
-                    loading={loading}
-                    onView={(p) => { setSelectedPayment(p); setPaymentModalMode('view'); setIsPaymentModalOpen(true); }} 
-                    onEdit={(p) => { setSelectedPayment(p); setPaymentModalMode('edit'); setIsPaymentModalOpen(true); }} 
-                    onDelete={handleDeletePayment}
-                    canEdit={canUpdatePayment}
-                    canDelete={canDeletePayment}
-                  />
+                  <div data-tour="payments.table">
+                    <TransactionsTab 
+                      payments={filteredPayments} 
+                      loading={loading}
+                      onView={(p) => { setSelectedPayment(p); setPaymentModalMode('view'); setIsPaymentModalOpen(true); }} 
+                      onEdit={(p) => { setSelectedPayment(p); setPaymentModalMode('edit'); setIsPaymentModalOpen(true); }} 
+                      onDelete={handleDeletePayment}
+                      canEdit={canUpdatePayment}
+                      canDelete={canDeletePayment}
+                    />
+                  </div>
                 </PageStack>
               </MobileUnifiedPageShell>
             )
@@ -400,7 +408,7 @@ export const Payments = () => {
                     description={currentTabGuidance.description}
                     dismissible
                   />
-                  <PageToolbarCard className="app-toolbar hidden lg:block">
+                  <PageToolbarCard className="app-toolbar hidden lg:block" data-tour="payments.filters">
                     <PaymentsToolbar 
                       searchTerm={searchTerm}
                       onSearchChange={setSearchTerm}
@@ -408,11 +416,13 @@ export const Payments = () => {
                       onDateRangeChange={setDateRange}
                     />
                   </PageToolbarCard>
-                  <OverdueTab 
-                    data={clientReceivables} 
-                    loading={loading}
-                    onSendReminder={handleWhatsApp}
-                  />
+                  <div data-tour="payments.list">
+                    <OverdueTab 
+                      data={clientReceivables} 
+                      loading={loading}
+                      onSendReminder={handleWhatsApp}
+                    />
+                  </div>
                 </PageStack>
               </MobileUnifiedPageShell>
             )

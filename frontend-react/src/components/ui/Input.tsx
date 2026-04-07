@@ -47,9 +47,9 @@ export const Input: React.FC<InputProps> = ({
           id={id}
           className={cn(
             'app-field-surface min-h-11 w-full rounded-2xl px-3.5 py-3 text-[16px] shadow-sm transition sm:text-sm',
-            'focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 dark:focus:border-blue-400 dark:focus:ring-blue-400/20',
+            'focus:outline-none',
             'disabled:opacity-50 disabled:cursor-not-allowed',
-            error && 'border-red-500 focus:ring-red-500/50 focus:border-red-500',
+            error && 'border-[color:var(--app-danger)] focus:border-[color:var(--app-danger)]',
             Icon ? 'pl-11' : (startAdornment ? 'pl-9' : ''),
             isNumber && 'appearance-none',
             className
@@ -59,7 +59,7 @@ export const Input: React.FC<InputProps> = ({
           placeholder={isNumber ? (props.placeholder ?? '0') : props.placeholder}
         />
       </div>
-      {error && <span className="text-[12px] font-medium text-red-500 dark:text-red-400">{error}</span>}
+      {error && <span className="text-[12px] font-medium text-[color:var(--app-danger)]">{error}</span>}
     </div>
   );
 };

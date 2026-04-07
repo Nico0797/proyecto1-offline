@@ -55,12 +55,12 @@ export const Suppliers = () => {
     fetchSuppliers,
   } = useSupplierStore();
 
-  const canRead = hasModule('raw_inventory') && hasPermission('suppliers.read');
+  const canRead = hasModule('raw_inventory') && hasPermission('suppliers.view');
   const canCreate = hasModule('raw_inventory') && hasPermission('suppliers.create');
-  const canUpdate = hasModule('raw_inventory') && hasPermission('suppliers.update');
+  const canUpdate = hasModule('raw_inventory') && hasPermission('suppliers.edit');
   const canDelete = hasModule('raw_inventory') && hasPermission('suppliers.delete');
-  const canReadPurchases = hasModule('raw_inventory') && hasPermission('raw_purchases.read');
-  const canReadPayables = hasModule('raw_inventory') && hasPermission('supplier_payables.read');
+  const canReadPurchases = hasModule('raw_inventory') && hasPermission('raw_purchases.view');
+  const canReadPayables = hasModule('raw_inventory') && hasPermission('supplier_payables.view');
 
   const [searchTerm, setSearchTerm] = useState('');
   const [includeInactive, setIncludeInactive] = useState(false);
@@ -275,7 +275,7 @@ export const Suppliers = () => {
   }
 
   return (
-    <PageLayout>
+    <PageLayout data-tour="suppliers.panel">
       <PageHeader
         title="Proveedores"
         description="Terceros operativos para abastecimiento, compras y seguimiento de obligaciones derivadas."
@@ -290,7 +290,7 @@ export const Suppliers = () => {
               </div>
             )}
             {canCreate && (
-              <Button onClick={openCreate}>
+              <Button onClick={openCreate} data-tour="suppliers.primaryAction">
                 <Truck className="w-4 h-4 mr-2" /> Nuevo proveedor
               </Button>
             )}
@@ -299,7 +299,7 @@ export const Suppliers = () => {
       />
 
       <PageBody className="space-y-6">
-        <div className="app-surface p-4 shadow-sm">
+        <div className="app-surface p-4 shadow-sm" data-tour="suppliers.filters">
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-3">
             <Input value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} placeholder="Buscar por nombre, contacto, teléfono o email..." icon={Search} />
             <Button variant={includeInactive ? 'primary' : 'secondary'} onClick={() => setIncludeInactive((value) => !value)}>
@@ -317,7 +317,7 @@ export const Suppliers = () => {
           )}
         </div>
 
-        <div className="app-surface overflow-hidden shadow-sm">
+        <div className="app-surface overflow-hidden shadow-sm" data-tour="suppliers.table">
           <div className="app-table-head hidden lg:grid grid-cols-[2fr_1.4fr_1fr_140px_180px_auto] gap-4 px-4 py-3 text-xs font-semibold uppercase tracking-wide">
             <div>Proveedor</div>
             <div>Contacto</div>
@@ -417,7 +417,7 @@ export const Suppliers = () => {
       </PageBody>
 
       <Modal isOpen={isModalOpen} onClose={closeModal} title={editingSupplier ? 'Editar proveedor' : 'Nuevo proveedor'} className="max-w-2xl">
-        <div className="space-y-5">
+        <div className="space-y-5" data-tour="suppliers.modal.form">
           <div className="rounded-[24px] border border-gray-200/80 bg-gray-50/80 p-4 dark:border-gray-800 dark:bg-gray-950/60">
             <div className="text-sm font-semibold text-gray-900 dark:text-white">Identidad y contacto</div>
             <div className="mt-1 text-sm text-gray-500 dark:text-gray-400">
@@ -445,7 +445,7 @@ export const Suppliers = () => {
 
           <div className="flex flex-col-reverse gap-3 border-t border-gray-200 pt-3 sm:flex-row sm:justify-end dark:border-gray-700">
             <Button variant="secondary" onClick={closeModal}>Cancelar</Button>
-            <Button onClick={handleSave} isLoading={saving}>Guardar</Button>
+            <Button onClick={handleSave} isLoading={saving} data-tour="suppliers.modal.confirm">Guardar</Button>
           </div>
         </div>
       </Modal>

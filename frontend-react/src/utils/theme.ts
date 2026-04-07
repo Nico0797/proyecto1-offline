@@ -20,7 +20,7 @@ const AUTH_THEME_DARK_PATHS = new Set([
 ]);
 
 const DEFAULT_APPEARANCE_SETTINGS: AppearanceSettings = {
-  theme: 'system',
+  theme: 'dark',
   fontSize: 'md',
   density: 'normal',
 };

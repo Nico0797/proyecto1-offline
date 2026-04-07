@@ -425,7 +425,7 @@ export const Quotes = () => {
         title="Cotizaciones"
         description="Gestiona cotizaciones separadas de ventas y conviértelas explícitamente cuando corresponda."
         action={canCreate ? (
-          <Button onClick={openCreate} className="w-full sm:w-auto">
+          <Button onClick={openCreate} className="w-full sm:w-auto" data-tour="quotes.primaryAction">
             <Plus className="w-4 h-4 mr-2" /> Nueva Cotización
           </Button>
         ) : undefined}
@@ -442,7 +442,9 @@ export const Quotes = () => {
               utilityBar={(
                 <MobileUtilityBar>
                   <MobileFilterDrawer summary={quotesFilterSummary} {...mobileQuoteFilters.sheetProps}>
-                    {mobileQuotesFilterContent}
+                    <div data-tour="quotes.filters">
+                      {mobileQuotesFilterContent}
+                    </div>
                   </MobileFilterDrawer>
                 </MobileUtilityBar>
               )}
@@ -453,12 +455,14 @@ export const Quotes = () => {
 
           <div className="hidden lg:block">
             <PageToolbarCard>
-              {quotesFilterContent}
+              <div data-tour="quotes.filters">
+                {quotesFilterContent}
+              </div>
               {errorNotice ? <div className="mt-3">{errorNotice}</div> : null}
             </PageToolbarCard>
           </div>
 
-          <div className="rounded-[24px] border border-gray-200 bg-white shadow-sm dark:border-gray-800 dark:bg-gray-900 overflow-hidden">
+          <div className="rounded-[24px] border border-gray-200 bg-white shadow-sm dark:border-gray-800 dark:bg-gray-900 overflow-hidden" data-tour="quotes.table">
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead className="bg-gray-50 dark:bg-gray-800/50 text-gray-500 dark:text-gray-400">

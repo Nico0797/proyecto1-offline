@@ -9,6 +9,7 @@ from sqlalchemy.orm import joinedload
 
 from backend.database import db
 from backend.models import Business, Customer, LedgerEntry, Payment, Product, Quote, QuoteItem, Sale, TreasuryAccount
+from backend.services.commercial_financials import create_sale_financial_entries
 from backend.services.operational_inventory import enrich_line_item_with_operational_mode
 from backend.services.sale_inventory import apply_sale_inventory_effects
 
@@ -322,14 +323,19 @@ def register_commercial_quotes_restore_routes(app, *, token_required, module_req
             items=items,
             actor_user=current_user,
             role_snapshot=role_snapshot,
-            raw_material_consumption_mode="fulfillment",
+            raw_material_consumption_mode="quote_conversion",
         )
-        if balance > 0.01 and quote.customer_id:
-            db.session.add(LedgerEntry(business_id=business_id, customer_id=quote.customer_id, entry_type="charge", amount=_round(quote.total or 0), entry_date=sale_date, note=f"Venta #{sale.id}", ref_type="sale", ref_id=sale.id))
-            if paid_amount > 0.01:
-                db.session.add(LedgerEntry(business_id=business_id, customer_id=quote.customer_id, entry_type="payment", amount=_round(paid_amount), entry_date=sale_date, note=f"Abono inicial Venta #{sale.id}", ref_type="sale", ref_id=sale.id))
+        payment = None
         if paid_amount > 0.01 and quote.customer_id:
-            db.session.add(Payment(business_id=business_id, customer_id=quote.customer_id, sale_id=sale.id, payment_date=sale_date, amount=_round(paid_amount), method=sale.payment_method, treasury_account_id=treasury_account_id, note=note_tag, created_by_user_id=getattr(current_user, "id", None), created_by_name=getattr(current_user, "name", None) or "Sistema", created_by_role="Sistema", updated_by_user_id=getattr(current_user, "id", None)))
+            payment = Payment(business_id=business_id, customer_id=quote.customer_id, sale_id=sale.id, payment_date=sale_date, amount=_round(paid_amount), method=sale.payment_method, treasury_account_id=treasury_account_id, note=note_tag, created_by_user_id=getattr(current_user, "id", None), created_by_name=getattr(current_user, "name", None) or "Sistema", created_by_role="Sistema", updated_by_user_id=getattr(current_user, "id", None))
+            db.session.add(payment)
+            db.session.flush()
+        if quote.customer_id:
+            create_sale_financial_entries(
+                sale=sale,
+                payment=payment,
+                payment_note=f"Abono inicial Venta #{sale.id}" if payment is not None else None,
+            )
         quote.status = "converted"
         quote.converted_sale_id = sale.id
         quote.converted_at = datetime.utcnow()

@@ -93,7 +93,7 @@ export const BusinessSettingsTab = () => {
         Datos del Negocio
       </h3>
       
-      <form onSubmit={handleSubmit} className="space-y-6">
+      <form onSubmit={handleSubmit} className="space-y-6" data-tour="settings.business">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div className="md:col-span-2">
             <Input

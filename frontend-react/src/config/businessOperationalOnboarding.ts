@@ -500,7 +500,14 @@ const buildOperationalProfile = (answers: BusinessOnboardingWizardAnswers): Busi
 const mapBusinessType = (answers: BusinessOnboardingWizardAnswers, operationalProfile: BusinessOperationalProfile): BusinessTypeKey => {
   if (answers.operationalModel === 'production_fixed_stock' || answers.operationalModel === 'production_make_to_order') return 'production';
   if (answers.operationalModel === 'service_no_stock') return 'services';
-  if (answers.operationalModel === 'resale_fixed_stock') return 'simple_store';
+  if (answers.operationalModel === 'resale_fixed_stock') {
+    const hasCollectionsSignal =
+      answers.salesFlow === 'pending'
+      || answers.homeFocus === 'collections'
+      || answers.teamStructure === 'sales_and_admin'
+      || answers.teamStructure === 'multi_area_team';
+    return hasCollectionsSignal ? 'wholesale' : 'simple_store';
+  }
   if (answers.operationalModel === 'mixed') {
     return operationalProfile.manages_raw_materials ? 'production' : 'wholesale';
   }

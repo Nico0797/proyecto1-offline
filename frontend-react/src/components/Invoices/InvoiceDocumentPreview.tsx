@@ -16,7 +16,7 @@ interface InvoiceDocumentPreviewProps {
 }
 
 const SectionLabel = ({ children }: { children: React.ReactNode }) => (
-  <div className="text-[11px] font-semibold uppercase tracking-[0.24em] text-slate-400 dark:text-slate-500">
+  <div className="text-[11px] font-semibold uppercase tracking-[0.24em] app-text-muted">
     {children}
   </div>
 );
@@ -32,7 +32,7 @@ const InfoCard = ({
 }) => (
   <div
     className={cn(
-      'min-w-0 rounded-[22px] border border-slate-200 bg-slate-50/90 shadow-sm dark:border-slate-800 dark:bg-slate-900/80',
+      'app-inline-panel min-w-0 rounded-[22px] shadow-sm',
       compact ? 'px-4 py-4' : 'px-4 py-4 sm:px-5 sm:py-5'
     )}
   >
@@ -51,13 +51,13 @@ const SummaryRow = ({
   emphasize?: boolean;
 }) => (
   <div className="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-4">
-    <span className={cn('min-w-0 text-slate-500 dark:text-slate-400', emphasize && 'text-slate-700 dark:text-slate-300')}>
+    <span className={cn('min-w-0 app-text-muted', emphasize && 'app-text-secondary')}>
       {label}
     </span>
     <span
       className={cn(
-        'max-w-full text-right font-medium text-slate-900 [overflow-wrap:anywhere] dark:text-slate-100',
-        emphasize && 'text-base font-semibold text-slate-950 dark:text-white'
+        'max-w-full text-right font-medium app-text [overflow-wrap:anywhere]',
+        emphasize && 'text-base font-semibold app-text'
       )}
     >
       {value}
@@ -74,12 +74,12 @@ const InfoDetailCard = ({
   value: string;
   icon?: React.ReactNode;
 }) => (
-  <div className="min-w-0 rounded-[18px] border border-slate-200/90 bg-white/80 px-3.5 py-3 shadow-sm dark:border-slate-800 dark:bg-slate-950/70">
-    <div className="inline-flex min-w-0 items-center gap-1.5 text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-400 dark:text-slate-500">
+  <div className="app-surface min-w-0 rounded-[18px] px-3.5 py-3 shadow-sm">
+    <div className="inline-flex min-w-0 items-center gap-1.5 text-[11px] font-semibold uppercase tracking-[0.18em] app-text-muted">
       {icon}
       <span>{label}</span>
     </div>
-    <div className="mt-2 text-sm font-semibold leading-6 text-slate-900 [overflow-wrap:anywhere] dark:text-white">
+    <div className="mt-2 text-sm font-semibold leading-6 app-text [overflow-wrap:anywhere]">
       {value}
     </div>
   </div>
@@ -93,8 +93,8 @@ const ItemMetaRow = ({
   value: string;
 }) => (
   <div className="grid grid-cols-[minmax(0,1fr)_auto] gap-3 text-sm">
-    <span className="text-slate-500 dark:text-slate-400">{label}</span>
-    <span className="text-right font-medium text-slate-900 [overflow-wrap:anywhere] dark:text-slate-100">
+    <span className="app-text-muted">{label}</span>
+    <span className="text-right font-medium app-text [overflow-wrap:anywhere]">
       {value}
     </span>
   </div>
@@ -122,7 +122,7 @@ export const InvoiceDocumentPreview = ({
     : 'grid gap-4 lg:grid-cols-[minmax(0,1.16fr)_minmax(18.5rem,0.84fr)]';
 
   return (
-    <div className="overflow-hidden rounded-[28px] border border-slate-200/90 bg-white shadow-[0_30px_80px_-42px_rgba(15,23,42,0.45)] ring-1 ring-slate-950/5 dark:border-slate-800 dark:bg-slate-950 dark:ring-white/5">
+    <div className="app-elevated-card overflow-hidden rounded-[28px] ring-1 ring-[color:color-mix(in_srgb,var(--app-border)_72%,transparent)]">
       <div
         className="h-2 rounded-t-[28px]"
         style={{
@@ -137,21 +137,21 @@ export const InvoiceDocumentPreview = ({
                 <img
                   src={logoUrl}
                   alt="Logo del negocio"
-                  className="h-14 w-14 shrink-0 rounded-2xl border border-slate-200 object-cover shadow-sm dark:border-slate-800"
+                  className="h-14 w-14 shrink-0 rounded-2xl border app-divider object-cover shadow-sm"
                 />
               ) : (
-                <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl border border-dashed border-slate-300 bg-slate-50 text-slate-400 shadow-sm dark:border-slate-700 dark:bg-slate-900 dark:text-slate-500">
+                <div className="app-inline-panel flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl border border-dashed app-text-muted shadow-sm">
                   <Building2 className="h-6 w-6" />
                 </div>
               )}
               <div className="min-w-0">
-                <div className="text-[11px] font-semibold uppercase tracking-[0.3em] text-slate-400 dark:text-slate-500">
+                <div className="text-[11px] font-semibold uppercase tracking-[0.3em] app-text-muted">
                   Documento digital
                 </div>
-                <h2 className="mt-1 text-balance text-[clamp(1.45rem,2.2vw,2.15rem)] font-semibold tracking-tight text-slate-950 [overflow-wrap:anywhere] dark:text-white">
+                <h2 className="mt-1 text-balance text-[clamp(1.45rem,2.2vw,2.15rem)] font-semibold tracking-tight app-text [overflow-wrap:anywhere]">
                   {business?.name || 'Tu negocio'}
                 </h2>
-                <p className="mt-1 max-w-2xl text-sm leading-6 text-slate-500 dark:text-slate-400">
+                <p className="mt-1 max-w-2xl text-sm leading-6 app-text-muted">
                   Vista previa lista para compartir, descargar o imprimir.
                 </p>
               </div>
@@ -159,19 +159,19 @@ export const InvoiceDocumentPreview = ({
 
             <div className="grid gap-3 md:grid-cols-[minmax(0,1.16fr)_minmax(0,0.94fr)]">
               <InfoCard label="Cliente" compact={compact}>
-                <div className="flex min-w-0 items-start gap-3 text-sm text-slate-700 dark:text-slate-200">
-                  <div className="rounded-2xl bg-white/80 p-2 text-slate-400 shadow-sm ring-1 ring-slate-200/80 dark:bg-slate-950 dark:ring-slate-800">
+                <div className="flex min-w-0 items-start gap-3 text-sm app-text-secondary">
+                  <div className="app-surface rounded-2xl p-2 app-text-muted shadow-sm">
                     <UserRound className="h-4 w-4" />
                   </div>
                   <div className="min-w-0 space-y-1">
-                    <div className="font-medium leading-6 text-slate-900 [overflow-wrap:anywhere] dark:text-white">{customerName}</div>
+                    <div className="font-medium leading-6 app-text [overflow-wrap:anywhere]">{customerName}</div>
                     {customerAddress && (
-                      <div className="text-sm leading-6 text-slate-500 [overflow-wrap:anywhere] dark:text-slate-400">
+                      <div className="text-sm leading-6 app-text-muted [overflow-wrap:anywhere]">
                         {customerAddress}
                       </div>
                     )}
                     {customerPhone && (
-                      <div className="flex min-w-0 items-start gap-2 text-sm leading-6 text-slate-500 dark:text-slate-400">
+                      <div className="flex min-w-0 items-start gap-2 text-sm leading-6 app-text-muted">
                         <Phone className="mt-1 h-3.5 w-3.5 shrink-0" />
                         <span className="[overflow-wrap:anywhere]">{customerPhone}</span>
                       </div>
@@ -199,12 +199,12 @@ export const InvoiceDocumentPreview = ({
             </div>
           </div>
 
-          <div className="min-w-0 rounded-[24px] border border-slate-200 bg-gradient-to-br from-slate-50 via-white to-slate-100/80 p-5 shadow-sm dark:border-slate-800 dark:from-slate-900 dark:via-slate-950 dark:to-slate-900/60 sm:p-6">
+          <div className="app-inline-panel-info min-w-0 rounded-[24px] p-5 sm:p-6">
             <SectionLabel>Factura</SectionLabel>
             <div className="mt-3 flex flex-wrap items-start gap-3">
               <h3
                 className={cn(
-                  'min-w-0 flex-1 font-semibold tracking-tight text-slate-950 [overflow-wrap:anywhere] dark:text-white',
+                  'min-w-0 flex-1 font-semibold tracking-tight app-text [overflow-wrap:anywhere]',
                   compact ? 'text-[clamp(1.55rem,2.8vw,2.25rem)] leading-tight' : 'text-[clamp(1.7rem,3vw,2.65rem)] leading-[1.05]'
                 )}
               >
@@ -214,17 +214,17 @@ export const InvoiceDocumentPreview = ({
                 {statusMeta.label}
               </div>
             </div>
-            <div className="mt-4 rounded-[20px] border border-white/70 bg-white/85 px-4 py-3.5 shadow-sm dark:border-white/5 dark:bg-slate-950/80">
+            <div className="app-surface mt-4 rounded-[20px] px-4 py-3.5 shadow-sm">
               <div className="grid gap-3 sm:grid-cols-2">
                 <div className="min-w-0">
                   <SectionLabel>Emitida para</SectionLabel>
-                  <div className="mt-1.5 text-sm font-medium leading-6 text-slate-900 [overflow-wrap:anywhere] dark:text-white">
+                  <div className="mt-1.5 text-sm font-medium leading-6 app-text [overflow-wrap:anywhere]">
                     {customerName}
                   </div>
                 </div>
                 <div className="min-w-0 sm:text-right">
                   <SectionLabel>Total actual</SectionLabel>
-                  <div className="mt-1.5 text-xl font-semibold tracking-tight text-slate-950 [overflow-wrap:anywhere] dark:text-white">
+                  <div className="mt-1.5 text-xl font-semibold tracking-tight app-text [overflow-wrap:anywhere]">
                     {formatInvoiceMoney(invoice.total, invoice.currency)}
                   </div>
                 </div>
@@ -235,14 +235,14 @@ export const InvoiceDocumentPreview = ({
               <SummaryRow label="Descuentos" value={formatInvoiceMoney(invoice.discount_total, invoice.currency)} />
               <SummaryRow label="Impuestos" value={formatInvoiceMoney(invoice.tax_total, invoice.currency)} />
               <SummaryRow label="Pagado" value={formatInvoiceMoney(invoice.amount_paid, invoice.currency)} />
-              <div className="border-t border-slate-200 pt-3 dark:border-slate-800">
+              <div className="border-t app-divider pt-3">
                 <SummaryRow label="Total" value={formatInvoiceMoney(invoice.total, invoice.currency)} emphasize />
               </div>
-              <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-4 rounded-[20px] border border-slate-200 bg-white px-4 py-3.5 text-sm shadow-sm dark:border-slate-800 dark:bg-slate-950">
-                <span className="inline-flex items-center gap-2 text-slate-500 dark:text-slate-400">
+              <div className="app-surface grid grid-cols-[minmax(0,1fr)_auto] items-center gap-4 rounded-[20px] px-4 py-3.5 text-sm shadow-sm">
+                <span className="inline-flex items-center gap-2 app-text-muted">
                   <CreditCard className="h-4 w-4" /> Saldo pendiente
                 </span>
-                <span className="text-right text-base font-semibold text-slate-950 [overflow-wrap:anywhere] dark:text-white">
+                <span className="text-right text-base font-semibold app-text [overflow-wrap:anywhere]">
                   {formatInvoiceMoney(invoice.outstanding_balance, invoice.currency)}
                 </span>
               </div>
@@ -250,20 +250,20 @@ export const InvoiceDocumentPreview = ({
           </div>
         </div>
 
-        <div className="overflow-hidden rounded-[24px] border border-slate-200 dark:border-slate-800">
-          <div className="divide-y divide-slate-200 bg-white md:hidden dark:divide-slate-800 dark:bg-slate-950">
+        <div className="overflow-hidden rounded-[24px] border app-divider">
+          <div className="divide-y app-divider bg-[color:var(--app-surface-elevated)] md:hidden">
             {invoice.items.length === 0 ? (
-              <div className="px-4 py-8 text-center text-sm text-slate-500 dark:text-slate-400">
+              <div className="px-4 py-8 text-center text-sm app-text-muted">
                 Agrega lineas para ver el documento completo.
               </div>
             ) : (
               invoice.items.map((item, index) => (
                 <div key={`${item.id || index}-${index}`} className="space-y-4 px-4 py-4">
                   <div className="space-y-1.5">
-                    <div className="font-medium leading-6 text-slate-900 [overflow-wrap:anywhere] dark:text-white">
+                    <div className="font-medium leading-6 app-text [overflow-wrap:anywhere]">
                       {item.description}
                     </div>
-                    <div className="text-xs leading-5 text-slate-500 [overflow-wrap:anywhere] dark:text-slate-400">
+                    <div className="text-xs leading-5 app-text-muted [overflow-wrap:anywhere]">
                       {item.product_name || 'Linea manual'}
                     </div>
                   </div>
@@ -272,7 +272,7 @@ export const InvoiceDocumentPreview = ({
                     <ItemMetaRow label="Unitario" value={formatInvoiceMoney(item.unit_price, invoice.currency)} />
                     <ItemMetaRow label="Descuento" value={formatInvoiceMoney(item.discount ?? 0, invoice.currency)} />
                     <ItemMetaRow label="Impuesto" value={`${item.tax_rate ?? 0}%`} />
-                    <div className="border-t border-slate-200 pt-2 dark:border-slate-800">
+                    <div className="border-t app-divider pt-2">
                       <ItemMetaRow label="Total" value={formatInvoiceMoney(item.line_total ?? item.total ?? 0, invoice.currency)} />
                     </div>
                   </div>
@@ -281,9 +281,9 @@ export const InvoiceDocumentPreview = ({
             )}
           </div>
           <div className="custom-scrollbar hidden overflow-x-auto md:block">
-            <table className="min-w-[760px] w-full divide-y divide-slate-200 text-sm dark:divide-slate-800">
-              <thead className="bg-slate-50 dark:bg-slate-900">
-                <tr className="text-left text-[11px] font-semibold uppercase tracking-[0.24em] text-slate-400">
+            <table className="min-w-[760px] w-full divide-y app-divider text-sm">
+              <thead className="bg-[color:var(--app-surface-soft)]">
+                <tr className="text-left text-[11px] font-semibold uppercase tracking-[0.24em] app-text-muted">
                   <th className="px-4 py-3">Descripcion</th>
                   <th className="px-4 py-3 text-right whitespace-nowrap">Cant.</th>
                   <th className="px-4 py-3 text-right whitespace-nowrap">Unitario</th>
@@ -292,10 +292,10 @@ export const InvoiceDocumentPreview = ({
                   <th className="px-4 py-3 text-right whitespace-nowrap">Total</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-200 bg-white dark:divide-slate-800 dark:bg-slate-950">
+              <tbody className="divide-y app-divider bg-[color:var(--app-surface-elevated)]">
                 {invoice.items.length === 0 ? (
                   <tr>
-                    <td colSpan={6} className="px-4 py-8 text-center text-sm text-slate-500 dark:text-slate-400">
+                    <td colSpan={6} className="px-4 py-8 text-center text-sm app-text-muted">
                       Agrega lineas para ver el documento completo.
                     </td>
                   </tr>
@@ -303,20 +303,20 @@ export const InvoiceDocumentPreview = ({
                   invoice.items.map((item, index) => (
                     <tr key={`${item.id || index}-${index}`}>
                       <td className="w-[38%] px-4 py-3.5 align-top">
-                        <div className="font-medium leading-6 text-slate-900 [overflow-wrap:anywhere] dark:text-white">{item.description}</div>
-                        <div className="mt-1 text-xs leading-5 text-slate-500 [overflow-wrap:anywhere] dark:text-slate-400">
+                        <div className="font-medium leading-6 app-text [overflow-wrap:anywhere]">{item.description}</div>
+                        <div className="mt-1 text-xs leading-5 app-text-muted [overflow-wrap:anywhere]">
                           {item.product_name || 'Linea manual'}
                         </div>
                       </td>
-                      <td className="px-4 py-3.5 text-right whitespace-nowrap text-slate-600 dark:text-slate-300">{item.quantity}</td>
-                      <td className="px-4 py-3.5 text-right whitespace-nowrap text-slate-600 dark:text-slate-300">
+                      <td className="px-4 py-3.5 text-right whitespace-nowrap app-text-secondary">{item.quantity}</td>
+                      <td className="px-4 py-3.5 text-right whitespace-nowrap app-text-secondary">
                         {formatInvoiceMoney(item.unit_price, invoice.currency)}
                       </td>
-                      <td className="px-4 py-3.5 text-right whitespace-nowrap text-slate-600 dark:text-slate-300">
+                      <td className="px-4 py-3.5 text-right whitespace-nowrap app-text-secondary">
                         {formatInvoiceMoney(item.discount ?? 0, invoice.currency)}
                       </td>
-                      <td className="px-4 py-3.5 text-right whitespace-nowrap text-slate-600 dark:text-slate-300">{item.tax_rate ?? 0}%</td>
-                      <td className="px-4 py-3.5 text-right whitespace-nowrap font-semibold text-slate-900 dark:text-white">
+                      <td className="px-4 py-3.5 text-right whitespace-nowrap app-text-secondary">{item.tax_rate ?? 0}%</td>
+                      <td className="px-4 py-3.5 text-right whitespace-nowrap font-semibold app-text">
                         {formatInvoiceMoney(item.line_total ?? item.total ?? 0, invoice.currency)}
                       </td>
                     </tr>
@@ -328,22 +328,22 @@ export const InvoiceDocumentPreview = ({
         </div>
 
         <div className={noteGridClass}>
-          <div className="rounded-[24px] border border-slate-200 bg-slate-50/90 p-5 dark:border-slate-800 dark:bg-slate-900/85">
+          <div className="app-inline-panel rounded-[24px] p-5">
             <SectionLabel>Notas</SectionLabel>
-            <div className="mt-3 whitespace-pre-wrap text-sm leading-6 text-slate-700 [overflow-wrap:anywhere] dark:text-slate-200">
+            <div className="mt-3 whitespace-pre-wrap text-sm leading-6 app-text-secondary [overflow-wrap:anywhere]">
               {invoice.notes || settings?.default_notes || 'Sin notas para esta factura.'}
             </div>
           </div>
           <div className="space-y-4">
-            <div className="rounded-[24px] border border-slate-200 bg-slate-50/90 p-5 dark:border-slate-800 dark:bg-slate-900/85">
+            <div className="app-inline-panel rounded-[24px] p-5">
               <SectionLabel>Terminos</SectionLabel>
-              <div className="mt-3 whitespace-pre-wrap text-sm leading-6 text-slate-700 [overflow-wrap:anywhere] dark:text-slate-200">
+              <div className="mt-3 whitespace-pre-wrap text-sm leading-6 app-text-secondary [overflow-wrap:anywhere]">
                 {settings?.default_terms || 'Sin terminos adicionales para este documento.'}
               </div>
             </div>
-            <div className="rounded-[24px] border border-slate-200 bg-slate-50/90 p-5 dark:border-slate-800 dark:bg-slate-900/85">
+            <div className="app-inline-panel rounded-[24px] p-5">
               <SectionLabel>Pie de documento</SectionLabel>
-              <div className="mt-3 text-sm leading-6 text-slate-700 [overflow-wrap:anywhere] dark:text-slate-200">
+              <div className="mt-3 text-sm leading-6 app-text-secondary [overflow-wrap:anywhere]">
                 {settings?.footer_text || 'Gracias por tu confianza.'}
               </div>
             </div>

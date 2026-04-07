@@ -36,7 +36,7 @@ export const useCustomerStore = create<CustomerState>((set, get) => ({
     const accessStore = getAccessSnapshot();
     
     // Check if user can access customers module
-    if (!accessStore.hasModule('customers') || !accessStore.hasPermission('customers.read')) {
+    if (!accessStore.hasModule('customers') || !accessStore.hasPermission('customers.view')) {
       set({ customers: [], loading: false, error: null });
       return;
     }
@@ -75,7 +75,7 @@ export const useCustomerStore = create<CustomerState>((set, get) => ({
         customers: [],
         receivables: [],
       };
-      if (canUseReceivables && accessStore.hasModule('accounts_receivable') && accessStore.hasPermission('payments.read')) {
+      if (canUseReceivables && accessStore.hasModule('accounts_receivable') && accessStore.hasPermission('receivables.view')) {
         try {
           const receivablesRequests: Array<Promise<void>> = [
             receivablesService.getOverview(businessId).then((overview) => {
@@ -182,9 +182,11 @@ export const useCustomerStore = create<CustomerState>((set, get) => ({
         };
       });
 
+      await offlineSyncService.cacheCustomers(businessId, merged);
+
       const localState = await offlineSyncService.getOfflineMergedCustomers(businessId);
       set({
-        customers: localState.customers.length > 0 ? localState.customers : merged,
+        customers: merged,
         debtTermDays: localState.debtTermDays || termDays,
       });
     } catch (error: any) {

@@ -3,10 +3,11 @@ from __future__ import annotations
 from datetime import date, datetime
 
 from flask import g, jsonify, request
-from sqlalchemy import func, or_
+from sqlalchemy import func, inspect, or_, text
 from sqlalchemy.orm import joinedload
 
 from backend.database import db
+from backend.services.treasury_flow_service import create_expense_record, resolve_treasury_context
 from backend.models import (
     Business,
     Expense,
@@ -46,6 +47,28 @@ def _safe_round(value, digits=4):
 def _normalize_text(value):
     normalized = str(value or "").strip()
     return normalized or None
+
+
+def _ensure_recipe_consumption_traceability_columns():
+    inspector = inspect(db.engine)
+    if not inspector.has_table("recipe_consumptions"):
+        return
+
+    column_names = {column["name"] for column in inspector.get_columns("recipe_consumptions")}
+    statements = []
+    if "source_type" not in column_names:
+        statements.append('ALTER TABLE "recipe_consumptions" ADD COLUMN IF NOT EXISTS source_type VARCHAR(40)')
+    if "source_document_type" not in column_names:
+        statements.append('ALTER TABLE "recipe_consumptions" ADD COLUMN IF NOT EXISTS source_document_type VARCHAR(40)')
+    if "source_document_id" not in column_names:
+        statements.append('ALTER TABLE "recipe_consumptions" ADD COLUMN IF NOT EXISTS source_document_id INTEGER')
+
+    if not statements:
+        return
+
+    with db.engine.begin() as connection:
+        for statement in statements:
+            connection.execute(text(statement))
 
 
 def _build_supplier_summary(payables):
@@ -407,6 +430,9 @@ def register_raw_inventory_restore_routes(
     get_current_role_snapshot,
     refresh_summary_materialized_days,
 ):
+    with application.app_context():
+        _ensure_recipe_consumption_traceability_columns()
+
     @application.route("/api/businesses/<int:business_id>/raw-materials", methods=["GET"])
     @token_required
     @module_required("raw_inventory")
@@ -1017,9 +1043,17 @@ def register_raw_inventory_restore_routes(
         if amount - float(payable.balance_due or 0) > 0.009:
             return jsonify({"error": "El pago no puede superar el saldo pendiente"}), 400
         payment_date_value = _parse_date(data.get("payment_date"), default=date.today())
-        treasury_account_id = int(data.get("treasury_account_id") or 0) or None
-        if treasury_account_id and not TreasuryAccount.query.filter_by(id=treasury_account_id, business_id=business_id).first():
-            return jsonify({"error": "Cuenta de tesorería no encontrada"}), 400
+        try:
+            treasury_context = resolve_treasury_context(
+                business_id,
+                treasury_account_id=data.get("treasury_account_id"),
+                payment_method=_normalize_text(data.get("method")),
+                allow_account_autoselect=True,
+                require_account=True,
+                missing_account_message="Debes seleccionar o configurar una cuenta de caja para registrar el pago",
+            )
+        except ValueError as exc:
+            return jsonify({"error": str(exc)}), 400
         role_snapshot = get_current_role_snapshot(g.current_user, business_id)
         payment = SupplierPayment(
             business_id=business_id,
@@ -1027,8 +1061,8 @@ def register_raw_inventory_restore_routes(
             supplier_payable_id=payable.id,
             amount=_safe_round(amount, 2),
             payment_date=payment_date_value,
-            method=_normalize_text(data.get("method")) or "cash",
-            treasury_account_id=treasury_account_id,
+            method=treasury_context.get("payment_method"),
+            treasury_account_id=treasury_context.get("treasury_account_id"),
             reference=_normalize_text(data.get("reference")),
             notes=_normalize_text(data.get("notes")),
             created_by=g.current_user.id,
@@ -1039,7 +1073,7 @@ def register_raw_inventory_restore_routes(
         db.session.flush()
         payable.amount_paid = _safe_round(float(payable.amount_paid or 0) + float(payment.amount or 0), 2)
         _update_supplier_payable_status(payable)
-        expense = Expense(
+        create_expense_record(
             business_id=business_id,
             expense_date=payment_date_value,
             category="inventario",
@@ -1047,15 +1081,12 @@ def register_raw_inventory_restore_routes(
             description=payment.notes or payment.reference or f"Pago proveedor {payable.supplier.name if payable.supplier else payable.supplier_id}",
             source_type="supplier_payment",
             payment_method=payment.method,
-            treasury_account_id=treasury_account_id,
+            treasury_account_id=payment.treasury_account_id,
             supplier_payable_id=payable.id,
             supplier_payment_id=payment.id,
-            created_by_user_id=g.current_user.id,
-            created_by_name=g.current_user.name,
-            created_by_role=role_snapshot,
-            updated_by_user_id=g.current_user.id,
+            actor_user=g.current_user,
+            role_snapshot=role_snapshot,
         )
-        db.session.add(expense)
         db.session.commit()
         refresh_summary_materialized_days(business_id, payment_date_value)
         return jsonify({"payment": payment.to_dict(), "supplier_payable": payable.to_dict(include_payments=True)}), 201

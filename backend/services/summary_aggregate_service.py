@@ -13,6 +13,7 @@ from sqlalchemy.exc import IntegrityError
 
 from backend.database import db
 from backend.models import Expense, Payment, Product, Sale, SummaryCacheState, SummaryDailyAggregate
+from backend.services.commercial_financials import list_sale_initial_cash_events
 from backend.services.response_cache import SharedResponseCache
 
 SUMMARY_CACHE_NAMESPACE = "summary"
@@ -549,27 +550,19 @@ def _build_daily_metrics(business_id: int, target_date: date) -> dict:
         or 0
     )
 
-    cash_sales_total = float(
-        db.session.query(func.sum(Sale.total)).filter(
-            Sale.business_id == business_id,
-            Sale.sale_date == target_date,
-            Sale.payment_method == "cash",
-        ).scalar()
-        or 0
-    )
-
+    cash_sales_total = 0.0
     cash_sales_cost = 0.0
     try:
-        cash_sales_cost_query = db.session.query(func.sum(Sale.total_cost)).filter(
-            Sale.business_id == business_id,
-            Sale.sale_date == target_date,
-            Sale.payment_method == "cash",
-        ).scalar()
-        if cash_sales_cost_query is not None and float(cash_sales_cost_query or 0) > 0:
-            cash_sales_cost = float(cash_sales_cost_query or 0)
+        initial_cash_events = list_sale_initial_cash_events(
+            business_id=business_id,
+            start_date=target_date,
+            end_date=target_date,
+        )
+        cash_sales_total = float(sum(float(item.get("amount") or 0) for item in initial_cash_events))
+        cash_sales_cost = float(sum(float(item.get("realized_cost") or 0) for item in initial_cash_events))
     except Exception:
         current_app.logger.exception(
-            "summary aggregate cash sales cost failed",
+            "summary aggregate initial sale cash events failed",
             extra={"business_id": business_id, "summary_date": target_date.isoformat()},
         )
 

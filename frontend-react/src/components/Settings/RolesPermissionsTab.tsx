@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { 
   Shield, Plus, Trash2, Edit2, Lock, AlertCircle, Save,
-  Briefcase, UserCog, DollarSign, Package, Eye
+  Briefcase, UserCog, DollarSign, Package, Eye, ChevronDown, ChevronRight
 } from 'lucide-react';
 import api from '../../services/api';
 import { Button } from '../ui/Button';
@@ -67,6 +67,7 @@ export const RolesPermissionsTab = () => {
   const [selectedRole, setSelectedRole] = useState<Role | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [expandedCategories, setExpandedCategories] = useState<Record<string, boolean>>({});
   
   // Form State
   const [formData, setFormData] = useState({
@@ -78,6 +79,23 @@ export const RolesPermissionsTab = () => {
   useEffect(() => {
     fetchData();
   }, [activeBusiness?.id]);
+
+   useEffect(() => {
+     const categoryOrder = [
+       ...ORDERED_CATEGORIES.filter((category) => Array.isArray(permissions[category]) && permissions[category].length > 0),
+       ...Object.keys(permissions).filter((category) => !ORDERED_CATEGORIES.includes(category)),
+     ];
+
+     if (categoryOrder.length === 0) return;
+
+     const nextExpanded: Record<string, boolean> = {};
+     categoryOrder.forEach((category, index) => {
+       const categoryPermissions = permissions[category] || [];
+       const hasAssignedPermission = categoryPermissions.some((permission) => selectedRole?.permissions.includes(permission.name));
+       nextExpanded[category] = hasAssignedPermission || index < 2;
+     });
+     setExpandedCategories(nextExpanded);
+   }, [permissions, selectedRole]);
 
   const fetchData = async () => {
     setLoading(true);
@@ -139,6 +157,16 @@ export const RolesPermissionsTab = () => {
     setFormData({ name: '', description: '', permissions: [] });
     setIsModalOpen(true);
   };
+
+   const handleCreateRoleFromTemplate = (template: BusinessRbacRoleTemplate) => {
+     setSelectedRole(null);
+     setFormData({
+       name: template.name,
+       description: template.description || '',
+       permissions: [...template.permissions],
+     });
+     setIsModalOpen(true);
+   };
 
   const handleEditRole = (role: Role) => {
     // Only update form data, don't change selection yet
@@ -238,52 +266,78 @@ export const RolesPermissionsTab = () => {
     });
   };
 
+   const toggleCategoryExpansion = (category: string) => {
+     setExpandedCategories((current) => ({
+       ...current,
+       [category]: !current[category],
+     }));
+   };
+
   const renderCategory = (category: string, perms: Permission[]) => {
     if (!perms || perms.length === 0) return null;
 
+    const selectedCount = perms.filter((perm) => selectedRole?.permissions.includes(perm.name)).length;
+    const isExpanded = expandedCategories[category] ?? false;
+
     return (
       <div key={category} className="bg-gray-50 dark:bg-gray-900/30 rounded-xl p-4 border border-gray-200 dark:border-gray-700">
-        <div className="flex items-center justify-between mb-3 pb-2 border-b border-gray-200 dark:border-gray-700">
-          <h4 className="font-semibold text-gray-900 dark:text-white capitalize">
-            {CATEGORY_LABELS[category] || category}
-          </h4>
-          <div className="flex gap-2">
-            <button 
-                onClick={() => toggleCategory(category, true)}
-                className="text-xs text-blue-600 hover:underline"
+        <div className="mb-3 border-b border-gray-200 pb-2 dark:border-gray-700">
+          <div className="flex items-center justify-between gap-3">
+            <button
+              type="button"
+              onClick={() => toggleCategoryExpansion(category)}
+              className="flex min-w-0 items-center gap-2 text-left"
             >
-                Todo
+              {isExpanded ? <ChevronDown className="h-4 w-4 text-gray-400" /> : <ChevronRight className="h-4 w-4 text-gray-400" />}
+              <h4 className="font-semibold text-gray-900 dark:text-white capitalize">
+                {CATEGORY_LABELS[category] || category}
+              </h4>
+              <span className="app-chip rounded-full px-2 py-0.5 text-[11px]">
+                {selectedCount}/{perms.length}
+              </span>
             </button>
-            <span className="text-gray-300">|</span>
-            <button 
-                onClick={() => toggleCategory(category, false)}
-                className="text-xs text-gray-500 hover:underline"
-            >
-                Nada
-            </button>
+            <div className="flex gap-2">
+              <button 
+                  type="button"
+                  onClick={() => toggleCategory(category, true)}
+                  className="text-xs text-blue-600 hover:underline"
+              >
+                  Todo
+              </button>
+              <span className="text-gray-300">|</span>
+              <button 
+                  type="button"
+                  onClick={() => toggleCategory(category, false)}
+                  className="text-xs text-gray-500 hover:underline"
+              >
+                  Nada
+              </button>
+            </div>
           </div>
         </div>
-        <div className="space-y-2">
-          {perms.map(perm => (
-            <label key={perm.name} className="flex items-start gap-2 cursor-pointer group">
-              <div className="relative flex items-center">
-                <input
-                  type="checkbox"
-                  className="peer h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700"
-                  checked={selectedRole?.permissions.includes(perm.name)}
-                  onChange={() => togglePermission(perm.name)}
-                  disabled={selectedRole?.is_system && selectedRole?.name === 'SUPERADMIN'} 
-                />
-              </div>
-              <div className="text-sm">
-                <span className="font-medium text-gray-700 dark:text-gray-300 group-hover:text-blue-600 transition-colors">
-                  {perm.description || perm.name}
-                </span>
-                <p className="text-xs text-gray-400">{perm.name}</p>
-              </div>
-            </label>
-          ))}
-        </div>
+        {isExpanded ? (
+          <div className="space-y-2">
+            {perms.map(perm => (
+              <label key={perm.name} className="flex items-start gap-2 cursor-pointer group">
+                <div className="relative flex items-center">
+                  <input
+                    type="checkbox"
+                    className="peer h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700"
+                    checked={selectedRole?.permissions.includes(perm.name)}
+                    onChange={() => togglePermission(perm.name)}
+                    disabled={selectedRole?.is_system && selectedRole?.name === 'SUPERADMIN'} 
+                  />
+                </div>
+                <div className="text-sm">
+                  <span className="font-medium text-gray-700 dark:text-gray-300 group-hover:text-blue-600 transition-colors">
+                    {perm.description || perm.name}
+                  </span>
+                  <p className="text-xs text-gray-400">{perm.name}</p>
+                </div>
+              </label>
+            ))}
+          </div>
+        ) : null}
       </div>
     );
   };
@@ -293,16 +347,11 @@ export const RolesPermissionsTab = () => {
   }
 
   return (
-    <div className="flex min-h-0 flex-col gap-4 lg:h-[calc(100dvh-200px)] lg:gap-6">
+    <div className="flex min-h-0 flex-col gap-4 lg:h-[calc(100dvh-200px)] lg:gap-6" data-tour="roles.panel">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Roles y Permisos</h2>
           <p className="text-gray-500 dark:text-gray-400 text-sm">Define qué pueden hacer los miembros de tu equipo.</p>
-          {suggestedRoles.length > 0 && (
-            <p className="mt-1 text-xs text-blue-600 dark:text-blue-400">
-              Roles sugeridos para este negocio: {suggestedRoles.map((role) => role.name).join(', ')}.
-            </p>
-          )}
         </div>
         <Button onClick={handleCreateRole} className="w-full sm:w-auto">
           <Plus className="w-4 h-4 mr-2" />
@@ -310,9 +359,34 @@ export const RolesPermissionsTab = () => {
         </Button>
       </div>
 
+      {suggestedRoles.length > 0 && (
+        <div className="app-surface rounded-xl p-4 sm:p-5">
+          <div className="flex flex-col gap-1">
+            <h3 className="text-sm font-semibold text-gray-900 dark:text-white">Roles base sugeridos para este negocio</h3>
+            <p className="text-xs text-gray-500 dark:text-gray-400">Úsalos como punto de partida y luego ajusta permisos finos si hace falta.</p>
+          </div>
+          <div className="mt-4 grid grid-cols-1 gap-3 lg:grid-cols-2 xl:grid-cols-3">
+            {suggestedRoles.map((template) => (
+              <div key={template.key} className="rounded-xl border border-gray-200 bg-gray-50 p-4 dark:border-gray-700 dark:bg-gray-900/30">
+                <div className="flex items-start justify-between gap-3">
+                  <div>
+                    <div className="font-medium text-gray-900 dark:text-white">{template.name}</div>
+                    <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">{template.description}</p>
+                  </div>
+                  <span className="app-chip rounded-full px-2 py-0.5 text-[11px]">{template.permissions.length} permisos</span>
+                </div>
+                <Button type="button" variant="outline" className="mt-4 w-full" onClick={() => handleCreateRoleFromTemplate(template)}>
+                  Usar como base
+                </Button>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
       <div className="flex min-h-0 flex-col gap-4 lg:flex-1 lg:flex-row lg:gap-6 lg:overflow-hidden">
         {/* Roles List (Sidebar) */}
-        <div className="app-surface flex max-h-[38dvh] flex-col overflow-hidden rounded-xl lg:max-h-none lg:w-64 lg:flex-shrink-0">
+        <div className="app-surface flex max-h-[38dvh] flex-col overflow-hidden rounded-xl lg:max-h-none lg:w-64 lg:flex-shrink-0" data-tour="roles.list">
           <div className="app-table-head p-4">
             <h3 className="font-semibold text-gray-700 dark:text-gray-200">Roles</h3>
           </div>
@@ -343,7 +417,7 @@ export const RolesPermissionsTab = () => {
         </div>
 
         {/* Permissions Editor (Main) */}
-        <div className="app-surface flex min-h-0 flex-1 flex-col overflow-hidden rounded-xl">
+        <div className="app-surface flex min-h-0 flex-1 flex-col overflow-hidden rounded-xl" data-tour="roles.permissions">
           {selectedRole ? (
             <>
               {/* Toolbar */}

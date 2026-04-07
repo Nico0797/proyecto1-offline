@@ -5,7 +5,7 @@ import { useAccess } from '../hooks/useAccess';
 import { Loader2 } from 'lucide-react';
 
 export const RequireAdmin = () => {
-  const { isAuthenticated, fetchUser } = useAuthStore();
+  const { isAuthenticated, isHydrating, fetchUser } = useAuthStore();
   const { isAdmin } = useAccess();
   
   // If we are authenticated but not admin (yet), we might need to fetch fresh permissions
@@ -31,6 +31,15 @@ export const RequireAdmin = () => {
     
     return () => { mounted = false; };
   }, [isAuthenticated]); // Only run once on mount/auth change
+
+  if (isHydrating) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center bg-gray-900 text-white">
+        <Loader2 className="w-8 h-8 animate-spin text-blue-500 mb-4" />
+        <p className="text-gray-400">Restaurando tu sesión...</p>
+      </div>
+    );
+  }
 
   if (!isAuthenticated) {
     return <Navigate to="/admin/login" replace />;

@@ -82,9 +82,9 @@ export const Treasury = () => {
     updateAccount,
   } = useTreasuryStore();
 
-  const canRead = hasPermission('treasury.read');
-  const canCreate = hasPermission('treasury.create');
-  const canUpdate = hasPermission('treasury.update');
+  const canRead = hasPermission('treasury.view');
+  const canCreate = hasPermission('treasury.manage_accounts');
+  const canUpdate = hasPermission('treasury.adjust') || hasPermission('treasury.manage_accounts');
   const currency = activeBusiness?.currency || 'COP';
 
   const [search, setSearch] = useState('');
@@ -335,13 +335,13 @@ export const Treasury = () => {
       <TeachingEmptyState
         icon={Landmark}
         title="Sin acceso a tesoreria"
-        description="Necesitas el permiso `treasury.read` para ver cuentas, saldos y movimientos."
+        description="Necesitas el permiso `treasury.view` para ver cuentas, saldos y movimientos."
       />
     );
   }
 
   return (
-    <PageLayout>
+    <PageLayout data-tour="treasury.panel">
       <PageHeader
         title="Tesoreria"
         description="Administra tus cajas, bancos y billeteras sin perder el rastro historico de ingresos, gastos, cobros y transferencias."
@@ -356,7 +356,7 @@ export const Treasury = () => {
             )}
             secondary={[
               canCreate ? (
-                <Button key="add-account" onClick={openCreateModal} className="w-full sm:w-auto">
+                <Button key="add-account" onClick={openCreateModal} className="w-full sm:w-auto" data-tour="treasury.primaryAction">
                   <Plus className="h-4 w-4" />
                   Agregar cuenta
                 </Button>
@@ -432,7 +432,7 @@ export const Treasury = () => {
             </div>
           ) : null}
 
-          <div className="hidden lg:block app-toolbar space-y-3">
+          <div className="hidden lg:block app-toolbar space-y-3" data-tour="treasury.filters">
             <div>
               <div className="text-sm font-semibold text-gray-900 dark:text-white">Filtros</div>
               <div className="text-xs text-gray-500 dark:text-gray-400 sm:text-sm">
@@ -443,7 +443,7 @@ export const Treasury = () => {
           </div>
 
           <div className="grid grid-cols-1 gap-6 xl:grid-cols-[420px_minmax(0,1fr)]">
-            <div className="app-surface p-5 sm:p-6">
+            <div className="app-surface p-5 sm:p-6" data-tour="treasury.accounts">
               <div className="mb-5 flex items-center justify-between gap-3">
                 <div>
                   <div className="text-base font-semibold text-gray-900 dark:text-white">Cuentas del negocio</div>
@@ -561,7 +561,7 @@ export const Treasury = () => {
               )}
             </div>
 
-            <div className="app-surface p-5 sm:p-6">
+            <div className="app-surface p-5 sm:p-6" data-tour="treasury.movements">
               <div className="mb-5 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                 <div>
                   <div className="text-base font-semibold text-gray-900 dark:text-white">Movimientos recientes</div>

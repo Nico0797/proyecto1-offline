@@ -400,7 +400,7 @@ export const RawPurchases = () => {
   }
 
   return (
-    <PageLayout>
+    <PageLayout data-tour="raw-purchases.panel">
       <PageHeader
         title="Compras de insumos"
         description="Registra compras de bodega y confirma entradas automáticas a raw inventory."
@@ -413,7 +413,7 @@ export const RawPurchases = () => {
               {summary.confirmed} confirmada(s)
             </div>
             {canCreate && (
-              <Button onClick={openCreate}>
+              <Button onClick={openCreate} data-tour="raw-purchases.primaryAction">
                 <PackagePlus className="w-4 h-4 mr-2" /> Nueva compra
               </Button>
             )}
@@ -422,7 +422,7 @@ export const RawPurchases = () => {
       />
 
       <PageBody className="space-y-6">
-        <div className="app-surface p-4 shadow-sm">
+        <div className="app-surface p-4 shadow-sm" data-tour="raw-purchases.filters">
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-3">
             <Input value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} placeholder="Buscar por número, proveedor o nota..." icon={Search} />
             <select className="app-select" value={selectedStatus} onChange={(e) => setSelectedStatus(e.target.value as 'all' | RawPurchaseStatus)}>
@@ -442,7 +442,7 @@ export const RawPurchases = () => {
           )}
         </div>
 
-        <div className="app-surface overflow-hidden shadow-sm">
+        <div className="app-surface overflow-hidden shadow-sm" data-tour="raw-purchases.table">
           <div className="app-table-head hidden md:grid grid-cols-[1.1fr_1fr_140px_140px_180px_auto] gap-4 px-4 py-3 text-xs font-semibold uppercase tracking-wide">
             <div>Compra</div>
             <div>Proveedor</div>
@@ -523,7 +523,7 @@ export const RawPurchases = () => {
         </div>
 
       <Modal isOpen={isPurchaseModalOpen} onClose={closePurchaseModal} title={editingPurchase ? 'Editar compra de insumos' : 'Nueva compra de insumos'} className="max-w-5xl h-[90vh]">
-        <div className="space-y-5">
+        <div className="space-y-5" data-tour="raw-purchases.modal.form">
           <div className="app-muted-panel p-4">
             <div className="text-sm font-semibold text-gray-900 dark:text-white">Compra y abastecimiento</div>
             <div className="mt-1 text-sm text-gray-500 dark:text-gray-400">
@@ -551,7 +551,7 @@ export const RawPurchases = () => {
             </div>
           </div>
 
-          <div className="app-surface overflow-hidden rounded-[24px]">
+          <div className="app-surface overflow-hidden rounded-[24px]" data-tour="raw-purchases.modal.items">
             <div className="app-table-head px-4 py-3 text-sm font-semibold text-gray-900 dark:text-white">Ítems de compra</div>
             <div className="app-table-body divide-y divide-gray-100 dark:divide-gray-800">
               {items.map((item, index) => (
@@ -600,7 +600,7 @@ export const RawPurchases = () => {
 
           <div className="app-divider flex flex-col-reverse gap-3 border-t pt-3 sm:flex-row sm:justify-end">
             <Button variant="secondary" onClick={closePurchaseModal}>Cancelar</Button>
-            <Button onClick={handleSavePurchase} isLoading={saving}>Guardar borrador</Button>
+            <Button onClick={handleSavePurchase} isLoading={saving} data-tour="raw-purchases.modal.confirm">Guardar borrador</Button>
           </div>
         </div>
       </Modal>

@@ -31,7 +31,6 @@ import { ElevatedCard } from '../components/ui/ElevatedCard';
 import { IconContainer } from '../components/ui/IconContainer';
 import { AppStatusBadge } from '../components/ui/AppStatusBadge';
 import { useAccess } from '../hooks/useAccess';
-import { useBusinessStore } from '../store/businessStore';
 
 type SettingsSectionId =
   | 'profile'
@@ -73,13 +72,15 @@ const useIsDesktop = () => {
 };
 
 export const Settings = () => {
-  const { activeBusiness } = useBusinessStore();
-  const { isOwner, hasPermission } = useAccess();
+  const {
+    isOwner,
+    canManageBusinessExperience,
+    canViewAudit,
+    canViewTeamWorkspace,
+    canManageRoles,
+  } = useAccess();
   const [searchParams, setSearchParams] = useSearchParams();
   const isDesktop = useIsDesktop();
-
-  const canManageBusinessExperience = !!activeBusiness && (isOwner || hasPermission('business.update'));
-  const canViewAudit = !!activeBusiness && (isOwner || hasPermission('business.update') || hasPermission('team.manage'));
 
   const sections = useMemo<SettingsSectionDefinition[]>(() => {
     const nextSections: SettingsSectionDefinition[] = [
@@ -106,21 +107,23 @@ export const Settings = () => {
             tone: 'products',
           })]
         : []),
-      createSection({
-        id: 'team',
-        title: 'Equipo',
-        description: 'Invitaciones, miembros, roles operativos y gestion del trabajo en equipo.',
-        icon: Users,
-        tone: 'sales',
-      }),
-      ...(isOwner
+      ...(canViewTeamWorkspace
+        ? [createSection({
+            id: 'team',
+            title: 'Equipo',
+            description: 'Invitaciones, miembros, roles operativos y comunicación del equipo.',
+            icon: Users,
+            tone: 'sales',
+          })]
+        : []),
+      ...(canManageRoles
         ? [createSection({
             id: 'roles',
             title: 'Roles y permisos',
             description: 'Control fino de accesos para proteger areas y acciones sensibles.',
             icon: ShieldCheck,
             tone: 'alerts',
-            badge: 'Propietario',
+            badge: isOwner ? 'Propietario' : 'Acceso',
           })]
         : []),
       createSection({
@@ -169,7 +172,7 @@ export const Settings = () => {
     nextSections.forEach((section) => deduped.set(section.id, section));
 
     return Array.from(deduped.values());
-  }, [canManageBusinessExperience, canViewAudit, isOwner]);
+  }, [canManageBusinessExperience, canManageRoles, canViewAudit, canViewTeamWorkspace, isOwner]);
 
   const mobileSections = useMemo<SettingsMobileEntry[]>(
     () => [

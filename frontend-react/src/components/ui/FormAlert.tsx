@@ -13,10 +13,10 @@ interface FormAlertProps {
 }
 
 const toneStyles: Record<FormAlertTone, string> = {
-  error: 'border-red-200/80 bg-red-50/95 text-red-900 shadow-[0_18px_40px_-28px_rgba(220,38,38,0.45)] dark:border-red-900/40 dark:bg-red-950/30 dark:text-red-100',
-  warning: 'border-amber-200/80 bg-amber-50/95 text-amber-900 shadow-[0_18px_40px_-28px_rgba(217,119,6,0.4)] dark:border-amber-900/40 dark:bg-amber-950/30 dark:text-amber-100',
-  info: 'border-blue-200/80 bg-blue-50/95 text-blue-900 shadow-[0_18px_40px_-28px_rgba(37,99,235,0.4)] dark:border-blue-900/40 dark:bg-blue-950/30 dark:text-blue-100',
-  success: 'border-emerald-200/80 bg-emerald-50/95 text-emerald-900 shadow-[0_18px_40px_-28px_rgba(5,150,105,0.4)] dark:border-emerald-900/40 dark:bg-emerald-950/30 dark:text-emerald-100',
+  error: 'border-[color:var(--app-danger-soft-border)] bg-[color:color-mix(in_srgb,var(--app-danger-soft)_90%,white_10%)] text-[color:color-mix(in_srgb,var(--app-danger)_78%,var(--app-text)_22%)] shadow-[var(--app-shadow-soft)]',
+  warning: 'border-[color:var(--app-warning-soft-border)] bg-[color:color-mix(in_srgb,var(--app-warning-soft)_92%,white_8%)] text-[color:color-mix(in_srgb,var(--app-warning)_80%,var(--app-text)_20%)] shadow-[var(--app-shadow-soft)]',
+  info: 'border-[color:var(--app-primary-soft-border)] bg-[color:color-mix(in_srgb,var(--app-primary-soft)_88%,white_12%)] text-[color:color-mix(in_srgb,var(--app-primary)_78%,var(--app-text)_22%)] shadow-[var(--app-shadow-soft)]',
+  success: 'border-[color:var(--app-success-soft-border)] bg-[color:color-mix(in_srgb,var(--app-success-soft)_90%,white_10%)] text-[color:color-mix(in_srgb,var(--app-success)_80%,var(--app-text)_20%)] shadow-[var(--app-shadow-soft)]',
 };
 
 const iconMap = {
@@ -46,7 +46,7 @@ export const FormAlert: React.FC<FormAlertProps> = ({
       aria-live="polite"
     >
       <div className="flex items-start gap-3">
-        <div className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-white/70 dark:bg-white/10">
+        <div className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[color:color-mix(in_srgb,var(--app-surface-elevated)_92%,white_8%)]">
           <Icon className="h-5 w-5" />
         </div>
         <div className="min-w-0 flex-1">

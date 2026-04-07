@@ -64,9 +64,9 @@ export const Recipes = () => {
     setSelectedConsumption,
   } = useRecipesStore();
 
-  const canRead = hasModule('raw_inventory') && hasPermission('recipes.read');
+  const canRead = hasModule('raw_inventory') && hasPermission('recipes.view');
   const canCreate = hasModule('raw_inventory') && hasPermission('recipes.create');
-  const canUpdate = hasModule('raw_inventory') && hasPermission('recipes.update');
+  const canUpdate = hasModule('raw_inventory') && hasPermission('recipes.edit');
   const canDelete = hasModule('raw_inventory') && hasPermission('recipes.delete');
   const canConsume = hasModule('raw_inventory') && hasPermission('recipes.consume');
 
@@ -313,19 +313,19 @@ export const Recipes = () => {
   }
 
   return (
-    <PageLayout>
+    <PageLayout data-tour="recipes.panel">
       <PageHeader
         title="Recetas y consumo de materias primas"
         description="Define fórmulas por producto y registra consumos explícitos con trazabilidad en bodega."
         action={canCreate ? (
-          <Button onClick={openCreate}>
+          <Button onClick={openCreate} data-tour="recipes.primaryAction">
             <Plus className="w-4 h-4 mr-2" /> Nueva receta
           </Button>
         ) : undefined}
       />
 
       <PageBody className="space-y-6">
-        <div className="app-surface space-y-3 p-4 shadow-sm">
+        <div className="app-surface space-y-3 p-4 shadow-sm" data-tour="recipes.filters">
           <div className="grid grid-cols-1 lg:grid-cols-4 gap-3">
             <Input value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} placeholder="Buscar por receta o producto..." icon={Search} />
             <select className="app-select" value={selectedProductId} onChange={(e) => setSelectedProductId(e.target.value)}>
@@ -349,7 +349,7 @@ export const Recipes = () => {
           )}
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4" data-tour="recipes.table">
           {recipes.length === 0 && !loading && (
             <div className="lg:col-span-2 xl:col-span-3">
               <TeachingEmptyState
@@ -414,7 +414,7 @@ export const Recipes = () => {
 
       <Modal isOpen={isFormOpen} onClose={closeForm} title={editingRecipeId ? 'Editar receta' : 'Nueva receta'} className="max-w-5xl h-[90vh]">
         <div className="space-y-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4" data-tour="recipes.modal.form">
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Producto</label>
               <select disabled={recipeHasHistory} className="app-select disabled:opacity-60" value={formProductId} onChange={(e) => setFormProductId(e.target.value)}>
@@ -443,7 +443,7 @@ export const Recipes = () => {
             </div>
           )}
 
-          <div className="app-surface overflow-hidden rounded-[24px]">
+          <div className="app-surface overflow-hidden rounded-[24px]" data-tour="recipes.modal.items">
             <div className="app-table-head px-4 py-3 text-sm font-semibold text-gray-900 dark:text-white">Insumos por unidad</div>
             <div className="p-4 space-y-4">
               {formItems.map((item, index) => (
@@ -475,7 +475,7 @@ export const Recipes = () => {
 
             <div className="app-divider flex flex-col-reverse gap-3 border-t pt-4 sm:flex-row sm:justify-end">
             <Button variant="secondary" onClick={closeForm}>Cancelar</Button>
-            <Button onClick={handleSaveRecipe} isLoading={saving}>{editingRecipeId ? 'Guardar cambios' : 'Crear receta'}</Button>
+            <Button onClick={handleSaveRecipe} isLoading={saving} data-tour="recipes.modal.confirm">{editingRecipeId ? 'Guardar cambios' : 'Crear receta'}</Button>
           </div>
         </div>
       </Modal>

@@ -71,9 +71,16 @@ interface ClientDetailPanelProps {
   onEdit: () => void;
   onClose: () => void; // For mobile
   showReceivables?: boolean;
+  onCustomerHydrated?: (customer: Customer) => void;
 }
 
-export const ClientDetailPanel: React.FC<ClientDetailPanelProps> = ({ customer, onEdit, onClose, showReceivables = true }) => {
+export const ClientDetailPanel: React.FC<ClientDetailPanelProps> = ({
+  customer,
+  onEdit,
+  onClose,
+  showReceivables = true,
+  onCustomerHydrated,
+}) => {
   const [activeTab, setActiveTab] = useState<'summary' | 'debts' | 'history'>('summary');
   const [isWhatsAppOpen, setIsWhatsAppOpen] = useState(false);
   const [detailCustomer, setDetailCustomer] = useState<Customer | null>(customer);
@@ -124,6 +131,7 @@ export const ClientDetailPanel: React.FC<ClientDetailPanelProps> = ({ customer, 
         const detail = await customerDetailService.getCustomerDetail(activeBusiness.id, customer.id);
         if (!cancelled) {
           setDetailCustomer(detail);
+          onCustomerHydrated?.(detail);
         }
       } catch (error: any) {
         if (!cancelled) {
@@ -140,7 +148,7 @@ export const ClientDetailPanel: React.FC<ClientDetailPanelProps> = ({ customer, 
     return () => {
       cancelled = true;
     };
-  }, [activeBusiness?.id, customer?.id, detailReloadToken]);
+  }, [activeBusiness?.id, customer?.id, detailReloadToken, onCustomerHydrated]);
 
   useEffect(() => {
     if (activeTab !== 'history' || !activeBusiness?.id || !customer?.id) return;
@@ -248,7 +256,7 @@ export const ClientDetailPanel: React.FC<ClientDetailPanelProps> = ({ customer, 
                 <p className="text-sm md:text-lg font-bold text-gray-900 dark:text-white">{formatCOP(customerSummary?.average_ticket || 0)}</p>
             </div>
         </div>
-        {isLoadingDetail ? <p className="mt-3 text-sm text-gray-500 dark:text-gray-400">Actualizando detalle comercial...</p> : null}
+        {isLoadingDetail && !detailCustomer ? <p className="mt-3 text-sm text-gray-500 dark:text-gray-400">Actualizando detalle comercial...</p> : null}
         {detailError ? (
           <div className="mt-3 flex flex-wrap items-center gap-3 text-sm text-amber-600 dark:text-amber-300">
             <span>{detailError}</span>

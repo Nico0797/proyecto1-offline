@@ -125,10 +125,10 @@ export const RawInventory = () => {
     clearMovements,
   } = useRawInventoryStore();
 
-  const canRead = hasModule('raw_inventory') && hasPermission('raw_inventory.read');
-  const canCreate = hasModule('raw_inventory') && hasPermission('raw_inventory.create');
-  const canUpdate = hasModule('raw_inventory') && hasPermission('raw_inventory.update');
-  const canDelete = hasModule('raw_inventory') && hasPermission('raw_inventory.delete');
+  const canRead = hasModule('raw_inventory') && hasPermission('raw_inventory.view');
+  const canCreate = hasModule('raw_inventory') && hasPermission('raw_inventory.adjust');
+  const canUpdate = hasModule('raw_inventory') && hasPermission('raw_inventory.adjust');
+  const canDelete = hasModule('raw_inventory') && hasPermission('raw_inventory.adjust');
   const canCreateMovements = hasModule('raw_inventory') && hasPermission('raw_inventory.movements.create');
 
   const [searchTerm, setSearchTerm] = useState('');

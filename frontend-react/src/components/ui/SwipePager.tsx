@@ -52,6 +52,7 @@ export const MobileInternalNav: React.FC<MobileInternalNavProps> = ({
       shortLabel: getMobileLabel(page),
       icon: page.icon,
       badge: page.badge,
+      dataTour: page['data-tour'],
     })),
     [pages]
   );

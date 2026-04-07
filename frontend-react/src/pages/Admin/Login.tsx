@@ -2,12 +2,15 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Shield, Lock, ArrowRight, CheckCircle2 } from 'lucide-react';
 import { useAuthStore } from '../../store/authStore';
+import { useAccountAccessStore } from '../../store/accountAccessStore';
 import api from '../../services/api';
 import logo from '../../assets/logo.png';
 
 export const AdminLogin = () => {
   const navigate = useNavigate();
   const login = useAuthStore((state) => state.login);
+  const fetchUser = useAuthStore((state) => state.fetchUser);
+  const logout = useAuthStore((state) => state.logout);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -21,18 +24,11 @@ export const AdminLogin = () => {
 
     try {
       const response = await api.post('/auth/login', { email, password });
-      const { user, access_token, refresh_token, token } = response.data;
+      const { user, access_token, refresh_token, token, account_access } = response.data;
       const useToken = access_token || token;
 
       if (!useToken) {
         throw new Error('Token de acceso no recibido');
-      }
-
-      // Check admin permissions
-      const isAdmin = user?.is_admin || user?.permissions?.admin || (user?.roles && user.roles.some((r: any) => ['ADMIN', 'SUPERADMIN', 'ADMINISTRADOR'].includes(r.name)));
-      
-      if (!isAdmin) {
-        throw new Error('No tienes permisos de administrador');
       }
 
       if (refresh_token) {
@@ -40,6 +36,17 @@ export const AdminLogin = () => {
       }
       
       login(user, useToken);
+      useAccountAccessStore.getState().setAccess(account_access || null);
+      await fetchUser();
+
+      const resolvedUser = useAuthStore.getState().user;
+      const isAdmin = resolvedUser?.is_admin || resolvedUser?.permissions?.admin;
+
+      if (!isAdmin) {
+        logout();
+        throw new Error('No tienes permisos de administrador');
+      }
+
       navigate('/admin');
     } catch (err: any) {
       const serverError = err.response?.data?.error || err.response?.data?.message;

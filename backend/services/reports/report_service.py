@@ -5,9 +5,11 @@ from flask import current_app
 from openpyxl import Workbook
 from sqlalchemy import func
 from sqlalchemy.orm import joinedload
+from collections import defaultdict
 
 from backend.database import db
-from backend.models import Business, Debt, DebtPayment, Expense, LedgerEntry, Payment, Product, RecurringExpense, Sale
+from backend.models import Business, Debt, DebtPayment, Expense, LedgerAllocation, LedgerEntry, Payment, Product, RecurringExpense, Sale
+from backend.services.commercial_financials import list_sale_initial_cash_events
 
 from .excel_styles import ExcelStylePalette
 from .excel_utils import configure_workbook_properties, ensure_workbook_ready, safe_sheet_title
@@ -163,10 +165,69 @@ class ReportExportService:
         _, due_soon_days, _ = self._get_receivables_settings()
         sales = (
             Sale.query.options(joinedload(Sale.customer))
-            .filter(Sale.business_id == self.business_id, Sale.sale_date <= today, Sale.balance > 0)
+            .filter(Sale.business_id == self.business_id, Sale.sale_date <= today, Sale.customer_id.isnot(None))
             .order_by(Sale.sale_date.desc(), Sale.id.desc())
             .all()
         )
+
+        sale_ids = [sale.id for sale in sales]
+        allocated_paid_by_sale = defaultdict(float)
+        allocated_payment_ids = set()
+        fallback_paid_by_sale = defaultdict(float)
+
+        if sale_ids:
+            charge_entries = LedgerEntry.query.filter(
+                LedgerEntry.business_id == self.business_id,
+                LedgerEntry.entry_type == "charge",
+                LedgerEntry.ref_type == "sale",
+                LedgerEntry.ref_id.in_(sale_ids),
+            ).all()
+            charge_by_id = {entry.id: entry for entry in charge_entries}
+            charge_ids = [entry.id for entry in charge_entries]
+
+            if charge_ids:
+                allocations = LedgerAllocation.query.filter(LedgerAllocation.charge_id.in_(charge_ids)).all()
+                payment_entry_ids = {allocation.payment_id for allocation in allocations}
+                payment_entries = {}
+                payment_by_id = {}
+                if payment_entry_ids:
+                    payment_entries = {
+                        entry.id: entry
+                        for entry in LedgerEntry.query.filter(LedgerEntry.id.in_(payment_entry_ids)).all()
+                    }
+                    payment_ids = {
+                        int(entry.ref_id)
+                        for entry in payment_entries.values()
+                        if entry.ref_type == "payment" and entry.ref_id is not None
+                    }
+                    if payment_ids:
+                        payment_by_id = {
+                            payment.id: payment
+                            for payment in Payment.query.filter(Payment.id.in_(payment_ids)).all()
+                        }
+
+                for allocation in allocations:
+                    charge_entry = charge_by_id.get(allocation.charge_id)
+                    payment_entry = payment_entries.get(allocation.payment_id)
+                    if not charge_entry or not payment_entry or payment_entry.ref_type != "payment" or payment_entry.ref_id is None:
+                        continue
+                    payment = payment_by_id.get(int(payment_entry.ref_id))
+                    if payment is None or payment.payment_date is None or payment.payment_date > today:
+                        continue
+                    allocated_paid_by_sale[int(charge_entry.ref_id)] += float(allocation.amount or 0)
+                    allocated_payment_ids.add(payment.id)
+
+            linked_payments = Payment.query.filter(
+                Payment.business_id == self.business_id,
+                Payment.sale_id.in_(sale_ids),
+                Payment.payment_date <= today,
+            ).all()
+            for payment in linked_payments:
+                if payment.id in allocated_payment_ids:
+                    continue
+                if payment.sale_id is None:
+                    continue
+                fallback_paid_by_sale[int(payment.sale_id)] += float(payment.amount or 0)
 
         items = []
         customer_ids = set()
@@ -183,7 +244,8 @@ class ReportExportService:
         }
 
         for sale in sales:
-            balance = round(float(sale.balance or 0), 2)
+            historical_paid = round(float(allocated_paid_by_sale.get(sale.id, 0) or 0) + float(fallback_paid_by_sale.get(sale.id, 0) or 0), 2)
+            balance = round(max(float(sale.total or 0) - historical_paid, 0), 2)
             if balance <= 0:
                 continue
             due_date = self.resolve_sale_due_date(sale)
@@ -220,7 +282,7 @@ class ReportExportService:
                 "due_date": due_date,
                 "customer_name": customer_name,
                 "sale_total": round(float(sale.total or 0), 2),
-                "collected_amount": round(float(sale.collected_amount or 0), 2),
+                "collected_amount": historical_paid,
                 "balance": balance,
                 "status": status,
                 "days_until_due": days_until_due,
@@ -257,6 +319,344 @@ class ReportExportService:
             fallback_cost += unit_cost * quantity
 
         return round(fallback_cost, 2), "product_cost_fallback"
+
+    def build_profitability_payload(self, start_date=None, end_date=None, status=None, product_query=None, focus=None):
+        query = Sale.query.options(joinedload(Sale.customer)).filter(Sale.business_id == self.business_id)
+        if start_date:
+            query = query.filter(Sale.sale_date >= start_date)
+        if end_date:
+            query = query.filter(Sale.sale_date <= end_date)
+        sales = query.order_by(Sale.sale_date.desc(), Sale.id.desc()).all()
+
+        product_ids = set()
+        for sale in sales:
+            for item in sale.items or []:
+                product_id = item.get("product_id") if isinstance(item, dict) else None
+                if product_id:
+                    product_ids.add(int(product_id))
+        products_map = {}
+        if product_ids:
+            products_map = {
+                product.id: product
+                for product in Product.query.filter(Product.id.in_(sorted(product_ids))).all()
+            }
+
+        def _margin_percent(margin_value, revenue_value):
+            revenue = float(revenue_value or 0)
+            if revenue <= 0:
+                return None
+            return round((float(margin_value or 0) / revenue) * 100, 2)
+
+        def _status_payload(status_key, missing_items=0):
+            if status_key == "complete":
+                return "Costo completo", "Todos los productos de la venta tienen costo base disponible."
+            if status_key == "no_consumption":
+                return "Sin items", "La venta no tiene items suficientes para costeo."
+            if status_key == "missing_cost":
+                return "Sin costo base", "No hay costos base suficientes para costear la venta."
+            return "Costo parcial", f"Faltan costos base en {missing_items} item(s) de la venta."
+
+        def _analyze_sale(sale):
+            stored_cost = round(float(sale.total_cost or 0), 2)
+            items = [item for item in (sale.items or []) if isinstance(item, dict)]
+            if stored_cost > 0:
+                margin = round(float(sale.total or 0) - stored_cost, 2)
+                return {
+                    "sale_total": round(float(sale.total or 0), 2),
+                    "consumed_cost_total": stored_cost,
+                    "partial_consumed_cost_total": None,
+                    "estimated_gross_margin": margin,
+                    "estimated_margin_percent": _margin_percent(margin, sale.total),
+                    "cost_status": "complete",
+                    "cost_status_label": "Costo completo",
+                    "cost_status_message": "La venta tiene costo total histórico registrado.",
+                    "missing_cost_items_count": 0,
+                    "items_count": len(items),
+                }
+            if not items:
+                label, message = _status_payload("no_consumption")
+                return {
+                    "sale_total": round(float(sale.total or 0), 2),
+                    "consumed_cost_total": None,
+                    "partial_consumed_cost_total": None,
+                    "estimated_gross_margin": None,
+                    "estimated_margin_percent": None,
+                    "cost_status": "no_consumption",
+                    "cost_status_label": label,
+                    "cost_status_message": message,
+                    "missing_cost_items_count": 0,
+                    "items_count": 0,
+                }
+
+            available_cost = 0.0
+            missing_items = 0
+            for item in items:
+                product_id = item.get("product_id")
+                quantity = float(item.get("quantity") if item.get("quantity") is not None else item.get("qty") or 0)
+                if not product_id or quantity <= 0:
+                    missing_items += 1
+                    continue
+                product = products_map.get(int(product_id))
+                unit_cost = float(getattr(product, "cost", 0) or 0) if product else 0.0
+                if unit_cost <= 0:
+                    missing_items += 1
+                    continue
+                available_cost += unit_cost * quantity
+
+            available_cost = round(available_cost, 2)
+            if missing_items == 0:
+                margin = round(float(sale.total or 0) - available_cost, 2)
+                label, message = _status_payload("complete")
+                return {
+                    "sale_total": round(float(sale.total or 0), 2),
+                    "consumed_cost_total": available_cost,
+                    "partial_consumed_cost_total": None,
+                    "estimated_gross_margin": margin,
+                    "estimated_margin_percent": _margin_percent(margin, sale.total),
+                    "cost_status": "complete",
+                    "cost_status_label": label,
+                    "cost_status_message": message,
+                    "missing_cost_items_count": 0,
+                    "items_count": len(items),
+                }
+            if available_cost <= 0:
+                label, message = _status_payload("missing_cost", missing_items)
+                return {
+                    "sale_total": round(float(sale.total or 0), 2),
+                    "consumed_cost_total": None,
+                    "partial_consumed_cost_total": None,
+                    "estimated_gross_margin": None,
+                    "estimated_margin_percent": None,
+                    "cost_status": "missing_cost",
+                    "cost_status_label": label,
+                    "cost_status_message": message,
+                    "missing_cost_items_count": missing_items,
+                    "items_count": len(items),
+                }
+
+            partial_margin = round(float(sale.total or 0) - available_cost, 2)
+            label, message = _status_payload("incomplete", missing_items)
+            return {
+                "sale_total": round(float(sale.total or 0), 2),
+                "consumed_cost_total": None,
+                "partial_consumed_cost_total": available_cost,
+                "estimated_gross_margin": partial_margin,
+                "estimated_margin_percent": _margin_percent(partial_margin, sale.total),
+                "cost_status": "incomplete",
+                "cost_status_label": label,
+                "cost_status_message": message,
+                "missing_cost_items_count": missing_items,
+                "items_count": len(items),
+            }
+
+        sales_items = []
+        products_index = {}
+        for sale in sales:
+            analyzed = _analyze_sale(sale)
+            sale_item = {
+                "sale_id": sale.id,
+                "sale_date": sale.sale_date,
+                "customer_name": sale.customer.name if sale.customer and sale.customer.name else "Cliente casual",
+                "payment_method": sale.payment_method or "-",
+                **analyzed,
+            }
+            sales_items.append(sale_item)
+
+            for item in [row for row in (sale.items or []) if isinstance(row, dict)]:
+                product_id = item.get("product_id")
+                product_name = item.get("name") or f"Producto {product_id or '-'}"
+                quantity = float(item.get("quantity") if item.get("quantity") is not None else item.get("qty") or 0)
+                revenue_total = round(float(item.get("total") or 0), 2)
+                product = products_map.get(int(product_id)) if product_id else None
+                bucket_key = int(product_id) if product_id else product_name
+                bucket = products_index.setdefault(bucket_key, {
+                    "product_id": int(product_id) if product_id else None,
+                    "product_name": product_name,
+                    "quantity_sold": 0.0,
+                    "revenue_total": 0.0,
+                    "costed_revenue_total": 0.0,
+                    "consumed_cost_total": 0.0,
+                    "estimated_gross_margin": 0.0,
+                    "estimated_margin_percent": None,
+                    "sales_count": 0,
+                    "costed_sales_count": 0,
+                    "incomplete_sales_count": 0,
+                    "no_consumption_sales_count": 0,
+                    "missing_cost_sales_count": 0,
+                    "cost_status": "complete",
+                    "cost_status_label": "Costo completo",
+                    "cost_status_message": "Todos los movimientos con costo disponible.",
+                })
+                bucket["quantity_sold"] += quantity
+                bucket["revenue_total"] += revenue_total
+                bucket["sales_count"] += 1
+
+                if sale_item["cost_status"] == "complete":
+                    ratio = (revenue_total / sale_item["sale_total"]) if sale_item["sale_total"] else 0
+                    allocated_cost = round(float(sale_item["consumed_cost_total"] or 0) * ratio, 2)
+                    bucket["costed_revenue_total"] += revenue_total
+                    bucket["consumed_cost_total"] += allocated_cost
+                    bucket["estimated_gross_margin"] += round(revenue_total - allocated_cost, 2)
+                    bucket["costed_sales_count"] += 1
+                elif sale_item["cost_status"] == "incomplete":
+                    bucket["incomplete_sales_count"] += 1
+                elif sale_item["cost_status"] == "missing_cost":
+                    bucket["missing_cost_sales_count"] += 1
+                else:
+                    bucket["no_consumption_sales_count"] += 1
+
+                if product and float(getattr(product, "cost", 0) or 0) <= 0:
+                    bucket["cost_status"] = "missing_cost"
+                    bucket["cost_status_label"] = "Sin costo base"
+                    bucket["cost_status_message"] = "El producto no tiene costo base suficiente."
+                elif sale_item["cost_status"] == "incomplete" and bucket["cost_status"] != "missing_cost":
+                    bucket["cost_status"] = "incomplete"
+                    bucket["cost_status_label"] = "Costo parcial"
+                    bucket["cost_status_message"] = "El producto participa en ventas con costeo parcial."
+                elif sale_item["cost_status"] == "no_consumption" and bucket["cost_status"] == "complete":
+                    bucket["cost_status"] = "no_consumption"
+                    bucket["cost_status_label"] = "Sin items"
+                    bucket["cost_status_message"] = "No hay items suficientes para costear la venta."
+
+        products_items = []
+        for bucket in products_index.values():
+            bucket["quantity_sold"] = round(float(bucket["quantity_sold"] or 0), 2)
+            bucket["revenue_total"] = round(float(bucket["revenue_total"] or 0), 2)
+            bucket["costed_revenue_total"] = round(float(bucket["costed_revenue_total"] or 0), 2)
+            bucket["consumed_cost_total"] = round(float(bucket["consumed_cost_total"] or 0), 2)
+            bucket["estimated_gross_margin"] = round(float(bucket["estimated_gross_margin"] or 0), 2)
+            bucket["estimated_margin_percent"] = _margin_percent(bucket["estimated_gross_margin"], bucket["costed_revenue_total"])
+            products_items.append(bucket)
+
+        def _matches_status(item):
+            current = str(item.get("cost_status") or "").strip().lower()
+            if status in (None, "", "all"):
+                return True
+            if status == "with_issues":
+                return current in {"incomplete", "missing_cost", "no_consumption"}
+            return current == status
+
+        search_term = str(product_query or "").strip().lower()
+
+        filtered_products = [
+            item for item in products_items
+            if _matches_status(item)
+            and (not search_term or search_term in str(item.get("product_name") or "").lower())
+        ]
+        filtered_sales = [
+            item for item in sales_items
+            if _matches_status(item)
+            and (
+                not search_term
+                or search_term in str(item.get("customer_name") or "").lower()
+                or search_term in f"venta #{item.get('sale_id')}".lower()
+            )
+        ]
+
+        incomplete_products = [item for item in filtered_products if item.get("cost_status") == "incomplete"]
+        missing_cost_products = [item for item in filtered_products if item.get("cost_status") == "missing_cost"]
+        no_consumption_products = [item for item in filtered_products if item.get("cost_status") == "no_consumption"]
+        incomplete_sales = [item for item in filtered_sales if item.get("cost_status") == "incomplete"]
+        missing_cost_sales = [item for item in filtered_sales if item.get("cost_status") == "missing_cost"]
+        no_consumption_sales = [item for item in filtered_sales if item.get("cost_status") == "no_consumption"]
+        complete_sales = [item for item in filtered_sales if item.get("cost_status") == "complete"]
+
+        gross_margin_total = round(sum(float(item.get("estimated_gross_margin") or 0) for item in complete_sales), 2)
+        consumed_cost_total = round(sum(float(item.get("consumed_cost_total") or 0) for item in complete_sales), 2)
+        costed_revenue_total = round(sum(float(item.get("sale_total") or 0) for item in complete_sales), 2)
+        revenue_total = round(sum(float(item.get("sale_total") or 0) for item in filtered_sales), 2)
+        alerts = []
+        if missing_cost_sales:
+            alerts.append({
+                "level": "danger",
+                "code": "missing_cost_sales",
+                "title": "Ventas sin costo base",
+                "message": "Hay ventas con productos sin costo base suficiente.",
+                "count": len(missing_cost_sales),
+                "focus": "sales",
+                "status_filter": "missing_cost",
+            })
+        if incomplete_sales:
+            alerts.append({
+                "level": "warning",
+                "code": "incomplete_sales",
+                "title": "Ventas con costo parcial",
+                "message": "Algunas ventas tienen costeo parcial y requieren revisión.",
+                "count": len(incomplete_sales),
+                "focus": "sales",
+                "status_filter": "incomplete",
+            })
+        if no_consumption_sales:
+            alerts.append({
+                "level": "warning",
+                "code": "sales_without_items",
+                "title": "Ventas sin items costeables",
+                "message": "Hay ventas sin items suficientes para costeo.",
+                "count": len(no_consumption_sales),
+                "focus": "sales",
+                "status_filter": "no_consumption",
+            })
+
+        products_sorted = sorted(filtered_products, key=lambda item: (float(item.get("estimated_gross_margin") or 0), float(item.get("revenue_total") or 0)), reverse=True)
+        sales_sorted = sorted(filtered_sales, key=lambda item: ((item.get("sale_date") or date.min), float(item.get("sale_total") or 0)), reverse=True)
+
+        return {
+            "summary": {
+                "sales_count": len(filtered_sales),
+                "revenue_total": revenue_total,
+                "costed_revenue_total": costed_revenue_total,
+                "consumed_cost_total": consumed_cost_total,
+                "gross_margin_total": gross_margin_total,
+                "margin_percent": _margin_percent(gross_margin_total, costed_revenue_total),
+                "complete_sales_count": len(complete_sales),
+                "incomplete_sales_count": len(incomplete_sales),
+                "no_consumption_sales_count": len(no_consumption_sales),
+                "missing_cost_sales_count": len(missing_cost_sales),
+                "products_with_issues_count": len([item for item in filtered_products if item.get("cost_status") != "complete"]),
+            },
+            "products": {
+                "items": products_sorted,
+                "top_margin_items": [item for item in products_sorted if item.get("cost_status") == "complete"][:10],
+                "bottom_margin_items": sorted(
+                    [item for item in products_sorted if item.get("cost_status") == "complete"],
+                    key=lambda item: float(item.get("estimated_gross_margin") or 0),
+                )[:10],
+                "incomplete_items": incomplete_products,
+                "missing_cost_items": missing_cost_products,
+                "no_consumption_items": no_consumption_products,
+                "incomplete_items_count": len(incomplete_products),
+                "missing_cost_items_count": len(missing_cost_products),
+                "no_consumption_items_count": len(no_consumption_products),
+            },
+            "sales": {
+                "items": sales_sorted,
+                "sales": sales_sorted,
+                "top_margin_items": [item for item in sales_sorted if item.get("cost_status") == "complete"][:10],
+                "bottom_margin_items": sorted(
+                    [item for item in sales_sorted if item.get("cost_status") == "complete"],
+                    key=lambda item: float(item.get("estimated_gross_margin") or 0),
+                )[:10],
+                "incomplete_items": incomplete_sales,
+                "missing_cost_items": missing_cost_sales,
+                "no_consumption_items": no_consumption_sales,
+            },
+            "alerts": {
+                "alerts": alerts,
+                "products": [item for item in filtered_products if item.get("cost_status") != "complete"][:20],
+                "sales": [item for item in filtered_sales if item.get("cost_status") != "complete"][:20],
+                "incomplete_products_count": len(incomplete_products),
+                "missing_cost_products_count": len(missing_cost_products),
+                "no_consumption_products_count": len(no_consumption_products),
+                "incomplete_sales_count": len(incomplete_sales),
+                "missing_cost_sales_count": len(missing_cost_sales),
+                "no_consumption_sales_count": len(no_consumption_sales),
+            },
+            "filters": {
+                "status": status or "all",
+                "product_query": product_query or "",
+                "focus": focus or "overview",
+            },
+        }
 
     def _payment_application_label(self, payment):
         if payment.sale_id:
@@ -514,52 +914,24 @@ class ReportExportService:
     def build_sale_initial_cash_events(self, period_start, period_end):
         if not period_start or not period_end:
             return []
-        sale_rows = (
-            Sale.query.options(joinedload(Sale.customer), joinedload(Sale.treasury_account))
-            .filter(
-                Sale.business_id == self.business_id,
-                Sale.sale_date >= period_start,
-                Sale.sale_date <= period_end,
-                Sale.collected_amount > 0,
-            )
-            .order_by(Sale.sale_date.desc(), Sale.id.desc())
-            .all()
+        raw_events = list_sale_initial_cash_events(
+            business_id=self.business_id,
+            start_date=period_start,
+            end_date=period_end,
         )
-        sale_ids = [sale.id for sale in sale_rows]
-        payments_by_sale_id = {}
-        ledger_by_sale_id = {}
-        if sale_ids:
-            linked_payments = Payment.query.filter(Payment.business_id == self.business_id, Payment.sale_id.in_(sale_ids)).all()
-            for payment in linked_payments:
-                payments_by_sale_id.setdefault(payment.sale_id, []).append(payment)
-            linked_ledger_entries = LedgerEntry.query.filter(
-                LedgerEntry.business_id == self.business_id,
-                LedgerEntry.ref_type == "sale",
-                LedgerEntry.entry_type == "payment",
-                LedgerEntry.ref_id.in_(sale_ids),
-            ).all()
-            for entry in linked_ledger_entries:
-                ledger_by_sale_id.setdefault(entry.ref_id, []).append(entry)
         events = []
-        for sale in sale_rows:
-            amount = self.resolve_sale_initial_cash_amount(
-                sale,
-                payments_by_sale_id.get(sale.id, []),
-                ledger_by_sale_id.get(sale.id, []),
-            )
-            if amount <= 0:
-                continue
-            customer_name = sale.customer.name if sale.customer else "Cliente casual"
-            source_label = "Venta pagada" if round(float(sale.balance or 0), 2) <= 0.01 else "Abono inicial de venta"
+        for item in raw_events:
             events.append({
-                "date": sale.sale_date,
-                "description": sale.note or f"Venta #{sale.id} • {customer_name}",
-                "amount": round(float(amount or 0), 2),
-                "category": sale.payment_method or "venta",
-                "source_label": source_label,
+                "date": item.get("date"),
+                "description": item.get("description") or f"Venta #{item.get('sale_id')}",
+                "amount": round(float(item.get("amount") or 0), 2),
+                "category": item.get("payment_method") or item.get("category") or "venta",
+                "source_label": item.get("source_label") or "Venta pagada",
+                "source_type": "sale_payment",
                 "movement_type": "income",
                 "scope": "Operativo",
-                "account": sale.treasury_account.name if sale.treasury_account else "-",
+                "account": item.get("treasury_account_name") or "-",
+                "payment_ids": list(item.get("payment_ids") or []),
             })
         return events
 
@@ -576,6 +948,14 @@ class ReportExportService:
 
         payment_rows = payments_query.order_by(Payment.payment_date.desc(), Payment.id.desc()).all()
         sale_initial_events = self.build_sale_initial_cash_events(start_date, end_date) if start_date and end_date else []
+        initial_payment_ids = {
+            int(payment_id)
+            for event in sale_initial_events
+            for payment_id in (event.get("payment_ids") or [])
+            if payment_id is not None
+        }
+        if initial_payment_ids:
+            payment_rows = [payment for payment in payment_rows if int(payment.id) not in initial_payment_ids]
 
         movements = []
         for payment in payment_rows:
@@ -611,10 +991,14 @@ class ReportExportService:
         operational_summary = self.build_debts_summary(operational_debts, today=end_date)
         financial_summary = self.build_debts_summary(financial_debts, today=end_date)
 
+        cash_sales_total = round(sum(float(item.get("amount") or 0) for item in sale_initial_events), 2)
+        payments_total = round(sum(float(payment.amount or 0) for payment in payment_rows), 2)
         cash_in = round(sum(item["amount"] for item in movements if item["movement_type"] == "income"), 2)
         cash_out = round(sum(item["amount"] for item in movements if item["movement_type"] == "expense"), 2)
         return {
             "summary": {
+                "cash_sales_total": cash_sales_total,
+                "payments_total": payments_total,
                 "cash_in": cash_in,
                 "cash_out": cash_out,
                 "cash_net": round(cash_in - cash_out, 2),
@@ -715,6 +1099,19 @@ def export_combined_report(business_id, report_type, start_date=None, end_date=N
     if normalized_type == "aged_receivables":
         build_aged_receivables_report(service, start, end)
         return service.save("CARTERA_EDADES")
+    if normalized_type == "profit_full":
+        profitability_payload = service.build_profitability_payload(start, end)
+        build_profitability_payload_report(
+            service,
+            profitability_payload["summary"],
+            profitability_payload["products"],
+            profitability_payload["sales"],
+            profitability_payload["alerts"],
+            start,
+            end,
+            filters=profitability_payload["filters"],
+        )
+        return service.save("RENTABILIDAD")
 
     from backend.services.export import export_combined_report as legacy_export_combined_report
 

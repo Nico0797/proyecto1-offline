@@ -176,15 +176,17 @@ export const Orders = () => {
   const renderOrdersUtilityBar = () => (
     <MobileUtilityBar>
       <MobileFilterDrawer summary={orderFilterSummary} {...mobileOrderFilters.sheetProps}>
-        <OrdersToolbar
-          search={mobileOrderFilters.draft.searchTerm}
-          onSearchChange={(value) => mobileOrderFilters.setDraft((current) => ({ ...current, searchTerm: value }))}
-          statusFilter={mobileOrderFilters.draft.statusFilter}
-          onStatusFilterChange={(value) => mobileOrderFilters.setDraft((current) => ({ ...current, statusFilter: value }))}
-          dateRange={mobileOrderFilters.draft.dateRange}
-          onDateRangeChange={(value) => mobileOrderFilters.setDraft((current) => ({ ...current, dateRange: value }))}
-          statusCounts={counts}
-        />
+        <div data-tour="orders.filters">
+          <OrdersToolbar
+            search={mobileOrderFilters.draft.searchTerm}
+            onSearchChange={(value) => mobileOrderFilters.setDraft((current) => ({ ...current, searchTerm: value }))}
+            statusFilter={mobileOrderFilters.draft.statusFilter}
+            onStatusFilterChange={(value) => mobileOrderFilters.setDraft((current) => ({ ...current, statusFilter: value }))}
+            dateRange={mobileOrderFilters.draft.dateRange}
+            onDateRangeChange={(value) => mobileOrderFilters.setDraft((current) => ({ ...current, dateRange: value }))}
+            statusCounts={counts}
+          />
+        </div>
       </MobileFilterDrawer>
       <MobileHelpDisclosure summary="Cómo usar pedidos">
         <p className="text-sm text-gray-600 dark:text-gray-300">
@@ -230,6 +232,7 @@ export const Orders = () => {
               title: 'Tablero Kanban',
               mobileTitle: 'Kanban',
               icon: Kanban,
+              'data-tour': 'orders.board',
               content: (
                 <SectionStack>
                   <div className="hidden lg:block">
@@ -238,7 +241,7 @@ export const Orders = () => {
                         description="Organiza pedidos por estado y revisa rápido qué sigue en preparación, entrega o cierre."
                         dismissible
                       />
-                      <ToolbarSection>
+                      <ToolbarSection data-tour="orders.filters">
                         <OrdersToolbar
                           search={searchTerm}
                           onSearchChange={setSearchTerm}
@@ -301,11 +304,12 @@ export const Orders = () => {
               title: 'Lista de Pedidos',
               mobileTitle: 'Pedidos',
               icon: TableIcon,
+              'data-tour': 'orders.card',
               content: (
                 <SectionStack>
                   <div className="hidden lg:block">
                     <PageStack>
-                      <ToolbarSection>
+                      <ToolbarSection data-tour="orders.filters">
                         <OrdersToolbar
                           search={searchTerm}
                           onSearchChange={setSearchTerm}
@@ -321,7 +325,7 @@ export const Orders = () => {
 
                   <ContentSection>
                     <MobileUnifiedPageShell utilityBar={renderOrdersUtilityBar()}>
-                    <div className="flex-1 min-h-0">
+                    <div className="flex-1 min-h-0" data-tour="orders.card">
                       <DataTableContainer>
                         <OrdersTable
                           orders={filteredOrders}

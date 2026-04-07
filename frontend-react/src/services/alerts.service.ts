@@ -151,17 +151,17 @@ export const alertsService = {
 
     const promises = {
       // Core business entities - only fetch if modules are enabled
-      customers: canRead('customers.read', 'customers')
+      customers: canRead('customers.view', 'customers')
         ? safeGet<{ customers: Customer[] }>(`/businesses/${businessId}/customers`)
         : Promise.resolve({ customers: [] as Customer[] }),
       
       // Products only if products module is enabled (rare in current setup)
-      products: canRead('products.read', 'products')
+      products: canRead('products.view', 'products')
         ? safeGet<{ products: Product[] }>(`/businesses/${businessId}/products`)
         : Promise.resolve({ products: [] as Product[] }),
       
       // Recurring expenses only if feature is available in plan
-      recurring: can('expenses.read') && canAccessFeatureInPlan(FEATURES.RECURRING_EXPENSES, businessPlan) && isBackendCapabilitySupported('recurring_expenses')
+      recurring: can('expenses.view') && canAccessFeatureInPlan(FEATURES.RECURRING_EXPENSES, businessPlan) && isBackendCapabilitySupported('recurring_expenses')
         ? safeGet<{ recurring_expenses: RecurringExpense[] }>(`/businesses/${businessId}/recurring-expenses`)
         : Promise.resolve({ recurring_expenses: [] as RecurringExpense[] }),
       
@@ -171,17 +171,17 @@ export const alertsService = {
         : Promise.resolve({ quotes: [] as Quote[] }),
       
       // Raw materials only if raw_inventory module is enabled
-      rawMaterials: canRead('raw_inventory.read', 'raw_inventory') && isBackendCapabilitySupported('raw_inventory')
+      rawMaterials: canRead('raw_inventory.view', 'raw_inventory') && isBackendCapabilitySupported('raw_inventory')
         ? safeGet<{ raw_materials: RawMaterial[] }>(`/businesses/${businessId}/raw-materials`)
         : Promise.resolve({ raw_materials: [] as RawMaterial[] }),
       
       // Supplier payables only if raw_inventory module is enabled
-      supplierPayables: canRead('supplier_payables.read', 'raw_inventory') && isBackendCapabilitySupported('supplier_payables')
+      supplierPayables: canRead('supplier_payables.view', 'raw_inventory') && isBackendCapabilitySupported('supplier_payables')
         ? safeGet<{ supplier_payables: SupplierPayable[] }>(`/businesses/${businessId}/supplier-payables`)
         : Promise.resolve({ supplier_payables: [] as SupplierPayable[] }),
       
       // Recipes only if raw_inventory module is enabled
-      recipes: canRead('recipes.read', 'raw_inventory') && isBackendCapabilitySupported('recipes')
+      recipes: canRead('recipes.view', 'raw_inventory') && isBackendCapabilitySupported('recipes')
         ? safeGet<{ recipes: Array<{ id: number; name: string }> }>(`/businesses/${businessId}/recipes`)
         : Promise.resolve({ recipes: [] as Array<{ id: number; name: string }> }),
       
@@ -411,7 +411,7 @@ export const alertsService = {
       }));
     }
 
-    if (hasModule('raw_inventory') && can('raw_inventory.read') && rawMaterials.length === 0) {
+    if (hasModule('raw_inventory') && can('raw_inventory.view') && rawMaterials.length === 0) {
       alerts.push(buildAlert({
         id: 'raw_inventory_empty',
         type: 'inventory',
@@ -457,7 +457,7 @@ export const alertsService = {
       }));
     }
 
-    if (hasModule('raw_inventory') && can('recipes.read') && rawMaterials.length > 0 && recipes.length === 0) {
+    if (hasModule('raw_inventory') && can('recipes.view') && rawMaterials.length > 0 && recipes.length === 0) {
       alerts.push(buildAlert({
         id: 'recipes_empty',
         type: 'configuration',
@@ -550,7 +550,7 @@ export const alertsService = {
       }));
     }
 
-    const canManageBusiness = can('business.update');
+    const canManageBusiness = can('settings.edit');
     if (business && canManageBusiness) {
       const personalization = getBusinessPersonalizationSettings(business);
       const businessBaseState = getBusinessBaseState(business);

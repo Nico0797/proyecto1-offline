@@ -18,11 +18,11 @@ export const Button: React.FC<ButtonProps> = ({
   ...props
 }) => {
   const variants = {
-    primary: 'app-button-primary hover:-translate-y-[1px] focus-visible:ring-blue-500',
-    secondary: 'app-button-secondary focus-visible:ring-blue-500',
-    danger: 'border border-transparent bg-red-600 text-white shadow-[0_10px_24px_-18px_rgba(220,38,38,0.55)] hover:-translate-y-[1px] hover:bg-red-500 hover:shadow-[0_16px_32px_-20px_rgba(220,38,38,0.52)] focus-visible:ring-red-500',
-    ghost: 'app-button-ghost focus-visible:ring-blue-500',
-    outline: 'app-button-outline focus-visible:ring-blue-500',
+    primary: 'app-button-primary hover:-translate-y-[1px] focus-visible:ring-[color:var(--accent)]',
+    secondary: 'app-button-secondary focus-visible:ring-[color:var(--accent)]',
+    danger: 'border border-[color:var(--app-danger-soft-border)] bg-[color:var(--app-danger)] text-white shadow-[0_12px_26px_-18px_rgba(220,38,38,0.44)] hover:-translate-y-[1px] hover:brightness-110 hover:shadow-[0_18px_34px_-20px_rgba(220,38,38,0.46)] focus-visible:ring-[color:var(--app-danger)]',
+    ghost: 'app-button-ghost focus-visible:ring-[color:var(--accent)]',
+    outline: 'app-button-outline focus-visible:ring-[color:var(--accent)]',
   };
 
   const sizes = {

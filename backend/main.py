@@ -1,7 +1,7 @@
-# Cuaderno - Main Application
+﻿# Cuaderno - Main Application
 # ============================================
 """
-Punto de entrada de la aplicación Flask
+Punto de entrada de la aplicaciÃ³n Flask
 """
 import os
 import sys
@@ -60,11 +60,20 @@ try:
     from backend.routes.commercial_quotes_restore_routes import register_commercial_quotes_restore_routes
     from backend.routes.commercial_invoices_restore_routes import register_commercial_invoices_restore_routes
     from backend.services.business_operational_profile import normalize_business_operational_profile
+    from backend.services.business_presets import (
+        apply_preset_to_business_settings,
+        resolve_business_preset_from_settings,
+        get_business_preset,
+        BUSINESS_PRESETS,
+        get_all_presets_for_ui
+    )
     from backend.services.operational_inventory import InsufficientRawMaterialsError, clear_sale_origin_links, normalize_fulfillment_mode, register_stock_production, resolve_product_fulfillment_mode, reverse_sale_operational_effects
     from backend.services.sale_inventory import apply_sale_inventory_effects
     from backend.models import User, Business, BusinessModule, BUSINESS_MODULE_DEFAULTS, BUSINESS_MODULE_KEYS, Product, Customer, Sale, Expense, Payment, LedgerEntry, LedgerAllocation, Permission, Role, UserRole, RolePermission, AuditLog, SubscriptionPayment, AppSettings, Order, Invoice, InvoicePayment, RecurringExpense, QuickNote, Reminder, SalesGoal, Banner, FAQ, Debt, DebtPayment, ProductBarcode, ProductMovement, RawMaterial, RawMaterialMovement, Recipe, RecipeConsumption, RecipeConsumptionItem, RecipeItem, SupplierPayable, TeamMember, TeamInvitation, TeamFeedback, TreasuryAccount
     from backend.services.rbac import active_module_keys_from_payload, extract_commercial_sections, extract_operational_profile, list_applicable_role_templates, list_business_permission_definitions, normalize_permission_names, resolve_effective_permissions, serialize_role_definition
     from backend.runtime import build_liveness_payload, build_readiness_result
+    from backend.services.commercial_financials import allocate_payment_amount, create_sale_financial_entries, delete_sale_financial_effects, list_sale_initial_cash_events, reverse_payment_allocations
+    from backend.services.treasury_flow_service import create_expense_record, resolve_treasury_context
 except ImportError:
     import sys, importlib.util
     _BASE = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -89,9 +98,12 @@ except ImportError:
     commercial_quotes_routes_mod = _load("backend.routes.commercial_quotes_restore_routes", os.path.join("routes", "commercial_quotes_restore_routes.py"))
     commercial_invoices_routes_mod = _load("backend.routes.commercial_invoices_restore_routes", os.path.join("routes", "commercial_invoices_restore_routes.py"))
     operational_profile_mod = _load("backend.services.business_operational_profile", os.path.join("services", "business_operational_profile.py"))
+    business_presets_mod = _load("backend.services.business_presets", os.path.join("services", "business_presets.py"))
     rbac_mod = _load("backend.services.rbac", os.path.join("services", "rbac.py"))
     operational_inventory_mod = _load("backend.services.operational_inventory", os.path.join("services", "operational_inventory.py"))
     sale_inventory_mod = _load("backend.services.sale_inventory", os.path.join("services", "sale_inventory.py"))
+    commercial_financials_mod = _load("backend.services.commercial_financials", os.path.join("services", "commercial_financials.py"))
+    treasury_flow_mod = _load("backend.services.treasury_flow_service", os.path.join("services", "treasury_flow_service.py"))
     get_config = cfg_mod.get_config
     db = db_mod.db
     init_db = db_mod.init_db
@@ -122,6 +134,18 @@ except ImportError:
     start_preview_session = demo_preview_mod.start_preview_session
     stop_preview_session = demo_preview_mod.stop_preview_session
     normalize_business_operational_profile = operational_profile_mod.normalize_business_operational_profile
+    apply_preset_to_business_settings = business_presets_mod.apply_preset_to_business_settings
+    resolve_business_preset_from_settings = business_presets_mod.resolve_business_preset_from_settings
+    get_business_preset = business_presets_mod.get_business_preset
+    BUSINESS_PRESETS = business_presets_mod.BUSINESS_PRESETS
+    get_all_presets_for_ui = business_presets_mod.get_all_presets_for_ui
+    allocate_payment_amount = commercial_financials_mod.allocate_payment_amount
+    create_sale_financial_entries = commercial_financials_mod.create_sale_financial_entries
+    delete_sale_financial_effects = commercial_financials_mod.delete_sale_financial_effects
+    list_sale_initial_cash_events = commercial_financials_mod.list_sale_initial_cash_events
+    reverse_payment_allocations = commercial_financials_mod.reverse_payment_allocations
+    create_expense_record = treasury_flow_mod.create_expense_record
+    resolve_treasury_context = treasury_flow_mod.resolve_treasury_context
     active_module_keys_from_payload = rbac_mod.active_module_keys_from_payload
     extract_commercial_sections = rbac_mod.extract_commercial_sections
     extract_operational_profile = rbac_mod.extract_operational_profile
@@ -358,11 +382,11 @@ def is_module_enabled(business_id, module_key):
 
 def ensure_module_enabled(business_id, module_key):
     if module_key not in BUSINESS_MODULE_DEFAULTS:
-        return jsonify({"error": "Módulo inválido", "module_key": module_key}), 400
+        return jsonify({"error": "MÃ³dulo invÃ¡lido", "module_key": module_key}), 400
     if is_module_enabled(business_id, module_key):
         return None
     return jsonify({
-        "error": "El módulo no está habilitado para este negocio",
+        "error": "El mÃ³dulo no estÃ¡ habilitado para este negocio",
         "module_key": module_key,
         "enabled": False,
     }), 403
@@ -405,40 +429,70 @@ def _safe_float(value, default=0.0):
 
 
 def _resolve_treasury_account_id(business_id, payment_method=None, treasury_account_id=None):
-    resolved_id = treasury_account_id
-    if resolved_id not in (None, ""):
-        try:
-            resolved_id = int(resolved_id)
-        except (TypeError, ValueError):
-            raise ValueError("Cuenta de caja invalida")
-        account = TreasuryAccount.query.filter_by(id=resolved_id, business_id=business_id, is_active=True).first()
-        if not account:
-            raise ValueError("La cuenta de caja seleccionada no existe")
-        return account.id
+    return resolve_treasury_context(
+        business_id,
+        payment_method=payment_method,
+        treasury_account_id=treasury_account_id,
+        allow_account_autoselect=True,
+        require_account=False,
+    ).get("treasury_account_id")
 
-    method_key = str(payment_method or "").strip().lower()
-    if method_key:
-        linked_account = TreasuryAccount.query.filter_by(
-            business_id=business_id,
-            payment_method_key=method_key,
-            is_active=True,
-        ).order_by(TreasuryAccount.is_default.desc(), TreasuryAccount.id.asc()).first()
-        if linked_account:
-            return linked_account.id
 
-    default_account = TreasuryAccount.query.filter_by(
-        business_id=business_id,
-        is_active=True,
-        is_default=True,
-    ).order_by(TreasuryAccount.id.asc()).first()
-    if default_account:
-        return default_account.id
+def _add_months(base_date, months):
+    month_index = (base_date.month - 1) + months
+    year = base_date.year + (month_index // 12)
+    month = (month_index % 12) + 1
+    month_lengths = [31, 29 if year % 4 == 0 and (year % 100 != 0 or year % 400 == 0) else 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31]
+    day = min(base_date.day, month_lengths[month - 1])
+    return date(year, month, day)
 
-    fallback_account = TreasuryAccount.query.filter_by(
-        business_id=business_id,
-        is_active=True,
-    ).order_by(TreasuryAccount.id.asc()).first()
-    return fallback_account.id if fallback_account else None
+
+def _advance_recurring_due_date(recurring_expense, paid_date):
+    current_due = recurring_expense.next_due_date or paid_date
+    frequency = str(recurring_expense.frequency or "monthly").strip().lower()
+    if frequency == "weekly":
+        recurring_expense.next_due_date = current_due + timedelta(days=7)
+    elif frequency == "biweekly":
+        recurring_expense.next_due_date = current_due + timedelta(days=14)
+    elif frequency == "annual":
+        recurring_expense.next_due_date = _add_months(current_due, 12)
+    else:
+        recurring_expense.next_due_date = _add_months(current_due, 1)
+    return recurring_expense.next_due_date
+
+
+def _apply_debt_payment(*, debt, amount, payment_date, payment_method, treasury_account_id, note, actor_user, role_snapshot):
+    payment = DebtPayment(
+        debt_id=debt.id,
+        amount=round(float(amount or 0), 2),
+        payment_date=payment_date,
+        payment_method=payment_method,
+        treasury_account_id=treasury_account_id,
+        note=note,
+    )
+    db.session.add(payment)
+    db.session.flush()
+    debt.balance_due = round(max(0.0, float(debt.balance_due or 0) - float(payment.amount or 0)), 2)
+    if debt.balance_due <= 0.01:
+        debt.balance_due = 0.0
+        debt.status = "paid"
+    else:
+        debt.status = "partial"
+    create_expense_record(
+        business_id=debt.business_id,
+        expense_date=payment_date,
+        category=debt.category or "otros",
+        amount=payment.amount,
+        description=note or f"Pago deuda {debt.name}",
+        source_type="debt_payment",
+        payment_method=payment_method,
+        treasury_account_id=treasury_account_id,
+        debt_id=debt.id,
+        debt_payment_id=payment.id,
+        actor_user=actor_user,
+        role_snapshot=role_snapshot,
+    )
+    return payment
 
 
 def _apply_sale_inventory_effects(
@@ -588,14 +642,14 @@ def is_commercial_section_enabled(business, section_key):
 
 def ensure_commercial_section_enabled(business_id, section_key):
     if section_key not in COMMERCIAL_SECTION_DEFAULTS:
-        return jsonify({"error": "Sección comercial inválida", "section_key": section_key}), 400
+        return jsonify({"error": "SecciÃ³n comercial invÃ¡lida", "section_key": section_key}), 400
     business = Business.query.get(business_id)
     if not business:
         return jsonify({"error": "Negocio no encontrado"}), 404
     if is_commercial_section_enabled(business, section_key):
         return None
     return jsonify({
-        "error": "La sección comercial no está habilitada para este negocio",
+        "error": "La secciÃ³n comercial no estÃ¡ habilitada para este negocio",
         "section_key": section_key,
         "enabled": False,
     }), 403
@@ -788,8 +842,8 @@ def _build_default_templates_payload():
         "collection_message": (
             "Hola {cliente} \n"
             "Te escribo de *{negocio}*.\n\n"
-            "Según mi registro, tienes un saldo pendiente de *${deuda}*.\n"
-            "¿Me confirmas por favor cuándo puedes realizar el pago?\n\n"
+            "SegÃºn mi registro, tienes un saldo pendiente de *${deuda}*.\n"
+            "Â¿Me confirmas por favor cuÃ¡ndo puedes realizar el pago?\n\n"
             "Gracias "
         ),
         "sale_message": (
@@ -798,7 +852,7 @@ def _build_default_templates_payload():
             "*TOTAL: ${total}*\n"
             "Pagado: ${pagado}\n"
             "Saldo: ${saldo}\n\n"
-            "¡Esperamos verte pronto! "
+            "Â¡Esperamos verte pronto! "
         )
     }
 
@@ -1439,7 +1493,7 @@ def build_modern_dashboard_payload(business_id, today, thirty_days_ago, sixty_da
             "id": s.id,
             "date": s.sale_date.isoformat(),
             "total": s.total,
-            "customer_name": s.customer.name if s.customer else "Venta rápida"
+            "customer_name": s.customer.name if s.customer else "Venta rÃ¡pida"
         } for s in recent_sales]
     }
 
@@ -1459,10 +1513,10 @@ def refresh_summary_materialized_days(business_id, *affected_dates):
         )
 
 def create_app(config_class=None):
-    """Crear aplicación Flask"""
+    """Crear aplicaciÃ³n Flask"""
     app = Flask(__name__, static_folder="../frontend", static_url_path="")
 
-    # Cargar configuración
+    # Cargar configuraciÃ³n
     if config_class:
         app.config.from_object(config_class)
     else:
@@ -1530,7 +1584,7 @@ def create_app(config_class=None):
 
         if should_block_preview_write(request.path, request.method):
             return jsonify({
-                "error": "Vista previa interactiva: puedes probar la app, pero los cambios no se persisten. Activa un plan para guardar información real.",
+                "error": "Vista previa interactiva: puedes probar la app, pero los cambios no se persisten. Activa un plan para guardar informaciÃ³n real.",
                 "code": "preview_no_persist",
             }), 403
 
@@ -1591,7 +1645,7 @@ def create_app(config_class=None):
     app.config["EXPORT_DIR"] = export_dir
     app.config["BACKUP_DIR"] = backup_dir
     
-    # CORS: incluir orígenes para la app móvil (Capacitor) para evitar "Failed to fetch"
+    # CORS: incluir orÃ­genes para la app mÃ³vil (Capacitor) para evitar "Failed to fetch"
     cors_origins_env = app.config.get("CORS_ORIGINS", [])
     
     # If wildcard is present, just use that and don't append others
@@ -1715,7 +1769,7 @@ def create_app(config_class=None):
     @app.route("/api/settings", methods=["GET"])
     @optional_token
     def get_settings():
-        """Obtener configuración global de la aplicación"""
+        """Obtener configuraciÃ³n global de la aplicaciÃ³n"""
         try:
             import json
             settings = AppSettings.query.all()
@@ -1735,7 +1789,7 @@ def create_app(config_class=None):
     @app.route("/api/settings", methods=["POST"])
     @token_required
     def save_settings():
-        """Guardar configuración global (requiere auth)"""
+        """Guardar configuraciÃ³n global (requiere auth)"""
         try:
             import json
             data = request.get_json() or {}
@@ -1756,7 +1810,7 @@ def create_app(config_class=None):
                     db.session.add(setting)
             
             db.session.commit()
-            return jsonify({"message": "Configuración guardada"})
+            return jsonify({"message": "ConfiguraciÃ³n guardada"})
         except Exception as e:
             db.session.rollback()
             return jsonify({"error": str(e)}), 500
@@ -1766,7 +1820,7 @@ def create_app(config_class=None):
         """Obtiene la tasa de cambio USD -> COP actual"""
         try:
             import requests
-            # API gratuita, actualiza una vez al día
+            # API gratuita, actualiza una vez al dÃ­a
             resp = requests.get("https://api.exchangerate-api.com/v4/latest/USD", timeout=5)
             if resp.status_code == 200:
                 data = resp.json()
@@ -1788,10 +1842,10 @@ def create_app(config_class=None):
         valid_plans = CHECKOUT_PLAN_CODES
 
         if plan not in valid_plans:
-            return jsonify({"error": "Plan inválido"}), 400
+            return jsonify({"error": "Plan invÃ¡lido"}), 400
 
         if payment_method not in {"nequi", "card", "bancolombia", "pse"}:
-            return jsonify({"error": "Método de pago inválido"}), 400
+            return jsonify({"error": "MÃ©todo de pago invÃ¡lido"}), 400
 
         pricing_catalog = build_plan_catalog()
         plan_key = normalize_access_plan(plan)
@@ -1830,9 +1884,9 @@ def create_app(config_class=None):
         wompi_base = "https://production.wompi.co" if wompi_env == "prod" else "https://sandbox.wompi.co"
 
         if not wompi_pk:
-            return jsonify({"error": "No está configurada la llave pública de Wompi (WOMPI_PUBLIC_KEY)"}), 500
+            return jsonify({"error": "No estÃ¡ configurada la llave pÃºblica de Wompi (WOMPI_PUBLIC_KEY)"}), 500
         if not wompi_sk:
-            return jsonify({"error": "No está configurada la llave privada de Wompi (WOMPI_PRIVATE_KEY)"}), 500
+            return jsonify({"error": "No estÃ¡ configurada la llave privada de Wompi (WOMPI_PRIVATE_KEY)"}), 500
 
         try:
             import requests, uuid
@@ -1852,7 +1906,7 @@ def create_app(config_class=None):
                 
             payload = {
                 "name": f"EnCaja {plan_name}",
-                "description": f"Suscripción {plan_name}",
+                "description": f"SuscripciÃ³n {plan_name}",
                 "single_use": False,
                 "collect_shipping": False,
                 "currency": "COP",
@@ -1894,8 +1948,8 @@ def create_app(config_class=None):
                 else:
                      app.logger.error(f"Invalid Wompi response format: {presp.text}")
                      return jsonify({
-                        "error": f"Respuesta inesperada de Wompi (JSON inválido): {presp.text}",
-                        "details": f"Wompi respondió: {presp.text}"
+                        "error": f"Respuesta inesperada de Wompi (JSON invÃ¡lido): {presp.text}",
+                        "details": f"Wompi respondiÃ³: {presp.text}"
                     }), 502
                 
             except Exception as e:
@@ -1907,7 +1961,7 @@ def create_app(config_class=None):
                 app.logger.error(traceback.format_exc())
                 
                 return jsonify({
-                    "error": "Error de conexión con pasarela de pago",
+                    "error": "Error de conexiÃ³n con pasarela de pago",
                     "details": f"Error interno: {error_msg}"
                 }), 502
 
@@ -1927,7 +1981,7 @@ def create_app(config_class=None):
             import traceback
             app.logger.error(traceback.format_exc())
             return jsonify({
-                "error": "Ocurrió un error al iniciar el pago con Wompi.",
+                "error": "OcurriÃ³ un error al iniciar el pago con Wompi.",
                 "details": str(e)
             }), 502
 
@@ -1954,7 +2008,7 @@ def create_app(config_class=None):
             import requests
             resp = requests.get(f"{wompi_base}/v1/transactions/{tx_id}")
             if resp.status_code == 404:
-                return jsonify({"error": "Transacción no encontrada"}), 404
+                return jsonify({"error": "TransacciÃ³n no encontrada"}), 404
             
             resp.raise_for_status()
             tx_data = resp.json().get("data", {})
@@ -1973,7 +2027,7 @@ def create_app(config_class=None):
                      # For now, we just treat it as success
                      return jsonify({
                         "success": True,
-                        "message": "Método de pago actualizado correctamente",
+                        "message": "MÃ©todo de pago actualizado correctamente",
                         "type": "update_payment"
                      })
 
@@ -2014,7 +2068,7 @@ def create_app(config_class=None):
                 
                 return jsonify({
                     "success": True, 
-                    "message": f"Pago aprobado. ¡Ahora tienes {str(resolved_plan).upper()} activo!",
+                    "message": f"Pago aprobado. Â¡Ahora tienes {str(resolved_plan).upper()} activo!",
                     "plan": user.plan,
                     "account_access": build_account_access_payload(user, resolve_account_access(user)),
                     "membership": {
@@ -2029,7 +2083,7 @@ def create_app(config_class=None):
             elif status == "VOIDED":
                  return jsonify({"error": "El pago fue anulado"}), 400
             elif status == "ERROR":
-                 return jsonify({"error": "Error en la transacción"}), 400
+                 return jsonify({"error": "Error en la transacciÃ³n"}), 400
             else:
                  return jsonify({"message": f"Estado del pago: {status}", "status": status})
                  
@@ -2040,7 +2094,7 @@ def create_app(config_class=None):
     @app.route("/api/billing/status", methods=["GET"])
     @token_required
     def get_billing_status():
-        """Estado de la suscripción"""
+        """Estado de la suscripciÃ³n"""
         user = getattr(g, "authenticated_user", None) or g.current_user
         access = build_account_access_payload(user, resolve_account_access(user))
         
@@ -2086,13 +2140,13 @@ def create_app(config_class=None):
 
     @app.route("/api/billing/pricing", methods=["GET"])
     def get_billing_pricing():
-        """Retorna catálogo central de planes"""
+        """Retorna catÃ¡logo central de planes"""
         return jsonify(build_plan_catalog())
 
     @app.route("/api/billing/portal", methods=["POST"])
     @token_required
     def billing_portal():
-        """Retorna URL para gestionar suscripción"""
+        """Retorna URL para gestionar suscripciÃ³n"""
         # Al no tener portal externo, retornamos la URL interna
         base_url = os.getenv("APP_URL") or "http://localhost:5173"
         return jsonify({ "url": f"{base_url}/settings/membership" })
@@ -2163,7 +2217,7 @@ def create_app(config_class=None):
         phone = payload.get("phone")
         prefix = payload.get("prefix") or "+57"
         if not phone:
-            return jsonify({"error": "Teléfono requerido"}), 400
+            return jsonify({"error": "TelÃ©fono requerido"}), 400
         try:
             import requests
             pk = (os.getenv("WOMPI_PUBLIC_KEY") or app.config.get("WOMPI_PUBLIC_KEY") or "").strip()
@@ -2184,7 +2238,7 @@ def create_app(config_class=None):
             status = (tok_resp.json().get("data") or {}).get("status")
             # If not approved yet, ask client to approve on phone and poll
             if status != "APPROVED":
-                return jsonify({"pending": True, "token": nequi_token, "message": "Aprueba la suscripción en tu app Nequi"}), 202
+                return jsonify({"pending": True, "token": nequi_token, "message": "Aprueba la suscripciÃ³n en tu app Nequi"}), 202
             # Step 2: create payment source with acceptance token + nequi token
             mresp = requests.get(f"{base}/v1/merchants/{pk}", timeout=20)
             mresp.raise_for_status()
@@ -2291,7 +2345,7 @@ def create_app(config_class=None):
     @app.route("/api/billing/update-payment-method", methods=["POST"])
     @token_required
     def update_payment_method():
-        """Genera link para actualizar método de pago (Cobro de validación)"""
+        """Genera link para actualizar mÃ©todo de pago (Cobro de validaciÃ³n)"""
         user = getattr(g, "authenticated_user", None) or g.current_user
         try:
             import requests, uuid, traceback
@@ -2309,10 +2363,10 @@ def create_app(config_class=None):
             if not redirect_url or "localhost" in redirect_url:
                 redirect_url = "https://app.encaja.co"
             
-            # Payload para validación (monto pequeño). Algunos comercios requieren mínimo >= $2.000 COP.
+            # Payload para validaciÃ³n (monto pequeÃ±o). Algunos comercios requieren mÃ­nimo >= $2.000 COP.
             payload = {
-                "name": "Validación Tarjeta",
-                "description": "Actualización de método de pago",
+                "name": "ValidaciÃ³n Tarjeta",
+                "description": "ActualizaciÃ³n de mÃ©todo de pago",
                 "single_use": False,
                 "collect_shipping": False,
                 "currency": "COP",
@@ -2355,25 +2409,25 @@ def create_app(config_class=None):
                 app.logger.error(f"CRITICAL WOMPI UPDATE ERROR: {str(e)}")
                 app.logger.error(traceback.format_exc())
                 return jsonify({
-                    "error": "Error de conexión con pasarela de pago",
+                    "error": "Error de conexiÃ³n con pasarela de pago",
                     "details": str(e)
                 }), 502
             
             return jsonify({ "url": url })
         except Exception as e:
             app.logger.error(f"Error creating update payment link: {e}")
-            return jsonify({"error": "No se pudo generar el link de actualización", "details": str(e)}), 500
+            return jsonify({"error": "No se pudo generar el link de actualizaciÃ³n", "details": str(e)}), 500
 
     @app.route("/api/billing/change-cycle", methods=["POST"])
     @token_required
     def change_billing_cycle():
-        """Cambia el ciclo de facturación (Genera nuevo pago)"""
+        """Cambia el ciclo de facturaciÃ³n (Genera nuevo pago)"""
         user = getattr(g, "authenticated_user", None) or g.current_user
         data = request.get_json() or {}
         cycle = data.get("cycle")
         
         if cycle not in ["monthly", "quarterly", "annual"]:
-            return jsonify({"error": "Ciclo inválido"}), 400
+            return jsonify({"error": "Ciclo invÃ¡lido"}), 400
             
         # Determine current plan base (pro or business)
         current_plan_base = "pro"
@@ -2490,7 +2544,7 @@ def create_app(config_class=None):
                 </style>
             </head>
             <body>
-                <h1>Factura de Suscripción</h1>
+                <h1>Factura de SuscripciÃ³n</h1>
                 <p>EnCaja App</p>
                 <div class="details">
                     <div class="row"><span class="label">Fecha:</span> {payment.created_at.strftime('%Y-%m-%d')}</div>
@@ -2521,11 +2575,11 @@ def create_app(config_class=None):
     @app.route("/api/billing/cancel", methods=["POST"])
     @token_required
     def cancel_subscription():
-        """Cancela renovación"""
+        """Cancela renovaciÃ³n"""
         user = getattr(g, "authenticated_user", None) or g.current_user
         user.membership_auto_renew = False
         db.session.commit()
-        return jsonify({"success": True, "message": "Suscripción cancelada exitosamente"})
+        return jsonify({"success": True, "message": "SuscripciÃ³n cancelada exitosamente"})
 
 
     @app.route("/api/upgrade-to-pro", methods=["POST"])
@@ -2537,7 +2591,7 @@ def create_app(config_class=None):
         
         return jsonify({
             "success": True,
-            "message": "¡Ahora tienes Plan PRO!",
+            "message": "Â¡Ahora tienes Plan PRO!",
             "plan": user.plan
         })
 
@@ -2557,11 +2611,11 @@ def create_app(config_class=None):
 
         import re
         if len(password) < 8:
-            return jsonify({"error": "La contraseña debe tener al menos 8 caracteres"}), 400
+            return jsonify({"error": "La contraseÃ±a debe tener al menos 8 caracteres"}), 400
         if not re.search(r"\d", password):
-            return jsonify({"error": "La contraseña debe contener al menos un número"}), 400
+            return jsonify({"error": "La contraseÃ±a debe contener al menos un nÃºmero"}), 400
         if not re.search(r"[\W_]", password):
-            return jsonify({"error": "La contraseña debe contener al menos un carácter especial"}), 400
+            return jsonify({"error": "La contraseÃ±a debe contener al menos un carÃ¡cter especial"}), 400
 
         user, error = AuthManager.register(email, password, name)
         if error:
@@ -2590,7 +2644,7 @@ def create_app(config_class=None):
             "user": user.to_dict(),
             "verification_required": activation_required,
             "activation_required": activation_required,
-            "message": "Revisa tu correo para el código de verificación",
+            "message": "Revisa tu correo para el cÃ³digo de verificaciÃ³n",
             "account_access": build_account_access_payload(user, resolve_account_access(user)),
         }
         
@@ -2612,7 +2666,7 @@ def create_app(config_class=None):
         code = data.get("code", "").strip()
 
         if not email or not code:
-            return jsonify({"error": "Email y código son requeridos"}), 400
+            return jsonify({"error": "Email y cÃ³digo son requeridos"}), 400
 
         user = User.query.filter_by(email=email).first()
         if not user:
@@ -2622,20 +2676,20 @@ def create_app(config_class=None):
             return jsonify({"message": "Email ya verificado"})
 
         if not user.email_verification_code or not user.email_verification_expires:
-            return jsonify({"error": "Código de verificación no disponible"}), 400
+            return jsonify({"error": "CÃ³digo de verificaciÃ³n no disponible"}), 400
 
         if user.email_verification_expires < datetime.utcnow():
-            return jsonify({"error": "Código de verificación expirado"}), 400
+            return jsonify({"error": "CÃ³digo de verificaciÃ³n expirado"}), 400
 
         if user.email_verification_code != code:
-            return jsonify({"error": "Código de verificación inválido"}), 400
+            return jsonify({"error": "CÃ³digo de verificaciÃ³n invÃ¡lido"}), 400
 
         user.email_verified = True
         user.email_verification_code = None
         user.email_verification_expires = None
         db.session.commit()
         
-        # Generar tokens automáticamente tras verificar
+        # Generar tokens automÃ¡ticamente tras verificar
         access_token = create_token(user.id, "access")
         refresh_token = create_token(user.id, "refresh")
 
@@ -2826,7 +2880,7 @@ def create_app(config_class=None):
     def logout():
         user = getattr(g, "authenticated_user", None) or g.current_user
         bump_user_session_version(user.id)
-        return jsonify({"success": True, "message": "Sesión cerrada correctamente"})
+        return jsonify({"success": True, "message": "SesiÃ³n cerrada correctamente"})
 
     @app.route("/api/auth/change-password", methods=["POST"])
     @token_required
@@ -2836,20 +2890,20 @@ def create_app(config_class=None):
         new_password = data.get("new_password", "")
 
         if not current_password or not new_password:
-            return jsonify({"error": "Contraseña actual y nueva son requeridas"}), 400
+            return jsonify({"error": "ContraseÃ±a actual y nueva son requeridas"}), 400
 
         if len(new_password) < 6:
-            return jsonify({"error": "La nueva contraseña debe tener al menos 6 caracteres"}), 400
+            return jsonify({"error": "La nueva contraseÃ±a debe tener al menos 6 caracteres"}), 400
 
         user = getattr(g, "authenticated_user", None) or g.current_user
         if not user.check_password(current_password):
-            return jsonify({"error": "La contraseña actual no es correcta"}), 400
+            return jsonify({"error": "La contraseÃ±a actual no es correcta"}), 400
 
         user.set_password(new_password)
         db.session.commit()
         bump_user_session_version(user.id)
 
-        return jsonify({"message": "Contraseña actualizada"})
+        return jsonify({"message": "ContraseÃ±a actualizada"})
 
     @app.route("/api/auth/forgot-password", methods=["POST"])
     def forgot_password():
@@ -2870,7 +2924,7 @@ def create_app(config_class=None):
 
         AuthManager.send_password_reset_email(user.email, user.name, code)
 
-        return jsonify({"message": "Te enviamos un código para restablecer tu contraseña"})
+        return jsonify({"message": "Te enviamos un cÃ³digo para restablecer tu contraseÃ±a"})
 
     @app.route("/api/auth/reset-password", methods=["POST"])
     def reset_password():
@@ -2880,23 +2934,23 @@ def create_app(config_class=None):
         new_password = data.get("new_password", "")
 
         if not email or not code or not new_password:
-            return jsonify({"error": "Email, código y nueva contraseña son requeridos"}), 400
+            return jsonify({"error": "Email, cÃ³digo y nueva contraseÃ±a son requeridos"}), 400
 
         if len(new_password) < 6:
-            return jsonify({"error": "La nueva contraseña debe tener al menos 6 caracteres"}), 400
+            return jsonify({"error": "La nueva contraseÃ±a debe tener al menos 6 caracteres"}), 400
 
         user = User.query.filter_by(email=email).first()
         if not user:
             return jsonify({"error": "Usuario no encontrado"}), 404
 
         if not user.reset_password_code or not user.reset_password_expires:
-            return jsonify({"error": "Código de recuperación no disponible"}), 400
+            return jsonify({"error": "CÃ³digo de recuperaciÃ³n no disponible"}), 400
 
         if user.reset_password_expires < datetime.utcnow():
-            return jsonify({"error": "Código de recuperación expirado"}), 400
+            return jsonify({"error": "CÃ³digo de recuperaciÃ³n expirado"}), 400
 
         if user.reset_password_code != code:
-            return jsonify({"error": "Código de recuperación inválido"}), 400
+            return jsonify({"error": "CÃ³digo de recuperaciÃ³n invÃ¡lido"}), 400
 
         user.set_password(new_password)
         user.reset_password_code = None
@@ -2904,7 +2958,7 @@ def create_app(config_class=None):
         db.session.commit()
         bump_user_session_version(user.id)
 
-        return jsonify({"message": "Contraseña restablecida correctamente"})
+        return jsonify({"message": "ContraseÃ±a restablecida correctamente"})
 
     @app.route("/api/auth/me", methods=["GET"])
     @token_required
@@ -2955,7 +3009,7 @@ def create_app(config_class=None):
 
         if not access_payload.get("demo_preview_available"):
             return jsonify({
-                "error": "La vista previa no estÃ¡ disponible para esta cuenta.",
+                "error": "La vista previa no estÃƒÂ¡ disponible para esta cuenta.",
                 "code": "preview_not_available",
                 "account_access": access_payload,
             }), 403
@@ -2991,12 +3045,12 @@ def create_app(config_class=None):
     def cancel_membership():
         user = getattr(g, "authenticated_user", None) or g.current_user
         if not getattr(user, "membership_plan", None) or not getattr(user, "membership_end", None):
-            return jsonify({"error": "No tienes una membresía activa"}), 400
+            return jsonify({"error": "No tienes una membresÃ­a activa"}), 400
         user.membership_auto_renew = False
         db.session.commit()
         return jsonify({
             "success": True,
-            "message": "La renovación automática de tu membresía ha sido cancelada.",
+            "message": "La renovaciÃ³n automÃ¡tica de tu membresÃ­a ha sido cancelada.",
             "membership_auto_renew": user.membership_auto_renew
         })
 
@@ -3031,7 +3085,7 @@ def create_app(config_class=None):
                 "account_access": account_access,
             }), 403
 
-        # Verificar límite del plan free
+        # Verificar lÃ­mite del plan free
         if g.current_user.plan == "free":
             count = Business.query.filter_by(user_id=g.current_user.id).count()
             if count >= 1:
@@ -3042,11 +3096,11 @@ def create_app(config_class=None):
 
         default_templates = {
             "collection_message": (
-                "Hola {cliente} 😊\n"
+                "Hola {cliente} ðŸ˜Š\n"
                 "Te escribo de *{negocio}*.\n\n"
-                "Según mi registro, tienes un saldo pendiente de *${deuda}*.\n"
-                "¿Me confirmas por favor cuándo puedes realizar el pago?\n\n"
-                "Gracias 🙌"
+                "SegÃºn mi registro, tienes un saldo pendiente de *${deuda}*.\n"
+                "Â¿Me confirmas por favor cuÃ¡ndo puedes realizar el pago?\n\n"
+                "Gracias ðŸ™Œ"
             ),
             "sale_message": (
                 "Hola {cliente}, gracias por tu compra en *{negocio}*.\n\n"
@@ -3054,7 +3108,7 @@ def create_app(config_class=None):
                 "*TOTAL: ${total}*\n"
                 "Pagado: ${pagado}\n"
                 "Saldo: ${saldo}\n\n"
-                "¡Esperamos verte pronto! 👋"
+                "Â¡Esperamos verte pronto! ðŸ‘‹"
             )
         }
         business = Business(
@@ -3066,10 +3120,36 @@ def create_app(config_class=None):
             whatsapp_templates=default_templates
         )
 
+        # Apply preset if specified during creation
+        business_type = data.get("business_type")
+        if business_type:
+            try:
+                # Apply preset to business settings
+                preset_settings = apply_preset_to_business_settings(
+                    business.settings or {}, 
+                    business_type,
+                    apply_modules=True,
+                    apply_navigation=True,
+                    apply_onboarding=True
+                )
+                business.settings = normalize_business_settings(preset_settings)
+            except Exception as e:
+                print(f"Warning: Failed to apply business preset '{business_type}': {e}")
+
         db.session.add(business)
         db.session.commit()
 
         return jsonify({"business": attach_modules_to_business_dict(business)}), 201
+
+    @app.route("/api/businesses/presets", methods=["GET"])
+    @token_required
+    def get_business_presets():
+        """Get all available business presets for UI"""
+        try:
+            presets = get_all_presets_for_ui()
+            return jsonify({"presets": presets})
+        except Exception as e:
+            return jsonify({"error": f"Failed to get presets: {str(e)}"}), 500
 
     @app.route("/api/businesses/<int:business_id>/team", methods=["GET"])
     @token_required
@@ -3111,7 +3191,7 @@ def create_app(config_class=None):
         try:
             role_id = int(role_id)
         except ValueError:
-            return jsonify({"error": "ID de rol inválido"}), 400
+            return jsonify({"error": "ID de rol invÃ¡lido"}), 400
             
         # Validar si ya es miembro
         existing_user = User.query.filter_by(email=email).first()
@@ -3119,22 +3199,22 @@ def create_app(config_class=None):
             # Check ownership
             b = Business.query.get(business_id)
             if b.user_id == existing_user.id:
-                 return jsonify({"error": "El usuario es el dueño del negocio"}), 400
+                 return jsonify({"error": "El usuario es el dueÃ±o del negocio"}), 400
                  
             member = TeamMember.query.filter_by(business_id=business_id, user_id=existing_user.id).first()
             if member:
                 return jsonify({"error": "El usuario ya es miembro del equipo"}), 400
         
-        # Validar si ya hay invitación pendiente
+        # Validar si ya hay invitaciÃ³n pendiente
         # Fix: Check expiration too? For now, just check pending status.
         existing_invite = TeamInvitation.query.filter_by(business_id=business_id, email=email, status="pending").first()
         if existing_invite:
              # If exists, maybe we should resend? Or just return error?
              # Let's return error but maybe with a specific code so frontend can handle it (e.g. "Resend?")
              # For now, stick to error.
-             return jsonify({"error": "Ya existe una invitación pendiente para este email"}), 400
+             return jsonify({"error": "Ya existe una invitaciÃ³n pendiente para este email"}), 400
              
-        # Crear invitación
+        # Crear invitaciÃ³n
         import secrets
         token = secrets.token_urlsafe(32)
         expires = datetime.utcnow() + timedelta(days=7)
@@ -3156,8 +3236,8 @@ def create_app(config_class=None):
             entity_type="team_invitation",
             entity_id=invite.id,
             action="invite",
-            summary=f"Invitó a {email} al equipo",
-            detail="Se generó una invitación de equipo para el negocio.",
+            summary=f"InvitÃ³ a {email} al equipo",
+            detail="Se generÃ³ una invitaciÃ³n de equipo para el negocio.",
             metadata=_build_audit_metadata(
                 source_path="/settings?section=team",
                 email=email,
@@ -3216,7 +3296,7 @@ def create_app(config_class=None):
         is_dev = os.getenv("FLASK_ENV") == "development" or os.getenv("APP_ENV") == "dev"
         
         response_data = {
-            "message": "Invitación creada" if email_result.get("success") else "Invitación creada pero falló el envío del correo",
+            "message": "InvitaciÃ³n creada" if email_result.get("success") else "InvitaciÃ³n creada pero fallÃ³ el envÃ­o del correo",
             "invitation": invite.to_dict(), 
             "email_sent": email_result.get("success", False),
             "invite_url": invite_url, # Always return for fallback
@@ -3233,6 +3313,7 @@ def create_app(config_class=None):
 
     @app.route("/api/roles", methods=["GET"])
     @token_required
+    @permission_required("team.manage")
     def get_roles():
         business_id = request.args.get("business_id")
         
@@ -3300,6 +3381,7 @@ def create_app(config_class=None):
 
     @app.route("/api/permissions", methods=["GET"])
     @token_required
+    @permission_required("team.manage")
     def get_permissions():
         scope = request.args.get('scope')
         business_id = request.args.get("business_id")
@@ -3538,7 +3620,7 @@ def create_app(config_class=None):
         team_count = TeamMember.query.filter_by(role_id=role_id).count()
         
         if users_count > 0 or team_count > 0:
-            return jsonify({"error": f"El rol está asignado a {users_count + team_count} usuarios/miembros"}), 400
+            return jsonify({"error": f"El rol estÃ¡ asignado a {users_count + team_count} usuarios/miembros"}), 400
 
         _log_audit(g.current_user, "delete", "role", role.id, {"name": role.name}, None)
         db.session.delete(role)
@@ -3555,7 +3637,7 @@ def create_app(config_class=None):
         try:
             member_id = int(member_id)
         except ValueError:
-            return jsonify({"error": "ID inválido"}), 400
+            return jsonify({"error": "ID invÃ¡lido"}), 400
 
         member = TeamMember.query.get(member_id)
         if not member or member.business_id != business_id:
@@ -3566,7 +3648,7 @@ def create_app(config_class=None):
             
         role = Role.query.get(new_role_id)
         if not role:
-            return jsonify({"error": "Rol no válido"}), 400
+            return jsonify({"error": "Rol no vÃ¡lido"}), 400
             
         old_role_name = member.role.name if member.role else "None"
         before_snapshot = _audit_snapshot("team_member", member)
@@ -3578,8 +3660,8 @@ def create_app(config_class=None):
             entity_type="team_member",
             entity_id=member.id,
             action="assign",
-            summary=f"Actualizó el rol de un miembro del equipo a {role.name}",
-            detail=f"El miembro pasó de {old_role_name} a {role.name}.",
+            summary=f"ActualizÃ³ el rol de un miembro del equipo a {role.name}",
+            detail=f"El miembro pasÃ³ de {old_role_name} a {role.name}.",
             metadata=_build_audit_metadata(
                 source_path="/settings?section=team",
                 old_role=old_role_name,
@@ -3614,7 +3696,7 @@ def create_app(config_class=None):
         try:
             member_id = int(member_id)
         except ValueError:
-            return jsonify({"error": "ID inválido"}), 400
+            return jsonify({"error": "ID invÃ¡lido"}), 400
 
         # Handle negative IDs for invitations
         if member_id < 0:
@@ -3624,11 +3706,11 @@ def create_app(config_class=None):
                 invite = TeamInvitation.query.get(invite_id)
                 if not invite:
                     print(f"[DEBUG] Invitation {invite_id} not found")
-                    return jsonify({"error": "Invitación no encontrada"}), 404
+                    return jsonify({"error": "InvitaciÃ³n no encontrada"}), 404
                 
                 if invite.business_id != business_id:
                     print(f"[DEBUG] Invitation {invite_id} belongs to business {invite.business_id}, not {business_id}")
-                    return jsonify({"error": "Invitación no encontrada"}), 404
+                    return jsonify({"error": "InvitaciÃ³n no encontrada"}), 404
                 
                 print(f"[DEBUG] Deleting invitation {invite_id}")
                 _record_business_audit(
@@ -3638,8 +3720,8 @@ def create_app(config_class=None):
                     entity_type="team_invitation",
                     entity_id=invite.id,
                     action="delete",
-                    summary=f"Canceló la invitación de {invite.email}",
-                    detail="Se canceló una invitación pendiente del equipo.",
+                    summary=f"CancelÃ³ la invitaciÃ³n de {invite.email}",
+                    detail="Se cancelÃ³ una invitaciÃ³n pendiente del equipo.",
                     metadata=_build_audit_metadata(
                         source_path="/settings?section=team",
                         email=invite.email,
@@ -3650,7 +3732,7 @@ def create_app(config_class=None):
                 db.session.delete(invite)
                 db.session.commit()
                 print(f"[DEBUG] Invitation {invite_id} deleted successfully")
-                return jsonify({"message": "Invitación cancelada"})
+                return jsonify({"message": "InvitaciÃ³n cancelada"})
             except Exception as e:
                 db.session.rollback()
                 print(f"[ERROR] Failed to delete invitation: {e}")
@@ -3670,8 +3752,8 @@ def create_app(config_class=None):
             entity_type="team_member",
             entity_id=member.id,
             action="delete",
-            summary="Eliminó un miembro del equipo",
-            detail="Se retiró a un miembro activo del equipo del negocio.",
+            summary="EliminÃ³ un miembro del equipo",
+            detail="Se retirÃ³ a un miembro activo del equipo del negocio.",
             metadata=_build_audit_metadata(
                 source_path="/settings?section=team",
                 member_user_id=member.user_id,
@@ -3691,15 +3773,15 @@ def create_app(config_class=None):
         
         invite = TeamInvitation.query.filter_by(token=token).first()
         if not invite:
-            return jsonify({"error": "Invitación no encontrada"}), 404
+            return jsonify({"error": "InvitaciÃ³n no encontrada"}), 404
             
         if invite.status != "pending":
-            return jsonify({"error": f"Invitación no válida (Estado: {invite.status})"}), 400
+            return jsonify({"error": f"InvitaciÃ³n no vÃ¡lida (Estado: {invite.status})"}), 400
             
         if invite.expires_at < datetime.utcnow():
             invite.status = "expired"
             db.session.commit()
-            return jsonify({"error": "La invitación ha expirado"}), 400
+            return jsonify({"error": "La invitaciÃ³n ha expirado"}), 400
             
         business = Business.query.get(invite.business_id)
         
@@ -3722,13 +3804,13 @@ def create_app(config_class=None):
             
         invite = TeamInvitation.query.filter_by(token=token).first()
         if not invite:
-            return jsonify({"error": "Invitación no encontrada"}), 404
+            return jsonify({"error": "InvitaciÃ³n no encontrada"}), 404
             
         if invite.status != "pending":
-            return jsonify({"error": "Invitación no válida"}), 400
+            return jsonify({"error": "InvitaciÃ³n no vÃ¡lida"}), 400
             
         if invite.expires_at < datetime.utcnow():
-            return jsonify({"error": "La invitación ha expirado"}), 400
+            return jsonify({"error": "La invitaciÃ³n ha expirado"}), 400
 
         # Check if TEAM user exists for this business
         existing_team_user = User.query.filter_by(
@@ -3738,7 +3820,7 @@ def create_app(config_class=None):
         ).first()
         
         if existing_team_user:
-            return jsonify({"error": "Ya tienes una cuenta de equipo para este negocio. Por favor inicia sesión."}), 400
+            return jsonify({"error": "Ya tienes una cuenta de equipo para este negocio. Por favor inicia sesiÃ³n."}), 400
             
         # Create User (Team Member Entity)
         new_user = User(
@@ -3792,28 +3874,28 @@ def create_app(config_class=None):
 
         invite = TeamInvitation.query.filter_by(token=token).first()
         if not invite:
-            return jsonify({"error": "Invitación no encontrada"}), 404
+            return jsonify({"error": "InvitaciÃ³n no encontrada"}), 404
             
         if invite.status == "accepted":
              # Check if user is already a member
              member = TeamMember.query.filter_by(business_id=invite.business_id, user_id=g.current_user.id).first()
              if member:
-                  return jsonify({"message": "Ya eres miembro del equipo (invitación ya aceptada)", "business_id": invite.business_id})
+                  return jsonify({"message": "Ya eres miembro del equipo (invitaciÃ³n ya aceptada)", "business_id": invite.business_id})
              else:
-                  return jsonify({"error": "Esta invitación ya fue usada"}), 400
+                  return jsonify({"error": "Esta invitaciÃ³n ya fue usada"}), 400
 
         if invite.status != "pending":
-             return jsonify({"error": f"Invitación no válida (Estado: {invite.status})"}), 400
+             return jsonify({"error": f"InvitaciÃ³n no vÃ¡lida (Estado: {invite.status})"}), 400
              
         if invite.expires_at < datetime.utcnow():
              invite.status = "expired"
              db.session.commit()
-             return jsonify({"error": "La invitación ha expirado"}), 400
+             return jsonify({"error": "La invitaciÃ³n ha expirado"}), 400
             
         # Check email match? Ideally yes, but if user registered with different email?
         # Let's be strict: email must match.
         if invite.email.lower() != g.current_user.email.lower():
-             return jsonify({"error": f"Esta invitación fue enviada a {invite.email}, pero tu cuenta es {g.current_user.email}. Por favor inicia sesión con la cuenta correcta o regístrate con el correo invitado."}), 403
+             return jsonify({"error": f"Esta invitaciÃ³n fue enviada a {invite.email}, pero tu cuenta es {g.current_user.email}. Por favor inicia sesiÃ³n con la cuenta correcta o regÃ­strate con el correo invitado."}), 403
             
         # Check if already member
         existing_member = TeamMember.query.filter_by(business_id=invite.business_id, user_id=g.current_user.id).first()
@@ -3836,7 +3918,7 @@ def create_app(config_class=None):
         
         db.session.commit()
         
-        return jsonify({"message": "Invitación aceptada exitosamente", "business_id": invite.business_id})
+        return jsonify({"message": "InvitaciÃ³n aceptada exitosamente", "business_id": invite.business_id})
 
     @app.route("/api/businesses/<int:business_id>", methods=["GET"])
     @token_required
@@ -3856,11 +3938,11 @@ def create_app(config_class=None):
         if not business.whatsapp_templates:
             business.whatsapp_templates = {
                 "collection_message": (
-                    "Hola {cliente} 😊\n"
+                    "Hola {cliente} ðŸ˜Š\n"
                     "Te escribo de *{negocio}*.\n\n"
-                    "Según mi registro, tienes un saldo pendiente de *${deuda}*.\n"
-                    "¿Me confirmas por favor cuándo puedes realizar el pago?\n\n"
-                    "Gracias 🙌"
+                    "SegÃºn mi registro, tienes un saldo pendiente de *${deuda}*.\n"
+                    "Â¿Me confirmas por favor cuÃ¡ndo puedes realizar el pago?\n\n"
+                    "Gracias ðŸ™Œ"
                 ),
                 "sale_message": (
                     "Hola {cliente}, gracias por tu compra en *{negocio}*.\n\n"
@@ -3868,7 +3950,7 @@ def create_app(config_class=None):
                     "*TOTAL: ${total}*\n"
                     "Pagado: ${pagado}\n"
                     "Saldo: ${saldo}\n\n"
-                    "¡Esperamos verte pronto! 👋"
+                    "Â¡Esperamos verte pronto! ðŸ‘‹"
                 )
             }
             # Solo guardar si es owner (evitar errores de permisos de escritura si el miembro no debe)
@@ -3926,19 +4008,6 @@ def create_app(config_class=None):
             business.currency = data["currency"]
         if "timezone" in data:
             business.timezone = data["timezone"]
-        if "monthly_sales_goal" in data:
-            try:
-                business.monthly_sales_goal = float(data["monthly_sales_goal"])
-            except:
-                pass
-        if "whatsapp_templates" in data:
-            # Merge templates
-            current_templates = business.whatsapp_templates or {}
-            new_templates = data["whatsapp_templates"]
-            # Update current with new (simple merge)
-            current_templates.update(new_templates)
-            business.whatsapp_templates = current_templates
-            
         if "settings" in data:
             # Merge settings (preserve existing logo if not provided)
             current_settings = normalize_business_settings(business.settings)
@@ -3946,23 +4015,51 @@ def create_app(config_class=None):
             # Ensure we don't overwrite the logo if it's not in the new settings but exists in current
             if "logo" in current_settings and "logo" not in new_settings:
                 new_settings["logo"] = current_settings["logo"]
-            business.settings = normalize_business_settings(new_settings)
+            
+            # Apply preset if business_type is being changed
+            business_type = new_settings.get("personalization", {}).get("business_type")
+            if business_type and business_type != current_settings.get("personalization", {}).get("business_type"):
+                try:
+                    # Apply new preset while preserving some existing settings
+                    preset_settings = apply_preset_to_business_settings(
+                        new_settings, 
+                        business_type,
+                        apply_modules=False,  # Don't override modules unless explicitly requested
+                        apply_navigation=True,
+                        apply_onboarding=True
+                    )
+                    # Preserve existing modules if not overridden
+                    if "modules" in current_settings and "modules" not in preset_settings:
+                        preset_settings["modules"] = current_settings["modules"]
+                    business.settings = normalize_business_settings(preset_settings)
+                except Exception as e:
+                    print(f"Warning: Failed to apply business preset '{business_type}': {e}")
+                    # Fallback to normal settings update
+                    business.settings = normalize_business_settings(new_settings)
+            else:
+                business.settings = normalize_business_settings(new_settings)
 
+        if "name" in data:
+            business.name = data["name"].strip()
+        if "currency" in data:
+            business.currency = data["currency"]
+        if "timezone" in data:
+            business.timezone = data["timezone"]
+        if "monthly_sales_goal" in data:
+            business.monthly_sales_goal = float(data["monthly_sales_goal"] or 0)
+
+        business.updated_at = datetime.utcnow()
+        db.session.commit()
+        
         after_snapshot = _audit_snapshot("business", business)
         _record_business_audit(
-            business_id=business_id,
-            actor_user=g.current_user,
-            module="settings",
-            entity_type="business",
-            entity_id=business.id,
-            action="update",
-            summary=f"Actualizó la configuración del negocio {business.name}",
-            detail="Se modificaron datos generales, metas o preferencias del negocio.",
-            metadata=_build_audit_metadata(changed_fields=sorted((data or {}).keys())),
-            before=before_snapshot,
-            after=after_snapshot,
+            business.id,
+            "business.updated",
+            before_snapshot,
+            after_snapshot,
+            {"updated_fields": list(data.keys())}
         )
-        db.session.commit()
+        
         return jsonify({"business": attach_modules_to_business_dict(business)})
 
     @app.route("/api/businesses/<int:business_id>/modules", methods=["GET"])
@@ -3988,15 +4085,15 @@ def create_app(config_class=None):
         modules_payload = data.get("modules")
 
         if not isinstance(modules_payload, dict):
-            return jsonify({"error": "El payload debe incluir un objeto 'modules' válido"}), 400
+            return jsonify({"error": "El payload debe incluir un objeto 'modules' vÃ¡lido"}), 400
 
         invalid_keys = [key for key in modules_payload.keys() if key not in BUSINESS_MODULE_DEFAULTS]
         if invalid_keys:
-            return jsonify({"error": "Se recibieron module_key inválidas", "invalid_keys": invalid_keys}), 400
+            return jsonify({"error": "Se recibieron module_key invÃ¡lidas", "invalid_keys": invalid_keys}), 400
 
         invalid_values = [key for key, value in modules_payload.items() if not isinstance(value, bool)]
         if invalid_values:
-            return jsonify({"error": "Cada módulo debe enviarse como boolean", "invalid_keys": invalid_values}), 400
+            return jsonify({"error": "Cada mÃ³dulo debe enviarse como boolean", "invalid_keys": invalid_values}), 400
 
         module_map = ensure_business_modules_initialized(business_id, auto_commit=False)
         before_modules = {module_key: bool(module_row.enabled) for module_key, module_row in module_map.items()}
@@ -4022,8 +4119,8 @@ def create_app(config_class=None):
             entity_type="business_modules",
             entity_id=business_id,
             action="update",
-            summary=f"Actualizó los módulos del negocio {business.name}",
-            detail="Se activaron o desactivaron módulos del negocio.",
+            summary=f"ActualizÃ³ los mÃ³dulos del negocio {business.name}",
+            detail="Se activaron o desactivaron mÃ³dulos del negocio.",
             metadata=_build_audit_metadata(changed_modules=changed_modules),
             before=before_modules,
             after=after_modules,
@@ -4038,7 +4135,7 @@ def create_app(config_class=None):
         if not business:
             return jsonify({"error": "Negocio no encontrado"}), 404
         if not _user_can_view_business_audit(g.current_user, business):
-            return jsonify({"error": "No tienes permisos para ver la auditoría del negocio"}), 403
+            return jsonify({"error": "No tienes permisos para ver la auditorÃ­a del negocio"}), 403
 
         page = max(request.args.get("page", 1, type=int), 1)
         per_page = min(max(request.args.get("per_page", 20, type=int), 1), 100)
@@ -4090,11 +4187,11 @@ def create_app(config_class=None):
             return jsonify({"error": "Negocio no encontrado"}), 404
         
         if 'logo' not in request.files:
-            return jsonify({"error": "No se encontró archivo de imagen"}), 400
+            return jsonify({"error": "No se encontrÃ³ archivo de imagen"}), 400
         
         file = request.files['logo']
         if file.filename == '':
-            return jsonify({"error": "No se selected ningún archivo"}), 400
+            return jsonify({"error": "No se selected ningÃºn archivo"}), 400
         
         # Save to assets folder
         import uuid
@@ -4115,8 +4212,8 @@ def create_app(config_class=None):
             entity_type="business",
             entity_id=business.id,
             action="update",
-            summary=f"Actualizó el logo del negocio {business.name}",
-            detail="Se cambió la imagen de logo del negocio.",
+            summary=f"ActualizÃ³ el logo del negocio {business.name}",
+            detail="Se cambiÃ³ la imagen de logo del negocio.",
             metadata=_build_audit_metadata(changed_fields=["settings.logo"]),
             before=before_snapshot,
             after=_audit_snapshot("business", business),
@@ -4173,7 +4270,7 @@ def create_app(config_class=None):
             product_count = Product.query.filter_by(business_id=business_id).count()
             if product_count >= 5:
                 return jsonify({
-                    "error": "Tu plan gratuito permite hasta 5 productos. Actualiza a Pro para añadir más.",
+                    "error": "Tu plan gratuito permite hasta 5 productos. Actualiza a Pro para aÃ±adir mÃ¡s.",
                     "upgrade_url": "/upgrade"
                 }), 403
 
@@ -4190,7 +4287,7 @@ def create_app(config_class=None):
             if price < 0:
                 raise ValueError()
         except:
-            return jsonify({"error": "Precio debe ser un número positivo"}), 400
+            return jsonify({"error": "Precio debe ser un nÃºmero positivo"}), 400
 
         product = Product(
             business_id=business_id,
@@ -4214,13 +4311,13 @@ def create_app(config_class=None):
         db.session.add(product)
         db.session.flush()
 
-        # GESTIÓN DE BARCODES
+        # GESTIÃ“N DE BARCODES
         barcodes = data.get("barcodes", [])
         if barcodes and isinstance(barcodes, list) and len(barcodes) > 0:
-            # Plan FREE: No permitir múltiples barcodes
+            # Plan FREE: No permitir mÃºltiples barcodes
             if g.current_user.plan == "free":
                 return jsonify({
-                    "error": "Tu plan gratuito no soporta múltiples códigos de barras. Actualiza a Pro.",
+                    "error": "Tu plan gratuito no soporta mÃºltiples cÃ³digos de barras. Actualiza a Pro.",
                     "upgrade_url": "/upgrade"
                 }), 403
 
@@ -4230,7 +4327,7 @@ def create_app(config_class=None):
                     # Verificar duplicados globales
                     if ProductBarcode.query.filter_by(code=code).first():
                         db.session.rollback()
-                        return jsonify({"error": f"El código de barras '{code}' ya está asignado a otro producto"}), 400
+                        return jsonify({"error": f"El cÃ³digo de barras '{code}' ya estÃ¡ asignado a otro producto"}), 400
                     
                     new_barcode = ProductBarcode(product_id=product.id, code=code)
                     db.session.add(new_barcode)
@@ -4242,8 +4339,8 @@ def create_app(config_class=None):
             entity_type="product",
             entity_id=product.id,
             action="create",
-            summary=f"Creó el producto {product.name}",
-            detail="Se registró un nuevo producto en el catálogo del negocio.",
+            summary=f"CreÃ³ el producto {product.name}",
+            detail="Se registrÃ³ un nuevo producto en el catÃ¡logo del negocio.",
             metadata=_build_audit_metadata(
                 source_path="/products",
                 sku=product.sku,
@@ -4312,7 +4409,7 @@ def create_app(config_class=None):
             )
 
             if "fulfillment_mode" in data and requested_fulfillment_mode not in (None, "") and normalized_requested_fulfillment_mode is None:
-                return jsonify({"error": "fulfillment_mode inválido"}), 400
+                return jsonify({"error": "fulfillment_mode invÃ¡lido"}), 400
 
             explicit_fulfillment_mode = (
                 normalized_requested_fulfillment_mode
@@ -4336,16 +4433,16 @@ def create_app(config_class=None):
                 synchronize_session=False,
             )
 
-        # GESTIÓN DE BARCODES
+        # GESTIÃ“N DE BARCODES
         if "barcodes" in data and isinstance(data["barcodes"], list):
-            # Plan FREE: No permitir múltiples barcodes
+            # Plan FREE: No permitir mÃºltiples barcodes
             if g.current_user.plan == "free" and len(data["barcodes"]) > 0:
                 return jsonify({
-                    "error": "Tu plan gratuito no soporta múltiples códigos de barras. Actualiza a Pro.",
+                    "error": "Tu plan gratuito no soporta mÃºltiples cÃ³digos de barras. Actualiza a Pro.",
                     "upgrade_url": "/upgrade"
                 }), 403
 
-            # 1. Eliminar códigos actuales
+            # 1. Eliminar cÃ³digos actuales
             ProductBarcode.query.filter_by(product_id=product.id).delete()
 
             # 2. Agregar nuevos validando duplicados
@@ -4355,7 +4452,7 @@ def create_app(config_class=None):
                     existing = ProductBarcode.query.filter_by(code=code).first()
                     if existing and existing.product_id != product.id:
                         db.session.rollback()
-                        return jsonify({"error": f"El código de barras '{code}' ya está asignado a otro producto"}), 400
+                        return jsonify({"error": f"El cÃ³digo de barras '{code}' ya estÃ¡ asignado a otro producto"}), 400
 
                     db.session.add(ProductBarcode(product_id=product.id, code=code))
 
@@ -4366,8 +4463,8 @@ def create_app(config_class=None):
             entity_type="product",
             entity_id=product.id,
             action="update",
-            summary=f"Actualizó el producto {product.name}",
-            detail="Se modificaron datos del producto o sus códigos de barras.",
+            summary=f"ActualizÃ³ el producto {product.name}",
+            detail="Se modificaron datos del producto o sus cÃ³digos de barras.",
             metadata=_build_audit_metadata(
                 source_path=f"/products/{product.id}",
                 changed_fields=sorted((data or {}).keys()),
@@ -4403,8 +4500,8 @@ def create_app(config_class=None):
             entity_type="product",
             entity_id=product.id,
             action="delete",
-            summary=f"Eliminó el producto {product.name}",
-            detail="Se eliminó un producto del catálogo del negocio.",
+            summary=f"EliminÃ³ el producto {product.name}",
+            detail="Se eliminÃ³ un producto del catÃ¡logo del negocio.",
             metadata=_build_audit_metadata(source_path="/products"),
             before=before_snapshot,
         )
@@ -4464,7 +4561,7 @@ def create_app(config_class=None):
              return jsonify({"error": "El motivo es obligatorio en Business"}), 400
 
         if type_ not in ["in", "out"]:
-            return jsonify({"error": "Tipo de movimiento inválido (in/out)"}), 400
+            return jsonify({"error": "Tipo de movimiento invÃ¡lido (in/out)"}), 400
         
         # Apply logic
         if type_ == "in":
@@ -4499,7 +4596,7 @@ def create_app(config_class=None):
             entity_type="product_movement",
             entity_id=movement.id,
             action="adjust",
-            summary=f"Registró un movimiento de inventario para {product.name}",
+            summary=f"RegistrÃ³ un movimiento de inventario para {product.name}",
             detail=f"Movimiento {type_} por {quantity} {product.unit or 'und'} con motivo: {reason}.",
             metadata=_build_audit_metadata(
                 source_path=f"/products/{product.id}",
@@ -4572,7 +4669,7 @@ def create_app(config_class=None):
             entity_type="recipe_consumption",
             entity_id=result["recipe_consumption"].id,
             action="produce",
-            summary=f"Registró producción para {product.name}",
+            summary=f"RegistrÃ³ producciÃ³n para {product.name}",
             detail=f"Se produjo {quantity} {product.unit or 'und'} de {product.name} consumiendo materias primas y aumentando stock terminado.",
             metadata=_build_audit_metadata(
                 source_path=f"/products/{product.id}",
@@ -4680,8 +4777,8 @@ def create_app(config_class=None):
                 entity_type="inventory_adjustment",
                 entity_id=None,
                 action="adjust",
-                summary=f"Ejecutó un ajuste masivo de inventario sobre {len(processed)} productos",
-                detail="Se aplicó un ajuste masivo de inventario en el negocio.",
+                summary=f"EjecutÃ³ un ajuste masivo de inventario sobre {len(processed)} productos",
+                detail="Se aplicÃ³ un ajuste masivo de inventario en el negocio.",
                 metadata=_build_audit_metadata(
                     source_path="/products",
                     processed_product_ids=processed,
@@ -4780,8 +4877,8 @@ def create_app(config_class=None):
             entity_type="customer",
             entity_id=customer.id,
             action="create",
-            summary=f"Creó el cliente {customer.name}",
-            detail="Se registró un nuevo cliente en el negocio.",
+            summary=f"CreÃ³ el cliente {customer.name}",
+            detail="Se registrÃ³ un nuevo cliente en el negocio.",
             metadata=_build_audit_metadata(
                 source_path="/customers",
                 phone=customer.phone,
@@ -4872,11 +4969,11 @@ def create_app(config_class=None):
         
         # Default template if not set
         default_template = (
-            "Hola {cliente} 😊\n"
+            "Hola {cliente} ðŸ˜Š\n"
             "Te escribo de *{negocio}*.\n\n"
-            "Según mi registro, tienes un saldo pendiente de *${deuda}*.\n"
-            "¿Me confirmas por favor cuándo puedes realizar el pago?\n\n"
-            "Gracias 🙌"
+            "SegÃºn mi registro, tienes un saldo pendiente de *${deuda}*.\n"
+            "Â¿Me confirmas por favor cuÃ¡ndo puedes realizar el pago?\n\n"
+            "Gracias ðŸ™Œ"
         )
         
         # Get custom template if exists
@@ -5068,7 +5165,7 @@ def create_app(config_class=None):
                 "document_id": payment.id,
                 "document_label": f"Pago #{payment.id}",
                 "title": "Pago recibido",
-                "subtitle": payment.method or "Sin método",
+                "subtitle": payment.method or "Sin mÃ©todo",
                 "amount": _safe_round(payment.amount),
                 "signed_amount": _safe_round(payment.amount),
                 "balance": None,
@@ -5210,7 +5307,7 @@ def create_app(config_class=None):
             entity_type="customer",
             entity_id=customer.id,
             action="update",
-            summary=f"Actualizó el cliente {customer.name}",
+            summary=f"ActualizÃ³ el cliente {customer.name}",
             detail="Se modificaron los datos del cliente.",
             metadata=_build_audit_metadata(
                 source_path=f"/customers/{customer.id}",
@@ -5239,8 +5336,8 @@ def create_app(config_class=None):
             entity_type="customer",
             entity_id=customer.id,
             action="delete",
-            summary=f"Eliminó el cliente {customer.name}",
-            detail="Se eliminó el registro del cliente del negocio.",
+            summary=f"EliminÃ³ el cliente {customer.name}",
+            detail="Se eliminÃ³ el registro del cliente del negocio.",
             metadata=_build_audit_metadata(source_path="/customers"),
             before=before_snapshot,
         )
@@ -5321,7 +5418,7 @@ def create_app(config_class=None):
         business = Business.query.get(business_id)
         if not business:
             return jsonify({"error": "Negocio no encontrado"}), 404
-        # Plan FREE: limitar a 20 ventas (Solo para dueños, empleados heredan el plan del negocio)
+        # Plan FREE: limitar a 20 ventas (Solo para dueÃ±os, empleados heredan el plan del negocio)
         effective_plan = g.current_user.plan
         if g.current_user.account_type == 'team_member' and business:
             effective_plan = business.user.plan if business.user else 'free'
@@ -5497,8 +5594,8 @@ def create_app(config_class=None):
             entity_type="sale",
             entity_id=sale.id,
             action="create",
-            summary=f"Registró la venta #{sale.id}",
-            detail=f"Venta por {total} con método {payment_method}.",
+            summary=f"RegistrÃ³ la venta #{sale.id}",
+            detail=f"Venta por {total} con mÃ©todo {payment_method}.",
             metadata=_build_audit_metadata(
                 source_path=f"/sales/{sale.id}",
                 customer_id=sale.customer_id,
@@ -5524,6 +5621,77 @@ def create_app(config_class=None):
             "invoice_url": invoice_url
         }), 201
 
+    @app.route("/api/businesses/<int:business_id>/sales/<int:sale_id>", methods=["PUT"])
+    @token_required
+    @module_required("sales")
+    @permission_required('sales.update')
+    def update_sale(business_id, sale_id):
+        sale = Sale.query.filter_by(id=sale_id, business_id=business_id).first()
+        if not sale:
+            return jsonify({"error": "Venta no encontrada"}), 404
+
+        data = request.get_json() or {}
+        before_snapshot = _audit_snapshot("sale", sale)
+        original_sale_date = sale.sale_date
+
+        items = data.get("items") if data.get("items") is not None else sale.items
+        subtotal = float(data.get("subtotal") if data.get("subtotal") is not None else sale.subtotal or 0)
+        discount = float(data.get("discount") if data.get("discount") is not None else sale.discount or 0)
+        total = float(data.get("total") if data.get("total") is not None else sale.total or 0)
+        if total <= 0:
+            return jsonify({"error": "Total invÃ¡lido"}), 400
+
+        sale_date = original_sale_date or date.today()
+        if data.get("sale_date"):
+            try:
+                sale_date = datetime.strptime(data["sale_date"], "%Y-%m-%d").date()
+            except Exception:
+                return jsonify({"error": "Fecha invÃ¡lida"}), 400
+
+        collected_amount = round(float(sale.collected_amount or 0), 2)
+        balance = round(max(0.0, total - collected_amount), 2)
+        sale.items = items
+        sale.subtotal = subtotal
+        sale.discount = discount
+        sale.total = total
+        sale.sale_date = sale_date
+        if "payment_method" in data:
+            sale.payment_method = data.get("payment_method") or sale.payment_method
+        if "note" in data:
+            sale.note = data.get("note")
+        sale.collected_amount = collected_amount
+        sale.balance = 0.0 if balance <= 0.01 else balance
+        sale.paid = sale.balance <= 0.01
+        sale.updated_by_user_id = g.current_user.id
+
+        charge_entry = LedgerEntry.query.filter_by(ref_type="sale", ref_id=sale.id, entry_type="charge").first()
+        if charge_entry:
+            charge_entry.amount = total
+            charge_entry.entry_date = sale_date
+            charge_entry.note = sale.note
+
+        refresh_summary_materialized_days(business_id, original_sale_date, sale.sale_date)
+        _record_business_audit(
+            business_id=business_id,
+            actor_user=g.current_user,
+            module="sales",
+            entity_type="sale",
+            entity_id=sale.id,
+            action="update",
+            summary=f"ActualizÃ³ la venta #{sale.id}",
+            detail="Se recalculÃ³ el cargo preservando pagos y asignaciones existentes.",
+            metadata=_build_audit_metadata(
+                source_path=f"/sales/{sale.id}",
+                changed_fields=sorted((data or {}).keys()),
+                total=total,
+                balance=sale.balance,
+            ),
+            before=before_snapshot,
+            after=_audit_snapshot("sale", sale),
+        )
+        db.session.commit()
+        return jsonify({"sale": sale.to_dict()})
+
     @app.route("/api/businesses/<int:business_id>/sales/<int:sale_id>", methods=["DELETE"])
     @token_required
     @module_required("sales")
@@ -5543,6 +5711,7 @@ def create_app(config_class=None):
             role_snapshot=role_snapshot,
         )
         clear_sale_origin_links(sale=sale)
+        financial_cleanup = delete_sale_financial_effects(sale=sale)
         _record_business_audit(
             business_id=business_id,
             actor_user=g.current_user,
@@ -5550,8 +5719,8 @@ def create_app(config_class=None):
             entity_type="sale",
             entity_id=sale.id,
             action="delete",
-            summary=f"Eliminó la venta #{sale.id}",
-            detail="Se eliminó una venta y sus movimientos asociados de cartera.",
+            summary=f"EliminÃ³ la venta #{sale.id}",
+            detail="Se eliminÃ³ una venta y sus movimientos asociados de cartera.",
             metadata=_build_audit_metadata(
                 source_path="/sales",
                 customer_id=sale.customer_id,
@@ -5559,12 +5728,11 @@ def create_app(config_class=None):
             ),
             before=before_snapshot,
         )
-        # Delete related ledger entries
-        Payment.query.filter_by(sale_id=sale_id).delete()
-        LedgerEntry.query.filter_by(ref_type="sale", ref_id=sale_id).delete()
-        
         db.session.delete(sale)
-        refresh_summary_materialized_days(business_id, sale.sale_date)
+        affected_dates = set(financial_cleanup.get("affected_dates") or [])
+        if sale.sale_date:
+            affected_dates.add(sale.sale_date)
+        refresh_summary_materialized_days(business_id, *sorted(affected_dates))
         db.session.commit()
         return jsonify({"ok": True})
 
@@ -5623,7 +5791,7 @@ def create_app(config_class=None):
 
             if not is_paid and order.customer_id:
                 if not is_module_enabled(order.business_id, "accounts_receivable"):
-                    raise ValueError("El módulo accounts_receivable no está habilitado para este negocio")
+                    raise ValueError("El mÃ³dulo accounts_receivable no estÃ¡ habilitado para este negocio")
 
             # Contexto de usuario (si existe)
             try:
@@ -5836,7 +6004,7 @@ def create_app(config_class=None):
             try:
                 query = query.filter(SupplierPayable.supplier_id == int(supplier_id))
             except (TypeError, ValueError):
-                return jsonify({"error": "supplier_id inválido"}), 400
+                return jsonify({"error": "supplier_id invÃ¡lido"}), 400
 
         payables = query.order_by(
             case((SupplierPayable.due_date.is_(None), 1), else_=0),
@@ -5894,14 +6062,14 @@ def create_app(config_class=None):
         amount = data.get("amount")
 
         if not category:
-            return jsonify({"error": "Categoría es requerida"}), 400
+            return jsonify({"error": "CategorÃ­a es requerida"}), 400
 
         try:
             amount = float(amount)
             if amount <= 0:
                 raise ValueError()
         except:
-            return jsonify({"error": "Monto debe ser un número positivo"}), 400
+            return jsonify({"error": "Monto debe ser un nÃºmero positivo"}), 400
 
         expense_date = date.today()
         if data.get("expense_date"):
@@ -5912,23 +6080,122 @@ def create_app(config_class=None):
 
         role_snapshot = get_current_role_snapshot(g.current_user, business_id)
 
-        expense = Expense(
+        try:
+            treasury_context = resolve_treasury_context(
+                business_id,
+                treasury_account_id=data.get("treasury_account_id"),
+                payment_method=data.get("payment_method"),
+                allow_account_autoselect=True,
+                require_account=False,
+            )
+        except ValueError as exc:
+            return jsonify({"error": str(exc)}), 400
+
+        expense = create_expense_record(
             business_id=business_id,
             expense_date=expense_date,
             category=category,
             amount=amount,
             description=data.get("description", "").strip() or None,
-            created_by_user_id=g.current_user.id,
-            created_by_name=g.current_user.name,
-            created_by_role=role_snapshot,
-            updated_by_user_id=g.current_user.id
+            source_type="manual",
+            payment_method=treasury_context.get("payment_method") if treasury_context.get("treasury_account_id") else data.get("payment_method"),
+            treasury_account_id=treasury_context.get("treasury_account_id"),
+            actor_user=g.current_user,
+            role_snapshot=role_snapshot,
         )
-
-        db.session.add(expense)
         mark_business_payloads_dirty(business_id, [expense_date])
         db.session.commit()
 
         return jsonify({"expense": expense.to_dict()}), 201
+
+    @app.route("/api/businesses/<int:business_id>/recurring-expenses", methods=["POST"])
+    @token_required
+    @permission_required('expenses.create')
+    def create_recurring_expense(business_id):
+        business = Business.query.get(business_id)
+        if not business:
+            return jsonify({"error": "Negocio no encontrado"}), 404
+
+        data = request.get_json() or {}
+        name = str(data.get("name") or "").strip()
+        category = str(data.get("category") or "").strip()
+        frequency = str(data.get("frequency") or "monthly").strip().lower() or "monthly"
+        payment_flow = str(data.get("payment_flow") or "cash").strip().lower() or "cash"
+        if not name:
+            return jsonify({"error": "Nombre es requerido"}), 400
+        if not category:
+            return jsonify({"error": "CategorÃ­a es requerida"}), 400
+        try:
+            amount = float(data.get("amount") or 0)
+            due_day = int(data.get("due_day") or 0)
+            if amount <= 0 or due_day <= 0 or due_day > 31:
+                raise ValueError()
+        except (TypeError, ValueError):
+            return jsonify({"error": "Datos de recurrencia invÃ¡lidos"}), 400
+        try:
+            next_due_date = datetime.strptime(data.get("next_due_date"), "%Y-%m-%d").date() if data.get("next_due_date") else date.today()
+        except Exception:
+            return jsonify({"error": "Fecha invÃ¡lida"}), 400
+
+        recurring_expense = RecurringExpense(
+            business_id=business_id,
+            name=name,
+            amount=amount,
+            due_day=due_day,
+            frequency=frequency,
+            next_due_date=next_due_date,
+            category=category,
+            payment_flow=payment_flow,
+            creditor_name=(str(data.get("creditor_name") or "").strip() or None),
+            is_active=bool(data.get("is_active", True)),
+        )
+        db.session.add(recurring_expense)
+        db.session.commit()
+        return jsonify({"recurring_expense": recurring_expense.to_dict()}), 201
+
+    @app.route("/api/businesses/<int:business_id>/recurring-expenses/<int:recurring_id>/mark-paid", methods=["POST"])
+    @token_required
+    @permission_required('expenses.create')
+    def mark_recurring_expense_paid(business_id, recurring_id):
+        recurring_expense = RecurringExpense.query.filter_by(id=recurring_id, business_id=business_id).first()
+        if not recurring_expense:
+            return jsonify({"error": "Gasto recurrente no encontrado"}), 404
+
+        data = request.get_json() or {}
+        try:
+            expense_date = datetime.strptime(data.get("expense_date"), "%Y-%m-%d").date() if data.get("expense_date") else date.today()
+        except Exception:
+            return jsonify({"error": "Fecha invÃ¡lida"}), 400
+
+        role_snapshot = get_current_role_snapshot(g.current_user, business_id)
+        try:
+            treasury_context = resolve_treasury_context(
+                business_id,
+                treasury_account_id=data.get("treasury_account_id"),
+                payment_method=data.get("payment_method"),
+                allow_account_autoselect=True,
+                require_account=False,
+            )
+        except ValueError as exc:
+            return jsonify({"error": str(exc)}), 400
+
+        expense = create_expense_record(
+            business_id=business_id,
+            expense_date=expense_date,
+            category=recurring_expense.category or "servicios",
+            amount=recurring_expense.amount,
+            description=(str(data.get("description") or "").strip() or f"Pago recurrente {recurring_expense.name}"),
+            source_type="recurring",
+            payment_method=treasury_context.get("payment_method") if treasury_context.get("treasury_account_id") else data.get("payment_method"),
+            treasury_account_id=treasury_context.get("treasury_account_id"),
+            recurring_expense_id=recurring_expense.id,
+            actor_user=g.current_user,
+            role_snapshot=role_snapshot,
+        )
+        _advance_recurring_due_date(recurring_expense, expense_date)
+        mark_business_payloads_dirty(business_id, [expense_date])
+        db.session.commit()
+        return jsonify({"expense": expense.to_dict(), "recurring_expense": recurring_expense.to_dict()}), 201
 
     @app.route("/api/businesses/<int:business_id>/expenses/<int:expense_id>", methods=["PUT"])
     @token_required
@@ -6044,7 +6311,7 @@ def create_app(config_class=None):
             if amount <= 0:
                 raise ValueError()
         except:
-            return jsonify({"error": "Monto debe ser un número positivo"}), 400
+            return jsonify({"error": "Monto debe ser un nÃºmero positivo"}), 400
 
         payment_date = date.today()
         if data.get("payment_date"):
@@ -6055,15 +6322,16 @@ def create_app(config_class=None):
 
         role_snapshot = get_current_role_snapshot(g.current_user, business_id)
         try:
-            treasury_account_id = _resolve_treasury_account_id(
+            treasury_context = resolve_treasury_context(
                 business_id,
-                payment_method=data.get("method", "cash"),
                 treasury_account_id=data.get("treasury_account_id"),
+                payment_method=data.get("method"),
+                allow_account_autoselect=True,
+                require_account=True,
+                missing_account_message="Debes seleccionar o configurar una cuenta de caja para registrar el pago",
             )
         except ValueError as exc:
             return jsonify({"error": str(exc)}), 400
-        if treasury_account_id is None:
-            return jsonify({"error": "Debes seleccionar o configurar una cuenta de caja para registrar el pago"}), 400
 
         payment = Payment(
             business_id=business_id,
@@ -6071,8 +6339,8 @@ def create_app(config_class=None):
             sale_id=data.get("sale_id"),
             payment_date=payment_date,
             amount=amount,
-            method=data.get("method", "cash"),
-            treasury_account_id=treasury_account_id,
+            method=treasury_context.get("payment_method"),
+            treasury_account_id=treasury_context.get("treasury_account_id"),
             note=data.get("note", "").strip() or None,
             created_by_user_id=g.current_user.id,
             created_by_name=g.current_user.name,
@@ -6160,7 +6428,7 @@ def create_app(config_class=None):
             entity_type="payment",
             entity_id=payment.id,
             action="pay",
-            summary=f"Registró el pago #{payment.id}",
+            summary=f"RegistrÃ³ el pago #{payment.id}",
             detail=f"Pago por {amount} para el cliente #{customer_id}.",
             metadata=_build_audit_metadata(
                 source_path=f"/payments/{payment.id}",
@@ -6274,21 +6542,23 @@ def create_app(config_class=None):
             except:
                 pass
 
-        if "method" in data:
-            payment.method = data["method"]
-
-        if "treasury_account_id" in data:
-            treasury_account_id = data.get("treasury_account_id")
-            if treasury_account_id not in (None, ""):
-                try:
-                    treasury_account_id = int(treasury_account_id)
-                except (TypeError, ValueError):
-                    return jsonify({"error": "Cuenta de caja invalida"}), 400
-                if not TreasuryAccount.query.filter_by(id=treasury_account_id, business_id=business_id).first():
-                    return jsonify({"error": "La cuenta de caja seleccionada no existe"}), 400
-            else:
-                treasury_account_id = None
-            payment.treasury_account_id = treasury_account_id
+        if "method" in data or "treasury_account_id" in data:
+            try:
+                resolved_payment_method = data.get("method")
+                if resolved_payment_method in (None, "") and "treasury_account_id" not in data:
+                    resolved_payment_method = payment.method
+                treasury_context = resolve_treasury_context(
+                    business_id,
+                    treasury_account_id=data.get("treasury_account_id", payment.treasury_account_id),
+                    payment_method=resolved_payment_method,
+                    allow_account_autoselect=True,
+                    require_account=True,
+                    missing_account_message="Debes seleccionar o configurar una cuenta de caja para registrar el pago",
+                )
+            except ValueError as exc:
+                return jsonify({"error": str(exc)}), 400
+            payment.method = treasury_context.get("payment_method")
+            payment.treasury_account_id = treasury_context.get("treasury_account_id")
             
         if "note" in data:
             payment.note = data["note"]
@@ -6305,8 +6575,8 @@ def create_app(config_class=None):
             entity_type="payment",
             entity_id=payment.id,
             action="update",
-            summary=f"Actualizó el pago #{payment.id}",
-            detail="Se modificaron datos del pago o su asignación de cartera.",
+            summary=f"ActualizÃ³ el pago #{payment.id}",
+            detail="Se modificaron datos del pago o su asignaciÃ³n de cartera.",
             metadata=_build_audit_metadata(
                 source_path=f"/payments/{payment.id}",
                 changed_fields=sorted((data or {}).keys()),
@@ -6357,8 +6627,8 @@ def create_app(config_class=None):
             entity_type="payment",
             entity_id=payment.id,
             action="delete",
-            summary=f"Eliminó el pago #{payment.id}",
-            detail="Se eliminó el pago y se revirtieron sus asignaciones.",
+            summary=f"EliminÃ³ el pago #{payment.id}",
+            detail="Se eliminÃ³ el pago y se revirtieron sus asignaciones.",
             metadata=_build_audit_metadata(
                 source_path="/payments",
                 customer_id=payment.customer_id,
@@ -6692,10 +6962,10 @@ def create_app(config_class=None):
         note_text = data.get("note", "").strip()
 
         if not note_text:
-            return jsonify({"error": "La nota no puede estar vacía"}), 400
+            return jsonify({"error": "La nota no puede estar vacÃ­a"}), 400
         
         if len(note_text) > 280:
-            return jsonify({"error": "La nota es demasiado larga (máx 280 caracteres)"}), 400
+            return jsonify({"error": "La nota es demasiado larga (mÃ¡x 280 caracteres)"}), 400
 
         note = QuickNote(
             business_id=business_id,
@@ -6748,7 +7018,7 @@ def create_app(config_class=None):
         reminder = Reminder(
             id=reminder_id,
             business_id=business_id,
-            title=data.get("title", "Sin título"),
+            title=data.get("title", "Sin tÃ­tulo"),
             content=data.get("content", ""),
             priority=data.get("priority", "medium"),
             due_date=data.get("dueDate"),
@@ -7066,10 +7336,10 @@ def create_app(config_class=None):
         business = Business.query.filter_by(id=business_id, user_id=g.current_user.id).first()
         if not business:
             return jsonify({"error": "Negocio no encontrado"}), 404
-        # Plan FREE: sin acceso a exportación
+        # Plan FREE: sin acceso a exportaciÃ³n
         if g.current_user.plan == "free":
             return jsonify({
-                "error": "La exportación está disponible solo en Pro. Actualiza tu plan para usar esta función.",
+                "error": "La exportaciÃ³n estÃ¡ disponible solo en Pro. Actualiza tu plan para usar esta funciÃ³n.",
                 "upgrade_url": "/upgrade"
             }), 403
 
@@ -7092,10 +7362,10 @@ def create_app(config_class=None):
         business = Business.query.filter_by(id=business_id, user_id=g.current_user.id).first()
         if not business:
             return jsonify({"error": "Negocio no encontrado"}), 404
-        # Plan FREE: sin acceso a exportación
+        # Plan FREE: sin acceso a exportaciÃ³n
         if g.current_user.plan == "free":
             return jsonify({
-                "error": "La exportación está disponible solo en Pro. Actualiza tu plan para usar esta función.",
+                "error": "La exportaciÃ³n estÃ¡ disponible solo en Pro. Actualiza tu plan para usar esta funciÃ³n.",
                 "upgrade_url": "/upgrade"
             }), 403
 
@@ -7121,7 +7391,7 @@ def create_app(config_class=None):
             
         if g.current_user.plan == "free":
             return jsonify({
-                "error": "La exportación avanzada está disponible solo en Pro.",
+                "error": "La exportaciÃ³n avanzada estÃ¡ disponible solo en Pro.",
                 "upgrade_url": "/upgrade"
             }), 403
 
@@ -7140,6 +7410,62 @@ def create_app(config_class=None):
         except Exception as e:
             print(f"ERROR GENERATING REPORT: {str(e)}")
             traceback.print_exc()
+            return jsonify({"error": str(e)}), 500
+
+    @app.route("/api/businesses/<int:business_id>/export/profitability", methods=["GET"])
+    @token_required
+    @module_required("reports")
+    def export_profitability(business_id):
+        business = Business.query.filter_by(id=business_id, user_id=g.current_user.id).first()
+        if not business:
+            member = TeamMember.query.filter_by(user_id=g.current_user.id, business_id=business_id, status='active').first()
+            if member:
+                business = member.business
+
+        if not business:
+            return jsonify({"error": "Negocio no encontrado"}), 404
+
+        if g.current_user.plan == "free":
+            return jsonify({
+                "error": "La exportaciÃ³n avanzada estÃ¡ disponible solo en Pro.",
+                "upgrade_url": "/upgrade"
+            }), 403
+
+        start_date = request.args.get("start_date") or request.args.get("startDate")
+        end_date = request.args.get("end_date") or request.args.get("endDate")
+        status = request.args.get("status")
+        product_query = request.args.get("product_query") or request.args.get("productQuery")
+        focus = request.args.get("focus")
+
+        try:
+            from backend.services.reports.report_service import ReportExportService, export_profitability_excel
+
+            service = ReportExportService(business_id)
+            start, end = service.normalize_dates(start_date, end_date)
+            payload = service.build_profitability_payload(
+                start,
+                end,
+                status=status,
+                product_query=product_query,
+                focus=focus,
+            )
+            filepath = export_profitability_excel(
+                business_id,
+                payload["summary"],
+                payload["products"],
+                payload["sales"],
+                payload["alerts"],
+                start,
+                end,
+                filters=payload["filters"],
+            )
+            return send_file(
+                filepath,
+                mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                as_attachment=True,
+                download_name=os.path.basename(filepath),
+            )
+        except Exception as e:
             return jsonify({"error": str(e)}), 500
 
     @app.route("/api/download/<filename>", methods=["GET"])
@@ -7161,7 +7487,7 @@ def create_app(config_class=None):
             jwt.decode(token, app.config['JWT_SECRET_KEY'], algorithms=["HS256"])
         except Exception as e:
             print(f"Token verification failed: {e}")
-            return jsonify({"error": "Token inválido o expirado"}), 401
+            return jsonify({"error": "Token invÃ¡lido o expirado"}), 401
 
         export_dir = app.config.get("EXPORT_DIR", "exports")
         
@@ -7212,7 +7538,7 @@ def create_app(config_class=None):
         # Plan FREE: sin acceso a exportar backup
         if g.current_user.plan == "free":
             return jsonify({
-                "error": "La exportación de backup está disponible solo en Pro. Actualiza tu plan para usar esta función.",
+                "error": "La exportaciÃ³n de backup estÃ¡ disponible solo en Pro. Actualiza tu plan para usar esta funciÃ³n.",
                 "upgrade_url": "/upgrade"
             }), 403
 
@@ -7233,7 +7559,7 @@ def create_app(config_class=None):
         # Plan FREE: sin acceso a importar/restore
         if g.current_user.plan == "free":
             return jsonify({
-                "error": "La importación está disponible solo en Pro. Actualiza tu plan para usar esta función.",
+                "error": "La importaciÃ³n estÃ¡ disponible solo en Pro. Actualiza tu plan para usar esta funciÃ³n.",
                 "upgrade_url": "/upgrade"
             }), 403
 
@@ -7654,13 +7980,13 @@ def create_app(config_class=None):
 
     def _build_owner_intervention_summary(action, business_name):
         labels = {
-            "extend_membership": f"Extendió la membresía de {business_name}",
-            "toggle_auto_renew": f"Actualizó la renovación automática de {business_name}",
-            "set_owner_active": f"Actualizó el acceso del owner de {business_name}",
-            "set_priority": f"Actualizó la prioridad operativa de {business_name}",
-            "add_structured_note": f"Registró una nota estructurada para {business_name}",
+            "extend_membership": f"ExtendiÃ³ la membresÃ­a de {business_name}",
+            "toggle_auto_renew": f"ActualizÃ³ la renovaciÃ³n automÃ¡tica de {business_name}",
+            "set_owner_active": f"ActualizÃ³ el acceso del owner de {business_name}",
+            "set_priority": f"ActualizÃ³ la prioridad operativa de {business_name}",
+            "add_structured_note": f"RegistrÃ³ una nota estructurada para {business_name}",
         }
-        return labels.get(action, f"Registró una intervención owner para {business_name}")
+        return labels.get(action, f"RegistrÃ³ una intervenciÃ³n owner para {business_name}")
 
     @app.route("/api/admin/owner-overview", methods=["GET"])
     @token_required
@@ -7719,11 +8045,11 @@ def create_app(config_class=None):
             new_businesses_chart.append(int(month_new_businesses))
 
         if failed_payments_30d > 0:
-            health_status = {"status": "critical", "label": "Acción requerida"}
+            health_status = {"status": "critical", "label": "AcciÃ³n requerida"}
         elif expired_count > 0 or expiring_soon_count > 0 or len(at_risk_rows) > 0:
-            health_status = {"status": "attention", "label": "Bajo observación"}
+            health_status = {"status": "attention", "label": "Bajo observaciÃ³n"}
         else:
-            health_status = {"status": "healthy", "label": "Operación estable"}
+            health_status = {"status": "healthy", "label": "OperaciÃ³n estable"}
 
         alerts = []
         if failed_payments_30d > 0:
@@ -7731,7 +8057,7 @@ def create_app(config_class=None):
                 "id": "failed-payments",
                 "level": "high",
                 "title": "Pagos fallidos recientes",
-                "message": f"Hay {failed_payments_30d} cuentas con señales de cobro fallido en los últimos 30 días.",
+                "message": f"Hay {failed_payments_30d} cuentas con seÃ±ales de cobro fallido en los Ãºltimos 30 dÃ­as.",
                 "cta_label": "Ir a Revenue",
                 "cta_to": "/admin/revenue?status=expired",
             })
@@ -7748,8 +8074,8 @@ def create_app(config_class=None):
             alerts.append({
                 "id": "inactive-adoption",
                 "level": "low",
-                "title": "Adopción inactiva",
-                "message": f"{inactive_businesses_count} negocios llevan más de 30 días sin actividad visible.",
+                "title": "AdopciÃ³n inactiva",
+                "message": f"{inactive_businesses_count} negocios llevan mÃ¡s de 30 dÃ­as sin actividad visible.",
                 "cta_label": "Revisar actividad",
                 "cta_to": "/admin/activity",
             })
@@ -7941,16 +8267,16 @@ def create_app(config_class=None):
             if "failed_payment" in row["risk_flags"] or "plan_expired" in row["risk_flags"] or "plan_expiring" in row["risk_flags"]:
                 if "failed_payment" in row["risk_flags"] or "plan_expired" in row["risk_flags"]:
                     severity = "high"
-                    title = "Cuenta con riesgo de facturación"
+                    title = "Cuenta con riesgo de facturaciÃ³n"
                 else:
                     severity = "medium"
-                    title = "Renovación por atender"
+                    title = "RenovaciÃ³n por atender"
                 alerts.append({
                     **base_payload,
                     "id": f"billing-{row['business_id']}",
                     "severity": severity,
                     "kind": "billing",
-                    "reason": "Pago fallido, plan vencido o renovación próxima detectada en la cuenta.",
+                    "reason": "Pago fallido, plan vencido o renovaciÃ³n prÃ³xima detectada en la cuenta.",
                     "title": title,
                     "cta_to": f"/admin/businesses?business_id={row['business_id']}",
                     "cta_label": "Abrir Business 360",
@@ -7963,8 +8289,8 @@ def create_app(config_class=None):
                     "id": f"adoption-{row['business_id']}",
                     "severity": "medium" if row["sales_count_30d"] > 0 else "low",
                     "kind": "adoption",
-                    "reason": "La cuenta muestra baja actividad reciente o el dueño no ha vuelto a entrar.",
-                    "title": "Seguimiento de adopción",
+                    "reason": "La cuenta muestra baja actividad reciente o el dueÃ±o no ha vuelto a entrar.",
+                    "title": "Seguimiento de adopciÃ³n",
                     "cta_to": f"/admin/activity?business_id={row['business_id']}",
                     "cta_label": "Ver actividad",
                     "created_at": now.isoformat(),
@@ -7978,7 +8304,7 @@ def create_app(config_class=None):
                     "id": f"support-{row['business_id']}",
                     "severity": "medium" if feedback_count > 0 else "low",
                     "kind": "support",
-                    "reason": f"{feedback_count} feedback sin leer y {invite_count} invitaciones pendientes requieren revisión.",
+                    "reason": f"{feedback_count} feedback sin leer y {invite_count} invitaciones pendientes requieren revisiÃ³n.",
                     "title": "Pendientes de soporte y equipo",
                     "cta_to": f"/admin/system-health",
                     "cta_label": "Abrir Health Center",
@@ -7991,7 +8317,7 @@ def create_app(config_class=None):
                     "id": f"churn-{row['business_id']}",
                     "severity": "high" if row["health_score"] <= 40 else "medium",
                     "kind": "churn",
-                    "reason": "Señales combinadas de baja adopción, fricción de cobro o deterioro de salud de la cuenta.",
+                    "reason": "SeÃ±ales combinadas de baja adopciÃ³n, fricciÃ³n de cobro o deterioro de salud de la cuenta.",
                     "title": "Riesgo de churn",
                     "cta_to": f"/admin/revenue?status={row['lifecycle_status']}",
                     "cta_label": "Ir a Revenue",
@@ -8161,8 +8487,8 @@ def create_app(config_class=None):
                 ],
             },
             "limitations": {
-                "exports": "La plataforma aún no expone telemetría histórica detallada de exportaciones; este centro usa señales persistidas reales.",
-                "sync": "No se inventan estados de sincronización. Solo se usan auditoría, feedback, invitaciones y señales reales de billing.",
+                "exports": "La plataforma aÃºn no expone telemetrÃ­a histÃ³rica detallada de exportaciones; este centro usa seÃ±ales persistidas reales.",
+                "sync": "No se inventan estados de sincronizaciÃ³n. Solo se usan auditorÃ­a, feedback, invitaciones y seÃ±ales reales de billing.",
             },
         })
 
@@ -8176,7 +8502,7 @@ def create_app(config_class=None):
 
         row = next((item for item in _build_owner_admin_rows(range_days=30) if item["business_id"] == business_id), None)
         if not row:
-            return jsonify({"error": "No se encontró contexto owner para este negocio"}), 404
+            return jsonify({"error": "No se encontrÃ³ contexto owner para este negocio"}), 404
 
         owner = business.user
         unread_feedback, pending_invitations = _build_admin_support_metrics([row])
@@ -8333,7 +8659,7 @@ def create_app(config_class=None):
         action = str(data.get("action") or "").strip()
         reason = str(data.get("reason") or "").strip()
         if not action:
-            return jsonify({"error": "La acción es requerida"}), 400
+            return jsonify({"error": "La acciÃ³n es requerida"}), 400
         if len(reason) < 5:
             return jsonify({"error": "Debes registrar un motivo claro"}), 400
 
@@ -8376,7 +8702,7 @@ def create_app(config_class=None):
             })
             owner_control["structured_notes"] = notes[:25]
         else:
-            return jsonify({"error": "Acción de intervención no soportada"}), 400
+            return jsonify({"error": "AcciÃ³n de intervenciÃ³n no soportada"}), 400
 
         owner_control["last_reason"] = reason
         owner_control["updated_at"] = now.isoformat()
@@ -8734,7 +9060,7 @@ def create_app(config_class=None):
         
         main_key = key_mapping.get(integration_id)
         if not main_key:
-            return jsonify({"error": "Integración no válida"}), 400
+            return jsonify({"error": "IntegraciÃ³n no vÃ¡lida"}), 400
         
         # Save enabled status
         setting = AppSettings.query.filter_by(key=main_key).first()
@@ -8845,7 +9171,7 @@ def create_app(config_class=None):
             # Check for duplicates based on context
             if account_type == 'personal':
                 if User.query.filter_by(email=email, account_type='personal').first():
-                    return jsonify({"error": "El email ya está en uso como cuenta personal"}), 400
+                    return jsonify({"error": "El email ya estÃ¡ en uso como cuenta personal"}), 400
             elif account_type == 'team_member':
                 if not linked_business_id:
                     return jsonify({"error": "ID de negocio requerido para cuentas de equipo"}), 400
@@ -8937,7 +9263,7 @@ def create_app(config_class=None):
             if new_email and new_email != user.email:
                 existing = User.query.filter(User.email == new_email, User.id != user_id).first()
                 if existing:
-                    return jsonify({"error": "El email ya está en uso"}), 400
+                    return jsonify({"error": "El email ya estÃ¡ en uso"}), 400
                 user.email = new_email
         if "name" in data:
             user.name = data["name"].strip()
@@ -9023,11 +9349,11 @@ def create_app(config_class=None):
         new_password = data.get("password", "")
         
         if not new_password or len(new_password) < 4:
-            return jsonify({"error": "La contraseña debe tener al menos 4 caracteres"}), 400
+            return jsonify({"error": "La contraseÃ±a debe tener al menos 4 caracteres"}), 400
         
         user.set_password(new_password)
         db.session.commit()
-        return jsonify({"ok": True, "message": "Contraseña actualizada"})
+        return jsonify({"ok": True, "message": "ContraseÃ±a actualizada"})
 
     @app.route("/api/admin/users/<int:user_id>/grant-access", methods=["POST"])
     @token_required
@@ -9095,7 +9421,11 @@ def create_app(config_class=None):
             return jsonify({"error": "Usuario no encontrado"}), 404
         
         user_roles = UserRole.query.filter_by(user_id=user_id).all()
-        return jsonify({"roles": [ur.role_id for ur in user_roles]})
+        resolved_roles = [ur.role.to_dict() for ur in user_roles if ur.role]
+        return jsonify({
+            "roles": resolved_roles,
+            "role_ids": [role["id"] for role in resolved_roles],
+        })
 
     @app.route("/api/admin/users/<int:user_id>/roles", methods=["PUT"])
     @token_required
@@ -9107,7 +9437,7 @@ def create_app(config_class=None):
             return jsonify({"error": "Usuario no encontrado"}), 404
         
         data = request.get_json() or {}
-        role_ids = data.get("roles", [])
+        role_ids = data.get("role_ids", data.get("roles", []))
         
         # Remove existing roles
         UserRole.query.filter_by(user_id=user_id).delete()
@@ -9279,7 +9609,7 @@ def create_app(config_class=None):
         # Check if already exists
         existing = RolePermission.query.filter_by(role_id=role_id, permission_id=perm.id).first()
         if existing:
-            return jsonify({"error": "El permiso ya está asignado al rol"}), 400
+            return jsonify({"error": "El permiso ya estÃ¡ asignado al rol"}), 400
         
         rp = RolePermission(role_id=role_id, permission_id=perm.id)
         db.session.add(rp)
@@ -9314,7 +9644,7 @@ def create_app(config_class=None):
     @permission_required('admin.*')
     def reseed_rbac():
         base_permissions = [
-            {"name": "admin.*", "description": "Acceso total al panel de administración", "category": "admin"},
+            {"name": "admin.*", "description": "Acceso total al panel de administraciÃ³n", "category": "admin"},
             {"name": "admin.users", "description": "Gestionar usuarios", "category": "admin"},
             {"name": "admin.roles", "description": "Gestionar roles", "category": "admin"},
             {"name": "admin.permissions", "description": "Gestionar permisos", "category": "admin"},
@@ -9343,14 +9673,14 @@ def create_app(config_class=None):
             {"name": "expenses.create", "description": "Crear gastos", "category": "expenses"},
             {"name": "expenses.update", "description": "Editar gastos", "category": "expenses"},
             {"name": "expenses.delete", "description": "Eliminar gastos", "category": "expenses"},
-            {"name": "summary.*", "description": "Acceso completo a resúmenes y reportes", "category": "summary"},
+            {"name": "summary.*", "description": "Acceso completo a resÃºmenes y reportes", "category": "summary"},
             {"name": "summary.dashboard", "description": "Ver dashboard", "category": "summary"},
             {"name": "summary.financial", "description": "Ver estados financieros", "category": "summary"},
             {"name": "export.*", "description": "Acceso completo a exportaciones", "category": "export"},
             {"name": "export.pdf", "description": "Exportar PDF", "category": "export"},
             {"name": "export.excel", "description": "Exportar Excel", "category": "export"},
-            {"name": "settings.*", "description": "Acceso completo a configuración", "category": "settings"},
-            {"name": "settings.business", "description": "Configuración del negocio", "category": "settings"},
+            {"name": "settings.*", "description": "Acceso completo a configuraciÃ³n", "category": "settings"},
+            {"name": "settings.business", "description": "ConfiguraciÃ³n del negocio", "category": "settings"},
         ]
 
         roles_config = [
@@ -9389,7 +9719,7 @@ def create_app(config_class=None):
             },
             {
                 "name": "CONTABILIDAD",
-                "description": "Rol para área contable - acceso a reportes y gastos",
+                "description": "Rol para Ã¡rea contable - acceso a reportes y gastos",
                 "is_system": True,
                 "permissions": [
                     "clients.read",
@@ -9402,7 +9732,7 @@ def create_app(config_class=None):
             },
             {
                 "name": "LECTOR",
-                "description": "Solo lectura - puede ver información sin modificar",
+                "description": "Solo lectura - puede ver informaciÃ³n sin modificar",
                 "is_system": True,
                 "permissions": [
                     "products.read",
@@ -9502,10 +9832,10 @@ def create_app(config_class=None):
     @permission_required('admin.*')
     def export_data():
         """Export all data"""
-        # Plan FREE: sin acceso a exportación
+        # Plan FREE: sin acceso a exportaciÃ³n
         if g.current_user.plan == "free":
             return jsonify({
-                "error": "La exportación está disponible solo en Pro. Actualiza tu plan para usar esta función.",
+                "error": "La exportaciÃ³n estÃ¡ disponible solo en Pro. Actualiza tu plan para usar esta funciÃ³n.",
                 "upgrade_url": "/upgrade"
             }), 403
         from backend.models import User, Business, Customer, Product, Sale, Payment, Expense, AuditLog
@@ -9546,10 +9876,10 @@ def create_app(config_class=None):
     @permission_required('admin.*')
     def import_data():
         """Import data from JSON file"""
-        # Plan FREE: sin acceso a importación
+        # Plan FREE: sin acceso a importaciÃ³n
         if g.current_user.plan == "free":
             return jsonify({
-                "error": "La importación está disponible solo en Pro. Actualiza tu plan para usar esta función.",
+                "error": "La importaciÃ³n estÃ¡ disponible solo en Pro. Actualiza tu plan para usar esta funciÃ³n.",
                 "upgrade_url": "/upgrade"
             }), 403
         from backend.models import User, Business, Customer, Product, Sale, Payment, Expense
@@ -9714,7 +10044,7 @@ def create_app(config_class=None):
         """Create banner"""
         data = request.get_json() or {}
         if not data.get("title") or not data.get("image_url"):
-            return jsonify({"error": "Título e imagen son requeridos"}), 400
+            return jsonify({"error": "TÃ­tulo e imagen son requeridos"}), 400
             
         banner = Banner(
             title=data["title"],
@@ -9912,10 +10242,10 @@ def create_app(config_class=None):
             from backend.auth import AuthManager
             sent = AuthManager.send_plain_email("encajapp@gmail.com", subject, body)
             if not sent:
-                return jsonify({"error": "No se pudo enviar el mensaje, intenta más tarde"}), 500
+                return jsonify({"error": "No se pudo enviar el mensaje, intenta mÃ¡s tarde"}), 500
         except Exception as e:
             print(f"[CONTACT] Error enviando mensaje: {e}")
-            return jsonify({"error": "No se pudo enviar el mensaje, intenta más tarde"}), 500
+            return jsonify({"error": "No se pudo enviar el mensaje, intenta mÃ¡s tarde"}), 500
         return jsonify({"success": True})
     
     # ========== PUBLIC CUSTOMER API ==========
@@ -9958,8 +10288,8 @@ def create_app(config_class=None):
                 entity_type="customer",
                 entity_id=customer.id,
                 action="create",
-                summary=f"Se registró el cliente {customer.name}",
-                detail="Un cliente fue creado desde el registro público.",
+                summary=f"Se registrÃ³ el cliente {customer.name}",
+                detail="Un cliente fue creado desde el registro pÃºblico.",
                 metadata=_build_audit_metadata(
                     source_path="/customers",
                     origin="public_register",
@@ -9983,7 +10313,7 @@ def create_app(config_class=None):
             password = (data.get("password", "") or "")
             
             if not phone or not password:
-                return jsonify({"error": "Celular y contraseña requeridos"}), 400
+                return jsonify({"error": "Celular y contraseÃ±a requeridos"}), 400
             
             # Get first business
             business = Business.query.first()
@@ -10036,6 +10366,63 @@ def create_app(config_class=None):
     # Remove legacy static handler if it exists here, as it is handled by the main serve_static
     # The duplicate serve_static at the end of create_app seems redundant or legacy.
     # I will remove it to avoid conflicts with the one defined earlier.
+
+    register_receipt_routes(app)
+    register_financial_restore_routes(
+        app,
+        token_required=token_required,
+        permission_required=permission_required,
+        has_permission=has_permission,
+    )
+    register_raw_inventory_restore_routes(
+        app,
+        token_required=token_required,
+        module_required=module_required,
+        permission_required=permission_required,
+        get_current_role_snapshot=get_current_role_snapshot,
+        refresh_summary_materialized_days=refresh_summary_materialized_days,
+    )
+    register_commercial_core_restore_routes(
+        app,
+        token_required=token_required,
+        module_required=module_required,
+        commercial_section_required=commercial_section_required,
+        permission_required=permission_required,
+        has_permission=has_permission,
+        get_current_role_snapshot=get_current_role_snapshot,
+        refresh_summary_materialized_days=refresh_summary_materialized_days,
+    )
+    register_commercial_quotes_restore_routes(
+        app,
+        token_required=token_required,
+        module_required=module_required,
+        permission_required=permission_required,
+        refresh_summary_materialized_days=refresh_summary_materialized_days,
+    )
+    register_commercial_invoices_restore_routes(
+        app,
+        token_required=token_required,
+        module_required=module_required,
+        commercial_section_required=commercial_section_required,
+        permission_required=permission_required,
+    )
+
+    existing_endpoints = set(app.view_functions.keys())
+    existing_rules = {rule.rule for rule in app.url_map.iter_rules()}
+    global_app_instance = globals().get("app")
+    if global_app_instance is not None and global_app_instance is not app:
+        for rule in global_app_instance.url_map.iter_rules():
+            if rule.endpoint == "static":
+                continue
+            if rule.endpoint in existing_endpoints or rule.rule in existing_rules:
+                continue
+            view_func = global_app_instance.view_functions.get(rule.endpoint)
+            if view_func is None:
+                continue
+            methods = sorted(method for method in rule.methods if method not in {"HEAD", "OPTIONS"})
+            app.add_url_rule(rule.rule, endpoint=rule.endpoint, view_func=view_func, methods=methods)
+            existing_endpoints.add(rule.endpoint)
+            existing_rules.add(rule.rule)
 
     log_startup_bootstrap_status(app)
 
@@ -10115,12 +10502,12 @@ def register_receipt_routes(application):
     @application.route("/api/receipt", methods=["GET"])
     def get_receipt():
         if not HAS_PIL:
-            return jsonify({"error": "PIL/Pillow no está instalado. Instala: pip install Pillow"}), 500
+            return jsonify({"error": "PIL/Pillow no estÃ¡ instalado. Instala: pip install Pillow"}), 500
         
         try:
             sale_id = request.args.get("sale_id", type=int)
         except:
-            return jsonify({"error": "sale_id inválido"}), 400
+            return jsonify({"error": "sale_id invÃ¡lido"}), 400
         
         if not sale_id:
             return jsonify({"error": "sale_id es requerido"}), 400
@@ -10199,10 +10586,10 @@ def register_receipt_routes(application):
                 draw.text((30, y), f"NIT/RUT: {profile_data['tax_id']}", fill=text_color, font=font_small)
                 y += 15
             if profile_data["phone"]:
-                draw.text((30, y), f"Teléfono: {profile_data['phone']}", fill=text_color, font=font_small)
+                draw.text((30, y), f"TelÃ©fono: {profile_data['phone']}", fill=text_color, font=font_small)
                 y += 15
             if profile_data["address"]:
-                draw.text((30, y), f"Dirección: {profile_data['address']}", fill=text_color, font=font_small)
+                draw.text((30, y), f"DirecciÃ³n: {profile_data['address']}", fill=text_color, font=font_small)
                 y += 15
             
             # Separator line
@@ -10226,7 +10613,7 @@ def register_receipt_routes(application):
             y += 15
             
             # Items header
-            draw.text((35, y), "DESCRIPCIÓN", fill=primary_color, font=font_small)
+            draw.text((35, y), "DESCRIPCIÃ“N", fill=primary_color, font=font_small)
             draw.text((280, y), "CANT.", fill=primary_color, font=font_small)
             draw.text((360, y), "PRECIO", fill=primary_color, font=font_small)
             
@@ -10279,7 +10666,7 @@ def register_receipt_routes(application):
             if profile_data["message"]:
                 draw.line([(30, y-10), (width-30, y-10)], fill=light_gray, width=1)
                 y += 5
-                draw.text((width//2, y), "📝 MENSAJE", fill=primary_color, anchor='mm', font=font_small)
+                draw.text((width//2, y), "ðŸ“ MENSAJE", fill=primary_color, anchor='mm', font=font_small)
                 y += 18
                 # Wrap message text
                 import textwrap
@@ -10294,7 +10681,7 @@ def register_receipt_routes(application):
             y += 10
             draw.text((width//2, y), "Gracias por su compra!", fill=primary_color, anchor='mm', font=font_normal)
             y += 18
-            draw.text((width//2, y), f"Sistema de Gestión - {datetime.now().year}", fill=light_gray, anchor='mm', font=font_tiny)
+            draw.text((width//2, y), f"Sistema de GestiÃ³n - {datetime.now().year}", fill=light_gray, anchor='mm', font=font_tiny)
             
             img_bytes = BytesIO()
             img.save(img_bytes, format='PNG')
@@ -10335,7 +10722,7 @@ def register_receipt_routes(application):
         except SignatureExpired:
             return "El enlace del recibo ha expirado.", 404
         except BadSignature:
-            return "Enlace inválido.", 404
+            return "Enlace invÃ¡lido.", 404
             
         sale = Sale.query.get(sale_id)
         if not sale:
@@ -10370,46 +10757,6 @@ def register_receipt_routes(application):
 # Create app instance
 app = create_app()
 
-# Register additional routes
-register_receipt_routes(app)
-
-register_financial_restore_routes(
-    app,
-    token_required=token_required,
-    permission_required=permission_required,
-)
-register_raw_inventory_restore_routes(
-    app,
-    token_required=token_required,
-    module_required=module_required,
-    permission_required=permission_required,
-    get_current_role_snapshot=get_current_role_snapshot,
-    refresh_summary_materialized_days=refresh_summary_materialized_days,
-)
-register_commercial_core_restore_routes(
-    app,
-    token_required=token_required,
-    module_required=module_required,
-    commercial_section_required=commercial_section_required,
-    permission_required=permission_required,
-    has_permission=has_permission,
-    get_current_role_snapshot=get_current_role_snapshot,
-    refresh_summary_materialized_days=refresh_summary_materialized_days,
-)
-register_commercial_quotes_restore_routes(
-    app,
-    token_required=token_required,
-    module_required=module_required,
-    permission_required=permission_required,
-    refresh_summary_materialized_days=refresh_summary_materialized_days,
-)
-register_commercial_invoices_restore_routes(
-    app,
-    token_required=token_required,
-    module_required=module_required,
-    commercial_section_required=commercial_section_required,
-    permission_required=permission_required,
-)
 
 # Additional route for WhatsApp sharing - get sale by ID
 @app.route("/api/sales", methods=["GET"])
@@ -10454,15 +10801,39 @@ def handle_debts(business_id):
             start_date = datetime.strptime(data.get("start_date"), "%Y-%m-%d").date() if data.get("start_date") else date.today()
             due_date = datetime.strptime(data.get("due_date"), "%Y-%m-%d").date() if data.get("due_date") else None
         except:
-            return jsonify({"error": "Fechas inválidas"}), 400
+            return jsonify({"error": "Fechas invÃ¡lidas"}), 400
+        
+        try:
+            total_amount = float(data.get("total_amount") or 0)
+            initial_payment_amount = float(data.get("initial_payment_amount") or 0)
+        except (TypeError, ValueError):
+            return jsonify({"error": "Montos invÃ¡lidos"}), 400
+        if total_amount <= 0:
+            return jsonify({"error": "El monto total debe ser mayor a 0"}), 400
+        if initial_payment_amount < 0 or initial_payment_amount - total_amount > 0.01:
+            return jsonify({"error": "El pago inicial es invÃ¡lido"}), 400
+
+        treasury_context = None
+        if initial_payment_amount > 0:
+            try:
+                treasury_context = resolve_treasury_context(
+                    business_id,
+                    treasury_account_id=data.get("treasury_account_id"),
+                    payment_method=data.get("payment_method"),
+                    allow_account_autoselect=True,
+                    require_account=True,
+                    missing_account_message="Debes seleccionar o configurar una cuenta de caja para registrar el pago inicial",
+                )
+            except ValueError as exc:
+                return jsonify({"error": str(exc)}), 400
 
         debt = Debt(
             business_id=business_id,
             name=data.get("name"),
             creditor_name=data.get("creditor_name"),
             category=data.get("category"),
-            total_amount=data.get("total_amount", 0),
-            balance_due=data.get("balance_due", data.get("total_amount", 0)),
+            total_amount=total_amount,
+            balance_due=total_amount,
             start_date=start_date,
             due_date=due_date,
             frequency=data.get("frequency"),
@@ -10475,8 +10846,25 @@ def handle_debts(business_id):
         )
 
         db.session.add(debt)
+        db.session.flush()
+        payment = None
+        if initial_payment_amount > 0:
+            payment = _apply_debt_payment(
+                debt=debt,
+                amount=initial_payment_amount,
+                payment_date=start_date,
+                payment_method=treasury_context.get("payment_method"),
+                treasury_account_id=treasury_context.get("treasury_account_id"),
+                note=data.get("initial_payment_note") or f"Pago inicial {debt.name}",
+                actor_user=g.current_user,
+                role_snapshot=get_current_role_snapshot(g.current_user, business_id),
+            )
+        mark_business_payloads_dirty(business_id, [start_date])
         db.session.commit()
-        return jsonify({"debt": debt.to_dict()}), 201
+        payload = {"debt": debt.to_dict()}
+        if payment is not None:
+            payload["payment"] = payment.to_dict()
+        return jsonify(payload), 201
 
     # GET
     status = request.args.get("status")
@@ -10572,28 +10960,37 @@ def handle_debt_payments(business_id, debt_id):
         
         if amount <= 0:
             return jsonify({"error": "El monto debe ser mayor a 0"}), 400
+        if amount - float(debt.balance_due or 0) > 0.01:
+            return jsonify({"error": "El pago no puede superar el saldo pendiente"}), 400
 
         try:
             payment_date = datetime.strptime(data.get("payment_date"), "%Y-%m-%d").date() if data.get("payment_date") else date.today()
         except:
-            return jsonify({"error": "Fecha inválida"}), 400
+            return jsonify({"error": "Fecha invÃ¡lida"}), 400
 
-        payment = DebtPayment(
-            debt_id=debt_id,
+        try:
+            treasury_context = resolve_treasury_context(
+                business_id,
+                treasury_account_id=data.get("treasury_account_id"),
+                payment_method=data.get("payment_method"),
+                allow_account_autoselect=True,
+                require_account=True,
+                missing_account_message="Debes seleccionar o configurar una cuenta de caja para registrar el pago",
+            )
+        except ValueError as exc:
+            return jsonify({"error": str(exc)}), 400
+
+        payment = _apply_debt_payment(
+            debt=debt,
             amount=amount,
             payment_date=payment_date,
-            payment_method=data.get("payment_method", "cash"),
-            note=data.get("note")
+            payment_method=treasury_context.get("payment_method"),
+            treasury_account_id=treasury_context.get("treasury_account_id"),
+            note=data.get("note"),
+            actor_user=g.current_user,
+            role_snapshot=get_current_role_snapshot(g.current_user, business_id),
         )
-
-        # Update debt balance
-        debt.balance_due = max(0, debt.balance_due - amount)
-        if debt.balance_due == 0:
-            debt.status = "paid"
-        elif debt.status == "pending" or debt.status == "overdue":
-            debt.status = "partial"
-
-        db.session.add(payment)
+        mark_business_payloads_dirty(business_id, [payment_date])
         db.session.commit()
         
         return jsonify({
@@ -10619,11 +11016,18 @@ def delete_debt_payment(business_id, debt_id, payment_id):
         return jsonify({"error": "Pago no encontrado"}), 404
 
     # Revert balance
-    debt.balance_due += payment.amount
-    if debt.balance_due > 0 and debt.status == "paid":
-        debt.status = "partial" # Or calculate properly if overdue
+    debt.balance_due = round(float(debt.balance_due or 0) + float(payment.amount or 0), 2)
+    if debt.balance_due <= 0.01:
+        debt.balance_due = 0.0
+        debt.status = "paid"
+    else:
+        debt.status = "partial"
+    linked_expenses = Expense.query.filter_by(debt_payment_id=payment.id, debt_id=debt.id).all()
+    for expense in linked_expenses:
+        db.session.delete(expense)
 
     db.session.delete(payment)
+    mark_business_payloads_dirty(business_id, [payment.payment_date])
     db.session.commit()
     return jsonify({"ok": True, "debt": debt.to_dict()})
 
@@ -10637,19 +11041,16 @@ def get_debts_summary(business_id):
         return jsonify({"error": "Negocio no encontrado"}), 404
 
     debts = Debt.query.filter_by(business_id=business_id).all()
-    
     total_debt = sum(d.balance_due for d in debts if d.status not in ["paid"])
     active_count = len([d for d in debts if d.status not in ["paid"]])
-    
+
     today = date.today()
     overdue_debts = [d for d in debts if d.due_date and d.due_date < today and d.status not in ["paid"]]
     overdue_total = sum(d.balance_due for d in overdue_debts)
-    
-    # Next due
+
     upcoming = sorted([d for d in debts if d.due_date and d.due_date >= today and d.status not in ["paid"]], key=lambda x: x.due_date)
     next_due = upcoming[0].to_dict() if upcoming else None
-    
-    # Paid this month
+
     start_of_month = today.replace(day=1)
     payments_this_month = db.session.query(func.sum(DebtPayment.amount)).join(Debt).filter(
         Debt.business_id == business_id,
@@ -10753,7 +11154,7 @@ def create_team_feedback(business_id):
             AuthManager.send_plain_email(
                 owner.email,
                 f"Nuevo mensaje de equipo: {subject}",
-                f"Has recibido un nuevo mensaje de {g.current_user.name}:\n\n{message}\n\nPuedes verlo en la sección de Equipo."
+                f"Has recibido un nuevo mensaje de {g.current_user.name}:\n\n{message}\n\nPuedes verlo en la secciÃ³n de Equipo."
             )
     except Exception as e:
         print(f"Error sending feedback notification: {e}")
@@ -10770,23 +11171,10 @@ def get_team_feedback(business_id):
 @app.route("/api/businesses/<int:business_id>/analytics/team", methods=["GET"])
 @token_required
 @module_required("reports")
+@permission_required('analytics.view_team')
 def team_analytics(business_id):
     business = Business.query.get(business_id)
     if not business: return jsonify({"error": "Negocio no encontrado"}), 404
-    
-    # Permission Check (Clean RBAC)
-    is_authorized = False
-    if business.user_id == g.current_user.id or g.current_user.is_admin:
-        is_authorized = True
-    else:
-        member = TeamMember.query.filter_by(user_id=g.current_user.id, business_id=business_id, status='active').first()
-        if member:
-            perm_names = [rp.permission.name for rp in member.role.permissions if rp.permission]
-            if 'analytics.view_team' in perm_names:
-                is_authorized = True
-    
-    if not is_authorized:
-            return jsonify({"error": "No tiene permisos para ver reportes de equipo"}), 403
 
     start_date_str = request.args.get("start_date")
     end_date_str = request.args.get("end_date")
@@ -10797,14 +11185,14 @@ def team_analytics(business_id):
     try:
         if start_date_str: start_date = datetime.strptime(start_date_str, "%Y-%m-%d").date()
         if end_date_str: end_date = datetime.strptime(end_date_str, "%Y-%m-%d").date()
-    except: return jsonify({"error": "Fecha inválida"}), 400
+    except: return jsonify({"error": "Fecha invÃ¡lida"}), 400
 
     from backend.services.analytics_layer import AnalyticsLayer
     analytics = AnalyticsLayer(business_id)
     summary = analytics.get_team_performance_summary(start_date, end_date)
     # Obtener detalle para mostrar en UI (limitado a recientes para performance)
     all_activity = analytics.get_team_activity_detail(start_date, end_date)
-    recent_activity = all_activity[:200] # Mostrar últimos 200 en pantalla
+    recent_activity = all_activity[:200] # Mostrar Ãºltimos 200 en pantalla
     
     return jsonify({
         "summary": summary,
@@ -10814,23 +11202,10 @@ def team_analytics(business_id):
 @app.route("/api/businesses/<int:business_id>/export/team", methods=["GET"])
 @token_required
 @module_required("reports")
+@permission_required('analytics.view_team')
 def export_team_report(business_id):
     business = Business.query.get(business_id)
     if not business: return jsonify({"error": "Negocio no encontrado"}), 404
-    
-    # Permission Check (Clean RBAC)
-    is_authorized = False
-    if business.user_id == g.current_user.id or g.current_user.is_admin:
-        is_authorized = True
-    else:
-        member = TeamMember.query.filter_by(user_id=g.current_user.id, business_id=business_id, status='active').first()
-        if member:
-            perm_names = [rp.permission.name for rp in member.role.permissions if rp.permission]
-            if 'analytics.view_team' in perm_names:
-                is_authorized = True
-    
-    if not is_authorized:
-            return jsonify({"error": "No tiene permisos"}), 403
 
     start_date_str = request.args.get("start_date")
     end_date_str = request.args.get("end_date")
@@ -10841,31 +11216,23 @@ def export_team_report(business_id):
     try:
         if start_date_str: start_date = datetime.strptime(start_date_str, "%Y-%m-%d").date()
         if end_date_str: end_date = datetime.strptime(end_date_str, "%Y-%m-%d").date()
-    except: return jsonify({"error": "Fecha inválida"}), 400
+    except: return jsonify({"error": "Fecha invÃ¡lida"}), 400
 
-    from backend.services.export import ExcelReportGenerator
     from backend.services.analytics_layer import AnalyticsLayer
-    
-    exporter = ExcelReportGenerator(business_id)
+    from backend.services.reports.report_service import export_team_excel
+
     analytics = AnalyticsLayer(business_id)
-    
+
     summary_data = analytics.get_team_performance_summary(start_date, end_date)
     detail_data = analytics.get_team_activity_detail(start_date, end_date)
-    
-    wb = exporter.generate_team_report(summary_data, detail_data, start_date, end_date)
-    
-    from io import BytesIO
-    output = BytesIO()
-    wb.save(output)
-    output.seek(0)
-    
-    filename = f"Reporte_Equipo_{date.today()}.xlsx"
-    
+
+    filepath = export_team_excel(business_id, summary_data, detail_data, start_date, end_date)
+
     return send_file(
-        output,
+        filepath,
         mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
         as_attachment=True,
-        download_name=filename
+        download_name=os.path.basename(filepath)
     )
 
 
@@ -10881,7 +11248,7 @@ if __name__ == "__main__":
     use_reloader = str(os.getenv("FLASK_USE_RELOADER", "0")).strip().lower() in {"1", "true", "yes", "on"}
     app.run(host="0.0.0.0", port=port, debug=debug, use_reloader=use_reloader)
 
-# Cómo correr en desarrollo para servir frontend y API desde 127.0.0.1:5000
+# CÃ³mo correr en desarrollo para servir frontend y API desde 127.0.0.1:5000
 # Windows PowerShell:
 #   $env:APP_ENV="dev"
 #   python main.py
@@ -10889,3 +11256,4 @@ if __name__ == "__main__":
 #   export APP_ENV=dev
 #   python main.py
 # Abrir: http://127.0.0.1:5000
+

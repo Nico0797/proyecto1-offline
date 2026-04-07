@@ -255,7 +255,7 @@ export const ProductModal: React.FC<ProductModalProps> = ({ isOpen, onClose, pro
   };
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} title={product ? 'Editar Producto' : 'Nuevo Producto'} className="max-w-5xl h-[90vh] flex flex-col">
+    <Modal isOpen={isOpen} onClose={onClose} title={product ? 'Editar Producto' : 'Nuevo Producto'} className="max-w-5xl h-[90vh] flex flex-col" data-tour="products.modal.form">
       <div className="flex flex-col md:flex-row h-full overflow-hidden">
         {/* Sidebar Tabs - Mobile: Top horizontal, Desktop: Left vertical */}
         <div className="app-soft-surface w-full shrink-0 border-b md:w-60 md:border-b-0 md:border-r p-2 md:p-3">
@@ -609,7 +609,7 @@ export const ProductModal: React.FC<ProductModalProps> = ({ isOpen, onClose, pro
                 <Button type="button" variant="ghost" onClick={onClose} size="lg" className="w-full sm:w-auto">
                 Cancelar
                 </Button>
-                <Button type="submit" isLoading={loading} size="lg" className="w-full px-8 shadow-lg shadow-blue-500/20 sm:w-auto">
+                <Button type="submit" isLoading={loading} size="lg" className="w-full px-8 shadow-lg shadow-blue-500/20 sm:w-auto" data-tour="products.modal.confirm">
                 {product ? 'Guardar Cambios' : 'Crear Producto'}
                 </Button>
               </div>

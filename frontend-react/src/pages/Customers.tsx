@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useBusinessStore } from '../store/businessStore';
 import { useCustomerStore } from '../store/customerStore';
@@ -24,6 +24,22 @@ import {
   useMobileFilterDraft,
 } from '../components/mobile/MobileContentFirst';
 
+const getCustomerOutstandingBalance = (customer: Customer) => {
+  const summaryOutstanding = customer.commercial_summary?.outstanding_balance;
+  if (typeof customer.total_balance === 'number') return customer.total_balance;
+  if (typeof summaryOutstanding === 'number') return summaryOutstanding;
+  return customer.balance || 0;
+};
+
+const normalizeCustomerBalance = (customer: Customer): Customer => {
+  const normalizedBalance = getCustomerOutstandingBalance(customer);
+  return {
+    ...customer,
+    balance: normalizedBalance,
+    total_balance: normalizedBalance,
+  };
+};
+
 export const Customers = () => {
   const navigate = useNavigate();
   const { activeBusiness } = useBusinessStore();
@@ -34,6 +50,7 @@ export const Customers = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [filter, setFilter] = useState('all');
   const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
+  const [hydratedCustomers, setHydratedCustomers] = useState<Record<number, Customer>>({});
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [editingCustomer, setEditingCustomer] = useState<Customer | null>(null);
@@ -73,13 +90,31 @@ export const Customers = () => {
   }, [hasAccountsReceivable, filter]);
 
   useEffect(() => {
+    setHydratedCustomers({});
+  }, [activeBusiness?.id]);
+
+  const customersView = useMemo(
+    () => customers.map((customer) => normalizeCustomerBalance({ ...customer, ...(hydratedCustomers[customer.id] || {}) })),
+    [customers, hydratedCustomers]
+  );
+
+  useEffect(() => {
     if (!selectedCustomer) return;
-    const refreshedCustomer = customers.find((item) => item.id === selectedCustomer.id);
+    const refreshedCustomer = customersView.find((item) => item.id === selectedCustomer.id);
     if (!refreshedCustomer) return;
     if (refreshedCustomer !== selectedCustomer) {
       setSelectedCustomer(refreshedCustomer);
     }
-  }, [customers, selectedCustomer]);
+  }, [customersView, selectedCustomer]);
+
+  const handleCustomerHydrated = useCallback((customer: Customer) => {
+    const normalizedCustomer = normalizeCustomerBalance(customer);
+    setHydratedCustomers((current) => ({
+      ...current,
+      [normalizedCustomer.id]: normalizedCustomer,
+    }));
+    setSelectedCustomer((current) => (current?.id === normalizedCustomer.id ? normalizedCustomer : current));
+  }, []);
 
   const loadSettings = () => {
     if (activeBusiness) {
@@ -91,7 +126,7 @@ export const Customers = () => {
     }
   };
 
-  const filteredCustomers = customers.filter((customer) => {
+  const filteredCustomers = customersView.filter((customer) => {
     const matchesSearch = customer.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
                           (customer.phone && customer.phone.includes(searchTerm)) ||
                           (customer.email && customer.email.toLowerCase().includes(searchTerm.toLowerCase()));
@@ -114,7 +149,7 @@ export const Customers = () => {
     return matchesSearch && matchesFilter;
   });
 
-  const debtCustomers = customers
+  const debtCustomers = customersView
     .filter((customer) => customer.balance > 0)
     .sort((a, b) => {
       const overdueGap = (b.receivable_days_overdue || 0) - (a.receivable_days_overdue || 0);
@@ -176,7 +211,7 @@ export const Customers = () => {
 
   if (isDesktop) {
       return (
-        <PageLayout>
+        <PageLayout data-tour="customers.panel">
           <PageHeader 
             title="Clientes" 
             description="Gestiona tu base de clientes y sus estados de cuenta."
@@ -197,16 +232,16 @@ export const Customers = () => {
                        dismissible
                      />
                      <PageSummary title="Resumen rápido" description="Mira la salud de tu base de clientes antes de buscar o abrir fichas.">
-                       <div className="shrink-0" data-tour="customers.balance">
-                         <ClientsKpis customers={customers} showReceivables={hasAccountsReceivable} />
-                       </div>
-                     </PageSummary>
-                     <PageToolbarCard className="app-toolbar">
-                       <ClientsToolbar 
-                           search={searchTerm}
-                           onSearchChange={setSearchTerm}
-                           filter={filter}
-                           onFilterChange={setFilter}
+                      <div className="shrink-0" data-tour="customers.balance">
+                        <ClientsKpis customers={customersView} showReceivables={hasAccountsReceivable} />
+                      </div>
+                    </PageSummary>
+                    <PageToolbarCard className="app-toolbar" data-tour="customers.filters">
+                      <ClientsToolbar 
+                          search={searchTerm}
+                          onSearchChange={setSearchTerm}
+                          filter={filter}
+                          onFilterChange={setFilter}
                            onOpenSettings={() => setIsSettingsOpen(true)}
                            showReceivables={hasAccountsReceivable}
                        />
@@ -235,6 +270,7 @@ export const Customers = () => {
                               onEdit={() => { setEditingCustomer(selectedCustomer); setIsFormOpen(true); }}
                               onClose={() => setSelectedCustomer(null)}
                               showReceivables={hasAccountsReceivable}
+                              onCustomerHydrated={handleCustomerHydrated}
                           />
                       </div>
                  </div>
@@ -272,6 +308,7 @@ export const Customers = () => {
                     <MobileUtilityBar>
                       <MobileFilterDrawer summary={mobileFilterSummary} {...mobileClientFilters.sheetProps}>
                         <MobileFilterSection title="Filtrar clientes" description="Busca primero y luego ajusta el estado principal.">
+                          <div data-tour="customers.filters">
                           <ClientsToolbar
                             search={mobileClientFilters.draft.searchTerm}
                             onSearchChange={(value) => mobileClientFilters.setDraft((current) => ({ ...current, searchTerm: value }))}
@@ -280,11 +317,12 @@ export const Customers = () => {
                             onOpenSettings={() => setIsSettingsOpen(true)}
                             showReceivables={hasAccountsReceivable}
                           />
+                          </div>
                         </MobileFilterSection>
                       </MobileFilterDrawer>
                       <MobileSummaryDrawer summary={mobileSummaryLabel}>
                         <div data-tour="customers.balance">
-                          <ClientsKpis customers={customers} showReceivables={hasAccountsReceivable} />
+                          <ClientsKpis customers={customersView} showReceivables={hasAccountsReceivable} />
                         </div>
                       </MobileSummaryDrawer>
                       <MobileHelpDisclosure summary="Como usar clientes">
@@ -299,7 +337,7 @@ export const Customers = () => {
                     />
                     <PageSummary className="hidden" title="Resumen rápido" description="Una lectura corta antes de filtrar o abrir la ficha del cliente.">
                       <div data-tour="customers.balance">
-                        <ClientsKpis customers={customers} showReceivables={hasAccountsReceivable} />
+                        <ClientsKpis customers={customersView} showReceivables={hasAccountsReceivable} />
                       </div>
                     </PageSummary>
                     <div data-tour="customers.table">
@@ -347,6 +385,7 @@ export const Customers = () => {
                                   setActiveTab('list');
                               }}
                               showReceivables={hasAccountsReceivable}
+                              onCustomerHydrated={handleCustomerHydrated}
                           />
                       ) : (
                           <div className="app-empty-state flex h-full flex-col items-center justify-center text-gray-500 dark:text-gray-400">
@@ -451,7 +490,7 @@ export const Customers = () => {
                 content: (
                     <div className="space-y-6">
                         <TopCustomersCard 
-                            customers={customers} 
+                            customers={customersView} 
                             sales={sales}
                             onSelectCustomer={(c) => {
                                 setSelectedCustomer(c);

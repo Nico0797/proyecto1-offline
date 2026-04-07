@@ -3,6 +3,9 @@ export interface User {
   email: string;
   name: string;
   plan: 'free' | 'basic' | 'pro' | 'business';
+  membership_plan?: 'free' | 'basic' | 'pro' | 'business' | null;
+  membership_start?: string | null;
+  membership_end?: string | null;
   account_type?: 'personal' | 'team_member';
   is_admin?: boolean;
   permissions?: Record<string, boolean>;
@@ -463,8 +466,10 @@ export interface SaleItem {
     fulfillment_mode?: ProductFulfillmentMode | null;
     finished_goods_stock_decremented?: boolean;
     recipe_consumption_ids?: number[];
+    raw_material_consumed?: boolean;
     raw_material_items?: Array<Record<string, unknown>>;
     raw_material_total_reference_cost?: number;
+    raw_material_source_type?: string;
     reversed_at?: boolean;
   };
   [key: string]: any;
@@ -636,6 +641,7 @@ export interface AuthState {
   activeContext: ActiveContext | null;
   accessibleContexts: AccessibleContext[];
   isAuthenticated: boolean;
+  isHydrating: boolean;
   login: (user: User, token: string, activeContext?: ActiveContext | null, accessibleContexts?: AccessibleContext[]) => void;
   logout: () => void;
   fetchUser: () => Promise<void>;

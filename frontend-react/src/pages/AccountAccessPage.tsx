@@ -16,7 +16,7 @@ const PLAN_ICONS = {
 
 export const AccountAccessPage = () => {
   const navigate = useNavigate();
-  const { isAuthenticated } = useAuthStore();
+  const { isAuthenticated, isHydrating } = useAuthStore();
   const fetchAuthBootstrap = useBusinessStore((state) => state.fetchAuthBootstrap);
   const {
     access,
@@ -50,6 +50,15 @@ export const AccountAccessPage = () => {
       discountLabel: pricing.plans.pro.cycles[cycle].discount_label,
     }));
   }, [pricing]);
+
+  if (isHydrating) {
+    return (
+      <div className="app-canvas flex min-h-screen items-center justify-center text-white">
+        <Loader2 className="mr-3 h-6 w-6 animate-spin" />
+        Restaurando tu sesión...
+      </div>
+    );
+  }
 
   if (!isAuthenticated) {
     return <Navigate to="/login" replace />;

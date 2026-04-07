@@ -64,7 +64,6 @@ import { canAccessModule, FEATURES } from './auth/plan';
 import { TourProvider } from './tour/TourProvider';
 import { Toaster } from 'react-hot-toast';
 import { NotificationController } from './components/NotificationController';
-import { useAuthStore } from './store/authStore';
 import { useBusinessStore } from './store/businessStore';
 import { BusinessModuleKey, isBusinessModuleEnabled } from './types';
 import { BusinessCommercialSectionKey, isBusinessCommercialSectionEnabled } from './config/businessPersonalization';
@@ -81,18 +80,14 @@ const ModuleRouteGuard = ({
   moduleKey: BusinessModuleKey;
   children: ReactNode;
 }) => {
-  const { user } = useAuthStore();
   const { activeBusiness } = useBusinessStore();
+  const { subscriptionPlan } = useAccess();
 
   if (!activeBusiness) {
     return <>{children}</>;
   }
 
-  const effectivePlan = activeBusiness?.user_id === user?.id
-    ? (user?.plan || 'basic')
-    : (activeBusiness?.plan || 'basic');
-
-  if (!isBusinessModuleEnabled(activeBusiness.modules, moduleKey) || !canAccessModule(effectivePlan, moduleKey)) {
+  if (!isBusinessModuleEnabled(activeBusiness.modules, moduleKey) || !canAccessModule(subscriptionPlan, moduleKey)) {
     return <Navigate to="/dashboard" replace />;
   }
 
@@ -255,32 +250,42 @@ const AppContent = () => {
           <Route path="/pro" element={<ProPage />} />
           <Route path="/orders" element={
             <CommercialSectionRouteGuard sectionKey="orders">
-              <ModuleRouteGuard moduleKey="sales">
-                <ProGate feature={FEATURES.ORDERS} mode="block">
-                  <Orders />
-                </ProGate>
-              </ModuleRouteGuard>
+              <PermissionRouteGuard permission="orders.view">
+                <ModuleRouteGuard moduleKey="sales">
+                  <ProGate feature={FEATURES.ORDERS} mode="block">
+                    <Orders />
+                  </ProGate>
+                </ModuleRouteGuard>
+              </PermissionRouteGuard>
             </CommercialSectionRouteGuard>
           } />
           <Route path="/sales" element={
-            <ModuleRouteGuard moduleKey="sales">
-              <Sales />
-            </ModuleRouteGuard>
+            <PermissionRouteGuard permission="sales.view">
+              <ModuleRouteGuard moduleKey="sales">
+                <Sales />
+              </ModuleRouteGuard>
+            </PermissionRouteGuard>
           } />
           <Route path="/payments" element={
-            <ModuleRouteGuard moduleKey="accounts_receivable">
-              <Payments />
-            </ModuleRouteGuard>
+            <PermissionRouteGuard permission="receivables.view">
+              <ModuleRouteGuard moduleKey="accounts_receivable">
+                <Payments />
+              </ModuleRouteGuard>
+            </PermissionRouteGuard>
           } />
           <Route path="/customers" element={
-            <ModuleRouteGuard moduleKey="customers">
-              <Customers />
-            </ModuleRouteGuard>
+            <PermissionRouteGuard permission="customers.view">
+              <ModuleRouteGuard moduleKey="customers">
+                <Customers />
+              </ModuleRouteGuard>
+            </PermissionRouteGuard>
           } />
           <Route path="/quotes" element={
-            <ModuleRouteGuard moduleKey="sales">
-              <Quotes />
-            </ModuleRouteGuard>
+            <PermissionRouteGuard permission="quotes.view">
+              <ModuleRouteGuard moduleKey="sales">
+                <Quotes />
+              </ModuleRouteGuard>
+            </PermissionRouteGuard>
           } />
           <Route path="/invoices" element={
             <BackendCapabilityRouteGuard capability="invoices">
@@ -375,50 +380,64 @@ const AppContent = () => {
             </BackendCapabilityRouteGuard>
           } />
           <Route path="/products" element={
-            <ModuleRouteGuard moduleKey="products">
-              <Products />
-            </ModuleRouteGuard>
+            <PermissionRouteGuard permission="products.view">
+              <ModuleRouteGuard moduleKey="products">
+                <Products />
+              </ModuleRouteGuard>
+            </PermissionRouteGuard>
           } />
           <Route path="/raw-inventory" element={
             <BackendCapabilityRouteGuard capability="raw_inventory">
-              <ModuleRouteGuard moduleKey="raw_inventory">
-                <RawInventory />
-              </ModuleRouteGuard>
+              <PermissionRouteGuard permission="raw_inventory.view">
+                <ModuleRouteGuard moduleKey="raw_inventory">
+                  <RawInventory />
+                </ModuleRouteGuard>
+              </PermissionRouteGuard>
             </BackendCapabilityRouteGuard>
           } />
           <Route path="/suppliers" element={
             <BackendCapabilityRouteGuard capability="suppliers">
-              <ModuleRouteGuard moduleKey="raw_inventory">
-                <Suppliers />
-              </ModuleRouteGuard>
+              <PermissionRouteGuard permission="suppliers.view">
+                <ModuleRouteGuard moduleKey="raw_inventory">
+                  <Suppliers />
+                </ModuleRouteGuard>
+              </PermissionRouteGuard>
             </BackendCapabilityRouteGuard>
           } />
           <Route path="/raw-purchases" element={
             <BackendCapabilityRouteGuard capability="raw_purchases">
-              <ModuleRouteGuard moduleKey="raw_inventory">
-                <RawPurchases />
-              </ModuleRouteGuard>
+              <PermissionRouteGuard permission="raw_purchases.view">
+                <ModuleRouteGuard moduleKey="raw_inventory">
+                  <RawPurchases />
+                </ModuleRouteGuard>
+              </PermissionRouteGuard>
             </BackendCapabilityRouteGuard>
           } />
           <Route path="/supplier-payables" element={
             <BackendCapabilityRouteGuard capability="supplier_payables">
-              <ModuleRouteGuard moduleKey="raw_inventory">
-                <SupplierPayables />
-              </ModuleRouteGuard>
+              <PermissionRouteGuard permission="supplier_payables.view">
+                <ModuleRouteGuard moduleKey="raw_inventory">
+                  <SupplierPayables />
+                </ModuleRouteGuard>
+              </PermissionRouteGuard>
             </BackendCapabilityRouteGuard>
           } />
           <Route path="/recipes" element={
             <BackendCapabilityRouteGuard capability="recipes">
-              <ModuleRouteGuard moduleKey="raw_inventory">
-                <Recipes />
-              </ModuleRouteGuard>
+              <PermissionRouteGuard permission="recipes.view">
+                <ModuleRouteGuard moduleKey="raw_inventory">
+                  <Recipes />
+                </ModuleRouteGuard>
+              </PermissionRouteGuard>
             </BackendCapabilityRouteGuard>
           } />
           <Route path="/cost-calculator" element={
             <BackendCapabilityRouteGuard capability="recipes">
-              <ModuleRouteGuard moduleKey="raw_inventory">
-                <CostCalculator />
-              </ModuleRouteGuard>
+              <PermissionRouteGuard permission="recipes.view">
+                <ModuleRouteGuard moduleKey="raw_inventory">
+                  <CostCalculator />
+                </ModuleRouteGuard>
+              </PermissionRouteGuard>
             </BackendCapabilityRouteGuard>
           } />
           <Route path="/debts" element={
@@ -430,32 +449,44 @@ const AppContent = () => {
           } />
           <Route path="/treasury" element={
             <BackendCapabilityRouteGuard capability="treasury">
-              <Treasury />
+              <PermissionRouteGuard permission="treasury.view">
+                <Treasury />
+              </PermissionRouteGuard>
             </BackendCapabilityRouteGuard>
           } />
-          <Route path="/expenses" element={<Expenses />} />
+          <Route path="/expenses" element={
+            <PermissionRouteGuard permission="expenses.view">
+              <Expenses />
+            </PermissionRouteGuard>
+          } />
           <Route path="/sales-goals" element={
             <CommercialSectionRouteGuard sectionKey="sales_goals">
-              <ModuleRouteGuard moduleKey="sales">
-                <ProGate feature={FEATURES.REPORTS} mode="block">
-                  <SalesGoals />
-                </ProGate>
-              </ModuleRouteGuard>
+              <PermissionRouteGuard permission="reports.view">
+                <ModuleRouteGuard moduleKey="sales">
+                  <ProGate feature={FEATURES.REPORTS} mode="block">
+                    <SalesGoals />
+                  </ProGate>
+                </ModuleRouteGuard>
+              </PermissionRouteGuard>
             </CommercialSectionRouteGuard>
           } />
           <Route path="/reports" element={
-            <ModuleRouteGuard moduleKey="reports">
-              <ProGate feature={FEATURES.REPORTS} mode="block">
-                <Reports />
-              </ProGate>
-            </ModuleRouteGuard>
+            <PermissionRouteGuard permission="reports.view">
+              <ModuleRouteGuard moduleKey="reports">
+                <ProGate feature={FEATURES.REPORTS} mode="block">
+                  <Reports />
+                </ProGate>
+              </ModuleRouteGuard>
+            </PermissionRouteGuard>
           } />
           <Route path="/alerts" element={
-            <ModuleRouteGuard moduleKey="reports">
-              <ProGate feature={FEATURES.ALERTS} mode="block">
-                <Alerts />
-              </ProGate>
-            </ModuleRouteGuard>
+            <PermissionRouteGuard permission="reports.view">
+              <ModuleRouteGuard moduleKey="reports">
+                <ProGate feature={FEATURES.ALERTS} mode="block">
+                  <Alerts />
+                </ProGate>
+              </ModuleRouteGuard>
+            </PermissionRouteGuard>
           } />
           <Route path="/settings" element={<Settings />} />
           <Route path="/help" element={<Help />} />

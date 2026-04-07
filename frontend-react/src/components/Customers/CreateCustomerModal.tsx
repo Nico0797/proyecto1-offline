@@ -85,6 +85,7 @@ export const CreateCustomerModal: React.FC<CreateCustomerModalProps> = ({
       isOpen={isOpen}
       onClose={onClose}
       title={customerToEdit ? 'Editar Cliente' : 'Nuevo Cliente'}
+      data-tour="customers.modal.form"
     >
       <form onSubmit={handleSubmit} className="space-y-4">
         <div>
@@ -153,6 +154,7 @@ export const CreateCustomerModal: React.FC<CreateCustomerModalProps> = ({
           <Button
             type="submit"
             disabled={loading}
+            data-tour="customers.modal.confirm"
           >
             {loading ? 'Guardando...' : (customerToEdit ? 'Actualizar' : 'Guardar')}
           </Button>

@@ -85,7 +85,14 @@ export const TourOverlayDesktop = forwardRef<HTMLDivElement, TourOverlayDesktopP
       <div className="px-5 py-4">
         {isFallback && (
           <div className="mb-4 p-3 rounded-lg bg-amber-500/10 border border-amber-500/20 text-amber-200 text-sm flex gap-2 items-start">
-             <span>No encontramos el elemento resaltado en tu pantalla. Puede que esté oculto o no disponible en esta vista.</span>
+             <span>
+               No encontramos el elemento resaltado en tu pantalla. Puede estar en otra pestaña, requerir abrir un modal o no aplicar a tu vista actual.
+             </span>
+          </div>
+        )}
+        {step.allowInteraction && waitingAction && (
+          <div className="mb-4 p-3 rounded-lg bg-cyan-500/10 border border-cyan-500/20 text-cyan-100 text-sm">
+            Usa el elemento resaltado para seguir. Cuando la interacción abra la siguiente vista, el tour continuará solo.
           </div>
         )}
         <ul className="space-y-3">
@@ -123,9 +130,10 @@ export const TourOverlayDesktop = forwardRef<HTMLDivElement, TourOverlayDesktopP
               if (isLast) onStop();
               else onNext();
             }}
+            disabled={step.allowInteraction && waitingAction}
             className={`
               px-4 py-2 rounded-lg text-sm font-semibold flex items-center gap-2 transition-all
-              bg-cyan-600 hover:bg-cyan-500 text-white shadow-lg shadow-cyan-900/20
+              bg-cyan-600 hover:bg-cyan-500 text-white shadow-lg shadow-cyan-900/20 disabled:opacity-50 disabled:hover:bg-cyan-600
             `}
           >
             {isLast ? 'Finalizar' : 'Siguiente'}

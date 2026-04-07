@@ -319,8 +319,8 @@ export const InvoiceEditor = () => {
       <div className="app-surface space-y-5 rounded-[28px] p-5 shadow-sm">
       <div className="app-muted-panel flex flex-col gap-3 rounded-[24px] p-4">
         <div>
-          <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Datos base y contexto comercial</h2>
-          <p className="mt-1 text-sm leading-6 text-gray-500 dark:text-gray-400">
+          <h2 className="text-lg font-semibold app-text">Datos base y contexto comercial</h2>
+          <p className="mt-1 text-sm leading-6 app-text-muted">
             Define el cliente, el momento del documento y las notas que deben acompañar la factura.
           </p>
         </div>
@@ -368,7 +368,7 @@ export const InvoiceEditor = () => {
       </div>
 
       <div>
-        <label className="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-300">Notas</label>
+        <label className="mb-1.5 block text-sm font-medium app-text-secondary">Notas</label>
         <textarea
           value={notes}
           onChange={(event) => setNotes(event.target.value)}
@@ -383,8 +383,8 @@ export const InvoiceEditor = () => {
     <div className="app-elevated-card space-y-6 p-5 sm:p-6">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Lineas de factura</h2>
-          <p className="text-sm leading-6 text-gray-500 dark:text-gray-400">
+          <h2 className="text-lg font-semibold app-text">Lineas de factura</h2>
+          <p className="text-sm leading-6 app-text-muted">
             Mezcla productos del catalogo con lineas manuales y revisa el total en vivo.
           </p>
         </div>
@@ -399,12 +399,12 @@ export const InvoiceEditor = () => {
             key={item.localId}
             className={`${
               lineErrors[index]
-                ? 'rounded-[24px] border border-red-500/30 bg-red-500/[0.08] p-4 shadow-[0_18px_40px_-30px_rgba(239,68,68,0.45)] dark:border-red-500/30 dark:bg-red-500/[0.08]'
-                : 'rounded-[24px] border border-slate-200/80 bg-slate-950/[0.03] p-4 shadow-[0_20px_40px_-30px_rgba(15,23,42,0.32)] dark:border-white/10 dark:bg-[linear-gradient(180deg,rgba(15,23,42,0.94),rgba(2,6,23,0.9))]'
+                ? 'app-inline-panel-danger rounded-[24px] p-4'
+                : 'app-surface rounded-[24px] p-4'
             }`}
           >
             <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-              <div className="app-chip inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold uppercase tracking-[0.2em] text-gray-500 shadow-sm dark:text-gray-300">
+              <div className="app-chip inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold uppercase tracking-[0.2em] shadow-sm">
                 Linea {index + 1}
               </div>
               <div className="flex gap-2">
@@ -419,7 +419,7 @@ export const InvoiceEditor = () => {
 
             <div className="grid gap-4 xl:grid-cols-[1.2fr_1.4fr_0.7fr_0.9fr_0.8fr_0.8fr_0.9fr]">
               <div>
-                <label className="mb-1.5 block text-xs font-semibold uppercase tracking-[0.18em] text-gray-400">Producto</label>
+                <label className="mb-1.5 block text-xs font-semibold uppercase tracking-[0.18em] app-text-muted">Producto</label>
                 <SelectField
                   className="text-sm"
                   value={item.product_id || ''}
@@ -434,7 +434,7 @@ export const InvoiceEditor = () => {
                 </SelectField>
               </div>
               <div>
-                <label className="mb-1.5 block text-xs font-semibold uppercase tracking-[0.18em] text-gray-400">Descripcion</label>
+                <label className="mb-1.5 block text-xs font-semibold uppercase tracking-[0.18em] app-text-muted">Descripcion</label>
                 <Input
                   value={item.description}
                   onChange={(event) => updateItem(item.localId, { description: event.target.value })}
@@ -450,11 +450,11 @@ export const InvoiceEditor = () => {
                 onChange={(event) => updateItem(item.localId, { quantity: Number(event.target.value) })}
               />
               <div>
-                <label className="mb-1.5 block text-xs font-semibold uppercase tracking-[0.18em] text-gray-400">Unitario</label>
+                <label className="mb-1.5 block text-xs font-semibold uppercase tracking-[0.18em] app-text-muted">Unitario</label>
                 <CurrencyInput value={item.unit_price} onChange={(value) => updateItem(item.localId, { unit_price: value || 0 })} />
               </div>
               <div>
-                <label className="mb-1.5 block text-xs font-semibold uppercase tracking-[0.18em] text-gray-400">Desc.</label>
+                <label className="mb-1.5 block text-xs font-semibold uppercase tracking-[0.18em] app-text-muted">Desc.</label>
                 <CurrencyInput value={item.discount} onChange={(value) => updateItem(item.localId, { discount: value || 0 })} />
               </div>
               <Input
@@ -467,15 +467,15 @@ export const InvoiceEditor = () => {
               />
               <div className="flex flex-col justify-between gap-3">
                 <div>
-                  <div className="mb-1.5 text-xs font-semibold uppercase tracking-[0.18em] text-gray-400">Total linea</div>
-                  <div className="rounded-2xl border border-slate-200/70 bg-white/80 px-3 py-3 text-sm font-semibold text-gray-900 shadow-sm dark:border-white/10 dark:bg-white/5 dark:text-white">
+                  <div className="mb-1.5 text-xs font-semibold uppercase tracking-[0.18em] app-text-muted">Total linea</div>
+                  <div className="app-inline-panel rounded-2xl px-3 py-3 text-sm font-semibold app-text">
                     {formatInvoiceMoney(buildLineTotal(item), activeBusiness?.currency || 'COP')}
                   </div>
                 </div>
               </div>
             </div>
             {lineErrors[index] && (
-              <div className="mt-3 inline-flex items-center gap-2 rounded-2xl border border-red-200 bg-red-50 px-3 py-2 text-xs font-medium text-red-700 dark:border-red-900/40 dark:bg-red-900/10 dark:text-red-300">
+              <div className="app-inline-panel-danger mt-3 inline-flex items-center gap-2 rounded-2xl px-3 py-2 text-xs font-medium">
                 <AlertCircle className="h-3.5 w-3.5" />
                 {lineErrors[index]}
               </div>
@@ -484,28 +484,28 @@ export const InvoiceEditor = () => {
         ))}
       </div>
 
-      <div className="grid gap-4 rounded-[24px] border border-slate-200/80 bg-[radial-gradient(circle_at_top_left,rgba(59,130,246,0.10),transparent_34%),linear-gradient(180deg,rgba(255,255,255,0.95),rgba(241,245,249,0.94))] p-4 shadow-[0_20px_40px_-30px_rgba(15,23,42,0.28)] sm:grid-cols-4 dark:border-white/10 dark:bg-[radial-gradient(circle_at_top_left,rgba(59,130,246,0.18),transparent_30%),linear-gradient(180deg,rgba(15,23,42,0.96),rgba(2,6,23,0.92))]">
+      <div className="app-inline-panel-info grid gap-4 rounded-[24px] p-4 sm:grid-cols-4">
         <div>
-          <div className="text-xs font-semibold uppercase tracking-[0.22em] text-blue-500 dark:text-blue-300">Subtotal</div>
-          <div className="mt-2 text-lg font-semibold text-blue-950 dark:text-blue-100">
+          <div className="text-xs font-semibold uppercase tracking-[0.22em]">Subtotal</div>
+          <div className="mt-2 text-lg font-semibold">
             {formatInvoiceMoney(totals.subtotal, activeBusiness?.currency || 'COP')}
           </div>
         </div>
         <div>
-          <div className="text-xs font-semibold uppercase tracking-[0.22em] text-blue-500 dark:text-blue-300">Descuentos</div>
-          <div className="mt-2 text-lg font-semibold text-blue-950 dark:text-blue-100">
+          <div className="text-xs font-semibold uppercase tracking-[0.22em]">Descuentos</div>
+          <div className="mt-2 text-lg font-semibold">
             {formatInvoiceMoney(totals.discountTotal, activeBusiness?.currency || 'COP')}
           </div>
         </div>
         <div>
-          <div className="text-xs font-semibold uppercase tracking-[0.22em] text-blue-500 dark:text-blue-300">Impuestos</div>
-          <div className="mt-2 text-lg font-semibold text-blue-950 dark:text-blue-100">
+          <div className="text-xs font-semibold uppercase tracking-[0.22em]">Impuestos</div>
+          <div className="mt-2 text-lg font-semibold">
             {formatInvoiceMoney(totals.taxTotal, activeBusiness?.currency || 'COP')}
           </div>
         </div>
         <div>
-          <div className="text-xs font-semibold uppercase tracking-[0.22em] text-blue-500 dark:text-blue-300">Total</div>
-          <div className="mt-2 text-2xl font-semibold tracking-tight text-blue-950 dark:text-blue-100">
+          <div className="text-xs font-semibold uppercase tracking-[0.22em]">Total</div>
+          <div className="mt-2 text-2xl font-semibold tracking-tight">
             {formatInvoiceMoney(totals.total, activeBusiness?.currency || 'COP')}
           </div>
         </div>
@@ -514,7 +514,7 @@ export const InvoiceEditor = () => {
   );
 
   return (
-    <PageLayout>
+    <PageLayout data-tour="invoices.modal.form">
       <PageHeader
         title={isEditing ? `Editar ${selectedInvoice?.invoice_number || 'factura'}` : 'Nueva factura'}
         description="Editor profesional con vista previa en vivo, listo para desktop y para una captura rapida desde movil."
@@ -522,7 +522,7 @@ export const InvoiceEditor = () => {
           <CompactActionGroup
             collapseLabel="Mas"
             primary={(
-              <Button onClick={handleSubmit} isLoading={saving} disabled={isEditing && !editability.canEdit} className="w-full sm:w-auto">
+              <Button onClick={handleSubmit} isLoading={saving} disabled={isEditing && !editability.canEdit} className="w-full sm:w-auto" data-tour="invoices.modal.confirm">
                 <Save className="h-4 w-4" /> Guardar
               </Button>
             )}
@@ -549,9 +549,9 @@ export const InvoiceEditor = () => {
           {getInvoiceSyncMeta(selectedInvoice) && (
             <div className={`rounded-[24px] border px-4 py-4 text-sm ${selectedInvoice?.sync_status === 'failed' || selectedInvoice?.sync_status === 'conflicted'
               ? selectedInvoice?.sync_status === 'conflicted'
-                ? 'border-fuchsia-200 bg-fuchsia-50 text-fuchsia-700 dark:border-fuchsia-900/40 dark:bg-fuchsia-900/10 dark:text-fuchsia-200'
-                : 'border-rose-200 bg-rose-50 text-rose-700 dark:border-rose-900/40 dark:bg-rose-900/10 dark:text-rose-200'
-              : 'border-amber-200 bg-amber-50 text-amber-800 dark:border-amber-900/40 dark:bg-amber-900/10 dark:text-amber-200'}`}>
+                ? 'app-inline-panel-conflict'
+                : 'app-inline-panel-danger'
+              : 'app-inline-panel-warning'}`}>
               {selectedInvoice?.sync_status === 'conflicted'
                 ? 'Esta factura entró en conflicto con una versión más nueva del servidor. Revisa el centro de sync para decidir si reintentas o recuperas la versión confirmada.'
                 : selectedInvoice?.sync_status === 'failed'
@@ -561,7 +561,7 @@ export const InvoiceEditor = () => {
           )}
 
           {isEditing && !editability.canEdit && (
-            <div className="flex items-start gap-3 rounded-[24px] border border-amber-200 bg-amber-50 px-4 py-4 text-sm text-amber-800 dark:border-amber-900/40 dark:bg-amber-900/10 dark:text-amber-200">
+            <div className="app-inline-panel-warning flex items-start gap-3 rounded-[24px] px-4 py-4 text-sm">
               <Lock className="mt-0.5 h-4 w-4 shrink-0" />
               <div>{editability.reason}</div>
             </div>
@@ -580,8 +580,8 @@ export const InvoiceEditor = () => {
                   onClick={() => setStep(tab.id)}
                   className={`rounded-2xl px-3 py-2 text-sm font-medium transition ${
                     step === tab.id
-                      ? 'bg-blue-600 text-white'
-                      : 'text-gray-600 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-slate-800'
+                      ? 'app-segmented-option-active text-[color:var(--app-primary)] shadow-sm'
+                      : 'app-text-secondary hover:bg-[color:var(--app-surface-soft)]'
                   }`}
                 >
                   {tab.label}
@@ -591,7 +591,7 @@ export const InvoiceEditor = () => {
           )}
 
           {(loading && isEditing && !selectedInvoice) ? (
-            <div className="app-surface rounded-[28px] p-10 text-center text-sm text-gray-500 dark:text-gray-400">
+            <div className="app-surface rounded-[28px] p-10 text-center text-sm app-text-muted">
               Cargando factura...
             </div>
           ) : (
@@ -605,26 +605,26 @@ export const InvoiceEditor = () => {
                 <div className="min-w-0 space-y-4">
                   <div className="app-surface rounded-[28px] p-4 shadow-sm">
                     <div className="app-muted-panel mb-4 flex flex-col gap-3 rounded-[24px] p-4">
-                      <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Vista previa en vivo</h2>
-                      <p className="text-sm leading-6 text-gray-500 dark:text-gray-400">
+                      <h2 className="text-lg font-semibold app-text">Vista previa en vivo</h2>
+                      <p className="text-sm leading-6 app-text-muted">
                         Ajusta fechas, lineas y notas. El documento se actualiza al instante.
                       </p>
                       <div className="grid gap-3 sm:grid-cols-3">
                         <div className="app-surface rounded-2xl px-3 py-3 shadow-sm">
-                          <div className="text-[11px] font-semibold uppercase tracking-[0.2em] text-gray-400">Cliente</div>
-                          <div className="mt-1 text-sm font-medium text-gray-900 dark:text-white">
+                          <div className="text-[11px] font-semibold uppercase tracking-[0.2em] app-text-muted">Cliente</div>
+                          <div className="mt-1 text-sm font-medium app-text">
                             {selectedCustomer?.name || 'Cliente ocasional'}
                           </div>
                         </div>
                         <div className="app-surface rounded-2xl px-3 py-3 shadow-sm">
-                          <div className="text-[11px] font-semibold uppercase tracking-[0.2em] text-gray-400">Estado</div>
-                          <div className="mt-1 text-sm font-medium text-gray-900 dark:text-white">
+                          <div className="text-[11px] font-semibold uppercase tracking-[0.2em] app-text-muted">Estado</div>
+                          <div className="mt-1 text-sm font-medium app-text">
                             {status === 'draft' ? 'Borrador' : status === 'sent' ? 'Enviada' : 'Cancelada'}
                           </div>
                         </div>
                         <div className="app-surface rounded-2xl px-3 py-3 shadow-sm">
-                          <div className="text-[11px] font-semibold uppercase tracking-[0.2em] text-gray-400">Total proyectado</div>
-                          <div className="mt-1 text-sm font-semibold text-gray-900 dark:text-white">
+                          <div className="text-[11px] font-semibold uppercase tracking-[0.2em] app-text-muted">Total proyectado</div>
+                          <div className="mt-1 text-sm font-semibold app-text">
                             {formatInvoiceMoney(totals.total, activeBusiness?.currency || 'COP')}
                           </div>
                         </div>

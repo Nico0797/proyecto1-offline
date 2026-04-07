@@ -3,6 +3,7 @@ import { useSearchParams, useNavigate } from 'react-router-dom';
 import { CheckCircle, XCircle, Loader2, ArrowRight, User, Lock, Mail } from 'lucide-react';
 import api from '../services/api';
 import { useAuthStore } from '../store/authStore';
+import { useAccountAccessStore } from '../store/accountAccessStore';
 
 export const AcceptInvite = () => {
   const [searchParams] = useSearchParams();
@@ -82,6 +83,7 @@ export const AcceptInvite = () => {
           // Auto login
           if (res.data.access_token && res.data.user) {
               login(res.data.user, res.data.access_token);
+              useAccountAccessStore.getState().setAccess(res.data.account_access || null);
               // Wait a bit for state update then redirect
               setStatus('success');
               setMessage('¡Cuenta creada y unida al equipo!');

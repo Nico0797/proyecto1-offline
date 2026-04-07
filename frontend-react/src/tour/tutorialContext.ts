@@ -1,15 +1,28 @@
 import { useMemo } from 'react';
 import { useLocation } from 'react-router-dom';
 import { FeatureKey } from '../auth/plan';
-import { BusinessCommercialSectionKey, getBusinessBaseState, isBusinessCommercialSectionEnabled } from '../config/businessPersonalization';
+import {
+  BusinessCommercialSectionKey,
+  getBusinessBaseState,
+  getBusinessInitialSetup,
+  isBusinessCommercialSectionEnabled,
+  type BusinessInitialSetupSettings,
+  type BusinessTypeKey,
+} from '../config/businessPersonalization';
+import {
+  getBusinessOperationalProfile,
+  type BusinessFulfillmentMode,
+  type BusinessOperationalProfile,
+} from '../config/businessOperationalProfile';
 import { isBackendCapabilitySupported, type BackendCapability } from '../config/backendCapabilities';
 import { useAccess } from '../hooks/useAccess';
 import { resolveBusinessNavigationState } from '../navigation/navigationPersonalization';
 import { useAuthStore } from '../store/authStore';
 import { useBusinessStore } from '../store/businessStore';
 import { useNavigationPreferences } from '../store/navigationPreferences.store';
+import type { ActiveContext, BusinessModuleKey } from '../types';
+import type { TutorialStatus } from './tourStore';
 import { useTourStore } from './tourStore';
-import type { BusinessModuleKey } from '../types';
 
 export type TutorialSettingsSectionId =
   | 'profile'
@@ -27,24 +40,35 @@ export type TutorialRuntimeContext = {
   plan: string | null | undefined;
   role: string | null;
   businessId: number | null;
-  businessType: string | null;
+  businessType: BusinessTypeKey | null;
   userId: number | null;
+  activeContext: ActiveContext | null;
+  activeContextBusinessId: number | null;
+  activeContextRole: string | null;
   isOwner: boolean;
   isAdmin: boolean;
   isFirstVisit: boolean;
   isRepeatVisit: boolean;
+  initialSetup: BusinessInitialSetupSettings;
+  operationalProfile: BusinessOperationalProfile;
+  fulfillmentMode: BusinessFulfillmentMode | null;
   modules: Set<BusinessModuleKey>;
   visibleRoutes: Set<string>;
   visibleSettingsSections: Set<TutorialSettingsSectionId>;
   dashboardVisibleTabs: Set<'hoy' | 'balance' | 'analiticas' | 'recordatorios'>;
   supportedCapabilities: Set<BackendCapability>;
+  recommendedTutorials: Set<string>;
   hasModule: (moduleKey?: BusinessModuleKey) => boolean;
   hasPermission: (permission?: string) => boolean;
   canAccessFeature: (feature?: FeatureKey) => boolean;
+  isPlanAtLeast: (plan?: 'basic' | 'pro' | 'business') => boolean;
   hasRoute: (route?: string) => boolean;
   hasSettingsSection: (section?: TutorialSettingsSectionId) => boolean;
   hasCapability: (capability?: BackendCapability) => boolean;
   hasCommercialSection: (section?: BusinessCommercialSectionKey) => boolean;
+  isRecommendedTutorial: (tutorialId?: string) => boolean;
+  getTutorialStatus: (tutorialId?: string) => TutorialStatus | null;
+  hasCompletedTutorial: (tutorialId?: string) => boolean;
 };
 
 const KNOWN_BACKEND_CAPABILITIES: BackendCapability[] = [
@@ -65,10 +89,21 @@ const normalizeRouteKey = (route?: string) => {
 };
 
 export const useTutorialRuntimeContext = (): TutorialRuntimeContext => {
-  const { user } = useAuthStore();
+  const { user, activeContext } = useAuthStore();
   const { activeBusiness } = useBusinessStore();
   const location = useLocation();
-  const { hasPermission, hasModule, canAccess, isOwner, isAdmin, subscriptionPlan } = useAccess();
+  const {
+    hasPermission,
+    hasModule,
+    canAccess,
+    isOwner,
+    isAdmin,
+    subscriptionPlan,
+    workspaceRole,
+    canManageBusinessExperience,
+    canViewAudit,
+    canManageRoles,
+  } = useAccess();
   const perTour = useTourStore((state) => state.perTour);
   const getScopeKey = useNavigationPreferences((state) => state.getScopeKey);
   const storedNavigationPreferences = useNavigationPreferences((state) => {
@@ -92,9 +127,6 @@ export const useTutorialRuntimeContext = (): TutorialRuntimeContext => {
       ...navigation.visibleItems.map((item) => item.path),
     ]);
 
-    const canManageBusinessExperience = !!activeBusiness && (isOwner || hasPermission('business.update'));
-    const canViewAudit = !!activeBusiness && (isOwner || hasPermission('business.update') || hasPermission('team.manage'));
-
     const visibleSettingsSections = new Set<TutorialSettingsSectionId>([
       'profile',
       'business',
@@ -105,8 +137,10 @@ export const useTutorialRuntimeContext = (): TutorialRuntimeContext => {
     ]);
     if (canManageBusinessExperience) visibleSettingsSections.add('personalization');
     if (canViewAudit) visibleSettingsSections.add('audit');
-    if (isOwner) {
+    if (canManageRoles) {
       visibleSettingsSections.add('roles');
+    }
+    if (isOwner) {
       visibleSettingsSections.add('membership');
     }
 
@@ -115,10 +149,10 @@ export const useTutorialRuntimeContext = (): TutorialRuntimeContext => {
     );
 
     const hasReportsModule = hasModule('reports');
-    const canOpenReportsPanel = hasReportsModule && hasPermission('summary.dashboard');
+    const canOpenReportsPanel = hasReportsModule && hasPermission('reports.view');
     const dashboardVisibleTabs = new Set<'hoy' | 'balance' | 'analiticas' | 'recordatorios'>(['hoy']);
 
-    if (hasReportsModule && hasPermission('summary.financial') && supportedCapabilities.has('treasury')) {
+    if (hasReportsModule && hasPermission('analytics.view') && supportedCapabilities.has('treasury')) {
       dashboardVisibleTabs.add('balance');
     }
     if (hasReportsModule && canOpenReportsPanel) {
@@ -135,8 +169,13 @@ export const useTutorialRuntimeContext = (): TutorialRuntimeContext => {
     );
 
     const businessType = activeBusiness ? getBusinessBaseState(activeBusiness).effectiveBusinessType : null;
+    const initialSetup = getBusinessInitialSetup(activeBusiness);
+    const operationalProfile = getBusinessOperationalProfile(activeBusiness);
+    const recommendedTutorials = new Set(initialSetup.recommended_tutorials || []);
     const storedTutorials = Object.keys(perTour || {});
     const isFirstVisit = storedTutorials.length === 0;
+    const activeContextBusinessId = activeContext?.business_id || activeBusiness?.id || null;
+    const activeContextRole = activeContext?.role || workspaceRole || activeBusiness?.role || null;
 
     const hasRoute = (route?: string) => {
       const normalized = normalizeRouteKey(route);
@@ -146,30 +185,51 @@ export const useTutorialRuntimeContext = (): TutorialRuntimeContext => {
       return visibleRoutes.has(normalized);
     };
 
+    const getTutorialStatus = (tutorialId?: string) => {
+      if (!tutorialId) return null;
+      return perTour?.[tutorialId]?.status || null;
+    };
+
     return {
       plan: subscriptionPlan,
-      role: activeBusiness?.role || null,
+      role: activeBusiness?.role || workspaceRole || null,
       businessId: activeBusiness?.id || null,
       businessType,
       userId: user?.id || null,
+      activeContext: activeContext || null,
+      activeContextBusinessId,
+      activeContextRole,
       isOwner,
       isAdmin,
       isFirstVisit,
       isRepeatVisit: !isFirstVisit,
+      initialSetup,
+      operationalProfile,
+      fulfillmentMode: operationalProfile.fulfillment_mode || null,
       modules: moduleSet,
       visibleRoutes,
       visibleSettingsSections,
       dashboardVisibleTabs,
       supportedCapabilities,
+      recommendedTutorials,
       hasModule,
       hasPermission,
       canAccessFeature: (feature) => (!feature ? true : canAccess(feature)),
+      isPlanAtLeast: (plan) =>
+        (!plan ? true : subscriptionPlan === plan ||
+          (plan === 'basic' && ['basic', 'pro', 'business'].includes(String(subscriptionPlan))) ||
+          (plan === 'pro' && ['pro', 'business'].includes(String(subscriptionPlan))) ||
+          (plan === 'business' && subscriptionPlan === 'business')),
       hasRoute,
       hasSettingsSection: (section) => (!section ? true : visibleSettingsSections.has(section)),
       hasCapability: (capability) => (!capability ? true : supportedCapabilities.has(capability)),
       hasCommercialSection: (section) => (!section ? true : isBusinessCommercialSectionEnabled(activeBusiness, section)),
+      isRecommendedTutorial: (tutorialId) => (!tutorialId ? false : recommendedTutorials.has(tutorialId)),
+      getTutorialStatus,
+      hasCompletedTutorial: (tutorialId) => getTutorialStatus(tutorialId) === 'completed',
     };
   }, [
+    activeContext,
     activeBusiness,
     canAccess,
     getScopeKey,

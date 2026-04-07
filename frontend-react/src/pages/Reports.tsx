@@ -104,16 +104,19 @@ export const Reports = () => {
       id: 'catalog',
       label: 'Catalogo de reportes',
       shortLabel: 'Catálogo',
+      dataTour: 'reports.catalog',
     },
     ...(supportsProfitability ? [{
       id: 'profitability',
       label: 'Rentabilidad',
       shortLabel: 'Rentabilidad',
+      dataTour: 'reports.profitability',
     }] : []),
     {
       id: 'team',
       label: 'Gestion de equipo',
       shortLabel: 'Equipo',
+      dataTour: 'reports.team',
     },
   ] as const;
 
@@ -129,11 +132,13 @@ export const Reports = () => {
         title="Report Studio"
         description="Descarga reportes detallados y metricas sin perder el foco en el periodo y el tipo de analisis."
         action={(
-          <CompactActionGroup
-            collapseLabel="Filtros"
-            primary={modeSwitcher}
-            secondary={periodControl}
-          />
+          <div data-tour="reports.filters">
+            <CompactActionGroup
+              collapseLabel="Filtros"
+              primary={modeSwitcher}
+              secondary={periodControl}
+            />
+          </div>
         )}
       />
 
@@ -149,6 +154,7 @@ export const Reports = () => {
                   variant={nativeSubTab === 'catalog' ? 'primary' : 'secondary'}
                   onClick={() => handleNativeSubTabChange('catalog')}
                   size="sm"
+                  data-tour="reports.catalog"
                 >
                   Catalogo de reportes
                 </Button>
@@ -157,6 +163,7 @@ export const Reports = () => {
                     variant={nativeSubTab === 'profitability' ? 'primary' : 'secondary'}
                     onClick={() => handleNativeSubTabChange('profitability')}
                     size="sm"
+                    data-tour="reports.profitability"
                   >
                     Rentabilidad
                   </Button>
@@ -165,6 +172,7 @@ export const Reports = () => {
                   variant={nativeSubTab === 'team' ? 'primary' : 'secondary'}
                   onClick={() => handleNativeSubTabChange('team')}
                   size="sm"
+                  data-tour="reports.team"
                 >
                   Gestion de equipo
                 </Button>
@@ -174,18 +182,24 @@ export const Reports = () => {
 
           {activeTab === 'native' ? (
             nativeSubTab === 'catalog' ? (
-              <CombinedReportsTab dateRange={dateRange} />
+              <div data-tour="reports.catalog">
+                <CombinedReportsTab dateRange={dateRange} />
+              </div>
             ) : nativeSubTab === 'profitability' ? (
-              <ProfitabilityReportTab
-                businessId={activeBusiness.id}
-                startDate={dateRange.start}
-                endDate={dateRange.end}
-                initialFocus={searchParams.get('focus') || undefined}
-                initialStatus={searchParams.get('status') || undefined}
-                initialProductQuery={searchParams.get('product_query') || searchParams.get('product') || undefined}
-              />
+              <div data-tour="reports.profitability">
+                <ProfitabilityReportTab
+                  businessId={activeBusiness.id}
+                  startDate={dateRange.start}
+                  endDate={dateRange.end}
+                  initialFocus={searchParams.get('focus') || undefined}
+                  initialStatus={searchParams.get('status') || undefined}
+                  initialProductQuery={searchParams.get('product_query') || searchParams.get('product') || undefined}
+                />
+              </div>
             ) : (
-              <TeamReportTab businessId={activeBusiness.id} startDate={dateRange.start} endDate={dateRange.end} />
+              <div data-tour="reports.team">
+                <TeamReportTab businessId={activeBusiness.id} startDate={dateRange.start} endDate={dateRange.end} />
+              </div>
             )
           ) : (
             <PowerBIEmbedContainer />

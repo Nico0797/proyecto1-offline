@@ -1,7 +1,9 @@
-import { canAccessFeatureInPlan, FeatureKey, getPlanName, isPlanAtLeast } from '../auth/plan';
-import { BUSINESS_MODULE_META, BusinessModuleKey, isBusinessModuleEnabled, type Business } from '../types';
+import { FeatureKey, getPlanName } from '../auth/plan';
+import { BUSINESS_MODULE_META, BusinessModuleKey } from '../types';
+import { resolveTutorialAvailability, type TutorialBehavior, type TutorialEligibilityRules, type TutorialPriority, type TutorialTrigger } from '../tour/tutorialEligibility';
+import type { TutorialRuntimeContext } from '../tour/tutorialContext';
 
-export const LEARNING_CENTER_VERSION = '2026-03-help-v2';
+export const LEARNING_CENTER_VERSION = '2026-04-help-v3';
 
 export type LearningCategoryId =
   | 'getting-started'
@@ -18,19 +20,28 @@ export type LearningTutorialId =
   | 'onboarding.business'
   | 'dashboard'
   | 'sales'
+  | 'customers'
   | 'payments'
   | 'expenses'
   | 'products'
+  | 'quotes'
+  | 'orders'
+  | 'suppliers'
+  | 'raw-purchases'
+  | 'recipes'
+  | 'cost-calculator'
   | 'invoices'
   | 'invoice-receivables'
   | 'raw-inventory'
+  | 'treasury'
   | 'settings'
   | 'personalization'
+  | 'team-roles'
   | 'invoice-sync';
 
 export type LearningAudience = 'basic' | 'pro' | 'business';
 
-export type LearningVisibilityRule = {
+export type LearningVisibilityRule = TutorialEligibilityRules & {
   moduleKey?: BusinessModuleKey;
   feature?: FeatureKey;
   permission?: string;
@@ -52,6 +63,10 @@ export type LearningTutorialDefinition = {
   audience?: LearningAudience[];
   isOnboarding?: boolean;
   spotlight?: boolean;
+  priority?: TutorialPriority;
+  trigger?: TutorialTrigger;
+  behavior?: TutorialBehavior;
+  eligibility?: TutorialEligibilityRules;
 };
 
 export type LearningCategoryDefinition = {
@@ -76,11 +91,10 @@ export type LearningGuideCard = {
   route?: string;
 };
 
-export type LearningAccessSnapshot = {
-  plan: string | null | undefined;
-  business: Business | null | undefined;
-  canAccessFeature: (feature: FeatureKey) => boolean;
-  hasPermission: (permission?: string) => boolean;
+export type VisibleLearningTutorial = LearningTutorialDefinition & {
+  locked: boolean;
+  lockedReason: string | null;
+  recommended: boolean;
 };
 
 export const LEARNING_CATEGORIES: LearningCategoryDefinition[] = [
@@ -139,6 +153,11 @@ export const LEARNING_TUTORIALS: LearningTutorialDefinition[] = [
     audience: ['basic'],
     isOnboarding: true,
     spotlight: true,
+    behavior: {
+      repeatable: false,
+      allowManualRestart: true,
+      dismissStopsAutoStart: true,
+    },
   },
   {
     id: 'onboarding.pro',
@@ -157,6 +176,11 @@ export const LEARNING_TUTORIALS: LearningTutorialDefinition[] = [
     audience: ['pro'],
     isOnboarding: true,
     spotlight: true,
+    behavior: {
+      repeatable: false,
+      allowManualRestart: true,
+      dismissStopsAutoStart: true,
+    },
   },
   {
     id: 'onboarding.business',
@@ -175,6 +199,11 @@ export const LEARNING_TUTORIALS: LearningTutorialDefinition[] = [
     audience: ['business'],
     isOnboarding: true,
     spotlight: true,
+    behavior: {
+      repeatable: false,
+      allowManualRestart: true,
+      dismissStopsAutoStart: true,
+    },
   },
   {
     id: 'dashboard',
@@ -191,6 +220,16 @@ export const LEARNING_TUTORIALS: LearningTutorialDefinition[] = [
       'Entender que acciones rapidas usar cada dia',
     ],
     spotlight: true,
+    priority: 'high',
+    trigger: 'recommended',
+    behavior: {
+      repeatable: true,
+      allowManualRestart: true,
+    },
+    eligibility: {
+      requireBusinessContext: true,
+      visibleRoute: '/dashboard',
+    },
   },
   {
     id: 'sales',
@@ -206,10 +245,52 @@ export const LEARNING_TUTORIALS: LearningTutorialDefinition[] = [
       'Entender contado, fiado y cliente casual',
       'Cerrar la venta con el metodo de pago correcto',
     ],
-    visibility: {
-      permission: 'sales.create',
-    },
     spotlight: true,
+    behavior: {
+      repeatable: true,
+      allowManualRestart: true,
+    },
+    eligibility: {
+      requireBusinessContext: true,
+      visibleRoute: '/sales',
+      permission: 'sales.view',
+      moduleKey: 'sales',
+    },
+    visibility: {
+      visibleRoute: '/sales',
+      permission: 'sales.view',
+      moduleKey: 'sales',
+    },
+  },
+  {
+    id: 'customers',
+    title: 'Leer mejor tu base de clientes',
+    summary: 'Te ubica en la lista, filtros y ficha de cliente para revisar saldo, historial y datos clave sin perder contexto.',
+    route: '/customers',
+    tourId: 'customers.expert',
+    categoryId: 'daily-workflows',
+    estimatedTime: '3 min',
+    whenToUse: 'Cuando quieres encontrar rapido un cliente, revisar su saldo o abrir su ficha completa antes de cobrar o vender.',
+    outcomes: [
+      'Encontrar clientes por búsqueda o estado',
+      'Leer saldo, historial y contexto comercial',
+      'Abrir la ficha correcta antes de registrar acciones',
+    ],
+    behavior: {
+      repeatable: true,
+      allowManualRestart: true,
+    },
+    eligibility: {
+      requireBusinessContext: true,
+      visibleRoute: '/customers',
+      permission: 'customers.view',
+      moduleKey: 'customers',
+    },
+    visibility: {
+      visibleRoute: '/customers',
+      permission: 'customers.view',
+      moduleKey: 'customers',
+    },
   },
   {
     id: 'payments',
@@ -225,11 +306,22 @@ export const LEARNING_TUTORIALS: LearningTutorialDefinition[] = [
       'Registrar un abono desde el flujo correcto',
       'Entender donde revisar el historial de cobros',
     ],
-    visibility: {
-      moduleKey: 'accounts_receivable',
-      permission: 'payments.create',
-    },
     spotlight: true,
+    behavior: {
+      repeatable: true,
+      allowManualRestart: true,
+    },
+    eligibility: {
+      requireBusinessContext: true,
+      visibleRoute: '/payments',
+      permission: 'receivables.view',
+      moduleKey: 'accounts_receivable',
+    },
+    visibility: {
+      visibleRoute: '/payments',
+      moduleKey: 'accounts_receivable',
+      permission: 'receivables.view',
+    },
   },
   {
     id: 'expenses',
@@ -245,8 +337,18 @@ export const LEARNING_TUTORIALS: LearningTutorialDefinition[] = [
       'Ubicar recurrentes y pendientes programados',
       'Entender donde se revisa el historial',
     ],
+    behavior: {
+      repeatable: true,
+      allowManualRestart: true,
+    },
+    eligibility: {
+      requireBusinessContext: true,
+      visibleRoute: '/expenses',
+      permission: 'expenses.view',
+    },
     visibility: {
-      permission: 'expenses.create',
+      visibleRoute: '/expenses',
+      permission: 'expenses.view',
     },
   },
   {
@@ -265,7 +367,212 @@ export const LEARNING_TUTORIALS: LearningTutorialDefinition[] = [
     ],
     visibility: {
       moduleKey: 'products',
-      permission: 'products.read',
+      permission: 'products.view',
+    },
+  },
+  {
+    id: 'quotes',
+    title: 'Cotizar antes de vender',
+    summary: 'Aprende a crear propuestas, dejar claros los items y convertir la oportunidad a venta solo cuando el cliente confirme.',
+    route: '/quotes',
+    tourId: 'quotes.expert',
+    categoryId: 'daily-workflows',
+    estimatedTime: '5 min',
+    whenToUse: 'Cuando tu operación necesita proponer, negociar o dejar aprobaciones claras antes de registrar la venta final.',
+    outcomes: [
+      'Crear una propuesta comercial con contexto',
+      'Entender cómo dejar items y totales claros',
+      'Saber cuándo convertir a venta y cuándo no',
+    ],
+    priority: 'high',
+    trigger: 'recommended',
+    behavior: {
+      repeatable: true,
+      allowManualRestart: true,
+    },
+    eligibility: {
+      requireBusinessContext: true,
+      visibleRoute: '/quotes',
+      permission: 'quotes.view',
+      moduleKey: 'quotes',
+      requiresQuotesSupport: true,
+    },
+    visibility: {
+      visibleRoute: '/quotes',
+      permission: 'quotes.view',
+      moduleKey: 'quotes',
+      requiresQuotesSupport: true,
+    },
+  },
+  {
+    id: 'orders',
+    title: 'Seguir pedidos sin perder el flujo',
+    summary: 'Te ubica en el tablero de pedidos para revisar estados, crear nuevos y seguir compromisos pendientes.',
+    route: '/orders',
+    tourId: 'orders.expert',
+    categoryId: 'daily-workflows',
+    estimatedTime: '3 min',
+    whenToUse: 'Cuando operas por pedido, necesitas ver avance por estado o quieres revisar qué falta antes del cierre.',
+    outcomes: [
+      'Entender el tablero y sus estados',
+      'Saber dónde crear nuevos pedidos',
+      'Revisar seguimiento antes de completar o entregar',
+    ],
+    behavior: {
+      repeatable: true,
+      allowManualRestart: true,
+    },
+    eligibility: {
+      requireBusinessContext: true,
+      visibleRoute: '/orders',
+      permission: 'orders.view',
+      moduleKey: 'sales',
+      commercialSection: 'orders',
+      feature: 'orders',
+    },
+    visibility: {
+      visibleRoute: '/orders',
+      permission: 'orders.view',
+      moduleKey: 'sales',
+      commercialSection: 'orders',
+      feature: 'orders',
+    },
+  },
+  {
+    id: 'suppliers',
+    title: 'Ordenar proveedores operativos',
+    summary: 'Aprende a concentrar terceros de abastecimiento, compras asociadas y saldo operativo sin mezclar capas financieras.',
+    route: '/suppliers',
+    tourId: 'suppliers.expert',
+    categoryId: 'inventory',
+    estimatedTime: '4 min',
+    whenToUse: 'Cuando quieres dejar listo el proveedor antes de comprar, revisar contexto operativo o entender qué obligaciones siguen abiertas.',
+    outcomes: [
+      'Encontrar proveedores activos o inactivos',
+      'Entender compras y saldo operativo por proveedor',
+      'Crear el proveedor correcto antes de usarlo en compras',
+    ],
+    behavior: {
+      repeatable: true,
+      allowManualRestart: true,
+    },
+    eligibility: {
+      requireBusinessContext: true,
+      visibleRoute: '/suppliers',
+      permission: 'suppliers.view',
+      moduleKey: 'raw_inventory',
+      capability: 'suppliers',
+      requiresRawMaterials: true,
+    },
+    visibility: {
+      visibleRoute: '/suppliers',
+      permission: 'suppliers.view',
+      moduleKey: 'raw_inventory',
+      capability: 'suppliers',
+      requiresRawMaterials: true,
+    },
+  },
+  {
+    id: 'raw-purchases',
+    title: 'Registrar compras de insumos',
+    summary: 'Recorre el flujo de compras de bodega para dejar un borrador claro y confirmar luego su impacto en stock, caja o por pagar.',
+    route: '/raw-purchases',
+    tourId: 'raw-purchases.expert',
+    categoryId: 'inventory',
+    estimatedTime: '5 min',
+    whenToUse: 'Cuando necesitas abastecer bodega con trazabilidad y decidir después si la compra impacta caja o genera una obligación operativa.',
+    outcomes: [
+      'Crear borradores de compra con proveedor e items',
+      'Entender qué pasa al confirmar la compra',
+      'Separar stock, caja y por pagar sin mezclar pasos',
+    ],
+    behavior: {
+      repeatable: true,
+      allowManualRestart: true,
+    },
+    eligibility: {
+      requireBusinessContext: true,
+      visibleRoute: '/raw-purchases',
+      permission: 'raw_purchases.view',
+      moduleKey: 'raw_inventory',
+      capability: 'raw_purchases',
+      requiresRawMaterials: true,
+    },
+    visibility: {
+      visibleRoute: '/raw-purchases',
+      permission: 'raw_purchases.view',
+      moduleKey: 'raw_inventory',
+      capability: 'raw_purchases',
+      requiresRawMaterials: true,
+    },
+  },
+  {
+    id: 'recipes',
+    title: 'Definir recetas y consumos',
+    summary: 'Te ubica en las fórmulas por producto para costear mejor y registrar consumos explícitos con trazabilidad de insumos.',
+    route: '/recipes',
+    tourId: 'recipes.expert',
+    categoryId: 'inventory',
+    estimatedTime: '5 min',
+    whenToUse: 'Cuando tu operación necesita convertir productos en fórmulas repetibles y dejar claro qué insumos se consumen por unidad.',
+    outcomes: [
+      'Crear recetas por producto con cantidades claras',
+      'Entender cómo se relaciona la receta con el costeo',
+      'Preparar la base para consumos explícitos y trazables',
+    ],
+    priority: 'high',
+    behavior: {
+      repeatable: true,
+      allowManualRestart: true,
+    },
+    eligibility: {
+      requireBusinessContext: true,
+      visibleRoute: '/recipes',
+      permission: 'recipes.view',
+      moduleKey: 'raw_inventory',
+      capability: 'recipes',
+      requiresRawMaterials: true,
+    },
+    visibility: {
+      visibleRoute: '/recipes',
+      permission: 'recipes.view',
+      moduleKey: 'raw_inventory',
+      capability: 'recipes',
+      requiresRawMaterials: true,
+    },
+  },
+  {
+    id: 'cost-calculator',
+    title: 'Simular costos antes de decidir',
+    summary: 'Aprende a usar la calculadora de costos para comparar escenarios sin mover stock, sin crear ventas y sin tocar el histórico.',
+    route: '/cost-calculator',
+    tourId: 'cost-calculator.expert',
+    categoryId: 'inventory',
+    estimatedTime: '4 min',
+    whenToUse: 'Cuando necesitas probar costos, extras y precio objetivo antes de actualizar una receta o el catálogo.',
+    outcomes: [
+      'Armar una simulación con insumos y extras',
+      'Leer costo unitario, precio sugerido y faltantes',
+      'Decidir mejor antes de guardar cambios reales',
+    ],
+    behavior: {
+      repeatable: true,
+      allowManualRestart: true,
+    },
+    eligibility: {
+      requireBusinessContext: true,
+      visibleRoute: '/cost-calculator',
+      permission: 'recipes.view',
+      moduleKey: 'raw_inventory',
+      capability: 'recipes',
+      requiresRawMaterials: true,
+    },
+    visibility: {
+      visibleRoute: '/cost-calculator',
+      permission: 'recipes.view',
+      moduleKey: 'raw_inventory',
+      capability: 'recipes',
+      requiresRawMaterials: true,
     },
   },
   {
@@ -282,9 +589,24 @@ export const LEARNING_TUTORIALS: LearningTutorialDefinition[] = [
       'Abrir cartera, ajustes y sync desde la misma vista',
       'Saber donde crear una nueva factura',
     ],
+    behavior: {
+      repeatable: true,
+      allowManualRestart: true,
+    },
+    eligibility: {
+      requireBusinessContext: true,
+      visibleRoute: '/invoices',
+      permission: 'invoices.view',
+      moduleKey: 'sales',
+      capability: 'invoices',
+      commercialSection: 'invoices',
+    },
     visibility: {
+      visibleRoute: '/invoices',
       moduleKey: 'sales',
       permission: 'invoices.view',
+      capability: 'invoices',
+      commercialSection: 'invoices',
     },
   },
   {
@@ -301,9 +623,24 @@ export const LEARNING_TUTORIALS: LearningTutorialDefinition[] = [
       'Distinguir saldo pendiente y vencido',
       'Abrir recordatorios y estados de cuenta',
     ],
-    visibility: {
+    behavior: {
+      repeatable: true,
+      allowManualRestart: true,
+    },
+    eligibility: {
+      requireBusinessContext: true,
+      visibleRoute: '/invoices/receivables',
       moduleKey: 'accounts_receivable',
       permission: 'receivables.view',
+      capability: 'invoices',
+      commercialSection: 'invoices',
+    },
+    visibility: {
+      visibleRoute: '/invoices/receivables',
+      moduleKey: 'accounts_receivable',
+      permission: 'receivables.view',
+      capability: 'invoices',
+      commercialSection: 'invoices',
     },
   },
   {
@@ -322,9 +659,58 @@ export const LEARNING_TUTORIALS: LearningTutorialDefinition[] = [
     ],
     visibility: {
       moduleKey: 'raw_inventory',
-      permission: 'raw_inventory.read',
+      permission: 'raw_inventory.view',
+      capability: 'raw_inventory',
     },
     audience: ['business'],
+    priority: 'high',
+    trigger: 'recommended',
+    behavior: {
+      repeatable: true,
+      allowManualRestart: true,
+    },
+    eligibility: {
+      requireBusinessContext: true,
+      visibleRoute: '/raw-inventory',
+      moduleKey: 'raw_inventory',
+      permission: 'raw_inventory.view',
+      capability: 'raw_inventory',
+      inventoryModels: ['raw_materials_only', 'mixed'],
+      fulfillmentModes: ['stock', 'make_to_order', 'hybrid'],
+      requiresRawMaterials: true,
+    },
+  },
+  {
+    id: 'treasury',
+    title: 'Caja, bancos y movimientos',
+    summary: 'Aprende a leer saldos, cuentas y movimientos reales para revisar caja sin perder trazabilidad.',
+    route: '/treasury',
+    tourId: 'treasury.expert',
+    categoryId: 'money',
+    estimatedTime: '4 min',
+    whenToUse: 'Cuando necesitas revisar el dinero real del negocio y distinguir cuentas, saldos y movimientos.',
+    outcomes: [
+      'Entender donde vive cada saldo del negocio',
+      'Filtrar movimientos por cuenta, tipo o fechas',
+      'Ubicar donde crear o ajustar cuentas si tu rol lo permite',
+    ],
+    priority: 'high',
+    trigger: 'recommended',
+    behavior: {
+      repeatable: true,
+      allowManualRestart: true,
+    },
+    eligibility: {
+      requireBusinessContext: true,
+      visibleRoute: '/treasury',
+      permission: 'treasury.view',
+      capability: 'treasury',
+    },
+    visibility: {
+      visibleRoute: '/treasury',
+      permission: 'treasury.view',
+      capability: 'treasury',
+    },
   },
   {
     id: 'settings',
@@ -356,10 +742,58 @@ export const LEARNING_TUTORIALS: LearningTutorialDefinition[] = [
       'Activar o desactivar areas segun lo que realmente usas',
       'Ordenar el menu y revisar como quedara la experiencia final',
     ],
-    visibility: {
-      permission: 'business.update',
+    priority: 'high',
+    trigger: 'recommended',
+    behavior: {
+      repeatable: true,
+      allowManualRestart: true,
     },
-    spotlight: true,
+    eligibility: {
+      requireBusinessContext: true,
+      visibleRoute: '/settings?tab=personalization',
+      settingsSection: 'personalization',
+      permissionsAny: ['settings.edit', 'business.update'],
+    },
+    visibility: {
+      visibleRoute: '/settings?tab=personalization',
+      settingsSection: 'personalization',
+      permissionsAny: ['settings.edit', 'business.update'],
+    },
+  },
+  {
+    id: 'team-roles',
+    title: 'Equipo, roles y permisos',
+    summary: 'Explica como ordenar colaboradores, invitaciones y permisos finos cuando el negocio trabaja con equipo.',
+    route: '/settings?tab=team',
+    tourId: 'team-roles.expert',
+    categoryId: 'settings',
+    estimatedTime: '5 min',
+    whenToUse: 'Cuando administras equipo y necesitas controlar acceso, invitaciones y permisos sin improvisar.',
+    outcomes: [
+      'Filtrar y revisar colaboradores del negocio',
+      'Entender donde invitar miembros del equipo',
+      'Ubicar la matriz de roles y permisos por categoria',
+    ],
+    priority: 'high',
+    behavior: {
+      repeatable: true,
+      allowManualRestart: true,
+    },
+    eligibility: {
+      requireBusinessContext: true,
+      visibleRoute: '/settings',
+      settingsSections: ['team', 'roles'],
+      feature: 'team_management',
+      permissionsAny: ['team.edit_roles', 'team.manage_team', 'team.manage', 'team.invite', 'team.remove'],
+      onboardingRoleSetupNot: ['owner_only'],
+      onboardingPermissionControlNot: ['simple'],
+    },
+    visibility: {
+      visibleRoute: '/settings',
+      settingsSections: ['team', 'roles'],
+      feature: 'team_management',
+      permissionsAny: ['team.edit_roles', 'team.manage_team', 'team.manage', 'team.invite', 'team.remove'],
+    },
   },
   {
     id: 'invoice-sync',
@@ -456,104 +890,115 @@ export const LEARNING_FAQS: LearningFaqItem[] = [
   },
 ];
 
-export const getOnboardingTutorialId = (plan: string | null | undefined, business?: Business | null): LearningTutorialId => {
-  if (isBusinessModuleEnabled(business?.modules, 'raw_inventory')) {
-    return 'onboarding.business';
-  }
+export const getOnboardingTutorialId = (context: TutorialRuntimeContext): LearningTutorialId => {
+  const onboardingTutorialId = context.hasModule('raw_inventory')
+    ? 'onboarding.business'
+    : context.isPlanAtLeast('pro')
+      ? 'onboarding.pro'
+      : 'onboarding.basic';
+  return onboardingTutorialId;
+};
 
-  if (isPlanAtLeast(plan, 'pro')) {
-    return 'onboarding.pro';
-  }
+const priorityScore: Record<TutorialPriority, number> = {
+  high: 0,
+  medium: 1,
+  low: 2,
+};
 
-  return 'onboarding.basic';
+export const getLearningTutorialById = (tutorialId: LearningTutorialId | string) => {
+  return LEARNING_TUTORIALS.find((tutorial) => tutorial.id === tutorialId) || null;
 };
 
 export const isTutorialAccessible = (
   tutorial: LearningTutorialDefinition,
-  access: LearningAccessSnapshot
+  context: TutorialRuntimeContext
 ) => {
-  if (tutorial.isOnboarding && tutorial.id !== getOnboardingTutorialId(access.plan, access.business)) {
-    return { visible: false, locked: false, reason: null as string | null };
+  const onboardingTutorialId = getOnboardingTutorialId(context);
+  if (tutorial.isOnboarding && tutorial.id !== onboardingTutorialId) {
+    return { visible: false, locked: false, reason: null as string | null, recommended: false };
   }
 
-  const visibility = tutorial.visibility;
+  const rules = tutorial.eligibility || tutorial.visibility;
+  const state = resolveTutorialAvailability({
+    tutorialId: tutorial.tourId,
+    rules,
+    behavior: tutorial.behavior,
+    context,
+    trigger: 'catalog',
+  });
 
-  if (!visibility) {
-    return { visible: true, locked: false, reason: null as string | null };
-  }
-
-  if (visibility.minimumPlan && !isPlanAtLeast(access.plan, visibility.minimumPlan)) {
-    if (visibility.showLocked) {
+  if (!state.eligible) {
+    const visibility = tutorial.visibility;
+    if (visibility?.showLocked && visibility.minimumPlan && !context.isPlanAtLeast(visibility.minimumPlan)) {
       return {
         visible: true,
         locked: true,
         reason: `Disponible desde ${getPlanName(visibility.minimumPlan)}`,
+        recommended: false,
       };
     }
 
-    return { visible: false, locked: false, reason: null as string | null };
-  }
-
-  if (visibility.moduleKey && !isBusinessModuleEnabled(access.business?.modules, visibility.moduleKey)) {
-    if (visibility.showLocked) {
+    if (visibility?.showLocked && visibility.moduleKey && !context.hasModule(visibility.moduleKey)) {
       return {
         visible: true,
         locked: true,
         reason: `${BUSINESS_MODULE_META[visibility.moduleKey].label} no esta activo en este negocio`,
+        recommended: false,
       };
     }
 
-    return { visible: false, locked: false, reason: null as string | null };
+    return { visible: false, locked: false, reason: null as string | null, recommended: false };
   }
 
-  if (visibility.feature && !access.canAccessFeature(visibility.feature)) {
-    if (visibility.showLocked) {
-      return {
-        visible: true,
-        locked: true,
-        reason: `Requiere acceso a ${visibility.feature}`,
-      };
-    }
+  const recommendedByInitialSetup = context.isRecommendedTutorial(tutorial.id);
+  const recommendedByTrigger = tutorial.trigger === 'recommended'
+    && resolveTutorialAvailability({
+      tutorialId: tutorial.tourId,
+      rules,
+      behavior: tutorial.behavior,
+      context,
+      trigger: 'recommended',
+    }).eligible;
 
-    return { visible: false, locked: false, reason: null as string | null };
-  }
-
-  if (visibility.permission && !access.hasPermission(visibility.permission)) {
-    if (visibility.showLocked) {
-      return {
-        visible: true,
-        locked: true,
-        reason: 'No tienes permisos suficientes para este recorrido',
-      };
-    }
-
-    return { visible: false, locked: false, reason: null as string | null };
-  }
-
-  return { visible: true, locked: false, reason: null as string | null };
+  return {
+    visible: true,
+    locked: false,
+    reason: null as string | null,
+    recommended: !context.hasCompletedTutorial(tutorial.tourId) && (recommendedByInitialSetup || recommendedByTrigger),
+  };
 };
 
-export const getVisibleLearningTutorials = (access: LearningAccessSnapshot) =>
+export const getVisibleLearningTutorials = (context: TutorialRuntimeContext): VisibleLearningTutorial[] =>
   LEARNING_TUTORIALS
     .map((tutorial) => {
-      const state = isTutorialAccessible(tutorial, access);
+      const state = isTutorialAccessible(tutorial, context);
       return state.visible
         ? {
             ...tutorial,
             locked: state.locked,
             lockedReason: state.reason,
+            recommended: state.recommended,
           }
         : null;
     })
-    .filter((tutorial): tutorial is LearningTutorialDefinition & { locked: boolean; lockedReason: string | null } => !!tutorial);
+    .filter((tutorial): tutorial is VisibleLearningTutorial => !!tutorial)
+    .sort((left, right) => {
+      if (Number(Boolean(left.recommended)) !== Number(Boolean(right.recommended))) {
+        return Number(Boolean(right.recommended)) - Number(Boolean(left.recommended));
+      }
+      if (Number(Boolean(left.spotlight)) !== Number(Boolean(right.spotlight))) {
+        return Number(Boolean(right.spotlight)) - Number(Boolean(left.spotlight));
+      }
+      const leftPriority = priorityScore[left.priority || 'medium'];
+      const rightPriority = priorityScore[right.priority || 'medium'];
+      if (leftPriority !== rightPriority) {
+        return leftPriority - rightPriority;
+      }
+      return left.title.localeCompare(right.title);
+    });
 
 export const getVisibleLearningCategories = (tutorials: Array<LearningTutorialDefinition & { locked: boolean }>) => {
   const visibleCategoryIds = new Set(tutorials.map((tutorial) => tutorial.categoryId));
   visibleCategoryIds.add('troubleshooting');
   return LEARNING_CATEGORIES.filter((category) => visibleCategoryIds.has(category.id));
-};
-
-export const isFeaturePotentiallyVisible = (tutorial: LearningTutorialDefinition, plan: string | null | undefined) => {
-  if (!tutorial.visibility?.feature) return true;
-  return canAccessFeatureInPlan(tutorial.visibility.feature, plan);
 };

@@ -11,6 +11,7 @@ export interface MobileViewOption {
   description?: string;
   icon?: React.ElementType;
   badge?: number | string;
+  dataTour?: string;
 }
 
 export interface MobileSelectOption {
@@ -76,6 +77,7 @@ export const MobileInlineTabs: React.FC<MobileInlineTabsProps> = ({ options, act
             type="button"
             onClick={() => onChange(option.id)}
             aria-current={isActive ? 'page' : undefined}
+            data-tour={option.dataTour}
             className={cn(
               'relative flex min-w-0 items-center justify-center gap-1.5 rounded-[14px] px-3 py-2 text-center text-xs font-medium transition-all',
               'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 focus-visible:ring-offset-[color:var(--app-surface-elevated)]',
@@ -287,6 +289,7 @@ export const MobileViewSwitcher: React.FC<MobileViewSwitcherProps> = ({
                   onChange(option.id);
                   setIsOpen(false);
                 }}
+                data-tour={option.dataTour}
                 className={cn(
                   'flex w-full items-center justify-between gap-3 rounded-2xl border px-4 py-3 text-left transition-all',
                   isActive
