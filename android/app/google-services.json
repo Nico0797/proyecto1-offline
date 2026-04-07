@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "955348430082",
+    "project_id": "encaja-app",
+    "storage_bucket": "encaja-app.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:955348430082:android:1a34998fd73e2e4138661b",
+        "android_client_info": {
+          "package_name": "com.encaja.app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAvkzNY35bwkB8i1Bp-Z9Nm4gSKlAiLsng"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

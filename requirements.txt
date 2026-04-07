@@ -1,0 +1,42 @@
+# Cuaderno - Dependencias Python
+# ============================================
+
+# Web Framework
+Flask>=3.1.0
+Flask-CORS>=5.0.0
+Flask-Migrate>=4.0.0
+# Flask-Compress>=1.14.0 # Removed due to build issues (brotli)
+
+# Database
+SQLAlchemy>=2.0.0
+Flask-SQLAlchemy>=3.1.0
+
+# Auth
+PyJWT>=2.9.0
+bcrypt>=4.2.0
+
+# Configuration
+python-dotenv>=1.0.0
+pyyaml>=6.0.0
+
+# Utilities
+python-dateutil>=2.9.0
+pytz>=2024.0
+
+# Export
+openpyxl>=3.1.0
+et-xmlfile>=2.0.0
+Pillow>=10.0.0
+requests>=2.32.0
+xhtml2pdf>=0.2.15
+
+# Validation
+email-validator>=2.0.0
+psycopg2-binary>=2.9.0
+redis>=5.0.0
+gunicorn>=23.0.0
+
+# Development
+pytest>=8.0.0
+pytest-flask>=1.3.0
+pytest-cov>=6.0.0

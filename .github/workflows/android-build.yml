@@ -1,0 +1,92 @@
+name: Build Android APK & AAB
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Java 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '21'
+          cache: 'gradle'
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: 'npm'
+
+      - name: Install Android SDK (command-line tools)
+        run: |
+          export ANDROID_SDK_ROOT="$HOME/android-sdk"
+          mkdir -p "$ANDROID_SDK_ROOT/cmdline-tools"
+          VERS="11076708 10406996 9477386"
+          for v in $VERS; do
+            if curl -sLf "https://dl.google.com/android/repository/commandlinetools-linux-${v}_latest.zip" -o cmdlinetools.zip; then
+              break
+            fi
+          done
+          unzip -q cmdlinetools.zip -d "$ANDROID_SDK_ROOT/cmdline-tools"
+          mv "$ANDROID_SDK_ROOT/cmdline-tools/cmdline-tools" "$ANDROID_SDK_ROOT/cmdline-tools/latest"
+          rm -f cmdlinetools.zip
+          echo "ANDROID_SDK_ROOT=$ANDROID_SDK_ROOT" >> "$GITHUB_ENV"
+          echo "ANDROID_HOME=$ANDROID_SDK_ROOT" >> "$GITHUB_ENV"
+          echo "$ANDROID_SDK_ROOT/cmdline-tools/latest/bin" >> "$GITHUB_PATH"
+          echo "$ANDROID_SDK_ROOT/platform-tools" >> "$GITHUB_PATH"
+
+      - name: Accept Android licenses and install platform
+        run: |
+          yes | $ANDROID_SDK_ROOT/cmdline-tools/latest/bin/sdkmanager --sdk_root=$ANDROID_SDK_ROOT --licenses || true
+          $ANDROID_SDK_ROOT/cmdline-tools/latest/bin/sdkmanager --sdk_root=$ANDROID_SDK_ROOT "platform-tools" "platforms;android-35" "build-tools;35.0.0"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build Web Assets
+        run: npm run build
+
+      - name: Clean unnecessary files to reduce APK size
+        run: |
+          rm -f frontend/static/android/encaja.apk
+          rm -rf frontend/static/screenshots
+          rm -rf frontend/static/icons/*.png # Optional: keep only if used in PWA manifest, but usually native app uses res/mipmap
+          # Ensure we don't delete icons if they are used by the web view, but usually we can clean up heavy things.
+          # For safety, let's just delete the APK and screenshots for now.
+
+      - name: Sync Capacitor
+        run: npx cap sync android
+
+      - name: Build Android (Release APK & AAB)
+        working-directory: ./android
+        run: |
+          chmod +x ./gradlew
+          # Generar APK Release (Minificado) y AAB Release en un solo paso
+          ./gradlew assembleRelease bundleRelease --no-daemon --no-configuration-cache --stacktrace 2>&1 | tee gradle-build.log
+          
+          if [ ! -f app/build/outputs/apk/release/app-release.apk ]; then
+            echo "::error::Release APK not found. Últimas 400 líneas del log:"
+            tail -400 gradle-build.log
+            exit 1
+          fi
+
+      - name: Upload AAB (Release)
+        uses: actions/upload-artifact@v4
+        with:
+          name: app-release.aab
+          path: android/app/build/outputs/bundle/release/app-release.aab
+
+      - name: Upload APK (Release Optimized)
+        uses: actions/upload-artifact@v4
+        with:
+          name: app-release-optimized.apk
+          path: android/app/build/outputs/apk/release/app-release.apk

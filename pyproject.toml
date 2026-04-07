@@ -1,0 +1,68 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "cuaderno"
+version = "1.0.0"
+description = "Cuaderno contable para negocios informales"
+readme = "README.md"
+requires-python = ">=3.11"
+license = {text = "MIT"}
+authors = [
+    {name = "Cuaderno Team", email = "hola@cuaderno.app"}
+]
+keywords = ["accounting", "business", "small-business", "expense-tracking"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: End Users/Desktop",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+]
+
+dependencies = [
+    "Flask>=3.1.0",
+    "Flask-CORS>=5.0.0",
+    "SQLAlchemy>=2.0.0",
+    "Flask-SQLAlchemy>=3.1.0",
+    "PyJWT>=2.9.0",
+    "bcrypt>=4.2.0",
+    "python-dotenv>=1.0.0",
+    "python-dateutil>=2.9.0",
+    "pytz>=2024.0",
+    "openpyxl>=3.1.0",
+    "email-validator>=2.0.0",
+    "redis>=5.0.0",
+    "gunicorn>=23.0.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0.0",
+    "pytest-flask>=1.3.0",
+    "pytest-cov>=6.0.0",
+]
+prod = [
+    "psycopg2-binary>=2.9.0",
+    "sentry-sdk[flask]>=2.0.0",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]
+addopts = "-v --tb=short"
+
+[tool.coverage.run]
+source = ["backend"]
+omit = ["*/tests/*", "*/migrations/*"]
+
+[tool.coverage.report]
+exclude_lines = [
+    "pragma: no cover",
+    "def __repr__",
+    "raise AssertionError",
+    "raise NotImplementedError",
+]

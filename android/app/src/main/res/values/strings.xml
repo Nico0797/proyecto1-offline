@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">EnCaja</string>
+    <string name="title_activity_main">EnCaja</string>
+    <string name="package_name">com.encaja.app</string>
+    <string name="custom_url_scheme">com.encaja.app</string>
+</resources>

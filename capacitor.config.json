@@ -1,0 +1,8 @@
+{
+  "appId": "com.encaja.app",
+  "appName": "EnCaja",
+  "webDir": "frontend-react/dist",
+  "server": {
+    "androidScheme": "https"
+  }
+}
