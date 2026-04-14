@@ -1,5 +1,5 @@
 ﻿import React, { useState, useRef, useEffect, useMemo } from 'react';
-import { NavLink, useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../../store/authStore';
 import { useBusinessStore } from '../../store/businessStore';
 import api from '../../services/api';
@@ -8,14 +8,12 @@ import { useAlertsSnoozeStore } from '../../store/alertsSnooze.store';
 import { useAlertsStore } from '../../store/alertsStore';
 import { useNavigationPreferences } from '../../store/navigationPreferences.store';
 import { CreateBusinessModal } from '../Business/CreateBusinessModal';
-import { UpgradeModal } from '../ui/UpgradeModal';
 import { cn } from '../../utils/cn';
-import { FEATURES, FeatureKey } from '../../auth/plan';
 import { useAccess } from '../../hooks/useAccess';
-import { useDemoPreview } from '../../hooks/useDemoPreview';
 import {
   NavigationItemDefinition,
 } from '../../navigation/businessNavigation';
+
 import { resolveBusinessNavigationState } from '../../navigation/navigationPersonalization';
 import {
   LogOut,
@@ -25,10 +23,10 @@ import {
   Check,
   Loader2,
   Lock,
-  Sparkles,
 } from 'lucide-react';
 import logo from '../../assets/logo.png';
-import { Business } from '../../types';
+import { ActiveContext, Business } from '../../types';
+import { isOfflineProductMode } from '../../runtime/runtimeMode';
 
 interface SidebarProps {
   isOpen: boolean;
@@ -37,27 +35,24 @@ interface SidebarProps {
 
 export const Sidebar: React.FC<SidebarProps> = ({ isOpen, setIsOpen }) => {
   const { user, logout, accessibleContexts, login, selectContext, activeContext } = useAuthStore();
-  const { businesses, activeBusiness, fetchBusinesses, fetchAuthBootstrap } = useBusinessStore();
+  const { businesses, activeBusiness, fetchBusinesses, fetchAuthBootstrap, setActiveBusiness } = useBusinessStore();
   const navigate = useNavigate();
+  const location = useLocation();
   const prefs = useAlertsPreferences();
   const snooze = useAlertsSnoozeStore();
   const { alerts, fetchAlerts } = useAlertsStore();
-
-  const { isDemoPreview } = useDemoPreview();
+  const offlineProductMode = isOfflineProductMode();
 
   // Use centralized access hook
   const {
     hasPermission,
     hasModule,
     canAccess,
-    isLocked,
-    canUpgrade
+    isLocked
   } = useAccess();
 
   const [isBusinessDropdownOpen, setIsBusinessDropdownOpen] = useState(false);
   const [isCreateBusinessModalOpen, setIsCreateBusinessModalOpen] = useState(false);
-  const [showUpgradeModal, setShowUpgradeModal] = useState(false);
-  const [selectedFeature, setSelectedFeature] = useState<FeatureKey | undefined>(undefined);
   const [alertsCount, setAlertsCount] = useState(0);
   const [switchingBusinessId, setSwitchingBusinessId] = useState<number | null>(null);
 
@@ -65,16 +60,11 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, setIsOpen }) => {
 
   const dropdownRef = useRef<HTMLDivElement>(null);
   const getScopeKey = useNavigationPreferences((state) => state.getScopeKey);
-  // Derive plan label for display
-  const isOwner = activeBusiness?.user_id === user?.id;
-  const planLabel = isDemoPreview
-    ? 'Vista previa interactiva'
-    : isOwner
-    ? (user?.plan === 'business' ? 'Plan Business' : user?.plan === 'pro' ? 'Plan Pro' : 'Plan BÃƒÂ¡sica')
-    : (activeBusiness?.role || 'Miembro de Equipo');
+  const businessLabel = offlineProductMode ? 'Espacio local' : (activeBusiness?.role || 'Espacio activo');
   const reportsModuleEnabled = hasModule('reports');
   const scopeKey = getScopeKey(user?.id, activeBusiness?.id);
   const storedNavigationPreferences = useNavigationPreferences((state) => state.preferencesByScope[scopeKey]);
+
   const { visibleSections } = useMemo(
     () =>
       resolveBusinessNavigationState({
@@ -87,8 +77,6 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, setIsOpen }) => {
     [activeBusiness, canAccess, hasModule, hasPermission, storedNavigationPreferences]
   );
 
-  // Helper to determine effective plan for UI logic
-  const isBasicPlan = !['pro', 'business'].includes(activeBusiness?.plan || '');
   const switcherBusinesses = useMemo(() => {
     const merged = new Map<number, Business>();
     const inferredOwnerId = activeBusiness?.user_id ?? user?.id ?? 0;
@@ -203,6 +191,25 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, setIsOpen }) => {
     setSwitchingBusinessId(business.id);
 
     try {
+      if (offlineProductMode) {
+        const matchingContext = accessibleContexts.find((context) => context.business_id === business.id);
+        setActiveBusiness(business);
+        if (matchingContext) {
+          const localContext: ActiveContext = {
+            business_id: matchingContext.business_id,
+            name: matchingContext.business_name,
+            role: matchingContext.role,
+            type: matchingContext.context_type,
+            permissions: [],
+          };
+          selectContext(localContext);
+        }
+        setIsBusinessDropdownOpen(false);
+        setIsOpen(false);
+        navigate('/dashboard', { replace: true });
+        return;
+      }
+
       const response = await api.post('/auth/select-context', {
         business_id: business.id,
       });
@@ -244,15 +251,12 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, setIsOpen }) => {
     // If it's locked, logic depends on user type
     const locked = item.feature && isLocked(item.feature);
 
-    if (locked) {
-      // Only show upgrade modal if user is allowed to upgrade (Personal account)
-      if (canUpgrade) {
-          e.preventDefault();
-          setSelectedFeature(item.feature);
-          setShowUpgradeModal(true);
-          return;
-      }
-      // If cannot upgrade (team member), allow navigation to show the ProGate UI
+    if (locked && !offlineProductMode) {
+      e.preventDefault();
+      return;
+    }
+    if (location.pathname !== item.path) {
+      navigate(item.path);
     }
     setIsOpen(false);
   };
@@ -260,43 +264,23 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, setIsOpen }) => {
   const handleCreateBusinessClick = () => {
     setIsBusinessDropdownOpen(false);
 
-    // Check if user can create more businesses
-    // For free plan, limit is 1 business
-    const ownedBusinesses = accessibleContexts.length > 0
-      ? accessibleContexts.filter((context) => context.context_type === 'owned')
-      : businesses.filter((business) => business.user_id === user?.id);
-    if (!['pro', 'business'].includes(user?.plan || '') && ownedBusinesses.length >= 1) {
-      if (canUpgrade) {
-          setSelectedFeature(FEATURES.MULTI_BUSINESS);
-          setShowUpgradeModal(true);
-      }
-      return;
-    }
-
-    // Employees cannot create businesses
-    if (!canUpgrade) return;
-
     setIsCreateBusinessModalOpen(true);
   };
 
-  const renderBadge = (item: NavigationItemDefinition, locked: boolean) => {
+  const renderBadge = (item: NavigationItemDefinition) => {
     const badge =
       item.path === '/alerts' && alertsCount > 0
         ? { label: String(alertsCount), tone: 'red' as const }
-        : item.feature && isBasicPlan
-          ? { label: 'PRO', tone: 'default' as const }
-          : null;
+        : null;
 
     if (!badge) return null;
 
     return (
       <span className={cn(
         'ml-auto',
-        locked
-          ? 'app-sidebar-badge-pro opacity-80'
-          : badge.tone === 'red'
-            ? 'app-sidebar-badge-alert'
-            : 'app-sidebar-badge-pro'
+        badge.tone === 'red'
+          ? 'app-sidebar-badge-alert'
+          : 'app-sidebar-badge-pro'
       )}>
         {badge.label}
       </span>
@@ -306,20 +290,17 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, setIsOpen }) => {
   const renderNavigationItem = (item: NavigationItemDefinition) => {
     const locked = Boolean(item.feature && isLocked(item.feature));
     const Icon = item.icon;
+    const isActive = location.pathname === item.path;
 
     return (
-      <NavLink
+      <button
         key={`nav-${item.path}`}
-        to={(locked && canUpgrade) ? '#' : item.path}
-        className={({ isActive }) =>
-          cn(
-            'app-sidebar-nav-item relative group flex items-center rounded-xl px-2.5 py-2.5 text-sm font-medium transition-all lg:px-3',
-            isActive && !locked
-              ? 'app-sidebar-nav-item-active'
-              : '',
-            locked && 'opacity-75 hover:opacity-100'
-          )
-        }
+        type="button"
+        className={cn(
+          'app-sidebar-nav-item relative group flex w-full items-center rounded-xl px-2.5 py-2.5 text-sm font-medium transition-all lg:px-3',
+          isActive && !locked ? 'app-sidebar-nav-item-active' : '',
+          locked && 'opacity-75 hover:opacity-100'
+        )}
         onClick={(e) => handleItemClick(e, item)}
       >
         <Icon
@@ -330,12 +311,12 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, setIsOpen }) => {
 
         <span className="flex-1">{item.label}</span>
 
-        {renderBadge(item, locked)}
+        {renderBadge(item)}
 
         {locked && (
           <Lock className="ml-2 h-3.5 w-3.5 text-[color:var(--app-sidebar-text-muted)]" />
         )}
-      </NavLink>
+      </button>
     );
   };
 
@@ -345,14 +326,8 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, setIsOpen }) => {
         isOpen={isCreateBusinessModalOpen}
         onClose={() => setIsCreateBusinessModalOpen(false)}
         onSuccess={() => {
-            fetchBusinesses();
+          fetchBusinesses();
         }}
-      />
-
-      <UpgradeModal
-        isOpen={showUpgradeModal}
-        onClose={() => setShowUpgradeModal(false)}
-        feature={selectedFeature}
       />
 
       {/* Mobile Overlay */}
@@ -392,7 +367,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, setIsOpen }) => {
                   {activeBusiness?.name || 'Seleccionar'}
                 </p>
                 <p className="truncate text-xs text-[color:var(--app-sidebar-text-muted)]">
-                  {planLabel}
+                  {businessLabel}
                 </p>
               </div>
               <ChevronDown className={cn("h-4 w-4 shrink-0 text-[color:var(--app-sidebar-text-muted)] transition-transform duration-200", isBusinessDropdownOpen && "rotate-180")} />
@@ -430,19 +405,19 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, setIsOpen }) => {
                   ))}
                 </div>
 
-                {canUpgrade && !isDemoPreview && (
-                <div className="app-divider border-t p-1">
-                  <button
-                    className="w-full flex items-center gap-3 px-3 py-2 text-left text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-500/10 rounded-lg transition-colors text-sm font-medium focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-inset active:scale-[0.99]"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleCreateBusinessClick();
-                    }}
-                  >
-                    <Plus className="w-4 h-4 flex-shrink-0" />
-                    <span className="truncate">Crear nuevo negocio</span>
-                  </button>
-                </div>
+                {offlineProductMode && (
+                  <div className="app-divider border-t p-1">
+                    <button
+                      className="w-full flex items-center gap-3 px-3 py-2 text-left text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-500/10 rounded-lg transition-colors text-sm font-medium focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-inset active:scale-[0.99]"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleCreateBusinessClick();
+                      }}
+                    >
+                      <Plus className="w-4 h-4 flex-shrink-0" />
+                      <span className="truncate">Crear nuevo negocio</span>
+                    </button>
+                  </div>
                 )}
               </div>
             )}
@@ -450,7 +425,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, setIsOpen }) => {
         </div>
 
         {/* Navigation */}
-      <nav className="flex-1 overflow-y-auto py-3 px-2.5 lg:px-3 space-y-4 lg:space-y-6 custom-scrollbar">
+        <nav className="flex-1 overflow-y-auto py-3 px-2.5 lg:px-3 space-y-4 lg:space-y-6 custom-scrollbar">
           {visibleSections.map((section) => (
             <div key={section.id} className="space-y-1">
               <div
@@ -483,46 +458,22 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, setIsOpen }) => {
               </div>
             </div>
           ))}
+        </nav>
 
-    </nav>
-
-    {/* Footer */}
-      <div className="app-sidebar app-divider z-50 shrink-0 space-y-2 border-t p-4">
-            {(isDemoPreview || (!['pro', 'business'].includes(user?.plan || '') && canUpgrade)) && (
-              <button
-                type="button"
-                data-preview-allow="true"
-                onClick={() => navigate(isDemoPreview ? '/account-access' : '/pro')}
-                className="app-sidebar-upgrade-card mb-3 flex w-full items-center justify-between gap-3 rounded-2xl px-3 py-3 text-left transition-colors hover:brightness-[0.98]"
-              >
-                <div className="flex items-center gap-3">
-                  <div className="rounded-xl border border-[color:var(--app-sidebar-upgrade-border)] bg-[color:var(--app-sidebar-surface-strong)] p-2 text-[color:var(--app-sidebar-upgrade-text)]">
-                    <Sparkles className="w-4 h-4" />
-                  </div>
-                  <div>
-                    <div className="text-sm font-semibold">{isDemoPreview ? 'Activar plan' : 'Actualizar plan'}</div>
-                    <div className="app-sidebar-upgrade-muted text-xs">
-                      {isDemoPreview
-                        ? 'Sal del modo vista previa y empieza con tus datos reales.'
-                        : 'Desbloquea reportes, alertas y multi-negocio.'}
-                    </div>
-                  </div>
-                </div>
-                <ChevronDown className="h-4 w-4 shrink-0 -rotate-90 text-[color:var(--app-sidebar-upgrade-text)]" />
-              </button>
-            )}
-
+        {/* Footer */}
+        <div className="app-sidebar app-divider z-50 shrink-0 space-y-2 border-t p-4">
+          {offlineProductMode ? null : (
             <button
-            type="button"
-            onClick={handleLogout}
-            className="app-text-secondary flex w-full items-center rounded-lg px-3 py-2.5 text-sm font-medium transition-colors hover:bg-[color:var(--app-surface-soft)] hover:text-[color:var(--app-text)]"
-          >
-            <LogOut className="w-5 h-5 mr-3" />
-            Cerrar sesión
-          </button>
+              type="button"
+              onClick={handleLogout}
+              className="app-text-secondary flex w-full items-center rounded-lg px-3 py-2.5 text-sm font-medium transition-colors hover:bg-[color:var(--app-surface-soft)] hover:text-[color:var(--app-text)]"
+            >
+              <LogOut className="w-5 h-5 mr-3" />
+              Cerrar sesión
+            </button>
+          )}
         </div>
       </div>
     </>
   );
 };
-

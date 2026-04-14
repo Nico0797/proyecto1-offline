@@ -1,0 +1,8 @@
+{
+  "$schema": "../gen/schemas/desktop-schema.json",
+  "identifier": "default",
+  "description": "Capacidad base de la ventana principal de EnCaja Desktop.",
+  "windows": ["main"],
+  "permissions": ["core:default"]
+}
+

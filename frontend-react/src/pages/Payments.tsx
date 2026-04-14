@@ -17,7 +17,7 @@ import { computeClientReceivables, ClientReceivable } from '../utils/receivables
 import { CreditSettingsModal } from '../components/Customers/CreditSettingsModal';
 import { settingsService } from '../services/settingsService';
 import { DateRange, getPeriodPreference } from '../utils/dateRange.utils';
-import { CompactActionGroup, PageHeader, PageLayout, PageNotice, PageStack, PageSummary, PageToolbarCard } from '../components/Layout/PageLayout';
+import { CompactActionGroup, PageHeader, PageHeaderActionButton, PageLayout, PageNotice, PageStack, PageSummary, PageToolbarCard } from '../components/Layout/PageLayout';
 import { SwipePager } from '../components/ui/SwipePager';
 import { Payment } from '../store/paymentStore';
 import { PaymentFormModal } from '../components/Payments/PaymentFormModal';
@@ -26,8 +26,6 @@ import { receivablesService } from '../services/receivablesService';
 import {
   MobileFilterDrawer,
   MobileFilterSection,
-  MobileHelpDisclosure,
-  MobileSummaryDrawer,
   MobileUnifiedPageShell,
   MobileUtilityBar,
   useMobileFilterDraft,
@@ -217,29 +215,26 @@ export const Payments = () => {
   const currentTabGuidance = useMemo(() => {
     if (currentTab === 'transactions') {
       return {
-        title: 'Aquí confirmas lo que ya entró',
+        title: 'Cobros registrados',
         description: 'Usa esta vista para revisar cobros registrados, corregir referencias y validar por dónde entró el dinero.',
       };
     }
 
     if (currentTab === 'overdue') {
       return {
-        title: 'Empieza por lo vencido o por vencer',
+        title: 'Por vencer',
         description: 'Este corte te ayuda a priorizar a quién escribir o cobrar hoy, sin revisar cliente por cliente.',
       };
     }
 
     return {
-      title: 'Empieza por clientes con saldo',
+      title: 'Clientes con saldo',
       description: 'Desde aquí ves quién debe, cuánto y quién conviene cobrar primero. Luego registras el abono en un paso guiado.',
     };
   }, [currentTab]);
 
   const hasPaymentFilters = searchTerm.trim().length > 0 || dateRange.preset !== 'month';
   const paymentFilterSummary = hasPaymentFilters ? 'Con filtros activos' : 'Buscar y periodo';
-  const paymentSummaryLabel = currentTab === 'clients'
-    ? `${filteredClients.length} cliente(s)`
-    : `${filteredPayments.length} movimiento(s)`;
   const mobilePaymentFilters = useMobileFilterDraft({
     value: { searchTerm, dateRange },
     onApply: (nextValue) => {
@@ -255,8 +250,8 @@ export const Payments = () => {
   const mobilePaymentsUtilityBar = (
     <MobileUtilityBar>
       <MobileFilterDrawer summary={paymentFilterSummary} {...mobilePaymentFilters.sheetProps}>
-        <MobileFilterSection title="Filtrar cobros" description="Busca primero y ajusta el periodo solo cuando aporte contexto.">
-          <div data-tour="payments.filters">
+        <MobileFilterSection title="Filtra lo justo" description="Busca clientes o cobros concretos y cambia el periodo sin llenar la pantalla principal.">
+          <div className="space-y-3">
             <PaymentsToolbar
               searchTerm={mobilePaymentFilters.draft.searchTerm}
               onSearchChange={(value) => mobilePaymentFilters.setDraft((current) => ({ ...current, searchTerm: value }))}
@@ -266,18 +261,6 @@ export const Payments = () => {
           </div>
         </MobileFilterSection>
       </MobileFilterDrawer>
-      {currentTab === 'clients' ? (
-        <MobileSummaryDrawer summary={paymentSummaryLabel}>
-          <div data-tour="payments.kpis">
-            <PaymentsKpis {...kpis} loading={loading} />
-          </div>
-        </MobileSummaryDrawer>
-      ) : null}
-      <MobileHelpDisclosure summary="Como usar cobros">
-        <p className="text-sm text-gray-600 dark:text-gray-300">
-          Mantén la pantalla limpia: usa Filtros para buscar o cambiar periodo y entra a cada pestaña solo para gestionar clientes, movimientos o vencimientos.
-        </p>
-      </MobileHelpDisclosure>
     </MobileUtilityBar>
   );
 
@@ -290,12 +273,14 @@ export const Payments = () => {
           <CompactActionGroup
             collapseLabel="Mas"
             primary={canCreatePayment ? (
-              <div data-tour="payments.primaryAction.mobile" className="w-full sm:w-auto">
-                <Button onClick={() => { setQuickPayClient(undefined); setIsRegisterModalOpen(true); }} className="w-full sm:w-auto" data-tour="payments.primaryAction.desktop">
-                  <Plus className="w-4 h-4 mr-2" />
-                  <span className="hidden sm:inline">Registrar cobro</span>
-                  <span className="sm:hidden">Cobro</span>
-                </Button>
+              <div data-tour="payments.primaryAction.mobile">
+                <PageHeaderActionButton
+                  onClick={() => { setQuickPayClient(undefined); setIsRegisterModalOpen(true); }}
+                  icon={Plus}
+                  label="Registrar cobro"
+                  mobileLabel="Cobro"
+                  data-tour="payments.primaryAction.desktop"
+                />
               </div>
             ) : undefined}
             secondary={canConfigureTerms && currentTab === 'clients' ? (

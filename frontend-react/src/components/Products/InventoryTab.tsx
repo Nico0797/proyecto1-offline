@@ -18,7 +18,7 @@ import { Button } from '../ui/Button';
 import { FormAlert } from '../ui/FormAlert';
 import { Input } from '../ui/Input';
 import { Modal } from '../ui/Modal';
-import api from '../../services/api';
+import { productionService } from '../../services/productionService';
 import { toast } from 'react-hot-toast';
 
 interface InventoryTabProps {
@@ -48,6 +48,17 @@ const formatProductionError = (error: any): ProductionFeedback => {
       title: 'Materias primas insuficientes',
       message: 'No puedes registrar la producción porque no hay suficiente inventario de insumos para completar este lote.',
       details,
+    };
+  }
+
+  if (payload?.error) {
+    return {
+      title: payload?.code === 'RAW_MATERIAL_NOT_FOUND'
+        ? 'Insumo no disponible'
+        : payload?.code === 'RECIPE_NOT_FOUND'
+          ? 'Receta no disponible'
+          : 'Producción no disponible',
+      message: payload.error,
     };
   }
 
@@ -113,7 +124,7 @@ export const InventoryTab: React.FC<InventoryTabProps> = ({ products }) => {
     setSubmittingProduction(true);
     setProductionFeedback(null);
     try {
-      await api.post(`/businesses/${activeBusiness.id}/products/${productionProduct.id}/production`, {
+      await productionService.registerStockProduction(activeBusiness.id, productionProduct.id, {
         quantity,
         notes: productionNotes.trim() || undefined,
       });

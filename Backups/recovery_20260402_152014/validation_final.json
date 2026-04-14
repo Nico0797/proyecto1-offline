@@ -1,0 +1,1020 @@
+{
+  "sql_validation": {
+    "users": [
+      {
+        "id": 1,
+        "email": "encajapp45@gmail.com",
+        "plan": "business",
+        "membership_plan": "business_manual",
+        "membership_start": "2026-04-02 15:22:25.840519",
+        "membership_end": "2026-05-02 15:22:25.840519",
+        "membership_auto_renew": false,
+        "is_admin": false,
+        "account_type": "personal",
+        "linked_business_id": null
+      },
+      {
+        "id": 3,
+        "email": "demo@cuaderno.app",
+        "plan": "pro",
+        "membership_plan": null,
+        "membership_start": null,
+        "membership_end": null,
+        "membership_auto_renew": true,
+        "is_admin": true,
+        "account_type": "personal",
+        "linked_business_id": null
+      }
+    ],
+    "businesses": [
+      {
+        "id": 3,
+        "user_id": 1,
+        "owner_email": "encajapp45@gmail.com",
+        "name": "NEGOCIO RECUPERADO - CONFIRMAR NOMBRE",
+        "currency": "COP",
+        "timezone": "America/Bogota",
+        "created_at": "2026-04-02 15:22:25.840519"
+      }
+    ],
+    "user_roles": []
+  },
+  "api_validation": {
+    "encajapp45": {
+      "login_status_code": 200,
+      "login": {
+        "access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjoxLCJ0eXBlIjoiYWNjZXNzIiwic3YiOjMsImV4cCI6MTc3NTE2MjI3OSwiaWF0IjoxNzc1MTYxMzc5fQ.fQHtznKZXOoc-AQ1TQveNhejsQIgSp5kp6DQuDeO2fw",
+        "accessible_contexts": [
+          {
+            "business_id": 3,
+            "business_name": "NEGOCIO RECUPERADO - CONFIRMAR NOMBRE",
+            "context_type": "owned",
+            "plan": "business",
+            "role": "Propietario",
+            "role_id": null,
+            "status": "active"
+          }
+        ],
+        "account_access": {
+          "active": true,
+          "checkout_required": false,
+          "demo_business_id": null,
+          "demo_business_name": null,
+          "demo_preview_active": false,
+          "demo_preview_available": false,
+          "existing_access": true,
+          "has_access": true,
+          "latest_payment": null,
+          "manual_grant": true,
+          "membership_end": "2026-05-02T15:22:25.840519",
+          "membership_plan_code": "business_manual",
+          "membership_start": "2026-04-02T15:22:25.840519",
+          "onboarding_flow": "business",
+          "onboarding_mode": "questionnaire_business",
+          "plan": "business",
+          "plan_code": "business",
+          "required": false,
+          "requires_onboarding": true,
+          "source": "manual",
+          "status": "active"
+        },
+        "activation_required": true,
+        "active_context": {
+          "business_id": 3,
+          "name": "NEGOCIO RECUPERADO - CONFIRMAR NOMBRE",
+          "permissions": [
+            "*"
+          ],
+          "role": "Propietario",
+          "type": "owned"
+        },
+        "refresh_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjoxLCJ0eXBlIjoicmVmcmVzaCIsInN2IjozLCJleHAiOjE3NzU3NjYxNzksImlhdCI6MTc3NTE2MTM3OX0.oasiEC_8jzsMB15w5pfv2MeoIQJjo1_WQsCCs0BT6PE",
+        "user": {
+          "account_type": "personal",
+          "created_at": "2026-04-02T12:44:07.896096",
+          "email": "encajapp45@gmail.com",
+          "email_verified": true,
+          "id": 1,
+          "is_active": true,
+          "is_admin": false,
+          "last_login": "2026-04-02T20:22:59.394835",
+          "membership_auto_renew": false,
+          "membership_end": "2026-05-02T15:22:25.840519",
+          "membership_plan": "business_manual",
+          "membership_start": "2026-04-02T15:22:25.840519",
+          "name": "Encajapp45",
+          "plan": "business"
+        }
+      },
+      "me_status_code": 200,
+      "me": {
+        "account_access": {
+          "active": true,
+          "checkout_required": false,
+          "demo_business_id": null,
+          "demo_business_name": null,
+          "demo_preview_active": false,
+          "demo_preview_available": false,
+          "existing_access": true,
+          "has_access": true,
+          "latest_payment": null,
+          "manual_grant": true,
+          "membership_end": "2026-05-02T15:22:25.840519",
+          "membership_plan_code": "business_manual",
+          "membership_start": "2026-04-02T15:22:25.840519",
+          "onboarding_flow": "business",
+          "onboarding_mode": "questionnaire_business",
+          "plan": "business",
+          "plan_code": "business",
+          "required": false,
+          "requires_onboarding": true,
+          "source": "manual",
+          "status": "active"
+        },
+        "user": {
+          "account_type": "personal",
+          "created_at": "2026-04-02T12:44:07.896096",
+          "email": "encajapp45@gmail.com",
+          "email_verified": true,
+          "id": 1,
+          "is_active": true,
+          "is_admin": false,
+          "last_login": "2026-04-02T20:22:59.394835",
+          "membership_auto_renew": false,
+          "membership_end": "2026-05-02T15:22:25.840519",
+          "membership_plan": "business_manual",
+          "membership_start": "2026-04-02T15:22:25.840519",
+          "name": "Encajapp45",
+          "permissions": {
+            "admin": false,
+            "admin_permissions": false,
+            "admin_roles": false,
+            "admin_users": false,
+            "clients": false,
+            "clients_read": false,
+            "expenses": false,
+            "expenses_read": false,
+            "payments": false,
+            "payments_read": false,
+            "products": false,
+            "products_create": false,
+            "products_read": false,
+            "sales": false,
+            "sales_read": false
+          },
+          "plan": "business"
+        }
+      },
+      "account_access_status_code": 200,
+      "account_access": {
+        "account_access": {
+          "active": true,
+          "checkout_required": false,
+          "demo_business_id": null,
+          "demo_business_name": null,
+          "demo_preview_active": false,
+          "demo_preview_available": false,
+          "existing_access": true,
+          "has_access": true,
+          "latest_payment": null,
+          "manual_grant": true,
+          "membership_end": "2026-05-02T15:22:25.840519",
+          "membership_plan_code": "business_manual",
+          "membership_start": "2026-04-02T15:22:25.840519",
+          "onboarding_flow": "business",
+          "onboarding_mode": "questionnaire_business",
+          "plan": "business",
+          "plan_code": "business",
+          "required": false,
+          "requires_onboarding": true,
+          "source": "manual",
+          "status": "active"
+        },
+        "pricing": {
+          "business_type_recommended_plan": {
+            "production": "business",
+            "services": "pro",
+            "simple_store": "basic",
+            "wholesale": "pro"
+          },
+          "currency": "USD",
+          "cycle_order": [
+            "monthly",
+            "quarterly",
+            "annual"
+          ],
+          "display_currency": "USD",
+          "legacy_aliases": {
+            "basic": "basic",
+            "business": "business",
+            "free": "basic",
+            "pro": "pro"
+          },
+          "module_minimum_plan": {
+            "accounts_receivable": "pro",
+            "customers": "basic",
+            "products": "basic",
+            "quotes": "pro",
+            "raw_inventory": "pro",
+            "reports": "basic",
+            "sales": "basic"
+          },
+          "plan_order": [
+            "basic",
+            "pro",
+            "business"
+          ],
+          "plans": {
+            "basic": {
+              "badge": null,
+              "cta_label": "Elegir Básica",
+              "cycles": {
+                "annual": {
+                  "checkout_plan_code": "basic_annual",
+                  "cycle": "annual",
+                  "discount_label": "Ahorra 15%",
+                  "discount_percent": 15.0,
+                  "label": "Anual",
+                  "monthly_equivalent_usd": 2.54,
+                  "months": 12,
+                  "savings_usd": 5.38,
+                  "total_usd": 30.5
+                },
+                "monthly": {
+                  "checkout_plan_code": "basic_monthly",
+                  "cycle": "monthly",
+                  "discount_label": null,
+                  "discount_percent": 0.0,
+                  "label": "Mensual",
+                  "monthly_equivalent_usd": 2.99,
+                  "months": 1,
+                  "savings_usd": 0.0,
+                  "total_usd": 2.99
+                },
+                "quarterly": {
+                  "checkout_plan_code": "basic_quarterly",
+                  "cycle": "quarterly",
+                  "discount_label": "Ahorra 10%",
+                  "discount_percent": 10.0,
+                  "label": "Trimestral",
+                  "monthly_equivalent_usd": 2.69,
+                  "months": 3,
+                  "savings_usd": 0.9,
+                  "total_usd": 8.07
+                }
+              },
+              "display_name": "Básica",
+              "features": [
+                "Preset directo de tienda simple",
+                "Ventas, productos, clientes y resumen",
+                "Menos menús visibles al arrancar",
+                "Ideal para comenzar sin complejidad"
+              ],
+              "highlight": "Entra directo con una base lista para vender.",
+              "key": "basic",
+              "monthly_price_usd": 2.99,
+              "recommended_for": [
+                "Tiendas pequeñas",
+                "Negocios que recién empiezan",
+                "Operaciones simples sin equipo"
+              ],
+              "short_description": "Para ventas rápidas, catálogo ligero y control diario simple.",
+              "tagline": "Empieza sin enredos con una tienda simple y clara."
+            },
+            "business": {
+              "badge": "Escala",
+              "cta_label": "Elegir Business",
+              "cycles": {
+                "annual": {
+                  "checkout_plan_code": "business_annual",
+                  "cycle": "annual",
+                  "discount_label": "Ahorra 15%",
+                  "discount_percent": 15.0,
+                  "label": "Anual",
+                  "monthly_equivalent_usd": 11.04,
+                  "months": 12,
+                  "savings_usd": 23.38,
+                  "total_usd": 132.5
+                },
+                "monthly": {
+                  "checkout_plan_code": "business_monthly",
+                  "cycle": "monthly",
+                  "discount_label": null,
+                  "discount_percent": 0.0,
+                  "label": "Mensual",
+                  "monthly_equivalent_usd": 12.99,
+                  "months": 1,
+                  "savings_usd": 0.0,
+                  "total_usd": 12.99
+                },
+                "quarterly": {
+                  "checkout_plan_code": "business_quarterly",
+                  "cycle": "quarterly",
+                  "discount_label": "Ahorra 10%",
+                  "discount_percent": 10.0,
+                  "label": "Trimestral",
+                  "monthly_equivalent_usd": 11.69,
+                  "months": 3,
+                  "savings_usd": 3.9,
+                  "total_usd": 35.07
+                }
+              },
+              "display_name": "Business",
+              "features": [
+                "Cuestionario inicial completo",
+                "Mejor ajuste para equipos y procesos avanzados",
+                "Ideal para producción, inventario o roles",
+                "Listo para una operación más estructurada"
+              ],
+              "highlight": "Más contexto inicial para equipos, producción y operación avanzada.",
+              "key": "business",
+              "monthly_price_usd": 12.99,
+              "recommended_for": [
+                "Negocios con equipo",
+                "Operaciones con producción o abastecimiento",
+                "Empresas que necesitan más estructura"
+              ],
+              "short_description": "Incluye el cuestionario completo y está pensado para una operación más profunda.",
+              "tagline": "Para operaciones más completas, con equipos o procesos avanzados."
+            },
+            "pro": {
+              "badge": "Más elegido",
+              "cta_label": "Elegir Pro",
+              "cycles": {
+                "annual": {
+                  "checkout_plan_code": "pro_annual",
+                  "cycle": "annual",
+                  "discount_label": "Ahorra 15%",
+                  "discount_percent": 15.0,
+                  "label": "Anual",
+                  "monthly_equivalent_usd": 5.09,
+                  "months": 12,
+                  "savings_usd": 10.78,
+                  "total_usd": 61.1
+                },
+                "monthly": {
+                  "checkout_plan_code": "pro_monthly",
+                  "cycle": "monthly",
+                  "discount_label": null,
+                  "discount_percent": 0.0,
+                  "label": "Mensual",
+                  "monthly_equivalent_usd": 5.99,
+                  "months": 1,
+                  "savings_usd": 0.0,
+                  "total_usd": 5.99
+                },
+                "quarterly": {
+                  "checkout_plan_code": "pro_quarterly",
+                  "cycle": "quarterly",
+                  "discount_label": "Ahorra 10%",
+                  "discount_percent": 10.0,
+                  "label": "Trimestral",
+                  "monthly_equivalent_usd": 5.39,
+                  "months": 3,
+                  "savings_usd": 1.8,
+                  "total_usd": 16.17
+                }
+              },
+              "display_name": "Pro",
+              "features": [
+                "Cuestionario inicial guiado",
+                "Cobros, reportes y personalización inicial",
+                "Mejor ajuste para ventas con seguimiento",
+                "Cambios posteriores desde Personalización"
+              ],
+              "highlight": "Ideal cuando necesitas cobrar, cotizar o personalizar mejor la experiencia.",
+              "key": "pro",
+              "monthly_price_usd": 5.99,
+              "recommended_for": [
+                "Negocios en crecimiento",
+                "Servicios y ventas con seguimiento",
+                "Operaciones con más control comercial"
+              ],
+              "short_description": "Desbloquea el cuestionario inicial y módulos para una operación más comercial.",
+              "tagline": "Configura una operación más flexible desde el primer día."
+            }
+          }
+        }
+      },
+      "bootstrap_status_code": 200,
+      "bootstrap": {
+        "account_access": {
+          "active": true,
+          "checkout_required": false,
+          "demo_business_id": null,
+          "demo_business_name": null,
+          "demo_preview_active": false,
+          "demo_preview_available": false,
+          "existing_access": true,
+          "has_access": true,
+          "latest_payment": null,
+          "manual_grant": true,
+          "membership_end": "2026-05-02T15:22:25.840519",
+          "membership_plan_code": "business_manual",
+          "membership_start": "2026-04-02T15:22:25.840519",
+          "onboarding_flow": "business",
+          "onboarding_mode": "questionnaire_business",
+          "plan": "business",
+          "plan_code": "business",
+          "required": false,
+          "requires_onboarding": true,
+          "source": "manual",
+          "status": "active"
+        },
+        "active_business": {
+          "created_at": "2026-04-02T15:22:25.840519",
+          "currency": "COP",
+          "id": 3,
+          "modules": [
+            {
+              "config": null,
+              "enabled": true,
+              "module_key": "sales",
+              "updated_at": null
+            },
+            {
+              "config": null,
+              "enabled": true,
+              "module_key": "customers",
+              "updated_at": null
+            },
+            {
+              "config": null,
+              "enabled": true,
+              "module_key": "products",
+              "updated_at": null
+            },
+            {
+              "config": null,
+              "enabled": true,
+              "module_key": "accounts_receivable",
+              "updated_at": null
+            },
+            {
+              "config": null,
+              "enabled": true,
+              "module_key": "reports",
+              "updated_at": null
+            },
+            {
+              "config": null,
+              "enabled": false,
+              "module_key": "quotes",
+              "updated_at": null
+            },
+            {
+              "config": null,
+              "enabled": false,
+              "module_key": "raw_inventory",
+              "updated_at": null
+            }
+          ],
+          "monthly_sales_goal": 0.0,
+          "name": "NEGOCIO RECUPERADO - CONFIRMAR NOMBRE",
+          "permissions": [
+            "*"
+          ],
+          "plan": "business",
+          "role": "OWNER",
+          "settings": {
+            "initial_setup": {
+              "hidden_tools": [],
+              "highlighted_tools": [],
+              "initial_dashboard_tab": "hoy",
+              "initial_home_focus": null,
+              "initial_modules_applied": [],
+              "onboarding_completed": false,
+              "onboarding_completed_at": null,
+              "onboarding_profile": {
+                "business_category": null,
+                "documents_mode": null,
+                "home_focus": null,
+                "inventory_mode": null,
+                "operational_model": null,
+                "operations_mode": null,
+                "production_control": null,
+                "raw_materials_mode": null,
+                "recipe_mode": null,
+                "sales_flow": null,
+                "selling_mode": null,
+                "team_mode": null
+              },
+              "recommended_tutorials": [],
+              "simplicity_level": "guided",
+              "version": 1
+            },
+            "operational_profile": {
+              "consumes_raw_materials_on_production": false,
+              "consumes_raw_materials_on_quote_conversion": false,
+              "consumes_raw_materials_on_sale": false,
+              "controls_production": false,
+              "fulfillment_mode": null,
+              "inventory_model": null,
+              "manages_raw_materials": false,
+              "operational_model": null,
+              "production_control_mode": null,
+              "production_mode": null,
+              "recipe_mode": null,
+              "supports_make_to_order": false,
+              "supports_quotes": false,
+              "tracks_finished_goods_stock": false,
+              "uses_raw_inventory": false,
+              "uses_recipes": false,
+              "version": 1
+            },
+            "personalization": {
+              "commercial_sections": {
+                "invoices": true,
+                "orders": true,
+                "sales_goals": true
+              }
+            }
+          },
+          "timezone": "America/Bogota",
+          "user_id": 1,
+          "whatsapp_templates": {
+            "collection_message": "Hola {cliente} \nTe escribo de *{negocio}*.\n\nSegún mi registro, tienes un saldo pendiente de *${deuda}*.\n¿Me confirmas por favor cuándo puedes realizar el pago?\n\nGracias ",
+            "sale_message": "Hola {cliente}, gracias por tu compra en *{negocio}*.\n\n*Detalle:*\n{items}\n*TOTAL: ${total}*\nPagado: ${pagado}\nSaldo: ${saldo}\n\n¡Esperamos verte pronto! "
+          }
+        },
+        "businesses": [
+          {
+            "created_at": "2026-04-02T15:22:25.840519",
+            "currency": "COP",
+            "id": 3,
+            "modules": [
+              {
+                "config": null,
+                "enabled": true,
+                "module_key": "sales",
+                "updated_at": null
+              },
+              {
+                "config": null,
+                "enabled": true,
+                "module_key": "customers",
+                "updated_at": null
+              },
+              {
+                "config": null,
+                "enabled": true,
+                "module_key": "products",
+                "updated_at": null
+              },
+              {
+                "config": null,
+                "enabled": true,
+                "module_key": "accounts_receivable",
+                "updated_at": null
+              },
+              {
+                "config": null,
+                "enabled": true,
+                "module_key": "reports",
+                "updated_at": null
+              },
+              {
+                "config": null,
+                "enabled": false,
+                "module_key": "quotes",
+                "updated_at": null
+              },
+              {
+                "config": null,
+                "enabled": false,
+                "module_key": "raw_inventory",
+                "updated_at": null
+              }
+            ],
+            "monthly_sales_goal": 0.0,
+            "name": "NEGOCIO RECUPERADO - CONFIRMAR NOMBRE",
+            "permissions": [
+              "*"
+            ],
+            "plan": "business",
+            "role": "OWNER",
+            "settings": {
+              "initial_setup": {
+                "hidden_tools": [],
+                "highlighted_tools": [],
+                "initial_dashboard_tab": "hoy",
+                "initial_home_focus": null,
+                "initial_modules_applied": [],
+                "onboarding_completed": false,
+                "onboarding_completed_at": null,
+                "onboarding_profile": {
+                  "business_category": null,
+                  "documents_mode": null,
+                  "home_focus": null,
+                  "inventory_mode": null,
+                  "operational_model": null,
+                  "operations_mode": null,
+                  "production_control": null,
+                  "raw_materials_mode": null,
+                  "recipe_mode": null,
+                  "sales_flow": null,
+                  "selling_mode": null,
+                  "team_mode": null
+                },
+                "recommended_tutorials": [],
+                "simplicity_level": "guided",
+                "version": 1
+              },
+              "operational_profile": {
+                "consumes_raw_materials_on_production": false,
+                "consumes_raw_materials_on_quote_conversion": false,
+                "consumes_raw_materials_on_sale": false,
+                "controls_production": false,
+                "fulfillment_mode": null,
+                "inventory_model": null,
+                "manages_raw_materials": false,
+                "operational_model": null,
+                "production_control_mode": null,
+                "production_mode": null,
+                "recipe_mode": null,
+                "supports_make_to_order": false,
+                "supports_quotes": false,
+                "tracks_finished_goods_stock": false,
+                "uses_raw_inventory": false,
+                "uses_recipes": false,
+                "version": 1
+              },
+              "personalization": {
+                "commercial_sections": {
+                  "invoices": true,
+                  "orders": true,
+                  "sales_goals": true
+                }
+              }
+            },
+            "timezone": "America/Bogota",
+            "user_id": 1,
+            "whatsapp_templates": {
+              "collection_message": "Hola {cliente} \nTe escribo de *{negocio}*.\n\nSegún mi registro, tienes un saldo pendiente de *${deuda}*.\n¿Me confirmas por favor cuándo puedes realizar el pago?\n\nGracias ",
+              "sale_message": "Hola {cliente}, gracias por tu compra en *{negocio}*.\n\n*Detalle:*\n{items}\n*TOTAL: ${total}*\nPagado: ${pagado}\nSaldo: ${saldo}\n\n¡Esperamos verte pronto! "
+            }
+          }
+        ]
+      }
+    },
+    "demo": {
+      "login_status_code": 200,
+      "login": {
+        "access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjozLCJ0eXBlIjoiYWNjZXNzIiwic3YiOjMsImV4cCI6MTc3NTE2MjI4MCwiaWF0IjoxNzc1MTYxMzgwfQ.RK8Oo7R_URExq0awHyLL0t9MZYjy1ZRciLg9qY4L-wk",
+        "accessible_contexts": [],
+        "account_access": {
+          "active": true,
+          "checkout_required": false,
+          "demo_business_id": null,
+          "demo_business_name": null,
+          "demo_preview_active": false,
+          "demo_preview_available": false,
+          "existing_access": true,
+          "has_access": true,
+          "manual_grant": true,
+          "membership_end": null,
+          "membership_plan_code": null,
+          "onboarding_flow": "business",
+          "onboarding_mode": "questionnaire_business",
+          "plan": "pro",
+          "plan_code": "pro",
+          "required": false,
+          "requires_onboarding": true,
+          "source": "admin",
+          "status": "active"
+        },
+        "activation_required": true,
+        "active_context": null,
+        "refresh_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjozLCJ0eXBlIjoicmVmcmVzaCIsInN2IjozLCJleHAiOjE3NzU3NjYxODAsImlhdCI6MTc3NTE2MTM4MH0.3idK7otcYMKkzMjxaZXYTwrqnLIIcefIYhiE8DJ6GyU",
+        "user": {
+          "account_type": "personal",
+          "created_at": "2026-04-02T12:44:39.517801",
+          "email": "demo@cuaderno.app",
+          "email_verified": true,
+          "id": 3,
+          "is_active": true,
+          "is_admin": true,
+          "last_login": "2026-04-02T20:23:00.807299",
+          "membership_auto_renew": true,
+          "membership_end": null,
+          "membership_plan": null,
+          "membership_start": null,
+          "name": "Demo",
+          "plan": "pro"
+        }
+      },
+      "me_status_code": 200,
+      "me": {
+        "account_access": {
+          "active": true,
+          "checkout_required": false,
+          "demo_business_id": null,
+          "demo_business_name": null,
+          "demo_preview_active": false,
+          "demo_preview_available": false,
+          "existing_access": true,
+          "has_access": true,
+          "manual_grant": true,
+          "membership_end": null,
+          "membership_plan_code": null,
+          "onboarding_flow": "business",
+          "onboarding_mode": "questionnaire_business",
+          "plan": "pro",
+          "plan_code": "pro",
+          "required": false,
+          "requires_onboarding": true,
+          "source": "admin",
+          "status": "active"
+        },
+        "user": {
+          "account_type": "personal",
+          "created_at": "2026-04-02T12:44:39.517801",
+          "email": "demo@cuaderno.app",
+          "email_verified": true,
+          "id": 3,
+          "is_active": true,
+          "is_admin": true,
+          "last_login": "2026-04-02T20:23:00.807299",
+          "membership_auto_renew": true,
+          "membership_end": null,
+          "membership_plan": null,
+          "membership_start": null,
+          "name": "Demo",
+          "permissions": {
+            "admin": true,
+            "admin_permissions": true,
+            "admin_roles": true,
+            "admin_users": true,
+            "clients": true,
+            "clients_read": true,
+            "expenses": true,
+            "expenses_read": true,
+            "payments": true,
+            "payments_read": true,
+            "products": true,
+            "products_create": true,
+            "products_read": true,
+            "sales": true,
+            "sales_read": true
+          },
+          "plan": "pro"
+        }
+      },
+      "account_access_status_code": 200,
+      "account_access": {
+        "account_access": {
+          "active": true,
+          "checkout_required": false,
+          "demo_business_id": null,
+          "demo_business_name": null,
+          "demo_preview_active": false,
+          "demo_preview_available": false,
+          "existing_access": true,
+          "has_access": true,
+          "manual_grant": true,
+          "membership_end": null,
+          "membership_plan_code": null,
+          "onboarding_flow": "business",
+          "onboarding_mode": "questionnaire_business",
+          "plan": "pro",
+          "plan_code": "pro",
+          "required": false,
+          "requires_onboarding": true,
+          "source": "admin",
+          "status": "active"
+        },
+        "pricing": {
+          "business_type_recommended_plan": {
+            "production": "business",
+            "services": "pro",
+            "simple_store": "basic",
+            "wholesale": "pro"
+          },
+          "currency": "USD",
+          "cycle_order": [
+            "monthly",
+            "quarterly",
+            "annual"
+          ],
+          "display_currency": "USD",
+          "legacy_aliases": {
+            "basic": "basic",
+            "business": "business",
+            "free": "basic",
+            "pro": "pro"
+          },
+          "module_minimum_plan": {
+            "accounts_receivable": "pro",
+            "customers": "basic",
+            "products": "basic",
+            "quotes": "pro",
+            "raw_inventory": "pro",
+            "reports": "basic",
+            "sales": "basic"
+          },
+          "plan_order": [
+            "basic",
+            "pro",
+            "business"
+          ],
+          "plans": {
+            "basic": {
+              "badge": null,
+              "cta_label": "Elegir Básica",
+              "cycles": {
+                "annual": {
+                  "checkout_plan_code": "basic_annual",
+                  "cycle": "annual",
+                  "discount_label": "Ahorra 15%",
+                  "discount_percent": 15.0,
+                  "label": "Anual",
+                  "monthly_equivalent_usd": 2.54,
+                  "months": 12,
+                  "savings_usd": 5.38,
+                  "total_usd": 30.5
+                },
+                "monthly": {
+                  "checkout_plan_code": "basic_monthly",
+                  "cycle": "monthly",
+                  "discount_label": null,
+                  "discount_percent": 0.0,
+                  "label": "Mensual",
+                  "monthly_equivalent_usd": 2.99,
+                  "months": 1,
+                  "savings_usd": 0.0,
+                  "total_usd": 2.99
+                },
+                "quarterly": {
+                  "checkout_plan_code": "basic_quarterly",
+                  "cycle": "quarterly",
+                  "discount_label": "Ahorra 10%",
+                  "discount_percent": 10.0,
+                  "label": "Trimestral",
+                  "monthly_equivalent_usd": 2.69,
+                  "months": 3,
+                  "savings_usd": 0.9,
+                  "total_usd": 8.07
+                }
+              },
+              "display_name": "Básica",
+              "features": [
+                "Preset directo de tienda simple",
+                "Ventas, productos, clientes y resumen",
+                "Menos menús visibles al arrancar",
+                "Ideal para comenzar sin complejidad"
+              ],
+              "highlight": "Entra directo con una base lista para vender.",
+              "key": "basic",
+              "monthly_price_usd": 2.99,
+              "recommended_for": [
+                "Tiendas pequeñas",
+                "Negocios que recién empiezan",
+                "Operaciones simples sin equipo"
+              ],
+              "short_description": "Para ventas rápidas, catálogo ligero y control diario simple.",
+              "tagline": "Empieza sin enredos con una tienda simple y clara."
+            },
+            "business": {
+              "badge": "Escala",
+              "cta_label": "Elegir Business",
+              "cycles": {
+                "annual": {
+                  "checkout_plan_code": "business_annual",
+                  "cycle": "annual",
+                  "discount_label": "Ahorra 15%",
+                  "discount_percent": 15.0,
+                  "label": "Anual",
+                  "monthly_equivalent_usd": 11.04,
+                  "months": 12,
+                  "savings_usd": 23.38,
+                  "total_usd": 132.5
+                },
+                "monthly": {
+                  "checkout_plan_code": "business_monthly",
+                  "cycle": "monthly",
+                  "discount_label": null,
+                  "discount_percent": 0.0,
+                  "label": "Mensual",
+                  "monthly_equivalent_usd": 12.99,
+                  "months": 1,
+                  "savings_usd": 0.0,
+                  "total_usd": 12.99
+                },
+                "quarterly": {
+                  "checkout_plan_code": "business_quarterly",
+                  "cycle": "quarterly",
+                  "discount_label": "Ahorra 10%",
+                  "discount_percent": 10.0,
+                  "label": "Trimestral",
+                  "monthly_equivalent_usd": 11.69,
+                  "months": 3,
+                  "savings_usd": 3.9,
+                  "total_usd": 35.07
+                }
+              },
+              "display_name": "Business",
+              "features": [
+                "Cuestionario inicial completo",
+                "Mejor ajuste para equipos y procesos avanzados",
+                "Ideal para producción, inventario o roles",
+                "Listo para una operación más estructurada"
+              ],
+              "highlight": "Más contexto inicial para equipos, producción y operación avanzada.",
+              "key": "business",
+              "monthly_price_usd": 12.99,
+              "recommended_for": [
+                "Negocios con equipo",
+                "Operaciones con producción o abastecimiento",
+                "Empresas que necesitan más estructura"
+              ],
+              "short_description": "Incluye el cuestionario completo y está pensado para una operación más profunda.",
+              "tagline": "Para operaciones más completas, con equipos o procesos avanzados."
+            },
+            "pro": {
+              "badge": "Más elegido",
+              "cta_label": "Elegir Pro",
+              "cycles": {
+                "annual": {
+                  "checkout_plan_code": "pro_annual",
+                  "cycle": "annual",
+                  "discount_label": "Ahorra 15%",
+                  "discount_percent": 15.0,
+                  "label": "Anual",
+                  "monthly_equivalent_usd": 5.09,
+                  "months": 12,
+                  "savings_usd": 10.78,
+                  "total_usd": 61.1
+                },
+                "monthly": {
+                  "checkout_plan_code": "pro_monthly",
+                  "cycle": "monthly",
+                  "discount_label": null,
+                  "discount_percent": 0.0,
+                  "label": "Mensual",
+                  "monthly_equivalent_usd": 5.99,
+                  "months": 1,
+                  "savings_usd": 0.0,
+                  "total_usd": 5.99
+                },
+                "quarterly": {
+                  "checkout_plan_code": "pro_quarterly",
+                  "cycle": "quarterly",
+                  "discount_label": "Ahorra 10%",
+                  "discount_percent": 10.0,
+                  "label": "Trimestral",
+                  "monthly_equivalent_usd": 5.39,
+                  "months": 3,
+                  "savings_usd": 1.8,
+                  "total_usd": 16.17
+                }
+              },
+              "display_name": "Pro",
+              "features": [
+                "Cuestionario inicial guiado",
+                "Cobros, reportes y personalización inicial",
+                "Mejor ajuste para ventas con seguimiento",
+                "Cambios posteriores desde Personalización"
+              ],
+              "highlight": "Ideal cuando necesitas cobrar, cotizar o personalizar mejor la experiencia.",
+              "key": "pro",
+              "monthly_price_usd": 5.99,
+              "recommended_for": [
+                "Negocios en crecimiento",
+                "Servicios y ventas con seguimiento",
+                "Operaciones con más control comercial"
+              ],
+              "short_description": "Desbloquea el cuestionario inicial y módulos para una operación más comercial.",
+              "tagline": "Configura una operación más flexible desde el primer día."
+            }
+          }
+        }
+      },
+      "bootstrap_status_code": 200,
+      "bootstrap": {
+        "account_access": {
+          "active": true,
+          "checkout_required": false,
+          "demo_business_id": null,
+          "demo_business_name": null,
+          "demo_preview_active": false,
+          "demo_preview_available": false,
+          "existing_access": true,
+          "has_access": true,
+          "manual_grant": true,
+          "membership_end": null,
+          "membership_plan_code": null,
+          "onboarding_flow": "business",
+          "onboarding_mode": "questionnaire_business",
+          "plan": "pro",
+          "plan_code": "pro",
+          "required": false,
+          "requires_onboarding": true,
+          "source": "admin",
+          "status": "active"
+        },
+        "active_business": null,
+        "businesses": []
+      }
+    }
+  }
+}

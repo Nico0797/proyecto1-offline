@@ -1,64 +1,47 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   ArrowLeft,
   ArrowRight,
-  BadgeDollarSign,
-  Boxes,
-  BriefcaseBusiness,
-  ChefHat,
-  Circle,
-  CircleOff,
+  CalendarDays,
+  Check,
   ClipboardList,
-  Coins,
-  Factory,
-  FileText,
-  Landmark,
-  Layers3,
-  LayoutDashboard,
   Package,
-  Receipt,
-  RefreshCw,
-  ShieldCheck,
-  ShoppingBag,
   Sparkles,
-  Tag,
-  Ticket,
-  Truck,
-  User,
   Users,
-  Wand2,
-  Wallet,
-  Zap,
-  type LucideIcon,
+  Wrench,
 } from 'lucide-react';
-import { canAccessModule } from '../../auth/plan';
-import { useBusinessStore } from '../../store/businessStore';
-import { useAuthStore } from '../../store/authStore';
-import { useAccountAccessStore } from '../../store/accountAccessStore';
 import { Modal } from '../ui/Modal';
 import { Button } from '../ui/Button';
 import { Input } from '../ui/Input';
 import { cn } from '../../utils/cn';
-import { applyBusinessTypeConfiguration } from '../../config/businessPresetApplication';
-import { getBusinessTypePresetDefinition } from '../../config/businessPersonalizationCompat';
+import { useBusinessStore } from '../../store/businessStore';
+import { useAuthStore } from '../../store/authStore';
 import { useNavigationPreferences } from '../../store/navigationPreferences.store';
-import { applyPresetToBusinessSettings } from '../../config/businessPresets';
+import { applyBusinessTypeConfiguration } from '../../config/businessPresetApplication';
 import {
-  buildBusinessOnboardingSummary,
-  buildInitialSetupSettings,
-  DEFAULT_BUSINESS_ONBOARDING_ANSWERS,
-  getQuestionSetForFlow,
-  getTutorialDisplayLabel,
-  INITIAL_ONBOARDING_CHANGE_MESSAGE,
-  resolveOnboardingFlow,
-  type BusinessOnboardingWizardAnswers,
-  type OnboardingFlow,
-  type OnboardingOptionDefinition,
-  type OnboardingQuestionDefinition,
-  type OnboardingQuestionId,
-  type OnboardingVisualTone,
-} from '../../config/businessOperationalOnboarding';
+  applyPresetToBusinessSettings,
+  buildInitialSetupFromPreset,
+  buildOperationalProfileFromPreset,
+} from '../../config/businessPresets';
+import type {
+  BusinessCommercialSectionsState,
+  BusinessInitialSetupSettings,
+} from '../../config/businessPersonalizationCompat';
+import type { BusinessOperationalProfile } from '../../config/businessOperationalProfile';
+import {
+  applyBusinessPreset,
+  getBusinessPresetFromAnswers,
+  getGranularPresetChoices,
+  MODULE_CATEGORIES,
+  ONBOARDING_MODULE_OPTIONS,
+  type BusinessVisibilityId,
+  type OnboardingAnswers,
+  type OnboardingSellsAnswer,
+  type OnboardingTeamAnswer,
+  type OnboardingWorkflowAnswer,
+} from '../../config/businessOnboardingPresets';
+import type { BusinessTypeKey } from '../../config/businessPresets';
 
 interface CreateBusinessModalProps {
   isOpen: boolean;
@@ -66,385 +49,183 @@ interface CreateBusinessModalProps {
   onSuccess: () => void;
 }
 
-type QuestionStep = OnboardingQuestionId;
-type WizardScreenId = 'identity' | QuestionStep | 'summary';
+type OnboardingStep = 'sells' | 'workflow' | 'team' | 'modules' | 'summary';
 
-const TONE_STYLES: Record<OnboardingVisualTone, { shell: string; badge: string; glow: string }> = {
-  sunrise: {
-    shell: 'border-amber-400/30 bg-[linear-gradient(180deg,rgba(251,191,36,0.18),rgba(15,23,42,0.78))] text-white',
-    badge: 'bg-amber-400/15 text-amber-100',
-    glow: 'from-amber-300/30 via-orange-300/10 to-transparent',
-  },
-  ocean: {
-    shell: 'border-sky-400/30 bg-[linear-gradient(180deg,rgba(56,189,248,0.18),rgba(15,23,42,0.78))] text-white',
-    badge: 'bg-sky-400/15 text-sky-100',
-    glow: 'from-sky-300/30 via-cyan-300/10 to-transparent',
-  },
-  mint: {
-    shell: 'border-emerald-400/30 bg-[linear-gradient(180deg,rgba(52,211,153,0.18),rgba(15,23,42,0.78))] text-white',
-    badge: 'bg-emerald-400/15 text-emerald-100',
-    glow: 'from-emerald-300/30 via-teal-300/10 to-transparent',
-  },
-  gold: {
-    shell: 'border-yellow-300/30 bg-[linear-gradient(180deg,rgba(250,204,21,0.18),rgba(15,23,42,0.78))] text-white',
-    badge: 'bg-yellow-300/15 text-yellow-100',
-    glow: 'from-yellow-200/30 via-amber-200/10 to-transparent',
-  },
-  rose: {
-    shell: 'border-rose-400/30 bg-[linear-gradient(180deg,rgba(251,113,133,0.18),rgba(15,23,42,0.78))] text-white',
-    badge: 'bg-rose-400/15 text-rose-100',
-    glow: 'from-rose-300/30 via-pink-300/10 to-transparent',
-  },
-  ink: {
-    shell: 'border-slate-400/20 bg-[linear-gradient(180deg,rgba(148,163,184,0.12),rgba(15,23,42,0.8))] text-white',
-    badge: 'bg-white/10 text-white/90',
-    glow: 'from-slate-300/20 via-slate-200/5 to-transparent',
-  },
-};
-
-const ICON_MAP: Record<string, LucideIcon> = {
-  package: Package,
-  briefcase: BriefcaseBusiness,
-  layers: Layers3,
-  factory: Factory,
-  boxes: Boxes,
-  sparkles: Sparkles,
-  wand: Wand2,
-  zap: Zap,
-  wallet: Wallet,
-  'clipboard-list': ClipboardList,
-  'file-text': FileText,
-  landmark: Landmark,
-  'shopping-bag': ShoppingBag,
-  coins: Coins,
-  tags: Tag,
-  'layout-dashboard': LayoutDashboard,
-  user: User,
-  users: Users,
-  shield: ShieldCheck,
-  receipt: Receipt,
-  ticket: Ticket,
-  'circle-off': CircleOff,
-  circle: Circle,
-  'refresh-cw': RefreshCw,
-  'chef-hat': ChefHat,
-  truck: Truck,
-};
+const STEP_ORDER: OnboardingStep[] = ['sells', 'workflow', 'team', 'modules', 'summary'];
 
 const CURRENCY_OPTIONS = [
-  { value: 'USD', label: 'USD ($)' },
-  { value: 'EUR', label: 'EUR (€)' },
   { value: 'COP', label: 'COP ($)' },
+  { value: 'USD', label: 'USD ($)' },
+  { value: 'EUR', label: 'EUR' },
   { value: 'MXN', label: 'MXN ($)' },
 ];
 
-const QUESTION_FIELD_MAP: Record<QuestionStep, keyof BusinessOnboardingWizardAnswers> = {
-  operational_model: 'operationalModel',
-  raw_materials_mode: 'rawMaterialsMode',
-  recipe_mode: 'recipeMode',
-  selling_mode: 'sellingMode',
-  production_control: 'productionControl',
-  sales_flow: 'salesFlow',
-  home_focus: 'homeFocus',
-  team_mode: 'teamMode',
-  team_structure: 'teamStructure',
-  role_setup: 'roleSetup',
-  permission_control: 'permissionControl',
-  owner_focus: 'ownerFocus',
-  documents_mode: 'documentsMode',
-  guidance_mode: 'guidanceMode',
-};
-
-const isQuestionScreen = (screenId: WizardScreenId): screenId is QuestionStep => {
-  return screenId !== 'identity' && screenId !== 'summary';
-};
-
-const getProgressValue = (screenId: WizardScreenId, screens: WizardScreenId[]) => {
-  if (screenId === 'summary') return 100;
-  return Math.round(((screens.indexOf(screenId) + 1) / Math.max(screens.length - 1, 1)) * 100);
-};
-
-const QuestionOptionCard = <TValue extends string>({
-  option,
+const ChoiceCard = ({
   selected,
-  onSelect,
+  onClick,
+  icon: Icon,
+  title,
+  description,
 }: {
-  option: OnboardingOptionDefinition<TValue>;
   selected: boolean;
-  onSelect: (value: TValue) => void;
-}) => {
-  const Icon = ICON_MAP[option.icon] || Sparkles;
-  const tone = TONE_STYLES[option.tone];
-
-  return (
-    <button
-      type="button"
-      onClick={() => onSelect(option.value)}
-      className={cn(
-        'group relative overflow-hidden rounded-[28px] border p-5 text-left transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-950 active:scale-[0.99]',
-        selected
-          ? `${tone.shell} shadow-[0_20px_65px_-30px_rgba(14,165,233,0.9)]`
-          : 'border-slate-200/80 bg-white text-slate-900 shadow-sm hover:-translate-y-0.5 hover:border-slate-300 dark:border-white/10 dark:bg-slate-950/80 dark:text-white dark:hover:border-white/20'
-      )}
-    >
-      <div className={cn('pointer-events-none absolute inset-x-0 top-0 h-28 bg-gradient-to-br blur-2xl', tone.glow)} />
-      <div className="relative">
-        <div className="flex items-start justify-between gap-3">
-          <div className={cn('inline-flex h-12 w-12 items-center justify-center rounded-2xl', selected ? tone.badge : 'bg-slate-100 text-slate-700 dark:bg-white/8 dark:text-white')}>
-            <Icon className="h-6 w-6" />
-          </div>
-          <div
-            className={cn(
-              'rounded-full border px-3 py-1 text-xs font-semibold tracking-[0.16em] uppercase',
-              selected
-                ? 'border-white/20 bg-white/10 text-white'
-                : 'border-slate-200 bg-slate-50 text-slate-500 dark:border-white/10 dark:bg-white/5 dark:text-slate-300'
-            )}
-          >
-            {selected ? 'Elegido' : 'Disponible'}
-          </div>
-        </div>
-
-        <div className="mt-5">
-          <h4 className="text-lg font-semibold">{option.title}</h4>
-          <p className={cn('mt-2 text-sm leading-6', selected ? 'text-white/82' : 'text-slate-600 dark:text-slate-300')}>
-            {option.description}
-          </p>
-        </div>
-
-        <div className="mt-5">
-          <div className={cn('text-[11px] font-semibold uppercase tracking-[0.24em]', selected ? 'text-white/75' : 'text-slate-500 dark:text-slate-400')}>
-            Lo deja listo con
-          </div>
-          <div className="mt-2 flex flex-wrap gap-2">
-            {option.activates.map((item) => (
-              <span
-                key={item}
-                className={cn(
-                  'rounded-full px-3 py-1 text-xs font-medium',
-                  selected ? 'bg-white/12 text-white' : 'bg-slate-100 text-slate-700 dark:bg-white/8 dark:text-slate-200'
-                )}
-              >
-                {item}
-              </span>
-            ))}
-          </div>
-          <p className={cn('mt-3 text-sm leading-6', selected ? 'text-white/88' : 'text-slate-600 dark:text-slate-300')}>
-            {option.benefit}
-          </p>
-        </div>
+  onClick: () => void;
+  icon: React.ElementType;
+  title: string;
+  description: string;
+}) => (
+  <button
+    type="button"
+    onClick={onClick}
+    className={cn(
+      'w-full rounded-[24px] border p-5 text-left transition-all',
+      selected
+        ? 'border-blue-400/30 bg-blue-500/12 shadow-[0_18px_48px_-30px_rgba(59,130,246,0.8)]'
+        : 'border-white/10 bg-slate-950/70 hover:border-white/20 hover:bg-slate-900/90',
+    )}
+  >
+    <div className="flex items-start gap-4">
+      <div className={cn('flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl', selected ? 'bg-blue-400/15 text-blue-100' : 'bg-white/8 text-white')}>
+        <Icon className="h-5 w-5" />
       </div>
-    </button>
-  );
-};
-
-const SummaryPill = ({ label }: { label: string }) => (
-  <span className="rounded-full border border-blue-500/15 bg-blue-500/10 px-3 py-1 text-xs font-medium text-blue-100">
-    {label}
-  </span>
+      <div className="min-w-0 flex-1">
+        <div className="flex items-center gap-2">
+          <span className="text-base font-semibold text-white">{title}</span>
+          {selected ? (
+            <div className="flex h-5 w-5 items-center justify-center rounded-full bg-blue-500/30">
+              <Check className="h-3.5 w-3.5 text-blue-100" />
+            </div>
+          ) : null}
+        </div>
+        <p className="mt-1 text-sm leading-6 text-slate-300">{description}</p>
+      </div>
+    </div>
+  </button>
 );
 
-export const CreateBusinessModal: React.FC<CreateBusinessModalProps> = ({
-  isOpen,
-  onClose,
-  onSuccess,
-}) => {
+export const CreateBusinessModal: React.FC<CreateBusinessModalProps> = ({ isOpen, onClose, onSuccess }) => {
   const navigate = useNavigate();
-  const { addBusiness, businesses, updateBusiness, updateBusinessModules } = useBusinessStore();
-  const { user } = useAuthStore();
-  const { access } = useAccountAccessStore();
+  const { addBusiness, updateBusiness, updateBusinessModules, fetchAuthBootstrap } = useBusinessStore();
+  const { user, activeContext, selectContext } = useAuthStore();
   const getScopeKey = useNavigationPreferences((state) => state.getScopeKey);
   const setPreferences = useNavigationPreferences((state) => state.setPreferences);
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  const [currentScreen, setCurrentScreen] = useState<WizardScreenId>('identity');
-  const [answers, setAnswers] = useState<BusinessOnboardingWizardAnswers>(DEFAULT_BUSINESS_ONBOARDING_ANSWERS);
-  const onboardingFlow: OnboardingFlow =
-    access?.onboarding_flow || resolveOnboardingFlow(user?.plan);
-  const isSimpleStoreOnboarding = onboardingFlow === 'basic';
-  const questionSet = useMemo(() => getQuestionSetForFlow(onboardingFlow), [onboardingFlow]);
-  const wizardScreens = useMemo<WizardScreenId[]>(
-    () => ['identity', ...questionSet.map((question) => question.id), 'summary'],
-    [questionSet]
-  );
-
-  const onboardingSummary = useMemo(
-    () => buildBusinessOnboardingSummary(answers, onboardingFlow),
-    [answers, onboardingFlow]
-  );
-  const effectiveSummary = useMemo(() => {
-    const allowedModules = onboardingSummary.activatedModules.filter((moduleKey) => canAccessModule(user?.plan, moduleKey));
-    const canShowProducts = allowedModules.includes('products');
-    const canShowCollections = allowedModules.includes('accounts_receivable');
-    const canShowQuotes = allowedModules.includes('quotes');
-    const canShowRawInventory = allowedModules.includes('raw_inventory');
-
-    return {
-      ...onboardingSummary,
-      activatedModules: allowedModules,
-      highlightedTools: onboardingSummary.highlightedTools.filter((tool) => {
-        if (tool === 'Productos') return canShowProducts;
-        if (tool === 'Cobros') return canShowCollections;
-        if (tool === 'Cotizaciones') return canShowQuotes;
-        if (tool === 'Inventario bodega') return canShowRawInventory;
-        return true;
-      }),
-      recommendedTutorials: onboardingSummary.recommendedTutorials.filter((tutorialId) => {
-        if (tutorialId === 'payments') return canShowCollections;
-        if (tutorialId === 'products') return canShowProducts;
-        if (tutorialId === 'invoices') return canShowQuotes || onboardingSummary.commercialSections.invoices;
-        if (tutorialId === 'raw-inventory') return canShowRawInventory;
-        return true;
-      }),
-    };
-  }, [onboardingSummary, user?.plan]);
-
-  const progress = getProgressValue(currentScreen, wizardScreens);
-  const currentQuestion = useMemo(
-    () => (isQuestionScreen(currentScreen) ? questionSet.find((question) => question.id === currentScreen) || null : null),
-    [currentScreen, questionSet]
-  );
-
-  const filteredHighlightTools = useMemo(
-    () => effectiveSummary.highlightedTools.slice(0, 5),
-    [effectiveSummary.highlightedTools]
-  );
-  const filteredHiddenTools = useMemo(
-    () => effectiveSummary.hiddenTools.slice(0, 5),
-    [effectiveSummary.hiddenTools]
-  );
-  const derivedPreset = useMemo(
-    () => getBusinessTypePresetDefinition(effectiveSummary.businessType),
-    [effectiveSummary.businessType]
-  );
-
-  const screenIndex = wizardScreens.indexOf(currentScreen);
-  const isFirstScreen = screenIndex <= 0;
-  const isSummaryScreen = currentScreen === 'summary';
-  const wizardStepTotal = Math.max(wizardScreens.length - 1, 1);
+  const [step, setStep] = useState<OnboardingStep>('sells');
+  const [businessName, setBusinessName] = useState('');
+  const [currency, setCurrency] = useState('COP');
+  const [selectedPresetKey, setSelectedPresetKey] = useState<BusinessTypeKey>('simple_store');
+  const [sells, setSells] = useState<OnboardingSellsAnswer>('products');
+  const [workflow, setWorkflow] = useState<OnboardingWorkflowAnswer>('orders');
+  const [team, setTeam] = useState<OnboardingTeamAnswer>('solo');
+  const [visibleModules, setVisibleModules] = useState<BusinessVisibilityId[]>([]);
+  const presetChoices = useMemo(() => getGranularPresetChoices(), []);
 
   useEffect(() => {
     if (!isOpen) return;
-
     setLoading(false);
     setError('');
-    setCurrentScreen('identity');
-    setAnswers(DEFAULT_BUSINESS_ONBOARDING_ANSWERS);
+    setStep('sells');
+    setBusinessName('');
+    setCurrency('COP');
+    setSelectedPresetKey('simple_store');
+    setSells('products');
+    setWorkflow('orders');
+    setTeam('solo');
+    setVisibleModules([]);
   }, [isOpen]);
 
+  const answers: OnboardingAnswers = useMemo(
+    () => ({
+      sells,
+      workflow,
+      team,
+      visibleModules,
+      granularPresetKey: selectedPresetKey,
+    }),
+    [selectedPresetKey, sells, team, visibleModules, workflow],
+  );
+
+  const preset = useMemo(() => getBusinessPresetFromAnswers(answers), [answers]);
+  const currentIndex = STEP_ORDER.indexOf(step);
+
   useEffect(() => {
-    if (!wizardScreens.includes(currentScreen)) {
-      setCurrentScreen('identity');
-    }
-  }, [currentScreen, wizardScreens]);
+    setVisibleModules(preset.visibleModules);
+  }, [preset.businessType, preset.granularPresetKey, team]);
 
-  const canAdvance = useMemo(() => {
-    if (currentScreen === 'identity') {
-      return answers.name.trim().length >= 2 && !!answers.currency;
-    }
+  const toggleModule = useCallback((id: BusinessVisibilityId) => {
+    setVisibleModules((prev) =>
+      prev.includes(id) ? prev.filter((current) => current !== id) : [...prev, id],
+    );
+  }, []);
 
-    if (isQuestionScreen(currentScreen)) {
-      return Boolean(answers[QUESTION_FIELD_MAP[currentScreen]]);
-    }
-
+  const canContinue = useMemo(() => {
+    if (step === 'modules') return visibleModules.length > 0;
+    if (step === 'summary') return businessName.trim().length >= 2 && Boolean(currency) && visibleModules.length > 0;
     return true;
-  }, [answers, currentScreen]);
+  }, [businessName, currency, step, visibleModules.length]);
 
-  const focusPreviewLabel = useMemo(() => {
-    if (effectiveSummary.prioritizedPath === '/dashboard' && effectiveSummary.initialDashboardTab === 'balance') {
-      return 'Caja';
-    }
-    if (effectiveSummary.prioritizedPath === '/payments') return 'Cobros';
-    if (effectiveSummary.prioritizedPath === '/products') return 'Productos';
-    if (effectiveSummary.prioritizedPath === '/sales') return 'Ventas';
-    return 'Resumen';
-  }, [effectiveSummary.initialDashboardTab, effectiveSummary.prioritizedPath]);
-
-  const handleClose = (force = false) => {
-    if (loading && !force) return;
-    setLoading(false);
-    setError('');
-    setCurrentScreen('identity');
-    setAnswers(DEFAULT_BUSINESS_ONBOARDING_ANSWERS);
-    onClose();
+  const goBack = () => {
+    if (currentIndex <= 0 || loading) return;
+    setStep(STEP_ORDER[currentIndex - 1]);
   };
 
   const goNext = () => {
-    if (!canAdvance || isSummaryScreen) return;
-    const nextScreen = wizardScreens[screenIndex + 1];
-    if (nextScreen) setCurrentScreen(nextScreen);
-  };
-
-  const goBack = () => {
-    if (isFirstScreen || loading) return;
-    const previousScreen = wizardScreens[screenIndex - 1];
-    if (previousScreen) setCurrentScreen(previousScreen);
-  };
-
-  const handleOptionSelect = <TValue extends string,>(
-    question: OnboardingQuestionDefinition<TValue>,
-    value: TValue
-  ) => {
-    const field = QUESTION_FIELD_MAP[question.id] as keyof BusinessOnboardingWizardAnswers;
-    setAnswers((current) => ({
-      ...current,
-      [field]: value,
-    }));
+    if (loading || currentIndex >= STEP_ORDER.length - 1) return;
+    setStep(STEP_ORDER[currentIndex + 1]);
   };
 
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
-    setError('');
 
-    const ownedBusinesses = businesses.filter((business) => business.user_id === user?.id);
-    if (!['pro', 'business'].includes(user?.plan || '') && ownedBusinesses.length >= 1) {
-      alert('Limite de negocios alcanzado. Actualiza tu plan para crear mas.');
-      handleClose();
+    if (step !== 'summary') {
+      if (canContinue) goNext();
       return;
     }
 
-    if (!isSummaryScreen) {
-      goNext();
+    if (!businessName.trim()) {
+      setError('Agrega un nombre para continuar.');
       return;
     }
 
     setLoading(true);
+    setError('');
+
     try {
-      const draftInitialSetup = buildInitialSetupSettings(answers, effectiveSummary, null);
-      
-      // Apply preset-based settings during business creation
-      const presetBasedSettings = applyPresetToBusinessSettings(
-        {
-          initial_setup: draftInitialSetup,
-        },
-        effectiveSummary.businessType,
-        {
-          applyModules: true,
-          applyOnboarding: true,
-        }
+      applyBusinessPreset(preset.businessType);
+
+      const rawInitialSetup = buildInitialSetupFromPreset(preset.granularPreset);
+      const presetSettings = applyPresetToBusinessSettings(
+        { initial_setup: rawInitialSetup },
+        preset.granularPresetKey,
+        { applyModules: true, applyOnboarding: true },
       );
-      
+
       const newBusiness = await addBusiness({
-        name: answers.name.trim(),
-        currency: answers.currency,
-        settings: presetBasedSettings,
+        name: businessName.trim(),
+        currency,
+        settings: presetSettings,
       });
 
       const completedAt = new Date().toISOString();
-      const completedInitialSetup = buildInitialSetupSettings(answers, effectiveSummary, completedAt);
-      const scopeKey = getScopeKey(user?.id, newBusiness.id);
+      const completedInitialSetup = {
+        ...rawInitialSetup,
+        onboarding_completed: true,
+        onboarding_completed_at: completedAt,
+      } as BusinessInitialSetupSettings;
 
-      // Apply navigation preferences and any remaining configuration
+      const scopeKey = getScopeKey(user?.id, newBusiness.id);
+      const operationalProfile = buildOperationalProfileFromPreset(preset.granularPreset) as unknown as BusinessOperationalProfile;
+
       await applyBusinessTypeConfiguration({
         business: newBusiness,
-        businessType: effectiveSummary.businessType,
-        recommendedModules: effectiveSummary.activatedModules,
-        commercialSections: effectiveSummary.commercialSections,
-        operationalProfile: effectiveSummary.operationalProfile,
-        visibilityMode: effectiveSummary.visibilityMode,
-        prioritizedPath: effectiveSummary.prioritizedPath,
-        answers: effectiveSummary.personalizationAnswers,
+        businessType: preset.granularPresetKey,
+        simpleBusinessType: preset.businessType,
+        recommendedModules: preset.enabledBusinessModules,
+        commercialSections: preset.commercialSections as BusinessCommercialSectionsState,
+        operationalProfile,
+        visibilityMode: preset.granularPreset.simplicityLevel === 'simple' ? 'basic' : 'advanced',
+        prioritizedPath: preset.granularPreset.prioritizedPath,
         initialSetup: completedInitialSetup,
         plan: newBusiness.plan || user?.plan,
         setNavigationPreferences: (preferences) => setPreferences(scopeKey, preferences),
@@ -452,11 +233,24 @@ export const CreateBusinessModal: React.FC<CreateBusinessModalProps> = ({
         updateBusinessModules,
       });
 
+      selectContext({
+        business_id: newBusiness.id,
+        name: newBusiness.name,
+        role: newBusiness.role || 'owner',
+        type: activeContext?.type || 'owned',
+        permissions: [
+          ...(newBusiness.permissions || []),
+          ...(newBusiness.permissions_canonical || []),
+        ],
+      });
+
+      await fetchAuthBootstrap(newBusiness.id);
+
       onSuccess();
-      navigate(effectiveSummary.prioritizedPath || '/dashboard', { replace: true });
-      handleClose(true);
+      navigate(preset.granularPreset.prioritizedPath || '/dashboard', { replace: true });
+      onClose();
     } catch (submitError: any) {
-      setError(submitError?.response?.data?.error || submitError?.message || 'No fue posible crear y configurar el negocio.');
+      setError(submitError?.response?.data?.error || submitError?.message || 'No fue posible crear el negocio.');
     } finally {
       setLoading(false);
     }
@@ -465,348 +259,248 @@ export const CreateBusinessModal: React.FC<CreateBusinessModalProps> = ({
   return (
     <Modal
       isOpen={isOpen}
-      onClose={handleClose}
+      onClose={loading ? () => undefined : onClose}
       title="Configura tu negocio"
-      maxWidth="max-w-5xl"
-      className="border border-white/10 bg-[radial-gradient(circle_at_top_left,rgba(59,130,246,0.14),transparent_32%),radial-gradient(circle_at_top_right,rgba(16,185,129,0.12),transparent_28%),linear-gradient(180deg,rgba(15,23,42,0.94),rgba(15,23,42,0.98))]"
+      maxWidth="max-w-2xl"
+      className="border border-white/10 bg-[radial-gradient(circle_at_top_left,rgba(59,130,246,0.16),transparent_34%),linear-gradient(180deg,rgba(15,23,42,0.95),rgba(15,23,42,0.98))]"
     >
-      <form onSubmit={handleSubmit} className="space-y-6">
-        <section className="relative overflow-hidden rounded-[30px] border border-white/10 bg-white/5 p-5 text-white shadow-[0_30px_90px_-50px_rgba(37,99,235,0.9)] sm:p-6">
-          <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(59,130,246,0.22),transparent_34%),radial-gradient(circle_at_bottom_right,rgba(20,184,166,0.18),transparent_28%)]" />
-          <div className="relative space-y-5">
-            <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
-              <div className="max-w-2xl">
-                <div className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/10 px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] text-blue-100">
-                  <Sparkles className="h-3.5 w-3.5" />
-                  Onboarding inicial
-                </div>
-                <h2 className="mt-4 text-2xl font-semibold tracking-tight sm:text-3xl">
-                  Armemos una version de EnCaja que se sienta clara desde el primer minuto.
-                </h2>
-                <p className="mt-3 text-sm leading-6 text-blue-50/82 sm:text-base">
-                  {isSimpleStoreOnboarding
-                    ? 'Entraras con una configuracion simple y limpia para empezar rapido, sin preguntas extra.'
-                    : onboardingFlow === 'business'
-                      ? 'Te guiaremos paso a paso para activar la operacion y la organizacion del equipo que de verdad necesitas.'
-                      : 'Te haremos una pregunta por pantalla para activar solo las herramientas que de verdad te sirven hoy.'}
-                </p>
-              </div>
+      <form onSubmit={handleSubmit} className="space-y-5">
+        <div className="flex items-center gap-2 px-1">
+          {STEP_ORDER.map((stepId, index) => (
+            <div
+              key={stepId}
+              className={cn('h-1.5 flex-1 rounded-full transition-colors', index <= currentIndex ? 'bg-blue-500' : 'bg-white/10')}
+            />
+          ))}
+        </div>
 
-              <div className="rounded-3xl border border-white/10 bg-slate-950/45 px-4 py-3 text-sm text-blue-50/85">
-                <div className="font-semibold">Paso {Math.min(screenIndex + 1, wizardStepTotal)} de {wizardStepTotal}</div>
-                <div className="mt-1 text-xs uppercase tracking-[0.18em] text-blue-100/70">
-                  {isSimpleStoreOnboarding ? 'Menos de 1 minuto' : onboardingFlow === 'business' ? 'Menos de 3 minutos' : 'Menos de 2 minutos'}
-                </div>
-              </div>
-            </div>
-
-            <div>
-              <div className="flex items-center justify-between text-xs font-semibold uppercase tracking-[0.16em] text-blue-100/75">
-                <span>Progreso</span>
-                <span>{progress}%</span>
-              </div>
-              <div className="mt-2 h-2 rounded-full bg-white/10">
-                <div
-                  className="h-2 rounded-full bg-gradient-to-r from-sky-400 via-blue-400 to-emerald-400 transition-all duration-300"
-                  style={{ width: `${progress}%` }}
-                />
-              </div>
-            </div>
-
-            <div className="rounded-[24px] border border-blue-300/15 bg-blue-500/10 px-4 py-3 text-sm text-blue-50/90">
-              <div className="flex items-start gap-3">
-                <BadgeDollarSign className="mt-0.5 h-4 w-4 shrink-0 text-blue-200" />
-                <div>
-                  <div className="font-semibold">Tu configuracion no es permanente.</div>
-                  <p className="mt-1 leading-6 text-blue-50/78">{INITIAL_ONBOARDING_CHANGE_MESSAGE}</p>
-                </div>
-              </div>
-            </div>
+        <section className="rounded-[24px] border border-white/10 bg-white/[0.04] p-4 text-white">
+          <div className="text-[11px] font-semibold uppercase tracking-[0.18em] text-blue-100/70">Base del negocio</div>
+          <div className="mt-3 grid gap-3 sm:grid-cols-[1.45fr_0.9fr]">
+            <Input
+              value={businessName}
+              onChange={(event) => setBusinessName(event.target.value)}
+              placeholder="Nombre del negocio"
+              className="w-full border-white/10 bg-white text-slate-900 placeholder:text-slate-400 dark:border-white/10 dark:bg-white dark:text-slate-900"
+            />
+            <select
+              className="w-full rounded-2xl border border-white/10 bg-slate-900 px-4 py-3 text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
+              value={currency}
+              onChange={(event) => setCurrency(event.target.value)}
+            >
+              {CURRENCY_OPTIONS.map((option) => (
+                <option key={option.value} value={option.value} className="bg-slate-950 text-white">
+                  {option.label}
+                </option>
+              ))}
+            </select>
           </div>
         </section>
 
-        {currentScreen === 'identity' && (
-          <section className="grid gap-5 lg:grid-cols-[minmax(0,1.1fr)_minmax(320px,0.9fr)]">
-            <div className="rounded-[30px] border border-white/10 bg-slate-950/75 p-5 text-white shadow-[0_30px_90px_-50px_rgba(15,23,42,0.9)] sm:p-6">
-              <div className="inline-flex items-center gap-2 rounded-full bg-white/8 px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] text-blue-100/80">
-                Paso 1
-              </div>
-              <h3 className="mt-4 text-2xl font-semibold">Primero, cuentame como se llama tu negocio.</h3>
-              <p className="mt-2 text-sm leading-6 text-slate-300">
-                {isSimpleStoreOnboarding
-                  ? 'Con esto abrimos tu espacio y dejamos lista una tienda simple para que puedas entrar sin preguntas extra.'
-                  : 'Con esto abrimos tu espacio y dejamos lista la moneda principal para que todo arranque bien desde el inicio.'}
-              </p>
-
-              <div className="mt-6 space-y-5">
-                <div>
-                  <label className="mb-2 block text-sm font-medium text-slate-200">Nombre del negocio</label>
-                  <Input
-                    value={answers.name}
-                    onChange={(e) =>
-                      setAnswers((current) => ({
-                        ...current,
-                        name: e.target.value,
-                      }))
+        {step === 'sells' ? (
+          <section className="rounded-[28px] border border-white/10 bg-slate-950/75 p-5 text-white">
+            <div className="text-xs font-semibold uppercase tracking-[0.18em] text-blue-100/75">Paso 1 de {STEP_ORDER.length}</div>
+            <h3 className="mt-3 text-2xl font-semibold">Elige el tipo que mas se parece a tu negocio</h3>
+            <p className="mt-2 text-sm leading-6 text-slate-300">
+              Este preset define la base inicial. Luego afinas el modo operativo y lo visible desde Personalizacion.
+            </p>
+            <div className="mt-5 grid gap-3 sm:grid-cols-2">
+              {presetChoices.map((option) => (
+                <button
+                  key={option.key}
+                  type="button"
+                  onClick={() => {
+                    setSelectedPresetKey(option.key);
+                    if (option.operationalBusinessType === 'services') {
+                      setSells('services');
+                      setWorkflow('appointments');
+                    } else if (option.operationalBusinessType === 'hybrid') {
+                      setSells('both');
+                      setWorkflow('both');
+                    } else {
+                      setSells('products');
+                      setWorkflow('orders');
                     }
-                    required
-                    placeholder="Ej: Cafe Luna, Mis Postres, Tienda Central"
-                    className="w-full border-white/10 bg-white text-slate-900 placeholder:text-slate-400 dark:border-white/10 dark:bg-white dark:text-slate-900"
-                  />
-                </div>
-
-                <div>
-                  <label className="mb-2 block text-sm font-medium text-slate-200">Moneda principal</label>
-                  <select
-                    className="w-full rounded-2xl border border-white/10 bg-slate-900 px-4 py-3 text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
-                    value={answers.currency}
-                    onChange={(e) =>
-                      setAnswers((current) => ({
-                        ...current,
-                        currency: e.target.value,
-                      }))
-                    }
-                  >
-                    {CURRENCY_OPTIONS.map((currency) => (
-                      <option key={currency.value} value={currency.value} className="bg-slate-950 text-white">
-                        {currency.label}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-              </div>
+                  }}
+                  className={cn(
+                    'rounded-[24px] border p-4 text-left transition-all',
+                    selectedPresetKey === option.key
+                      ? 'border-blue-400/30 bg-blue-500/12 shadow-[0_18px_48px_-30px_rgba(59,130,246,0.8)]'
+                      : 'border-white/10 bg-white/[0.03] hover:border-white/20 hover:bg-white/[0.05]',
+                  )}
+                >
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="min-w-0">
+                      <div className="text-base font-semibold text-white">{option.title}</div>
+                      <p className="mt-1 text-sm leading-5 text-slate-300">{option.description}</p>
+                    </div>
+                    {selectedPresetKey === option.key ? (
+                      <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-blue-500/25">
+                        <Check className="h-4 w-4 text-blue-100" />
+                      </div>
+                    ) : null}
+                  </div>
+                </button>
+              ))}
             </div>
 
-            <div className="rounded-[30px] border border-white/10 bg-[linear-gradient(180deg,rgba(14,165,233,0.14),rgba(15,23,42,0.88))] p-5 text-white sm:p-6">
-              <div className="inline-flex h-14 w-14 items-center justify-center rounded-3xl bg-white/10">
-                <Sparkles className="h-7 w-7 text-blue-100" />
-              </div>
-              <h4 className="mt-5 text-xl font-semibold">Lo que haremos despues</h4>
-              <div className="mt-4 space-y-3 text-sm leading-6 text-blue-50/80">
-                {isSimpleStoreOnboarding ? (
-                  <>
-                    <p>Entraras con una configuracion simple para vender rapido, tener catalogo basico y ver una app mas limpia desde el primer momento.</p>
-                    <p>Si luego necesitas algo mas avanzado, podras cambiar modulos y personalizacion cuando quieras.</p>
-                  </>
-                ) : (
-                  <>
-                    <p>Te mostrare una pregunta por pantalla para entender como vendes, que quieres ver primero y que herramientas vale la pena activar.</p>
-                    <p>Cada respuesta te explicara que se enciende y para que sirve, sin lenguaje tecnico ni decisiones irreversibles.</p>
-                  </>
-                )}
-              </div>
-
-              <div className="mt-6 rounded-[24px] border border-white/10 bg-slate-950/45 p-4">
-                <div className="text-xs font-semibold uppercase tracking-[0.18em] text-blue-100/70">Vista previa</div>
-                <div className="mt-3 text-lg font-semibold">{answers.name.trim() || 'Tu negocio'}</div>
-                <div className="mt-1 text-sm text-blue-50/75">Moneda base: {answers.currency}</div>
-                <div className="mt-4 flex flex-wrap gap-2">
-                  <SummaryPill label="Configuracion guiada" />
-                  <SummaryPill label="Menos ruido al entrar" />
-                  <SummaryPill label="Todo editable luego" />
-                </div>
-              </div>
+            <div className="mt-6 border-t border-white/10 pt-5">
+              <div className="text-xs font-semibold uppercase tracking-[0.18em] text-blue-100/75">Modo operativo</div>
+              <h4 className="mt-2 text-xl font-semibold">Que vende tu negocio?</h4>
+              <p className="mt-2 text-sm leading-6 text-slate-300">
+                Esta capa controla si activamos Agenda, Pedidos o ambos por defecto.
+              </p>
+            </div>
+            <div className="mt-4 space-y-3">
+              <ChoiceCard selected={sells === 'products'} onClick={() => setSells('products')} icon={Package} title="Productos" description="Vendes articulos, inventario o productos fisicos." />
+              <ChoiceCard selected={sells === 'services'} onClick={() => setSells('services')} icon={Wrench} title="Servicios" description="Atiendes citas, trabajos, asesorias o encargos." />
+              <ChoiceCard selected={sells === 'both'} onClick={() => setSells('both')} icon={Sparkles} title="Ambos" description="Combinas productos y servicios en el mismo negocio." />
             </div>
           </section>
-        )}
+        ) : null}
 
-        {currentQuestion && (
-          <section className="space-y-5">
-            <div className="rounded-[30px] border border-white/10 bg-slate-950/80 p-5 text-white shadow-[0_30px_90px_-50px_rgba(15,23,42,0.9)] sm:p-6">
-              <div className="text-xs font-semibold uppercase tracking-[0.18em] text-blue-100/75">{currentQuestion.eyebrow}</div>
-              <div className="mt-3 flex flex-col gap-4 xl:flex-row xl:items-end xl:justify-between">
-                <div className="max-w-3xl">
-                  <h3 className="text-2xl font-semibold">{currentQuestion.title}</h3>
-                  <p className="mt-2 text-sm leading-6 text-slate-300 sm:text-base">{currentQuestion.description}</p>
-                </div>
-                <div className="max-w-sm rounded-[24px] border border-white/10 bg-white/5 px-4 py-3 text-sm text-slate-200">
-                  {currentQuestion.helper}
-                </div>
-              </div>
+        {step === 'workflow' ? (
+          <section className="rounded-[28px] border border-white/10 bg-slate-950/75 p-5 text-white">
+            <div className="text-xs font-semibold uppercase tracking-[0.18em] text-blue-100/75">Paso 2 de {STEP_ORDER.length}</div>
+            <h3 className="mt-3 text-2xl font-semibold">Como trabajas normalmente?</h3>
+            <div className="mt-6 space-y-3">
+              <ChoiceCard selected={workflow === 'orders'} onClick={() => setWorkflow('orders')} icon={ClipboardList} title="Por pedidos" description="Recibes pedidos y los entregas cuando estan listos." />
+              <ChoiceCard selected={workflow === 'appointments'} onClick={() => setWorkflow('appointments')} icon={CalendarDays} title="Por citas / agenda" description="Atiendes por turnos, reservas o agenda." />
+              <ChoiceCard selected={workflow === 'both'} onClick={() => setWorkflow('both')} icon={Sparkles} title="Ambas" description="Manejas pedidos y tambien agenda segun el caso." />
             </div>
+          </section>
+        ) : null}
 
-            {derivedPreset ? (
-              <div className="rounded-[24px] border border-emerald-400/20 bg-emerald-500/10 px-4 py-3 text-white">
-                <div className="text-xs font-semibold uppercase tracking-[0.18em] text-emerald-100/80">Base sugerida hasta ahora</div>
-                <div className="mt-2 text-lg font-semibold">{derivedPreset.label}</div>
-                <p className="mt-1 text-sm leading-6 text-emerald-50/85">{derivedPreset.shortDescription}</p>
-              </div>
-            ) : null}
+        {step === 'team' ? (
+          <section className="rounded-[28px] border border-white/10 bg-slate-950/75 p-5 text-white">
+            <div className="text-xs font-semibold uppercase tracking-[0.18em] text-blue-100/75">Paso 3 de {STEP_ORDER.length}</div>
+            <h3 className="mt-3 text-2xl font-semibold">Trabajas solo o con equipo?</h3>
+            <div className="mt-6 space-y-3">
+              <ChoiceCard selected={team === 'solo'} onClick={() => setTeam('solo')} icon={Sparkles} title="Trabajo solo" description="Manejas la operacion principal por tu cuenta." />
+              <ChoiceCard selected={team === 'team'} onClick={() => setTeam('team')} icon={Users} title="Tengo empleados / colaboradores" description="Hay otras personas atendiendo, vendiendo o ejecutando." />
+            </div>
+          </section>
+        ) : null}
 
-            <div className="grid gap-4 md:grid-cols-2">
-              {currentQuestion.options.map((option) => {
-                const field = QUESTION_FIELD_MAP[currentQuestion.id];
-                const selected = answers[field] === option.value;
-
+        {step === 'modules' ? (
+          <section className="rounded-[28px] border border-white/10 bg-slate-950/75 p-5 text-white">
+            <div className="text-xs font-semibold uppercase tracking-[0.18em] text-blue-100/75">Paso 4 de {STEP_ORDER.length}</div>
+            <h3 className="mt-3 text-2xl font-semibold">Que quieres tener visible desde el primer dia?</h3>
+            <p className="mt-2 text-sm leading-6 text-slate-300">
+              Ya preseleccionamos lo recomendado para <span className="font-semibold text-blue-200">{preset.rules.label}</span>. Puedes ajustarlo aqui.
+            </p>
+            <div className="mt-6 space-y-5">
+              {MODULE_CATEGORIES.map((category) => {
+                const items = ONBOARDING_MODULE_OPTIONS.filter((option) => option.category === category.id);
+                if (!items.length) return null;
                 return (
-                  <QuestionOptionCard
-                    key={option.value}
-                    option={option as OnboardingOptionDefinition<string>}
-                    selected={selected}
-                    onSelect={(value) => handleOptionSelect(currentQuestion as OnboardingQuestionDefinition<string>, value)}
-                  />
+                  <div key={category.id}>
+                    <div className="text-xs font-semibold uppercase tracking-[0.16em] text-blue-100/70">{category.title}</div>
+                    <div className="mt-2 grid grid-cols-2 gap-2 sm:grid-cols-3">
+                      {items.map((option) => {
+                        const active = visibleModules.includes(option.id);
+                        return (
+                          <button
+                            key={option.id}
+                            type="button"
+                            onClick={() => toggleModule(option.id)}
+                            className={cn(
+                              'rounded-2xl border px-3 py-3 text-left transition-all',
+                              active ? 'border-blue-400/30 bg-blue-500/12' : 'border-white/10 bg-white/[0.03] hover:border-white/20',
+                            )}
+                          >
+                            <div className="flex items-center justify-between gap-1">
+                              <span className="text-sm font-semibold text-white">{option.label}</span>
+                              {active ? <Check className="h-3.5 w-3.5 text-blue-300" /> : null}
+                            </div>
+                            <p className="mt-0.5 text-[11px] leading-4 text-slate-400">{option.description}</p>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
                 );
               })}
             </div>
           </section>
-        )}
+        ) : null}
 
-        {currentScreen === 'summary' && (
-          <section className="grid gap-5 xl:grid-cols-[minmax(0,1.05fr)_minmax(320px,0.95fr)]">
-            <div className="rounded-[30px] border border-white/10 bg-slate-950/80 p-5 text-white shadow-[0_30px_90px_-50px_rgba(15,23,42,0.9)] sm:p-6">
-              <div className="inline-flex items-center gap-2 rounded-full bg-emerald-400/12 px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] text-emerald-100">
-                <Sparkles className="h-3.5 w-3.5" />
-                Resumen final
-              </div>
-              <h3 className="mt-4 text-2xl font-semibold">{effectiveSummary.headline}</h3>
-              <p className="mt-2 text-sm leading-6 text-slate-300 sm:text-base">{effectiveSummary.summary}</p>
+        {step === 'summary' ? (
+          <section className="space-y-4">
+            <div className="rounded-[28px] border border-white/10 bg-slate-950/75 p-5 text-white">
+              <div className="text-xs font-semibold uppercase tracking-[0.18em] text-blue-100/75">Paso 5 de {STEP_ORDER.length}</div>
+              <h3 className="mt-3 text-2xl font-semibold">Te recomendamos esta configuracion</h3>
+              <p className="mt-2 text-sm leading-6 text-slate-300">
+                Entraras con una base clara y luego podras cambiarla desde <span className="font-semibold text-blue-200">Personalizacion</span>.
+              </p>
 
-              {derivedPreset ? (
-                <div className="mt-5 rounded-[24px] border border-emerald-400/20 bg-emerald-500/10 p-4">
-                  <div className="text-xs font-semibold uppercase tracking-[0.18em] text-emerald-100/80">Base recomendada</div>
-                  <div className="mt-2 text-lg font-semibold text-white">{derivedPreset.label}</div>
-                  <p className="mt-1 text-sm leading-6 text-emerald-50/85">{derivedPreset.longDescription}</p>
-                </div>
-              ) : null}
-
-              <div className="mt-6 grid gap-4 md:grid-cols-2">
-                <div className="rounded-[24px] border border-white/10 bg-white/5 p-4">
-                  <div className="text-xs font-semibold uppercase tracking-[0.18em] text-blue-100/70">Vista principal</div>
-                  <div className="mt-3 text-lg font-semibold">{focusPreviewLabel}</div>
-                  <p className="mt-1 text-sm leading-6 text-slate-300">
-                    Tu negocio abrira con esta vista sugerida para que lo importante te quede mas cerca.
-                  </p>
-                </div>
-
-                <div className="rounded-[24px] border border-white/10 bg-white/5 p-4">
-                  <div className="text-xs font-semibold uppercase tracking-[0.18em] text-blue-100/70">Modelo operativo</div>
-                  <div className="mt-3 text-lg font-semibold">{effectiveSummary.operationalModelLabel}</div>
-                  <p className="mt-1 text-sm leading-6 text-slate-300">
-                    Esta sera la logica base guardada para inventario, produccion, bodega y cumplimiento comercial.
-                  </p>
-                </div>
-              </div>
-
-              <div className="mt-5 grid gap-4 md:grid-cols-2">
-                <div className="rounded-[24px] border border-white/10 bg-white/5 p-4">
-                  <div className="text-xs font-semibold uppercase tracking-[0.18em] text-blue-100/70">Nivel inicial</div>
-                  <div className="mt-3 text-lg font-semibold">
-                    {effectiveSummary.simplicityLevel === 'simple'
-                      ? 'Simple y directo'
-                      : effectiveSummary.simplicityLevel === 'guided'
-                        ? 'Guiado'
-                        : 'Mas completo'}
+              <div className="mt-5 grid gap-3 sm:grid-cols-2">
+                <div className="rounded-[20px] border border-white/10 bg-white/5 p-4">
+                  <div className="text-[11px] font-semibold uppercase tracking-[0.16em] text-blue-100/70">Tipo detectado</div>
+                  <div className="mt-2 text-lg font-semibold">{preset.rules.label}</div>
+                  <p className="mt-1 text-sm text-slate-400">{preset.rules.description}</p>
+                  <div className="mt-3 rounded-full border border-white/10 bg-white/6 px-3 py-1 text-xs font-medium text-slate-100">
+                    Preset real: {preset.granularPreset.name}
                   </div>
-                  <p className="mt-1 text-sm leading-6 text-slate-300">
-                    Lo ajustamos segun la complejidad real de tu operacion y tu forma de trabajar.
-                  </p>
                 </div>
-
-                <div className="rounded-[24px] border border-white/10 bg-white/5 p-4">
-                  <div className="text-xs font-semibold uppercase tracking-[0.18em] text-blue-100/70">Herramientas activadas</div>
-                  <div className="mt-3 flex flex-wrap gap-2">
-                    {filteredHighlightTools.map((tool) => (
-                      <SummaryPill key={tool} label={tool} />
-                    ))}
+                <div className="rounded-[20px] border border-white/10 bg-white/5 p-4">
+                  <div className="text-[11px] font-semibold uppercase tracking-[0.16em] text-blue-100/70">Accesos visibles</div>
+                  <div className="mt-2 flex flex-wrap gap-1.5">
+                    {visibleModules.map((id) => {
+                      const option = ONBOARDING_MODULE_OPTIONS.find((item) => item.id === id) || null;
+                      return (
+                        <span key={id} className="rounded-full border border-white/10 bg-white/8 px-3 py-1 text-xs font-medium text-slate-100">
+                          {option?.label || id}
+                        </span>
+                      );
+                    })}
                   </div>
-                  {effectiveSummary.highlightedTools.length > filteredHighlightTools.length ? (
-                    <div className="mt-3 text-sm text-slate-300">
-                      y {effectiveSummary.highlightedTools.length - filteredHighlightTools.length} mas listas para ti.
-                    </div>
-                  ) : null}
                 </div>
               </div>
 
-              <div className="mt-5 rounded-[24px] border border-white/10 bg-slate-950/55 p-4">
-                <div className="text-xs font-semibold uppercase tracking-[0.18em] text-blue-100/70">Quedaran ocultas por ahora</div>
-                <div className="mt-3 flex flex-wrap gap-2">
-                  {filteredHiddenTools.length > 0 ? (
-                    filteredHiddenTools.map((tool) => (
-                      <span
-                        key={tool}
-                        className="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs font-medium text-slate-200"
-                      >
-                        {tool}
-                      </span>
-                    ))
-                  ) : (
-                    <span className="text-sm text-slate-300">No ocultaremos nada importante en esta configuracion inicial.</span>
-                  )}
-                </div>
-                {effectiveSummary.hiddenTools.length > filteredHiddenTools.length ? (
-                  <div className="mt-3 text-sm text-slate-300">
-                    y {effectiveSummary.hiddenTools.length - filteredHiddenTools.length} cambios mas para mantener la vista limpia.
-                  </div>
-                ) : null}
-              </div>
-            </div>
-
-            <div className="space-y-5">
-              <div className="rounded-[30px] border border-white/10 bg-[linear-gradient(180deg,rgba(14,165,233,0.14),rgba(15,23,42,0.88))] p-5 text-white">
-                <div className="text-xs font-semibold uppercase tracking-[0.18em] text-blue-100/70">Recorridos recomendados</div>
-                <p className="mt-3 text-sm leading-6 text-blue-50/82">
-                  Dejaremos sugeridas estas guias para que el primer recorrido se sienta acompanado y claro.
-                </p>
-                <div className="mt-4 space-y-2">
-                  {effectiveSummary.recommendedTutorials.map((tutorialId) => (
-                    <div key={tutorialId} className="rounded-2xl border border-white/10 bg-slate-950/45 px-4 py-3 text-sm">
-                      {getTutorialDisplayLabel(tutorialId)}
-                    </div>
+              <div className="mt-4 rounded-[20px] border border-white/10 bg-white/5 p-4">
+                <div className="text-[11px] font-semibold uppercase tracking-[0.16em] text-blue-100/70">Internamente activamos</div>
+                <div className="mt-2 flex flex-wrap gap-2">
+                  {preset.enabledBusinessModules.map((moduleKey) => (
+                    <span key={moduleKey} className="rounded-full border border-white/10 bg-white/8 px-3 py-1 text-xs font-medium text-slate-100">
+                      {moduleKey}
+                    </span>
                   ))}
+                  {preset.showOrders ? <span className="rounded-full bg-blue-500/15 px-2.5 py-1 text-[11px] font-medium text-blue-100">Pedidos visibles</span> : null}
+                  {preset.showAgenda ? <span className="rounded-full bg-purple-500/15 px-2.5 py-1 text-[11px] font-medium text-purple-100">Agenda visible</span> : null}
+                  {preset.usesEmployees ? <span className="rounded-full bg-emerald-500/15 px-2.5 py-1 text-[11px] font-medium text-emerald-100">Equipo activo</span> : null}
                 </div>
-              </div>
-
-              <div className="rounded-[30px] border border-emerald-400/20 bg-emerald-500/10 p-5 text-white">
-                <div className="text-sm font-semibold">Podras cambiar todo esto mas adelante.</div>
-                <p className="mt-2 text-sm leading-6 text-emerald-50/88">
-                  Si tu negocio cambia, crece o simplemente prefieres otra vista, podras ajustar modulos, herramientas visibles y personalizacion cuando quieras.
-                </p>
               </div>
             </div>
           </section>
-        )}
+        ) : null}
 
-        {error && (
+        {error ? (
           <div className="rounded-2xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-100">
             {error}
           </div>
-        )}
+        ) : null}
 
-        <div className="flex flex-col gap-3 border-t border-white/10 pt-5 sm:flex-row sm:items-center sm:justify-between">
-          <div className="text-sm text-slate-300">
-            {currentScreen === 'summary'
-              ? 'Revisa el resumen y entra a tu negocio cuando quieras.'
-              : isSimpleStoreOnboarding
-                ? 'Dejaremos una configuracion inicial simple para que empieces rapido.'
-                : 'Una pregunta a la vez para dejar tu negocio claro desde el primer ingreso.'}
+        <div className="flex flex-col gap-3 border-t border-white/10 pt-4 sm:flex-row sm:items-center sm:justify-between">
+          <div className="text-sm text-slate-400">
+            {step === 'summary' ? 'Podras cambiar todo despues desde Personalizacion.' : `Paso ${currentIndex + 1} de ${STEP_ORDER.length}`}
           </div>
 
           <div className="flex flex-wrap gap-3">
-            {!isFirstScreen ? (
+            {currentIndex > 0 ? (
               <Button variant="outline" type="button" onClick={goBack} disabled={loading}>
                 <ArrowLeft className="h-4 w-4" />
                 Volver
               </Button>
             ) : null}
 
-            <Button variant="outline" type="button" onClick={() => handleClose()} disabled={loading}>
+            <Button variant="outline" type="button" onClick={onClose} disabled={loading}>
               Cancelar
             </Button>
 
-            <Button type="submit" disabled={loading || !canAdvance}>
-              {loading ? (
-                'Preparando tu negocio...'
-              ) : isSummaryScreen ? (
-                <>
-                  Entrar a mi negocio
-                  <ArrowRight className="h-4 w-4" />
-                </>
-              ) : (
-                <>
-                  Continuar
-                  <ArrowRight className="h-4 w-4" />
-                </>
-              )}
+            <Button type="submit" disabled={!canContinue || loading}>
+              {loading ? 'Preparando negocio...' : step === 'summary' ? 'Crear y entrar' : 'Continuar'}
+              {!loading ? <ArrowRight className="h-4 w-4" /> : null}
             </Button>
           </div>
         </div>

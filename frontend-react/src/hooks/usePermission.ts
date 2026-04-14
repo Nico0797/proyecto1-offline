@@ -1,10 +1,15 @@
 import { useBusinessStore } from '../store/businessStore';
 import { useAuthStore } from '../store/authStore';
 import { hasPermissionMatch } from '../auth/permissions';
+import { isOfflineProductMode } from '../runtime/runtimeMode';
 
 export const usePermission = (permission: string) => {
   const { activeBusiness } = useBusinessStore();
   const { user } = useAuthStore();
+
+  if (isOfflineProductMode()) {
+    return !permission.startsWith('team.');
+  }
 
   if (!user || !activeBusiness) return false;
 

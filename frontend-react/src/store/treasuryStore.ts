@@ -4,6 +4,7 @@ import { treasuryService, TreasuryAccountPayload, TreasuryMovementFilters } from
 import { offlineSyncService } from '../services/offlineSyncService';
 import { sortTreasuryAccounts } from '../utils/treasury';
 import { isBackendCapabilitySupported } from '../config/backendCapabilities';
+import { isPureOfflineRuntime } from '../services/offlineLocalData';
 
 interface TreasuryState {
   businessId: number | null;
@@ -36,7 +37,7 @@ export const useTreasuryStore = create<TreasuryState>((set) => ({
   ...initialState,
 
   fetchAccounts: async (businessId) => {
-    if (!isBackendCapabilitySupported('treasury')) {
+    if (!isPureOfflineRuntime() && !isBackendCapabilitySupported('treasury')) {
       set({
         businessId,
         accounts: [],
@@ -46,6 +47,7 @@ export const useTreasuryStore = create<TreasuryState>((set) => ({
       });
       return;
     }
+
     set({ loadingAccounts: true, error: null });
     try {
       const response = await treasuryService.listAccounts(businessId, { include_inactive: true });
@@ -71,14 +73,14 @@ export const useTreasuryStore = create<TreasuryState>((set) => ({
 
       set({
         loadingAccounts: false,
-        error: error?.response?.data?.error || error?.message || 'No se pudieron cargar las cuentas de tesorería',
+        error: error?.response?.data?.error || error?.message || 'No se pudieron cargar las cuentas de tesoreria',
       });
       throw error;
     }
   },
 
   fetchMovements: async (businessId, filters) => {
-    if (!isBackendCapabilitySupported('treasury')) {
+    if (!isPureOfflineRuntime() && !isBackendCapabilitySupported('treasury')) {
       set({
         businessId,
         movements: [],
@@ -87,6 +89,7 @@ export const useTreasuryStore = create<TreasuryState>((set) => ({
       });
       return;
     }
+
     set({ loadingMovements: true, error: null });
     try {
       const response = await treasuryService.listMovements(businessId, filters);
@@ -96,18 +99,29 @@ export const useTreasuryStore = create<TreasuryState>((set) => ({
         loadingMovements: false,
       });
     } catch (error: any) {
+      if (error?.isOfflineRequestError || !error?.response) {
+        set({
+          businessId,
+          movements: [],
+          loadingMovements: false,
+          error: null,
+        });
+        return;
+      }
+
       set({
         loadingMovements: false,
-        error: error?.response?.data?.error || error?.message || 'No se pudieron cargar los movimientos de tesorería',
+        error: error?.response?.data?.error || error?.message || 'No se pudieron cargar los movimientos de tesoreria',
       });
       throw error;
     }
   },
 
   createAccount: async (businessId, payload) => {
-    if (!isBackendCapabilitySupported('treasury')) {
-      throw new Error('Tesorería no está disponible en el backend actual');
+    if (!isPureOfflineRuntime() && !isBackendCapabilitySupported('treasury')) {
+      throw new Error('Tesoreria no esta disponible en este momento');
     }
+
     set({ mutatingAccount: true, error: null });
     try {
       const response = await treasuryService.createAccount(businessId, payload);
@@ -117,16 +131,17 @@ export const useTreasuryStore = create<TreasuryState>((set) => ({
     } catch (error: any) {
       set({
         mutatingAccount: false,
-        error: error?.response?.data?.error || error?.message || 'No se pudo crear la cuenta de tesorería',
+        error: error?.response?.data?.error || error?.message || 'No se pudo crear la cuenta de tesoreria',
       });
       throw error;
     }
   },
 
   updateAccount: async (businessId, accountId, payload) => {
-    if (!isBackendCapabilitySupported('treasury')) {
-      throw new Error('Tesorería no está disponible en el backend actual');
+    if (!isPureOfflineRuntime() && !isBackendCapabilitySupported('treasury')) {
+      throw new Error('Tesoreria no esta disponible en este momento');
     }
+
     set({ mutatingAccount: true, error: null });
     try {
       const response = await treasuryService.updateAccount(businessId, accountId, payload);
@@ -136,7 +151,7 @@ export const useTreasuryStore = create<TreasuryState>((set) => ({
     } catch (error: any) {
       set({
         mutatingAccount: false,
-        error: error?.response?.data?.error || error?.message || 'No se pudo actualizar la cuenta de tesorería',
+        error: error?.response?.data?.error || error?.message || 'No se pudo actualizar la cuenta de tesoreria',
       });
       throw error;
     }

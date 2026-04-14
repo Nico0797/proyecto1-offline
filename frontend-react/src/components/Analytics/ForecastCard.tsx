@@ -23,8 +23,8 @@ export const ForecastCard: React.FC<ForecastCardProps> = ({ forecast }) => {
           <p className="text-xs opacity-60 mt-1">Rango: ${forecast.confidence.min.toLocaleString(undefined, { maximumFractionDigits: 0 })} - ${forecast.confidence.max.toLocaleString(undefined, { maximumFractionDigits: 0 })}</p>
         </div>
         <div>
-          <p className="text-sm font-medium opacity-80 mb-1">Utilidad estimada</p>
-          <h2 className="text-3xl font-bold text-green-200">${forecast.projectedProfit.toLocaleString(undefined, { maximumFractionDigits: 0 })}</h2>
+          <p className="text-sm font-medium opacity-80 mb-1">{forecast.resultLabel}</p>
+          <h2 className="text-3xl font-bold text-green-200">${forecast.projectedResult.toLocaleString(undefined, { maximumFractionDigits: 0 })}</h2>
         </div>
       </div>
 

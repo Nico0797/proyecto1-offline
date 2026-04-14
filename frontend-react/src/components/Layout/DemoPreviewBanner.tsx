@@ -2,6 +2,7 @@ import { Eye, Lock, Sparkles } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '../ui/Button';
 import { useDemoPreview } from '../../hooks/useDemoPreview';
+import { isOfflineProductMode } from '../../runtime/runtimeMode';
 
 const baseBadgeClassName =
   'inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.16em] backdrop-blur';
@@ -10,7 +11,7 @@ export const DemoPreviewBanner = () => {
   const navigate = useNavigate();
   const { isDemoPreview, demoBusinessName } = useDemoPreview();
 
-  if (!isDemoPreview) {
+  if (!isDemoPreview || isOfflineProductMode()) {
     return null;
   }
 

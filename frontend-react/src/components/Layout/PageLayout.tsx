@@ -1,7 +1,9 @@
-import React, { useId, useMemo, useState } from 'react';
+import React, { useEffect, useId, useMemo, useRef, useState } from 'react';
 import { ChevronDown, ChevronUp, Ellipsis, Filter, X } from 'lucide-react';
 import { cn } from '../../utils/cn';
 import { Button } from '../ui/Button';
+import { useLocation } from 'react-router-dom';
+import { useContextualFloatingActionStore } from '../../store/contextualFloatingActionStore';
 
 type LayoutProps = React.HTMLAttributes<HTMLDivElement> & {
   children: React.ReactNode;
@@ -39,19 +41,89 @@ export const PageHeader: React.FC<{
   description?: string;
   action?: React.ReactNode;
   className?: string;
-}> = ({ title, description, action, className }) => {
+  mobileFab?: {
+    label: string;
+    icon?: React.ElementType;
+    onClick: () => void;
+  };
+}> = ({ title, description, action, className, mobileFab }) => {
+  const location = useLocation();
+  const headerRef = useRef<HTMLDivElement | null>(null);
+  const registerAction = useContextualFloatingActionStore((state) => state.registerAction);
+  const unregisterAction = useContextualFloatingActionStore((state) => state.unregisterAction);
+  const setHeaderVisible = useContextualFloatingActionStore((state) => state.setHeaderVisible);
+  const ownerKey = `${location.pathname}${location.search}`;
+
+  useEffect(() => {
+    if (!mobileFab) {
+      unregisterAction(ownerKey);
+      return;
+    }
+
+    registerAction({
+      ownerKey,
+      label: mobileFab.label,
+      icon: mobileFab.icon,
+      onClick: mobileFab.onClick,
+    });
+
+    return () => unregisterAction(ownerKey);
+  }, [mobileFab, ownerKey, registerAction, unregisterAction]);
+
+  useEffect(() => {
+    if (!mobileFab || !headerRef.current || typeof window === 'undefined') return undefined;
+
+    const root = document.getElementById('app-main-scroll');
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        setHeaderVisible(ownerKey, entry.isIntersecting && entry.intersectionRatio > 0.15);
+      },
+      {
+        root,
+        threshold: [0, 0.15, 0.5, 1],
+      },
+    );
+
+    observer.observe(headerRef.current);
+    return () => observer.disconnect();
+  }, [mobileFab, ownerKey, setHeaderVisible]);
+
   return (
-    <div className={cn('app-page-header app-shell-gutter shrink-0 z-20 flex flex-col gap-2 py-2 pt-safe sm:gap-3 sm:py-3.5 lg:flex-row lg:items-center lg:justify-between lg:gap-5 lg:py-4 xl:py-5', className)}>
-      <div className="min-w-0 flex-1">
-        <h1 className="truncate text-base font-bold tracking-tight app-text sm:text-lg lg:text-[1.4rem] xl:text-[1.55rem]">{title}</h1>
-        {description ? (
-          <p className="mt-0.5 line-clamp-1 max-w-3xl text-[11px] app-text-muted sm:line-clamp-2 sm:text-sm lg:mt-1 lg:max-w-4xl lg:text-[0.95rem]">
-            {description}
-          </p>
-        ) : null}
+    <div ref={headerRef} className={cn('app-page-header app-mobile-page-header app-shell-gutter relative shrink-0 py-2 sm:py-2.5 lg:py-3.5 xl:py-4', className)}>
+      <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between lg:gap-4">
+        <div className="min-w-0 flex-1">
+          <h1 className="text-[15px] font-semibold tracking-tight app-text sm:text-[1.05rem] lg:text-[1.32rem] xl:text-[1.45rem]">{title}</h1>
+          {description ? (
+            <p className="mt-1 line-clamp-2 max-w-[34rem] text-[11px] leading-4 app-text-muted sm:text-[12px] sm:leading-4.5 lg:mt-1 lg:max-w-4xl lg:text-sm">
+              {description}
+            </p>
+          ) : null}
+        </div>
+        {action ? <div className="flex min-w-0 max-w-full flex-wrap items-start justify-start pt-0.5 lg:ml-6 lg:w-auto lg:flex-none lg:justify-end lg:pt-0">{action}</div> : null}
       </div>
-      {action ? <div className="flex w-full shrink-0 flex-wrap items-center justify-start gap-2 lg:ml-8 lg:w-auto lg:justify-end lg:gap-3">{action}</div> : null}
     </div>
+  );
+};
+
+export const PageHeaderActionButton: React.FC<React.ComponentProps<typeof Button> & {
+  label: string;
+  mobileLabel?: string;
+  icon?: React.ElementType;
+}> = ({ label, mobileLabel, icon: Icon, className, size = 'md', ...props }) => {
+  return (
+    <Button
+      size={size}
+      className={cn(
+        'app-mobile-header-cta inline-flex w-auto max-w-full shrink-0 items-center justify-center rounded-full px-2.75 py-1.5 text-[12px] font-semibold tracking-tight',
+        'min-h-8.5 sm:min-h-9 sm:px-3.5 sm:text-sm lg:px-4.5 lg:py-2',
+        className,
+      )}
+      {...props}
+    >
+      {Icon ? <Icon className="h-[14px] w-[14px]" /> : null}
+      <span className="hidden min-w-0 whitespace-nowrap sm:inline">{label}</span>
+      <span className="min-w-0 whitespace-nowrap sm:hidden">{mobileLabel || label}</span>
+    </Button>
   );
 };
 
@@ -71,14 +143,14 @@ export const PageSection: React.FC<{
   }, [tone]);
 
   return (
-    <section className={cn(toneClassName, className)}>
+    <section className={cn(toneClassName, 'app-mobile-section', className)}>
       {(title || description || action) ? (
-        <div className="app-section-header">
+        <div className="app-section-header app-mobile-section-header">
           <div className="min-w-0 flex-1">
             {title ? <h2 className="text-sm font-semibold tracking-tight app-text sm:text-base">{title}</h2> : null}
-            {description ? <p className="mt-1 text-xs leading-5 app-text-muted sm:text-sm">{description}</p> : null}
+            {description ? <p className="mt-0.5 text-xs leading-4.5 app-text-muted sm:text-sm">{description}</p> : null}
           </div>
-          {action ? <div className="flex shrink-0 flex-wrap items-center gap-2">{action}</div> : null}
+          {action ? <div className="flex shrink-0 flex-wrap items-center gap-1.5">{action}</div> : null}
         </div>
       ) : null}
       <div className={cn('min-w-0', contentClassName)}>{children}</div>
@@ -93,15 +165,17 @@ export const PageToolbarCard: React.FC<{
   className?: string;
 }> = ({ title, description, children, className }) => {
   return (
-    <PageSection
-      tone="surface"
-      title={title}
-      description={description}
-      className={cn('app-toolbar-card', className)}
-      contentClassName="min-w-0"
-    >
-      {children}
-    </PageSection>
+    <section className={cn('app-toolbar-card app-mobile-toolbar-card', className)}>
+      {(title || description) ? (
+        <div className="app-section-header app-mobile-section-header">
+          <div className="min-w-0 flex-1">
+            {title ? <h2 className="text-sm font-semibold tracking-tight app-text sm:text-base">{title}</h2> : null}
+            {description ? <p className="mt-0.5 text-xs leading-4.5 app-text-muted sm:text-sm">{description}</p> : null}
+          </div>
+        </div>
+      ) : null}
+      <div className="min-w-0">{children}</div>
+    </section>
   );
 };
 
@@ -133,15 +207,15 @@ export const PageSummary: React.FC<{
   const disclosureId = useId();
 
   return (
-    <section className={cn('app-summary-shell', className)}>
+    <section className={cn('app-summary-shell app-mobile-summary-shell', className)}>
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0 flex-1">
           <div className="text-sm font-semibold tracking-tight app-text sm:text-base">{title}</div>
-          {description ? <p className="mt-1 text-xs leading-5 app-text-muted sm:text-sm">{description}</p> : null}
+          {description ? <p className="mt-0.5 text-xs leading-4.5 app-text-muted sm:text-sm">{description}</p> : null}
         </div>
         <button
           type="button"
-          className="inline-flex shrink-0 items-center gap-1.5 rounded-full border border-[color:var(--app-border)] bg-[color:var(--app-surface-soft)] px-3 py-1.5 text-xs font-medium app-text-secondary transition hover:border-[color:var(--app-primary-soft-border)] hover:bg-[color:var(--app-primary-soft)] hover:text-[color:var(--app-primary)]"
+          className="inline-flex shrink-0 items-center gap-1.5 rounded-full border border-[color:var(--app-border)] bg-[color:var(--app-surface-soft)] px-2.5 py-1 text-[11px] font-medium app-text-secondary transition hover:border-[color:var(--app-primary-soft-border)] hover:bg-[color:var(--app-primary-soft)] hover:text-[color:var(--app-primary)] sm:px-3 sm:py-1.5 sm:text-xs"
           onClick={() => setIsExpanded((current) => !current)}
           aria-expanded={isExpanded}
           aria-controls={disclosureId}
@@ -150,7 +224,7 @@ export const PageSummary: React.FC<{
           <ChevronDown className={cn('h-4 w-4 transition-transform duration-200', isExpanded ? 'rotate-180' : '')} />
         </button>
       </div>
-      <div id={disclosureId} className={cn('mt-4 lg:mt-5', isExpanded ? 'block' : 'hidden')}>
+      <div id={disclosureId} className={cn('mt-3.5 lg:mt-4', isExpanded ? 'block' : 'hidden')}>
         {children}
       </div>
     </section>
@@ -243,7 +317,7 @@ export const CompactActionGroup: React.FC<{
 
   return (
     <div className={cn('w-full', className)}>
-      <div className="flex items-center gap-2 sm:hidden">
+      <div className="flex items-center gap-1.5 sm:hidden">
         {primary ? <div className="min-w-0 flex-1">{primary}</div> : null}
         {hasSecondary ? (
           <Button
@@ -251,8 +325,8 @@ export const CompactActionGroup: React.FC<{
             variant={primary ? 'secondary' : 'outline'}
             size={primary ? 'md' : 'sm'}
             className={cn(
-              'shrink-0',
-              primary ? 'px-3.5' : 'w-full justify-between rounded-2xl px-3.5'
+              'shrink-0 rounded-full',
+              primary ? 'min-h-8.5 px-2.5 text-[12px]' : 'w-full justify-between rounded-2xl px-3.5'
             )}
             onClick={() => setIsExpanded((current) => !current)}
             aria-expanded={isExpanded}
@@ -272,7 +346,7 @@ export const CompactActionGroup: React.FC<{
           id={disclosureId}
           className={cn(
             'sm:hidden',
-            isExpanded ? 'mt-2 grid gap-2' : 'hidden'
+            isExpanded ? 'mt-1.5 grid gap-1.5' : 'hidden'
           )}
         >
           {secondaryChildren.map((child, index) => (
@@ -299,9 +373,9 @@ export const PageFilters: React.FC<React.HTMLAttributes<HTMLDivElement> & { chil
   const [isExpanded, setIsExpanded] = useState(false);
 
   return (
-    <div className={cn('app-page-header shrink-0 z-20 transition-all duration-300', className)} {...props}>
+    <div className={cn('app-filter-strip shrink-0 z-20 transition-all duration-300', className)} {...props}>
       <div
-        className="app-shell-gutter flex cursor-pointer items-center justify-between py-2 hover:bg-[color:var(--app-surface-soft)] lg:hidden"
+        className="app-shell-gutter flex cursor-pointer items-center justify-between py-2 lg:hidden"
         onClick={() => setIsExpanded((current) => !current)}
       >
         <div className="flex items-center gap-2 text-xs font-medium app-text-secondary sm:text-sm">
@@ -313,9 +387,9 @@ export const PageFilters: React.FC<React.HTMLAttributes<HTMLDivElement> & { chil
 
       <div
         className={cn(
-          'app-shell-gutter flex flex-col gap-3 transition-all duration-300 ease-in-out lg:flex-row lg:flex-wrap lg:items-center lg:gap-5 xl:gap-6',
+          'app-shell-gutter flex flex-col gap-2.5 transition-all duration-300 ease-in-out lg:flex-row lg:flex-wrap lg:items-center lg:gap-4 xl:gap-5',
           isExpanded ? 'visible max-h-[28rem] overflow-visible py-2 opacity-100' : 'invisible max-h-0 overflow-hidden opacity-0 lg:visible lg:max-h-none lg:overflow-visible',
-          'lg:h-auto lg:py-4 lg:opacity-100'
+          'lg:h-auto lg:py-3 lg:opacity-100'
         )}
       >
         {children}
@@ -326,8 +400,8 @@ export const PageFilters: React.FC<React.HTMLAttributes<HTMLDivElement> & { chil
 
 export const PageBody: React.FC<React.HTMLAttributes<HTMLDivElement> & { children: React.ReactNode }> = ({ children, className, ...props }) => {
   return (
-    <div className="custom-scrollbar relative flex-1 min-h-0 overflow-y-auto overflow-x-hidden scroll-smooth" {...props}>
-      <div className={cn('app-page-content app-page w-full max-w-full pb-28 lg:pb-10 xl:pb-12', className)}>{children}</div>
+    <div className="custom-scrollbar relative min-h-0 overflow-visible overflow-x-hidden scroll-smooth lg:flex-1 lg:overflow-y-auto" {...props}>
+      <div className={cn('app-page-content app-page w-full max-w-full pb-24 lg:pb-10 xl:pb-12', className)}>{children}</div>
     </div>
   );
 };

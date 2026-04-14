@@ -14,7 +14,7 @@ import { Button } from '../components/ui/Button';
 import { UserPlus, Users, User, AlertCircle, Trophy } from 'lucide-react';
 import { SwipePager } from '../components/ui/SwipePager';
 import { TopCustomersCard } from '../components/Customers/TopCustomersCard';
-import { PageLayout, PageHeader, PageBody, PageNotice, PageStack, PageSummary, PageToolbarCard } from '../components/Layout/PageLayout';
+import { PageLayout, PageHeader, PageHeaderActionButton, PageBody, PageNotice, PageStack, PageSummary, PageToolbarCard } from '../components/Layout/PageLayout';
 import {
   MobileFilterDrawer,
   MobileFilterSection,
@@ -286,11 +286,20 @@ export const Customers = () => {
     <PageLayout data-tour="customers.panel">
       <PageHeader
         title="Clientes"
-        description="Gestiona tu base de clientes."
+        description="Busca clientes y abre su ficha cuando la necesites."
+        mobileFab={{
+          label: '+Cliente',
+          icon: UserPlus,
+          onClick: handleNewClient,
+        }}
         action={
-          <Button onClick={handleNewClient} size="icon" data-tour="customers.primaryAction.mobile" className="h-10 w-10 shrink-0 sm:h-auto sm:w-auto">
-            <UserPlus className="w-4 h-4" />
-          </Button>
+          <PageHeaderActionButton
+            onClick={handleNewClient}
+            icon={UserPlus}
+            label="Nuevo cliente"
+            mobileLabel="Cliente"
+            data-tour="customers.primaryAction.mobile"
+          />
         }
       />
 
@@ -375,7 +384,7 @@ export const Customers = () => {
                 title: 'Detalle',
                 icon: User,
                 content: (
-                  <div className="h-full" data-tour="customers.detail">
+                  <div className="flex min-h-0 flex-1 flex-col" data-tour="customers.detail">
                       {selectedCustomer ? (
                           <ClientDetailPanel 
                               customer={selectedCustomer}

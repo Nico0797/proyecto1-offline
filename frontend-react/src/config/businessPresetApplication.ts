@@ -16,6 +16,7 @@ import {
   isBusinessCommercialSectionEnabled,
   resolveBusinessType,
 } from './businessPersonalization';
+import type { BusinessType } from '../types';
 import {
   areBusinessOperationalProfilesEqual,
   buildOperationalProfileSettingsPatch,
@@ -29,8 +30,9 @@ import {
   BUSINESS_MODULE_ORDER,
   isBusinessModuleEnabled,
 } from '../types';
+import { normalizeNavigationPaths } from '../navigation/navigationPathAliases';
 
-const normalizePaths = (paths?: string[]) => Array.from(new Set((paths || []).filter(Boolean)));
+const normalizePaths = (paths?: string[]) => normalizeNavigationPaths(paths);
 const DEFAULT_VISIBLE_COMMERCIAL_PATHS = ['/invoices', '/orders', '/sales-goals'];
 
 const hasBusinessPermission = (permissions: string[] | undefined, permission?: string) => {
@@ -340,6 +342,7 @@ interface ApplyBusinessTypeConfigurationParams {
   answers?: Partial<BusinessPersonalizationAnswers>;
   business: Business;
   businessType: BusinessTypeKey;
+  simpleBusinessType?: BusinessType | null;
   commercialSections?: BusinessCommercialSectionsState;
   currentNavigationPreferences?: NavigationPreferences | null;
   initialSetup?: BusinessInitialSetupSettings | null;
@@ -358,6 +361,7 @@ export const applyBusinessTypeConfiguration = async ({
   answers,
   business,
   businessType,
+  simpleBusinessType,
   commercialSections,
   currentNavigationPreferences,
   initialSetup,
@@ -389,6 +393,7 @@ export const applyBusinessTypeConfiguration = async ({
   };
   const nextCommercialSections: BusinessCommercialSectionsState =
     commercialSections || personalization.commercial_sections;
+  const nextSimpleBusinessType = simpleBusinessType ?? personalization.simple_business_type ?? null;
   const nextVisibilityMode = visibilityMode ?? personalization.visibility_mode ?? null;
   const nextOperationalProfile = operationalProfile || currentOperationalProfile;
   const effectivePlan = plan ?? business.plan ?? null;
@@ -406,6 +411,7 @@ export const applyBusinessTypeConfiguration = async ({
     ...buildPersonalizationSettingsPatch(settingsWithOperationalProfile, {
       ...personalization,
       business_type: businessType,
+      simple_business_type: nextSimpleBusinessType,
       visibility_mode: nextVisibilityMode,
       commercial_sections: nextCommercialSections,
       onboarding: {
@@ -430,27 +436,33 @@ export const applyBusinessTypeConfiguration = async ({
     availableItems,
     prioritizedPath,
   });
-  const currentDefaultPreferences = currentNavigationDefaults
-    ? toNavigationPreferences(currentNavigationDefaults)
-    : buildPresetNavigationPreferences({
-        businessType: resolveBusinessType(business),
-        availableItems: getAvailableNavigationItemsForBusiness({
-          business,
-          permissions: business.permissions,
-          modules: business.modules,
-          plan: effectivePlan,
-        }),
-        prioritizedPath: null,
-      });
+  const currentRecommendedPreferences = buildPresetNavigationPreferences({
+    businessType: resolveBusinessType(business),
+    availableItems: getAvailableNavigationItemsForBusiness({
+      business,
+      permissions: business.permissions,
+      modules: business.modules,
+      plan: effectivePlan,
+    }),
+    prioritizedPath: null,
+  });
   const navigationResolution = resolveNavigationPreferencesAfterPresetApplication({
     mode: navigationMode,
     currentNavigationPreferences,
-    currentNavigationDefaults: currentDefaultPreferences,
+    currentNavigationDefaults: currentRecommendedPreferences,
     nextNavigationDefaults: toNavigationPreferences(nextNavigationDefaultsBase),
     availableItems,
   });
+  const resolvedNavigationDefaults: BusinessNavigationDefaults = {
+    ...nextNavigationDefaultsBase,
+    favorite_paths: navigationResolution.preferences.favoritePaths,
+    hidden_paths: navigationResolution.preferences.hiddenPaths,
+    prioritized_path: navigationResolution.preferences.favoritePaths[0] || nextNavigationDefaultsBase.prioritized_path || null,
+    last_applied_at: nextNavigationDefaultsBase.last_applied_at || null,
+  };
   const settingsNeedUpdate =
     personalization.business_type !== businessType ||
+    personalization.simple_business_type !== nextSimpleBusinessType ||
     personalization.visibility_mode !== nextVisibilityMode ||
     personalization.onboarding.completed !== true ||
     personalization.onboarding.skipped !== false ||
@@ -461,12 +473,12 @@ export const applyBusinessTypeConfiguration = async ({
     !areCommercialSectionsEqual(personalization.commercial_sections, nextCommercialSections) ||
     !areBusinessOperationalProfilesEqual(currentOperationalProfile, nextOperationalProfile) ||
     !areInitialSetupEqual(currentInitialSetup, initialSetup || currentInitialSetup) ||
-    !areNavigationDefaultsEqual(currentNavigationDefaults, nextNavigationDefaultsBase);
+    !areNavigationDefaultsEqual(currentNavigationDefaults, resolvedNavigationDefaults);
 
   const timestamp = settingsNeedUpdate ? new Date().toISOString() : personalization.onboarding.last_updated_at || null;
   const nextNavigationDefaults: BusinessNavigationDefaults = {
-    ...nextNavigationDefaultsBase,
-    last_applied_at: settingsNeedUpdate ? timestamp : currentNavigationDefaults?.last_applied_at || null,
+    ...resolvedNavigationDefaults,
+    last_applied_at: settingsNeedUpdate ? timestamp : currentNavigationDefaults?.last_applied_at || resolvedNavigationDefaults.last_applied_at || null,
   };
 
   if (settingsNeedUpdate) {
@@ -474,6 +486,7 @@ export const applyBusinessTypeConfiguration = async ({
       ...buildPersonalizationSettingsPatch(settingsWithOperationalProfile, {
         ...personalization,
         business_type: businessType,
+        simple_business_type: nextSimpleBusinessType,
         visibility_mode: nextVisibilityMode,
         commercial_sections: nextCommercialSections,
         navigation_defaults: nextNavigationDefaults,

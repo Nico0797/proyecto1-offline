@@ -1,0 +1,77 @@
+{
+  "generatedAt": "2026-04-09T17:18:02.419Z",
+  "environment": {
+    "exePath": "C:\\Users\\harae\\Desktop\\offline app\\proyecto1\\frontend-react\\src-tauri\\target\\release\\encaja_desktop.exe",
+    "localDataRoot": "C:\\Users\\harae\\AppData\\Local\\com.encaja.desktop",
+    "remoteDebugUrl": "http://127.0.0.1:9222"
+  },
+  "scenarios": [
+    {
+      "name": "A. Primera apertura",
+      "url": "/dashboard",
+      "loginVisible": false,
+      "emptyStateVisible": true,
+      "window": {
+        "pid": 26240,
+        "title": "EnCaja Desktop",
+        "width": 1456,
+        "height": 959,
+        "left": 208,
+        "top": 121
+      }
+    },
+    {
+      "name": "B. Persistencia de negocio",
+      "url": "/dashboard",
+      "loginVisible": false,
+      "businessRestored": true,
+      "window": {
+        "pid": 19484,
+        "title": "EnCaja Desktop",
+        "width": 1456,
+        "height": 959,
+        "left": 52,
+        "top": 52
+      }
+    },
+    {
+      "name": "Desktop UX",
+      "initialWindow": {
+        "pid": 19484,
+        "title": "EnCaja Desktop",
+        "width": 1456,
+        "height": 959,
+        "left": 52,
+        "top": 52
+      },
+      "viewportBeforeResize": {
+        "width": 1440,
+        "height": 920
+      },
+      "viewportAfterResize": {
+        "width": 1264,
+        "height": 801
+      },
+      "navigatorOnline": false,
+      "sidebarVisible": true,
+      "title": "EnCaja Desktop"
+    }
+  ],
+  "remoteRequests": [],
+  "bugsFound": [
+    {
+      "severity": "blocking",
+      "description": "locator.waitFor: Timeout 30000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('[title=\"Producto Temporal Slice 1\"]').last() to be visible\u001b[22m\n"
+    }
+  ],
+  "bugsCorrected": [],
+  "bugsDeferred": [],
+  "screenshots": {
+    "desktop-first-open-dashboard": "C:\\Users\\harae\\Desktop\\offline app\\proyecto1\\frontend-react\\offline-evidence\\desktop-slice1\\desktop-first-open-dashboard.png",
+    "desktop-first-open-dashboard-window": "C:\\Users\\harae\\Desktop\\offline app\\proyecto1\\frontend-react\\offline-evidence\\desktop-slice1\\desktop-first-open-dashboard-window.png",
+    "desktop-after-business-create": "C:\\Users\\harae\\Desktop\\offline app\\proyecto1\\frontend-react\\offline-evidence\\desktop-slice1\\desktop-after-business-create.png",
+    "desktop-after-business-create-window": "C:\\Users\\harae\\Desktop\\offline app\\proyecto1\\frontend-react\\offline-evidence\\desktop-slice1\\desktop-after-business-create-window.png",
+    "desktop-products-empty-or-list": "C:\\Users\\harae\\Desktop\\offline app\\proyecto1\\frontend-react\\offline-evidence\\desktop-slice1\\desktop-products-empty-or-list.png",
+    "desktop-products-empty-or-list-window": "C:\\Users\\harae\\Desktop\\offline app\\proyecto1\\frontend-react\\offline-evidence\\desktop-slice1\\desktop-products-empty-or-list-window.png"
+  }
+}

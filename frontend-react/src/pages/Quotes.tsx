@@ -15,7 +15,7 @@ import { useAccess } from '../hooks/useAccess';
 import { quotesService } from '../services/quotesService';
 import { downloadFile } from '../utils/downloadHelper';
 import { DateRange, getPeriodPreference } from '../utils/dateRange.utils';
-import { PageBody, PageHeader, PageLayout, PageNotice, PageStack, PageToolbarCard } from '../components/Layout/PageLayout';
+import { PageBody, PageHeader, PageHeaderActionButton, PageLayout, PageNotice, PageStack, PageToolbarCard } from '../components/Layout/PageLayout';
 import { FilterBar, FilterPeriod, FilterSearch, FilterSelect } from '../components/ui/FilterBar';
 import {
   MobileFilterDrawer,
@@ -425,9 +425,13 @@ export const Quotes = () => {
         title="Cotizaciones"
         description="Gestiona cotizaciones separadas de ventas y conviértelas explícitamente cuando corresponda."
         action={canCreate ? (
-          <Button onClick={openCreate} className="w-full sm:w-auto" data-tour="quotes.primaryAction">
-            <Plus className="w-4 h-4 mr-2" /> Nueva Cotización
-          </Button>
+          <PageHeaderActionButton
+            onClick={openCreate}
+            icon={Plus}
+            label="Nueva cotización"
+            mobileLabel="Cotizar"
+            data-tour="quotes.primaryAction"
+          />
         ) : undefined}
       />
 

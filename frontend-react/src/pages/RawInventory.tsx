@@ -449,7 +449,7 @@ export const RawInventory = () => {
             <Button variant={includeInactive ? 'primary' : 'secondary'} onClick={() => setIncludeInactive((value) => !value)}>
               <SlidersHorizontal className="w-4 h-4 mr-2" /> {includeInactive ? 'Ocultar inactivos' : 'Mostrar inactivos'}
             </Button>
-            <div className="flex items-center text-sm text-gray-500 dark:text-gray-400">{loading ? 'Cargando inventario...' : 'Datos calculados en backend'}</div>
+            <div className="flex items-center text-sm text-gray-500 dark:text-gray-400">{loading ? 'Cargando inventario...' : 'Resumen local actualizado'}</div>
           </div>
           {error && (
             <div className="mt-3 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700 dark:border-red-800/40 dark:bg-red-900/10 dark:text-red-300">
@@ -573,7 +573,7 @@ export const RawInventory = () => {
               <div className="mt-3 space-y-2 text-sm text-gray-600 dark:text-gray-400">
                 <div>Entidad separada de productos comerciales.</div>
                 <div>Movimientos con trazabilidad e historial.</div>
-                <div>Cálculo de stock resuelto solo en backend.</div>
+                <div>Resumen pensado para control local diario.</div>
               </div>
             </div>
           </div>

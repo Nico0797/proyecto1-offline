@@ -37,9 +37,9 @@ export const SettingsSectionPage = ({
       </button>
 
       <ElevatedCard tone={tone} className="p-5">
-        <div className="flex items-start gap-3">
-          <IconContainer icon={icon} tone={tone} size="lg" />
-          <div>
+        <div className="grid grid-cols-[auto_minmax(0,1fr)] items-start gap-4">
+          <IconContainer icon={icon} tone={tone} size="lg" className="shrink-0" />
+          <div className="min-w-0">
             <div className="flex flex-wrap items-center gap-2">
               <h1 className="text-xl font-semibold tracking-tight app-text">{title}</h1>
               {badge ? <AppStatusBadge tone={tone}>{badge}</AppStatusBadge> : null}

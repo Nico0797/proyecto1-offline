@@ -1,0 +1,22 @@
+{
+  "baseUrl": "http://127.0.0.1:4175",
+  "firstOpen": {
+    "name": "desktop-first-open",
+    "finalUrl": "http://127.0.0.1:4175/dashboard",
+    "loginVisible": false,
+    "emptyBootstrapVisible": true,
+    "dashboardVisible": true,
+    "activeBusinessVisible": false,
+    "screenshot": "c:\\Users\\harae\\Desktop\\offline app\\proyecto1\\frontend-react\\offline-evidence\\desktop-first-open.png",
+    "bootstrapSignal": "Crear negocio"
+  },
+  "seededOpen": {
+    "name": "desktop-seeded-open",
+    "finalUrl": "http://127.0.0.1:4175/dashboard",
+    "loginVisible": false,
+    "emptyBootstrapVisible": false,
+    "dashboardVisible": true,
+    "activeBusinessVisible": true,
+    "screenshot": "c:\\Users\\harae\\Desktop\\offline app\\proyecto1\\frontend-react\\offline-evidence\\desktop-seeded-open.png"
+  }
+}

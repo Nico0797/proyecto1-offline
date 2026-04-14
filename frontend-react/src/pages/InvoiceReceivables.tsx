@@ -46,6 +46,7 @@ import {
 import { invoicesService } from '../services/invoicesService';
 import { OFFLINE_SNAPSHOT_APPLIED_EVENT, offlineSyncService } from '../services/offlineSyncService';
 import { useBusinessStore } from '../store/businessStore';
+import { isOfflineProductMode } from '../runtime/runtimeMode';
 import { useCustomerStore } from '../store/customerStore';
 
 const STATUS_OPTIONS: Array<{ value: InvoiceReceivableFilterStatus; label: string }> = [
@@ -491,7 +492,7 @@ export const InvoiceReceivables = () => {
                           <td className="px-4 py-3">
                             <div className="flex items-center gap-2">
                               <div className="font-semibold text-gray-950 dark:text-white">{invoice.invoice_number}</div>
-                              {syncMeta && (
+                              {!isOfflineProductMode() && syncMeta && (
                                 <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-semibold ${syncMeta.className}`}>
                                   {syncMeta.label}
                                 </span>
@@ -551,7 +552,7 @@ export const InvoiceReceivables = () => {
                         <div>
                           <div className="flex flex-wrap items-center gap-2">
                             <div className="text-sm font-semibold text-gray-950 dark:text-white">{invoice.customer_name || 'Cliente ocasional'}</div>
-                            {syncMeta && (
+                            {!isOfflineProductMode() && syncMeta && (
                               <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-semibold ${syncMeta.className}`}>
                                 {syncMeta.label}
                               </span>

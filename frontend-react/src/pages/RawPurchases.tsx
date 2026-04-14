@@ -6,7 +6,7 @@ import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
 import { Modal } from '../components/ui/Modal';
 import { TeachingEmptyState } from '../components/ui/TeachingEmptyState';
-import { PageBody, PageHeader, PageLayout } from '../components/Layout/PageLayout';
+import { PageBody, PageHeader, PageHeaderActionButton, PageLayout } from '../components/Layout/PageLayout';
 import { useBusinessStore } from '../store/businessStore';
 import { useAccess } from '../hooks/useAccess';
 import { useRawPurchasesStore } from '../store/rawPurchasesStore';
@@ -176,7 +176,7 @@ export const RawPurchases = () => {
         setMaterials(rawMaterials.filter((material) => material.is_active));
         setSuppliers(suppliersList.filter((supplier) => supplier.is_active));
       } catch (err: any) {
-        toast.error(err?.response?.data?.error || 'No fue posible cargar materias primas o proveedores');
+        toast.error(err?.response?.data?.error || err?.message || 'No fue posible preparar materias primas o proveedores.');
       }
     };
     loadReferences();
@@ -403,7 +403,7 @@ export const RawPurchases = () => {
     <PageLayout data-tour="raw-purchases.panel">
       <PageHeader
         title="Compras de insumos"
-        description="Registra compras de bodega y confirma entradas automáticas a raw inventory."
+        description="Registra compras de bodega y confirma entradas automaticas al inventario de insumos."
         action={
           <div className="flex flex-wrap gap-3">
             <div className="app-chip rounded-xl px-4 py-2 text-sm text-gray-600 dark:text-gray-300">
@@ -413,9 +413,13 @@ export const RawPurchases = () => {
               {summary.confirmed} confirmada(s)
             </div>
             {canCreate && (
-              <Button onClick={openCreate} data-tour="raw-purchases.primaryAction">
-                <PackagePlus className="w-4 h-4 mr-2" /> Nueva compra
-              </Button>
+              <PageHeaderActionButton
+                onClick={openCreate}
+                icon={PackagePlus}
+                label="Nueva compra"
+                mobileLabel="Comprar"
+                data-tour="raw-purchases.primaryAction"
+              />
             )}
           </div>
         }
@@ -522,7 +526,7 @@ export const RawPurchases = () => {
           </div>
         </div>
 
-      <Modal isOpen={isPurchaseModalOpen} onClose={closePurchaseModal} title={editingPurchase ? 'Editar compra de insumos' : 'Nueva compra de insumos'} className="max-w-5xl h-[90vh]">
+      <Modal isOpen={isPurchaseModalOpen} onClose={closePurchaseModal} title={editingPurchase ? 'Editar compra de insumos' : 'Nueva compra de insumos'} className="max-w-5xl max-h-[calc(100dvh-1.5rem)]">
         <div className="space-y-5" data-tour="raw-purchases.modal.form">
           <div className="app-muted-panel p-4">
             <div className="text-sm font-semibold text-gray-900 dark:text-white">Compra y abastecimiento</div>
@@ -589,7 +593,7 @@ export const RawPurchases = () => {
               <Button variant="secondary" onClick={addItem}>
                 <PackagePlus className="w-4 h-4 mr-2" /> Agregar ítem
               </Button>
-              <div className="text-sm text-gray-700 dark:text-gray-300">Total calculado en backend: <span className="font-semibold text-gray-900 dark:text-white">{formatCurrency(totals, activeBusiness?.currency || 'COP')}</span></div>
+              <div className="text-sm text-gray-700 dark:text-gray-300">Total estimado: <span className="font-semibold text-gray-900 dark:text-white">{formatCurrency(totals, activeBusiness?.currency || 'COP')}</span></div>
             </div>
           </div>
 
@@ -704,7 +708,7 @@ export const RawPurchases = () => {
         )}
       </Modal>
 
-      <Modal isOpen={isDetailOpen && !!selectedPurchase} onClose={closeDetails} title={selectedPurchase ? `Detalle de ${selectedPurchase.purchase_number}` : 'Detalle de compra'} className="max-w-4xl h-[85vh]">
+      <Modal isOpen={isDetailOpen && !!selectedPurchase} onClose={closeDetails} title={selectedPurchase ? `Detalle de ${selectedPurchase.purchase_number}` : 'Detalle de compra'} className="max-w-4xl max-h-[calc(100dvh-1.5rem)]">
         {selectedPurchase && (
           <div className="space-y-6">
             <div className="grid grid-cols-1 md:grid-cols-3 xl:grid-cols-6 gap-4">

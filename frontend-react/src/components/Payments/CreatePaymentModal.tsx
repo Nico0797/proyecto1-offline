@@ -4,6 +4,7 @@ import { useBusinessStore } from '../../store/businessStore';
 import { useCustomerStore } from '../../store/customerStore';
 import { usePaymentStore } from '../../store/paymentStore';
 import { Modal } from '../ui/Modal';
+import { SearchableSelect } from '../ui/SearchableSelect';
 import { Button } from '../ui/Button';
 import { CurrencyInput } from '../ui/CurrencyInput';
 
@@ -95,20 +96,17 @@ export const CreatePaymentModal: React.FC<CreatePaymentModalProps> = ({
     <Modal isOpen={isOpen} onClose={onClose} title="Registrar pago" maxWidth="max-w-xl">
       <form onSubmit={handleSubmit} className="space-y-5">
         <div>
-          <label className="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-300">Cliente</label>
-          <select
-            className="app-select"
+          <SearchableSelect
+            label="Cliente"
+            sheetTitle="Seleccionar cliente"
+            searchPlaceholder="Buscar cliente..."
+            placeholder="Seleccionar cliente"
+            options={customers.map((customer) => ({ value: customer.id, label: customer.name }))}
             value={selectedCustomerId}
-            onChange={(e) => setSelectedCustomerId(Number(e.target.value) || '')}
+            onChange={(v) => setSelectedCustomerId(v ? Number(v) : '')}
             required
-          >
-            <option value="">Seleccionar cliente</option>
-            {customers.map((customer) => (
-              <option key={customer.id} value={customer.id}>
-                {customer.name}
-              </option>
-            ))}
-          </select>
+            allowClear={false}
+          />
           {customerDebt !== null ? (
             <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
               Deuda actual:{' '}

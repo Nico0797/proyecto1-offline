@@ -1,15 +1,18 @@
+import { useMemo } from 'react';
 import { useAuthStore } from '../store/authStore';
 import { useBusinessStore } from '../store/businessStore';
 import { useAccountAccessStore } from '../store/accountAccessStore';
 import { canAccess as checkPlanAccess, canAccessModule, FeatureKey } from '../auth/plan';
 import { hasPermissionMatch } from '../auth/permissions';
 import { BusinessModuleKey, isBusinessModuleEnabled } from '../types';
+import { isOfflineProductMode } from '../runtime/runtimeMode';
 
 const buildAccessSnapshot = (
   user: ReturnType<typeof useAuthStore.getState>['user'],
   activeBusiness: ReturnType<typeof useBusinessStore.getState>['activeBusiness'],
   access: ReturnType<typeof useAccountAccessStore.getState>['access']
 ) => {
+  const offlineProductMode = isOfflineProductMode();
   const accountType = user?.account_type || (activeBusiness?.user_id === user?.id ? 'personal' : 'team_member');
   const isPersonal = accountType === 'personal';
   const isTeamMember = !isPersonal;
@@ -30,12 +33,18 @@ const buildAccessSnapshot = (
   const isAdmin = user?.is_admin || user?.permissions?.admin || false;
 
   const canAccessFeature = (feature: FeatureKey): boolean => {
+    if (offlineProductMode) {
+      return checkPlanAccess(feature, user, 'business');
+    }
     if (!user) return false;
     return checkPlanAccess(feature, user, subscriptionPlan);
   };
 
   const hasPermission = (permission?: string): boolean => {
     if (!permission) return true;
+    if (offlineProductMode) {
+      return !permission.startsWith('team.');
+    }
     if (isOwner) return true;
     if (isAdmin) return true;
     return hasPermissionMatch(permissions, permission);
@@ -66,12 +75,20 @@ const buildAccessSnapshot = (
     return !canAccessFeature(feature);
   };
 
-  const canUpgrade = isPersonal;
-  const canManageBusinessExperience = !!activeBusiness && (isOwner || hasAnyPermission(['settings.edit', 'business.update']));
-  const canViewAudit = !!activeBusiness && (isOwner || hasAnyPermission(['settings.edit', 'business.update', 'team.manage_team', 'team.manage']));
-  const canViewTeamWorkspace = !!activeBusiness;
-  const canManageTeam = !!activeBusiness && (isOwner || hasAnyPermission(['team.manage_team', 'team.manage', 'team.invite', 'team.edit_roles', 'team.remove']));
-  const canManageRoles = !!activeBusiness && (isOwner || hasAnyPermission(['team.edit_roles', 'team.manage_team', 'team.manage']));
+  const canUpgrade = offlineProductMode ? false : isPersonal;
+  const canManageBusinessExperience = offlineProductMode
+    ? true
+    : !!activeBusiness && (isOwner || hasAnyPermission(['settings.edit', 'business.update']));
+  const canViewAudit = offlineProductMode
+    ? true
+    : !!activeBusiness && (isOwner || hasAnyPermission(['settings.edit', 'business.update', 'team.manage_team', 'team.manage']));
+  const canViewTeamWorkspace = offlineProductMode ? false : !!activeBusiness;
+  const canManageTeam = offlineProductMode
+    ? false
+    : !!activeBusiness && (isOwner || hasAnyPermission(['team.manage_team', 'team.manage', 'team.invite', 'team.edit_roles', 'team.remove']));
+  const canManageRoles = offlineProductMode
+    ? false
+    : !!activeBusiness && (isOwner || hasAnyPermission(['team.edit_roles', 'team.manage_team', 'team.manage']));
 
   return {
     user,
@@ -113,5 +130,5 @@ export const useAccess = () => {
   const { user } = useAuthStore();
   const { activeBusiness } = useBusinessStore();
   const access = useAccountAccessStore((state) => state.access);
-  return buildAccessSnapshot(user, activeBusiness, access);
+  return useMemo(() => buildAccessSnapshot(user, activeBusiness, access), [access, activeBusiness, user]);
 };

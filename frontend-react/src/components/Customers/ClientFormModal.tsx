@@ -77,7 +77,12 @@ export const ClientFormModal: React.FC<ClientFormModalProps> = ({
   };
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} title={editingCustomer ? 'Editar Cliente' : 'Nuevo Cliente'}>
+    <Modal
+      isOpen={isOpen}
+      onClose={onClose}
+      title={editingCustomer ? 'Editar Cliente' : 'Nuevo Cliente'}
+      data-tour="customers.modal.form"
+    >
       <form onSubmit={handleSubmit} className="space-y-5">
         {submitError ? (
           <FormAlert
@@ -126,7 +131,14 @@ export const ClientFormModal: React.FC<ClientFormModalProps> = ({
 
         <div className="flex flex-col-reverse gap-2 border-t border-gray-200 pt-4 dark:border-gray-800 sm:flex-row sm:justify-end sm:gap-3">
           <Button type="button" variant="ghost" onClick={onClose} className="w-full sm:w-auto">Cancelar</Button>
-          <Button type="submit" isLoading={loading} className="w-full sm:w-auto">{editingCustomer ? 'Guardar Cambios' : 'Crear Cliente'}</Button>
+          <Button
+            type="submit"
+            isLoading={loading}
+            className="w-full sm:w-auto"
+            data-tour={editingCustomer ? 'customers.modal.update' : 'customers.modal.create'}
+          >
+            {editingCustomer ? 'Guardar Cambios' : 'Crear Cliente'}
+          </Button>
         </div>
       </form>
     </Modal>

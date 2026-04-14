@@ -20,6 +20,7 @@ import { useAuthStore } from '../../store/authStore';
 import { useAccess } from '../../hooks/useAccess';
 import { Button } from '../ui/Button';
 import {
+  BUSINESS_PRESET_UI_ORDER,
   buildOperationalProfileFromPreset,
   buildPersonalizationSettingsPatch,
   type BusinessCommercialSectionKey,
@@ -36,7 +37,7 @@ import {
 } from '../../config/businessPersonalizationCompat';
 import { BUSINESS_NAVIGATION_ITEMS, type NavigationItemDefinition } from '../../navigation/businessNavigation';
 import { resolveBusinessNavigationState } from '../../navigation/navigationPersonalization';
-import { useNavigationPreferences } from '../../store/navigationPreferences.store';
+import { type NavigationPreferences, useNavigationPreferences } from '../../store/navigationPreferences.store';
 import { cn } from '../../utils/cn';
 import {
   applyBusinessTypeConfiguration,
@@ -233,12 +234,16 @@ export const BusinessPersonalizationExperience = () => {
   const baseState = useMemo(() => getBusinessBaseState(activeBusiness), [activeBusiness]);
   const appliedBusinessType = baseState.effectiveBusinessType;
   const currentNavigationDefaults = useMemo(() => getBusinessNavigationDefaults(activeBusiness), [activeBusiness]);
+  const persistedMenuPrefs = useMemo(
+    () => (currentNavigationDefaults ? toNavigationPreferences(currentNavigationDefaults) : null),
+    [currentNavigationDefaults]
+  );
 
   const [selectedBusinessType, setSelectedBusinessType] = useState<BusinessTypeKey>(appliedBusinessType);
   const [savingPreset, setSavingPreset] = useState(false);
   const [savingSections, setSavingSections] = useState(false);
   const [showMenuEditor, setShowMenuEditor] = useState(false);
-  const [expandedToolGroupId, setExpandedToolGroupId] = useState<string | null>(null);
+  const [expandedToolGroupId, setExpandedToolGroupId] = useState<string | null>(TOOL_GROUPS[0]?.id || null);
   const [modulesForm, setModulesForm] = useState<Record<BusinessModuleKey, boolean>>(
     () => buildModulesFormState(activeBusiness?.modules)
   );
@@ -249,6 +254,7 @@ export const BusinessPersonalizationExperience = () => {
   const getScopeKey = useNavigationPreferences((state) => state.getScopeKey);
   const getPreferences = useNavigationPreferences((state) => state.getPreferences);
   const setPreferences = useNavigationPreferences((state) => state.setPreferences);
+  const resetScope = useNavigationPreferences((state) => state.resetScope);
   const preferencesByScope = useNavigationPreferences((state) => state.preferencesByScope);
 
   const scopeKey = useMemo(
@@ -270,7 +276,7 @@ export const BusinessPersonalizationExperience = () => {
   }, [activeBusiness]);
 
   const presetOptions = useMemo(
-    () => (['simple_store', 'services', 'production', 'wholesale'] as BusinessTypeKey[]).map((businessType) => getBusinessTypePresetDefinition(businessType)),
+    () => BUSINESS_PRESET_UI_ORDER.map((businessType) => getBusinessTypePresetDefinition(businessType)),
     []
   );
   const selectedPreset = useMemo(() => getBusinessTypePresetDefinition(selectedBusinessType), [selectedBusinessType]);
@@ -308,19 +314,19 @@ export const BusinessPersonalizationExperience = () => {
   }, [activeBusiness, canAccess, hasModule, hasPermission]);
 
   const currentDefaultMenuPrefs = useMemo(() => {
-    if (currentNavigationDefaults) {
-      return toNavigationPreferences(currentNavigationDefaults);
-    }
-
     return buildPresetNavigationPreferences({
       businessType: appliedBusinessType,
       availableItems: customizableNavigationItems,
     });
-  }, [appliedBusinessType, currentNavigationDefaults, customizableNavigationItems]);
+  }, [appliedBusinessType, customizableNavigationItems]);
 
   const currentMenuPrefs = useMemo(() => {
+    if (persistedMenuPrefs) {
+      return persistedMenuPrefs;
+    }
+
     return getPreferences(scopeKey, currentDefaultMenuPrefs);
-  }, [currentDefaultMenuPrefs, getPreferences, preferencesByScope, scopeKey]);
+  }, [currentDefaultMenuPrefs, getPreferences, persistedMenuPrefs, preferencesByScope, scopeKey]);
 
   const favoriteMenuItems = useMemo(() => {
     return currentMenuPrefs.favoritePaths
@@ -347,11 +353,11 @@ export const BusinessPersonalizationExperience = () => {
   const hasManualMenuCustomization = useMemo(
     () =>
       hasManualNavigationCustomization({
-        storedPreferences: storedNavigationPreferences,
+        storedPreferences: persistedMenuPrefs || storedNavigationPreferences,
         navigationDefaults: currentDefaultMenuPrefs,
         availableItems: customizableNavigationItems,
       }),
-    [currentDefaultMenuPrefs, customizableNavigationItems, storedNavigationPreferences]
+    [currentDefaultMenuPrefs, customizableNavigationItems, persistedMenuPrefs, storedNavigationPreferences]
   );
 
   const accessManagedItems = useMemo(() => {
@@ -416,6 +422,14 @@ export const BusinessPersonalizationExperience = () => {
       cards: group.moduleKeys
         .map((moduleKey) => moduleCards.find((card) => card.moduleKey === moduleKey))
         .filter((card): card is (typeof moduleCards)[number] => !!card),
+      enabledCount: group.moduleKeys
+        .map((moduleKey) => moduleCards.find((card) => card.moduleKey === moduleKey))
+        .filter((card): card is (typeof moduleCards)[number] => !!card)
+        .filter((card) => card.enabled).length,
+      pendingCount: group.moduleKeys
+        .map((moduleKey) => moduleCards.find((card) => card.moduleKey === moduleKey))
+        .filter((card): card is (typeof moduleCards)[number] => !!card)
+        .filter((card) => card.hasPendingChange).length,
     })).filter((group) => group.cards.length > 0);
   }, [moduleCards]);
 
@@ -486,16 +500,37 @@ export const BusinessPersonalizationExperience = () => {
     () => currentMenuPrefs.favoritePaths.filter((path) => !currentMenuPrefs.hiddenPaths.includes(path)).length,
     [currentMenuPrefs.favoritePaths, currentMenuPrefs.hiddenPaths]
   );
-  const toolGroupSummaries = useMemo(() => {
-    return toolGroups.map((group) => ({
-      ...group,
-      enabledCount: group.cards.filter((card) => card.enabled).length,
-      pendingCount: group.cards.filter((card) => card.hasPendingChange).length,
-    }));
-  }, [toolGroups]);
-
   const resetMenuToCurrentBase = () => {
-    setPreferences(scopeKey, currentDefaultMenuPrefs);
+    void persistMenuPreferences(currentDefaultMenuPrefs);
+  };
+
+  const persistMenuPreferences = async (preferences: NavigationPreferences) => {
+    if (!activeBusiness) return;
+
+    const previousPreferences = currentMenuPrefs;
+    const personalization = getBusinessPersonalizationSettings(activeBusiness);
+    const nextNavigationDefaults = {
+      business_type: personalization.navigation_defaults?.business_type || personalization.business_type || appliedBusinessType,
+      favorite_paths: preferences.favoritePaths,
+      hidden_paths: preferences.hiddenPaths,
+      prioritized_path: preferences.favoritePaths[0] || null,
+      last_applied_at: new Date().toISOString(),
+    };
+
+    setPreferences(scopeKey, preferences);
+
+    try {
+      await updateBusiness(activeBusiness.id, {
+        settings: buildPersonalizationSettingsPatch(activeBusiness.settings || {}, {
+          ...personalization,
+          navigation_defaults: nextNavigationDefaults,
+        }),
+      });
+      resetScope(scopeKey);
+    } catch (error: any) {
+      setPreferences(scopeKey, previousPreferences);
+      toast.error(error?.response?.data?.error || 'No fue posible actualizar el menú del negocio.');
+    }
   };
 
   const resetSectionDraft = () => {
@@ -585,13 +620,13 @@ export const BusinessPersonalizationExperience = () => {
         business: activeBusiness,
         businessType,
         commercialSections: canonicalPreset.commercialSections as Record<BusinessCommercialSectionKey, boolean>,
-        currentNavigationPreferences: storedNavigationPreferences,
+        currentNavigationPreferences: persistedMenuPrefs || storedNavigationPreferences,
         navigationMode,
         operationalProfile: normalizeBusinessOperationalProfile(presetOperationalProfile),
         plan: subscriptionPlan,
         prioritizedPath: canonicalPreset.prioritizedPath || null,
         recommendedModules: canonicalPreset.recommendedModules,
-        setNavigationPreferences: (preferences) => setPreferences(scopeKey, preferences),
+        setNavigationPreferences: () => resetScope(scopeKey),
         updateBusiness,
         updateBusinessModules,
         visibilityMode: canonicalPreset.simplicityLevel === 'simple' ? 'basic' : 'advanced',
@@ -613,7 +648,7 @@ export const BusinessPersonalizationExperience = () => {
   };
 
   const setMenuPreferences = (favoritePaths: string[], hiddenPaths: string[]) => {
-    setPreferences(scopeKey, {
+    void persistMenuPreferences({
       favoritePaths,
       hiddenPaths,
     });
@@ -942,7 +977,7 @@ export const BusinessPersonalizationExperience = () => {
             </div>
           ) : null}
 
-          {toolGroupSummaries.map((group) => {
+          {toolGroups.map((group) => {
             const expanded = expandedToolGroupId === group.id;
             return (
               <div key={group.id} className="theme-surface-soft rounded-3xl border">

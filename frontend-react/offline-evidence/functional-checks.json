@@ -1,0 +1,97 @@
+{
+  "baseUrl": "http://127.0.0.1:4174",
+  "screenshots": [
+    "C:\\Users\\harae\\Desktop\\offline app\\proyecto1\\frontend-react\\offline-evidence\\dashboard.png",
+    "C:\\Users\\harae\\Desktop\\offline app\\proyecto1\\frontend-react\\offline-evidence\\sales.png",
+    "C:\\Users\\harae\\Desktop\\offline app\\proyecto1\\frontend-react\\offline-evidence\\customers.png",
+    "C:\\Users\\harae\\Desktop\\offline app\\proyecto1\\frontend-react\\offline-evidence\\products.png",
+    "C:\\Users\\harae\\Desktop\\offline app\\proyecto1\\frontend-react\\offline-evidence\\products-after-create.png",
+    "C:\\Users\\harae\\Desktop\\offline app\\proyecto1\\frontend-react\\offline-evidence\\customers-after-create.png",
+    "C:\\Users\\harae\\Desktop\\offline app\\proyecto1\\frontend-react\\offline-evidence\\sales-after-create.png",
+    "C:\\Users\\harae\\Desktop\\offline app\\proyecto1\\frontend-react\\offline-evidence\\dashboard-after-create.png"
+  ],
+  "createResults": {
+    "product": {
+      "persisted": false,
+      "source": "offline",
+      "product": {
+        "id": -1775686347431928,
+        "business_id": 101,
+        "name": "Producto Offline Nuevo",
+        "description": "Creado en prueba offline",
+        "type": "product",
+        "sku": "OFF-NEW-01",
+        "price": 33000,
+        "cost": 12000,
+        "unit": "unidad",
+        "stock": 8,
+        "low_stock_threshold": 2,
+        "fulfillment_mode": "resale_stock",
+        "active": true,
+        "barcodes": [],
+        "created_at": "2026-04-08T22:12:27.431Z",
+        "sync_status": "pending",
+        "is_offline_record": true,
+        "client_operation_id": "product_1775686347431_ubhrjh54"
+      }
+    },
+    "customer": {
+      "id": -1775686347433179,
+      "business_id": 101,
+      "name": "Cliente Offline Nuevo",
+      "phone": "3000000002",
+      "address": "Calle 2",
+      "notes": "Creado offline",
+      "balance": 0,
+      "active": true,
+      "created_at": "2026-04-08T22:12:27.433Z",
+      "created_by_name": "Negocio Offline QA",
+      "sync_status": "pending",
+      "is_offline_record": true,
+      "client_operation_id": "customer_1775686347433_dbzieyqb"
+    },
+    "sale": {
+      "id": -1775686347477818,
+      "business_id": 101,
+      "customer_id": -1775686347433179,
+      "customer_name": "Cliente Offline Nuevo",
+      "sale_date": "2026-04-08",
+      "items": [
+        {
+          "product_id": -1775686347431928,
+          "qty": 1,
+          "quantity": 1,
+          "unit_price": 33000,
+          "price": 33000,
+          "name": "Producto Offline Nuevo",
+          "total": 33000,
+          "subtotal": 33000
+        }
+      ],
+      "subtotal": 33000,
+      "discount": 0,
+      "total": 33000,
+      "balance": 0,
+      "collected_amount": 33000,
+      "total_cost": 12000,
+      "payment_method": "cash",
+      "treasury_account_id": null,
+      "treasury_account_name": null,
+      "treasury_account_type": null,
+      "paid": true,
+      "note": "Venta offline nueva",
+      "created_at": "2026-04-08T22:12:27.600Z",
+      "is_offline_record": true,
+      "sync_status": "pending",
+      "offline_deleted": false,
+      "client_operation_id": "sale_1775686347477_y4mcfcr8"
+    }
+  },
+  "checks": {
+    "productVisible": false,
+    "customerVisible": true,
+    "saleCustomerVisible": false,
+    "dashboardRealVisible": true
+  },
+  "finalUrl": "http://127.0.0.1:4174/dashboard"
+}

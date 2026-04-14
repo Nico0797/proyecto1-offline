@@ -8,6 +8,7 @@ import {
   canSimulateDemoPreviewRequest,
   isDemoPreviewSensitiveAction,
 } from './demoPreviewSimulation';
+import { isOfflineProductMode } from '../runtime/runtimeMode';
 
 type RetriableRequestConfig = {
   _retry?: boolean;
@@ -62,6 +63,7 @@ const PREVIEW_HEADER_EXCLUDED_PREFIXES = [
 const PUBLIC_AUTH_PAGE_PATHS = [
   '/',
   '/login',
+  '/auth/login',
   '/team-login',
   '/register',
   '/accept-invite',
@@ -145,6 +147,7 @@ const createPreviewNoPersistError = (path: string, method: string) => {
 };
 
 const isDemoPreviewActive = () => {
+  if (isOfflineProductMode()) return false;
   if (typeof window === 'undefined') return false;
   try {
     const raw = localStorage.getItem(ACCOUNT_ACCESS_STORAGE_KEY);
@@ -157,6 +160,9 @@ const isDemoPreviewActive = () => {
 };
 
 const forceLogout = () => {
+  if (isOfflineProductMode()) {
+    return;
+  }
   resetAuthSessionState();
 
   if (typeof window !== 'undefined' && window.location.pathname !== '/login') {
@@ -265,6 +271,9 @@ api.interceptors.response.use(
       const offlineError = error as any;
       offlineError.isOfflineRequestError = true;
       offlineError.isNetworkError = true;
+      if (isOfflineProductMode()) {
+        offlineError.message = 'No se pudo preparar la informacion local.';
+      }
       return Promise.reject(offlineError);
     }
 

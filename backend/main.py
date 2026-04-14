@@ -5487,11 +5487,6 @@ def create_app(config_class=None):
         if amount_paid > 0 and treasury_account_id is None:
             return jsonify({"error": "Debes seleccionar o configurar una cuenta de caja para registrar una venta pagada"}), 400
 
-        if (not is_paid or payment_method == "credit") and data.get("customer_id"):
-            ar_response = ensure_module_enabled(business_id, "accounts_receivable")
-            if ar_response:
-                return ar_response
-
         # Parse sale date
         sale_date = date.today()
         if data.get("sale_date"):
@@ -5630,14 +5625,44 @@ def create_app(config_class=None):
         if not sale:
             return jsonify({"error": "Venta no encontrada"}), 404
 
+        business = Business.query.get(business_id)
+        if not business:
+            return jsonify({"error": "Negocio no encontrado"}), 404
+
         data = request.get_json() or {}
         before_snapshot = _audit_snapshot("sale", sale)
         original_sale_date = sale.sale_date
 
+        note_text = str(sale.note or "")
+        if "Desde pedido" in note_text:
+            return jsonify({"error": "Las ventas generadas desde pedidos deben corregirse desde el pedido original o eliminarse para reabrirlo."}), 400
+
+        linked_payments = Payment.query.filter_by(business_id=business_id, sale_id=sale.id).order_by(Payment.id.asc()).all()
+        linked_payment_ids = {int(payment.id) for payment in linked_payments}
+        charge_entry = LedgerEntry.query.filter_by(ref_type="sale", ref_id=sale.id, entry_type="charge").first()
+        allocation_payment_ids = set()
+        if charge_entry is not None:
+            allocations = LedgerAllocation.query.filter_by(charge_id=charge_entry.id).all()
+            for allocation in allocations:
+                payment_entry = LedgerEntry.query.get(allocation.payment_id)
+                if not payment_entry or payment_entry.ref_type != "payment" or payment_entry.ref_id is None:
+                    continue
+                allocation_payment_ids.add(int(payment_entry.ref_id))
+
+        related_payment_ids = sorted(linked_payment_ids | allocation_payment_ids)
+        related_payments = Payment.query.filter(Payment.id.in_(related_payment_ids)).all() if related_payment_ids else []
+        total_related_payments = round(sum(float(payment.amount or 0) for payment in related_payments), 2)
+        has_external_allocations = any(payment_id not in linked_payment_ids for payment_id in allocation_payment_ids)
+        if has_external_allocations or len(related_payment_ids) > 1 or abs(total_related_payments - float(sale.collected_amount or 0)) > 0.01:
+            return jsonify({"error": "Esta venta ya tiene cobros o asignaciones relacionadas. Para corregirla primero ajusta o elimina esos cobros desde cartera."}), 400
+
         items = data.get("items") if data.get("items") is not None else sale.items
-        subtotal = float(data.get("subtotal") if data.get("subtotal") is not None else sale.subtotal or 0)
+        if not isinstance(items, list) or len(items) == 0:
+            return jsonify({"error": "Debes mantener al menos un producto o servicio en la venta"}), 400
+
+        subtotal = float(data.get("subtotal") if data.get("subtotal") is not None else sum(float((item or {}).get("total") or 0) for item in items))
         discount = float(data.get("discount") if data.get("discount") is not None else sale.discount or 0)
-        total = float(data.get("total") if data.get("total") is not None else sale.total or 0)
+        total = float(data.get("total") if data.get("total") is not None else max(subtotal - discount, 0))
         if total <= 0:
             return jsonify({"error": "Total invÃ¡lido"}), 400
 
@@ -5648,29 +5673,115 @@ def create_app(config_class=None):
             except Exception:
                 return jsonify({"error": "Fecha invÃ¡lida"}), 400
 
-        collected_amount = round(float(sale.collected_amount or 0), 2)
-        balance = round(max(0.0, total - collected_amount), 2)
-        sale.items = items
-        sale.subtotal = subtotal
-        sale.discount = discount
-        sale.total = total
-        sale.sale_date = sale_date
-        if "payment_method" in data:
-            sale.payment_method = data.get("payment_method") or sale.payment_method
-        if "note" in data:
-            sale.note = data.get("note")
-        sale.collected_amount = collected_amount
-        sale.balance = 0.0 if balance <= 0.01 else balance
-        sale.paid = sale.balance <= 0.01
-        sale.updated_by_user_id = g.current_user.id
+        customer_id = sale.customer_id
+        if "customer_id" in data:
+            customer_id = data.get("customer_id")
+            if customer_id in ("", None):
+                customer_id = None
 
-        charge_entry = LedgerEntry.query.filter_by(ref_type="sale", ref_id=sale.id, entry_type="charge").first()
-        if charge_entry:
-            charge_entry.amount = total
-            charge_entry.entry_date = sale_date
-            charge_entry.note = sale.note
+        payment_method = str(data.get("payment_method") or sale.payment_method or "cash")
+        raw_paid_amount = data.get("amount_paid") if data.get("amount_paid") is not None else data.get("collected_amount")
+        if raw_paid_amount is None:
+            raw_paid_amount = sale.collected_amount or 0
+        try:
+            collected_amount = round(float(raw_paid_amount or 0), 2)
+        except (TypeError, ValueError):
+            return jsonify({"error": "Monto pagado invÃ¡lido"}), 400
 
-        refresh_summary_materialized_days(business_id, original_sale_date, sale.sale_date)
+        if data.get("paid") is True:
+            collected_amount = round(float(total), 2)
+        collected_amount = round(max(0.0, min(float(total), collected_amount)), 2)
+        balance = round(max(0.0, float(total) - collected_amount), 2)
+        is_paid = balance <= 0.01
+
+        if not is_paid and not customer_id:
+            return jsonify({"error": "Para dejar saldo pendiente debes seleccionar un cliente"}), 400
+
+        treasury_account_id = None
+        if collected_amount > 0.01:
+            try:
+                treasury_context = resolve_treasury_context(
+                    business_id,
+                    treasury_account_id=data.get("treasury_account_id", sale.treasury_account_id),
+                    payment_method=payment_method,
+                    allow_account_autoselect=True,
+                    require_account=True,
+                    missing_account_message="Debes seleccionar o configurar una cuenta de caja para registrar una venta pagada",
+                )
+            except ValueError as exc:
+                return jsonify({"error": str(exc)}), 400
+            treasury_account_id = treasury_context.get("treasury_account_id")
+            payment_method = treasury_context.get("payment_method") or payment_method
+
+        role_snapshot = get_current_role_snapshot(g.current_user, business_id)
+        try:
+            reverse_sale_operational_effects(
+                business=business,
+                sale=sale,
+                actor_user=g.current_user,
+                role_snapshot=role_snapshot,
+            )
+            financial_cleanup = delete_sale_financial_effects(sale=sale)
+
+            sale.customer_id = customer_id
+            sale.items = items
+            sale.subtotal = subtotal
+            sale.discount = discount
+            sale.total = total
+            sale.sale_date = sale_date
+            sale.payment_method = payment_method
+            sale.note = data.get("note") if "note" in data else sale.note
+            sale.collected_amount = collected_amount
+            sale.balance = 0.0 if is_paid else balance
+            sale.paid = is_paid
+            sale.treasury_account_id = treasury_account_id if collected_amount > 0.01 else None
+            sale.updated_by_user_id = g.current_user.id
+            sale.total_cost = apply_sale_inventory_effects(
+                business=business,
+                sale=sale,
+                items=items,
+                actor_user=g.current_user,
+                role_snapshot=role_snapshot,
+            )
+        except ValueError as exc:
+            db.session.rollback()
+            return jsonify({"error": str(exc)}), 400
+        except Exception:
+            db.session.rollback()
+            return jsonify({"error": "No fue posible recalcular inventario y efectos financieros de la venta"}), 500
+
+        payment = None
+        if customer_id and collected_amount > 0.01:
+            payment = Payment(
+                business_id=business_id,
+                customer_id=customer_id,
+                sale_id=sale.id,
+                payment_date=sale_date,
+                amount=collected_amount,
+                method=payment_method,
+                treasury_account_id=treasury_account_id,
+                note=(str(sale.note or "").strip() or f"Abono inicial Venta #{sale.id}"),
+                created_by_user_id=g.current_user.id,
+                created_by_name=g.current_user.name,
+                created_by_role=role_snapshot,
+                updated_by_user_id=g.current_user.id,
+            )
+            db.session.add(payment)
+            db.session.flush()
+
+        if customer_id:
+            create_sale_financial_entries(
+                sale=sale,
+                payment=payment,
+                payment_note=f"Abono inicial Venta #{sale.id}" if payment is not None else None,
+            )
+
+        affected_dates = set(financial_cleanup.get("affected_dates") or [])
+        if original_sale_date:
+            affected_dates.add(original_sale_date)
+        if sale.sale_date:
+            affected_dates.add(sale.sale_date)
+        refresh_summary_materialized_days(business_id, *sorted(affected_dates))
         _record_business_audit(
             business_id=business_id,
             actor_user=g.current_user,
@@ -5683,12 +5794,13 @@ def create_app(config_class=None):
             metadata=_build_audit_metadata(
                 source_path=f"/sales/{sale.id}",
                 changed_fields=sorted((data or {}).keys()),
-                total=total,
+                total=sale.total,
                 balance=sale.balance,
             ),
             before=before_snapshot,
             after=_audit_snapshot("sale", sale),
         )
+
         db.session.commit()
         return jsonify({"sale": sale.to_dict()})
 
@@ -5736,467 +5848,6 @@ def create_app(config_class=None):
         db.session.commit()
         return jsonify({"ok": True})
 
-    # ========== ORDER ROUTES ==========
-    def _ensure_sale_from_order(order, sale_date=None, payment_details=None):
-        try:
-            note_tag = f"Desde pedido {order.order_number} (ID {order.id})"
-            # Check if sale already exists to avoid duplicates
-            existing = Sale.query.filter_by(business_id=order.business_id).filter(Sale.note.like(f"%{note_tag}%")).first()
-            if existing:
-                return existing
-            
-            items = order.items or []
-            total_cost = 0
-            
-            # Calculate cost and update stock
-            for item in items:
-                pid = item.get("product_id")
-                qty = item.get("qty") if item.get("qty") is not None else item.get("quantity")
-                try:
-                    qty = float(qty) if qty is not None else 1.0
-                except:
-                    qty = 1.0
-                
-                if pid:
-                    product = Product.query.get(pid)
-                    if product and product.cost:
-                        total_cost += (product.cost or 0) * qty
-
-            # Payment logic
-            payment_details = payment_details or {}
-            method = payment_details.get('method', 'cash')
-            total = float(order.total or 0)
-            
-            # If explicit paid_amount is provided, use it. Otherwise default to total (full payment)
-            if 'paid_amount' in payment_details:
-                paid_amount = float(payment_details['paid_amount'])
-            else:
-                paid_amount = total
-
-            balance = total - paid_amount
-            if balance < 0: balance = 0 # Avoid negative balance
-            
-            is_paid = balance <= 0.01 # Float tolerance
-            treasury_account_id = (
-                _resolve_treasury_account_id(
-                    order.business_id,
-                    payment_method=method,
-                    treasury_account_id=payment_details.get("treasury_account_id"),
-                )
-                if paid_amount > 0
-                else None
-            )
-            if paid_amount > 0 and treasury_account_id is None:
-                raise ValueError("Debes seleccionar o configurar una cuenta de caja para registrar una venta pagada")
-
-            if not is_paid and order.customer_id:
-                if not is_module_enabled(order.business_id, "accounts_receivable"):
-                    raise ValueError("El mÃ³dulo accounts_receivable no estÃ¡ habilitado para este negocio")
-
-            # Contexto de usuario (si existe)
-            try:
-                user_id = g.current_user.id
-                user_name = g.current_user.name
-                role_snapshot = get_current_role_snapshot(g.current_user, order.business_id)
-            except:
-                user_id = None
-                user_name = "Sistema (Pedido)"
-                role_snapshot = "Sistema"
-
-            sale = Sale(
-                business_id=order.business_id,
-                customer_id=order.customer_id,
-                user_id=user_id,
-                sale_date=sale_date or date.today(),
-                items=items,
-                subtotal=order.subtotal or 0,
-                discount=order.discount or 0,
-                total=total,
-                balance=balance,
-                collected_amount=paid_amount,
-                treasury_account_id=treasury_account_id if paid_amount > 0 else None,
-                payment_method=method,
-                paid=is_paid,
-                note=note_tag,
-                created_by_name=user_name,
-                created_by_role=role_snapshot,
-                updated_by_user_id=user_id
-            )
-            db.session.add(sale)
-            db.session.flush()
-            sale.total_cost = _apply_sale_inventory_effects(
-                business=Business.query.get(order.business_id),
-                sale=sale,
-                items=items,
-                actor_user=getattr(g, "current_user", None),
-                role_snapshot=role_snapshot,
-            )
-            
-            # Ledger Entries (Accounts Receivable) - Only for credit/partial sales
-            if not is_paid and order.customer_id:
-                # 1. Charge (Total Sale Amount)
-                charge = LedgerEntry(
-                    business_id=order.business_id,
-                    customer_id=order.customer_id,
-                    entry_type="charge",
-                    amount=total,
-                    entry_date=sale_date or date.today(),
-                    note=f"Venta #{sale.id} (Desde Pedido #{order.order_number})",
-                    ref_type="sale",
-                    ref_id=sale.id
-                )
-                db.session.add(charge)
-                
-                # 2. Initial Payment (if any)
-                if paid_amount > 0:
-                    ledger_payment = LedgerEntry(
-                        business_id=order.business_id,
-                        customer_id=order.customer_id,
-                        entry_type="payment",
-                        amount=paid_amount,
-                        entry_date=sale_date or date.today(),
-                        note=f"Abono inicial Venta #{sale.id}",
-                        ref_type="sale",
-                        ref_id=sale.id
-                    )
-                    db.session.add(ledger_payment)
-            
-            # Payment Record (Transactions Report)
-            if paid_amount > 0 and order.customer_id:
-                payment = Payment(
-                    business_id=order.business_id,
-                    customer_id=order.customer_id,
-                    sale=sale,
-                    amount=paid_amount,
-                    payment_date=sale_date or date.today(),
-                    method=method,
-                    treasury_account_id=treasury_account_id,
-                    note="Pago inicial desde pedido"
-                )
-                db.session.add(payment)
-
-            db.session.flush()
-            refresh_summary_materialized_days(order.business_id, sale.sale_date)
-            return sale
-        except Exception as e:
-            app.logger.error(f"Error creando venta desde pedido {order.id}: {e}")
-            return None
-
-    @app.route("/api/businesses/<int:business_id>/expenses", methods=["GET"])
-    @token_required
-    @permission_required('expenses.read')
-    def get_expenses(business_id):
-        business = Business.query.get(business_id)
-        if not business:
-            return jsonify({"error": "Negocio no encontrado"}), 404
-
-        start_date = request.args.get("start_date") or request.args.get("from")
-        end_date = request.args.get("end_date") or request.args.get("to")
-        category = (request.args.get("category") or "").strip()
-        search = (request.args.get("search") or "").strip()
-        page = request.args.get("page", type=int)
-        limit = request.args.get("limit", type=int)
-
-        query = Expense.query.filter(Expense.business_id == business_id)
-
-        if start_date:
-            try:
-                start = datetime.strptime(start_date, "%Y-%m-%d").date()
-                query = query.filter(Expense.expense_date >= start)
-            except Exception:
-                pass
-
-        if end_date:
-            try:
-                end = datetime.strptime(end_date, "%Y-%m-%d").date()
-                query = query.filter(Expense.expense_date <= end)
-            except Exception:
-                pass
-
-        if category and category.lower() != "all":
-            query = query.filter(Expense.category == category)
-
-        if search:
-            query = query.filter(
-                or_(
-                    Expense.description.ilike(f"%{search}%"),
-                    Expense.category.ilike(f"%{search}%"),
-                )
-            )
-
-        ordered_query = query.order_by(Expense.expense_date.desc(), Expense.created_at.desc())
-
-        response_payload = {
-            "expenses": [],
-            "filters": {
-                "start_date": start_date,
-                "end_date": end_date,
-                "from": start_date,
-                "to": end_date,
-                "category": category or None,
-                "search": search or None,
-            },
-        }
-
-        if page or limit:
-            safe_page = max(page or 1, 1)
-            safe_limit = min(max(limit or 50, 1), 200)
-            total = ordered_query.count()
-            expenses = ordered_query.offset((safe_page - 1) * safe_limit).limit(safe_limit).all()
-            response_payload["expenses"] = [expense.to_dict() for expense in expenses]
-            response_payload["pagination"] = {
-                "page": safe_page,
-                "limit": safe_limit,
-                "total": total,
-                "pages": max((total + safe_limit - 1) // safe_limit, 1),
-                "has_more": safe_page * safe_limit < total,
-            }
-            return jsonify(response_payload)
-
-        expenses = ordered_query.all()
-        response_payload["expenses"] = [expense.to_dict() for expense in expenses]
-        response_payload["total"] = len(response_payload["expenses"])
-        return jsonify(response_payload)
-
-    @app.route("/api/businesses/<int:business_id>/recurring-expenses", methods=["GET"])
-    @token_required
-    @permission_required('expenses.read')
-    def get_recurring_expenses(business_id):
-        business = Business.query.get(business_id)
-        if not business:
-            return jsonify({"error": "Negocio no encontrado"}), 404
-
-        recurring_expenses = RecurringExpense.query.filter(
-            RecurringExpense.business_id == business_id,
-        ).order_by(
-            RecurringExpense.is_active.desc(),
-            case((RecurringExpense.next_due_date.is_(None), 1), else_=0),
-            RecurringExpense.next_due_date.asc(),
-            RecurringExpense.created_at.desc(),
-        ).all()
-
-        return jsonify({"recurring_expenses": [expense.to_dict() for expense in recurring_expenses]})
-
-    @app.route("/api/businesses/<int:business_id>/supplier-payables", methods=["GET"])
-    @token_required
-    @module_required("raw_inventory")
-    @permission_required('supplier_payables.read')
-    def get_supplier_payables(business_id):
-        business = Business.query.get(business_id)
-        if not business:
-            return jsonify({"error": "Negocio no encontrado"}), 404
-
-        status = (request.args.get("status") or "").strip().lower()
-        supplier_id = request.args.get("supplier_id")
-        search = (request.args.get("search") or "").strip().lower()
-
-        query = SupplierPayable.query.options(
-            joinedload(SupplierPayable.supplier),
-            joinedload(SupplierPayable.raw_purchase),
-        ).filter(
-            SupplierPayable.business_id == business_id,
-        )
-
-        if status in {"pending", "partial", "paid"}:
-            query = query.filter(SupplierPayable.status == status)
-
-        if supplier_id:
-            try:
-                query = query.filter(SupplierPayable.supplier_id == int(supplier_id))
-            except (TypeError, ValueError):
-                return jsonify({"error": "supplier_id invÃ¡lido"}), 400
-
-        payables = query.order_by(
-            case((SupplierPayable.due_date.is_(None), 1), else_=0),
-            SupplierPayable.due_date.asc(),
-            SupplierPayable.created_at.desc(),
-        ).all()
-
-        supplier_payables = [payable.to_dict() for payable in payables]
-
-        if search:
-            supplier_payables = [
-                payable for payable in supplier_payables
-                if search in str(payable.get("supplier_name") or "").lower()
-                or search in str(payable.get("raw_purchase_number") or "").lower()
-                or search in str(payable.get("notes") or "").lower()
-            ]
-
-        suppliers_summary_map = {}
-        for payable in supplier_payables:
-            supplier_key = payable.get("supplier_id")
-            if supplier_key is None:
-                continue
-            summary = suppliers_summary_map.get(supplier_key)
-            if not summary:
-                summary = {
-                    "supplier_id": supplier_key,
-                    "supplier_name": payable.get("supplier_name") or "Proveedor",
-                    "total_amount": 0,
-                    "amount_paid": 0,
-                    "balance_due": 0,
-                    "pending_count": 0,
-                }
-                suppliers_summary_map[supplier_key] = summary
-            summary["total_amount"] = round(summary["total_amount"] + float(payable.get("amount_total") or 0), 4)
-            summary["amount_paid"] = round(summary["amount_paid"] + float(payable.get("amount_paid") or 0), 4)
-            summary["balance_due"] = round(summary["balance_due"] + float(payable.get("balance_due") or 0), 4)
-            if payable.get("status") != "paid":
-                summary["pending_count"] += 1
-
-        return jsonify({
-            "supplier_payables": supplier_payables,
-            "suppliers_summary": list(suppliers_summary_map.values()),
-        })
-
-    @app.route("/api/businesses/<int:business_id>/expenses", methods=["POST"])
-    @token_required
-    @permission_required('expenses.create')
-    def create_expense(business_id):
-        business = Business.query.get(business_id)
-        if not business:
-            return jsonify({"error": "Negocio no encontrado"}), 404
-
-        data = request.get_json() or {}
-        category = data.get("category", "").strip()
-        amount = data.get("amount")
-
-        if not category:
-            return jsonify({"error": "CategorÃ­a es requerida"}), 400
-
-        try:
-            amount = float(amount)
-            if amount <= 0:
-                raise ValueError()
-        except:
-            return jsonify({"error": "Monto debe ser un nÃºmero positivo"}), 400
-
-        expense_date = date.today()
-        if data.get("expense_date"):
-            try:
-                expense_date = datetime.strptime(data["expense_date"], "%Y-%m-%d").date()
-            except:
-                pass
-
-        role_snapshot = get_current_role_snapshot(g.current_user, business_id)
-
-        try:
-            treasury_context = resolve_treasury_context(
-                business_id,
-                treasury_account_id=data.get("treasury_account_id"),
-                payment_method=data.get("payment_method"),
-                allow_account_autoselect=True,
-                require_account=False,
-            )
-        except ValueError as exc:
-            return jsonify({"error": str(exc)}), 400
-
-        expense = create_expense_record(
-            business_id=business_id,
-            expense_date=expense_date,
-            category=category,
-            amount=amount,
-            description=data.get("description", "").strip() or None,
-            source_type="manual",
-            payment_method=treasury_context.get("payment_method") if treasury_context.get("treasury_account_id") else data.get("payment_method"),
-            treasury_account_id=treasury_context.get("treasury_account_id"),
-            actor_user=g.current_user,
-            role_snapshot=role_snapshot,
-        )
-        mark_business_payloads_dirty(business_id, [expense_date])
-        db.session.commit()
-
-        return jsonify({"expense": expense.to_dict()}), 201
-
-    @app.route("/api/businesses/<int:business_id>/recurring-expenses", methods=["POST"])
-    @token_required
-    @permission_required('expenses.create')
-    def create_recurring_expense(business_id):
-        business = Business.query.get(business_id)
-        if not business:
-            return jsonify({"error": "Negocio no encontrado"}), 404
-
-        data = request.get_json() or {}
-        name = str(data.get("name") or "").strip()
-        category = str(data.get("category") or "").strip()
-        frequency = str(data.get("frequency") or "monthly").strip().lower() or "monthly"
-        payment_flow = str(data.get("payment_flow") or "cash").strip().lower() or "cash"
-        if not name:
-            return jsonify({"error": "Nombre es requerido"}), 400
-        if not category:
-            return jsonify({"error": "CategorÃ­a es requerida"}), 400
-        try:
-            amount = float(data.get("amount") or 0)
-            due_day = int(data.get("due_day") or 0)
-            if amount <= 0 or due_day <= 0 or due_day > 31:
-                raise ValueError()
-        except (TypeError, ValueError):
-            return jsonify({"error": "Datos de recurrencia invÃ¡lidos"}), 400
-        try:
-            next_due_date = datetime.strptime(data.get("next_due_date"), "%Y-%m-%d").date() if data.get("next_due_date") else date.today()
-        except Exception:
-            return jsonify({"error": "Fecha invÃ¡lida"}), 400
-
-        recurring_expense = RecurringExpense(
-            business_id=business_id,
-            name=name,
-            amount=amount,
-            due_day=due_day,
-            frequency=frequency,
-            next_due_date=next_due_date,
-            category=category,
-            payment_flow=payment_flow,
-            creditor_name=(str(data.get("creditor_name") or "").strip() or None),
-            is_active=bool(data.get("is_active", True)),
-        )
-        db.session.add(recurring_expense)
-        db.session.commit()
-        return jsonify({"recurring_expense": recurring_expense.to_dict()}), 201
-
-    @app.route("/api/businesses/<int:business_id>/recurring-expenses/<int:recurring_id>/mark-paid", methods=["POST"])
-    @token_required
-    @permission_required('expenses.create')
-    def mark_recurring_expense_paid(business_id, recurring_id):
-        recurring_expense = RecurringExpense.query.filter_by(id=recurring_id, business_id=business_id).first()
-        if not recurring_expense:
-            return jsonify({"error": "Gasto recurrente no encontrado"}), 404
-
-        data = request.get_json() or {}
-        try:
-            expense_date = datetime.strptime(data.get("expense_date"), "%Y-%m-%d").date() if data.get("expense_date") else date.today()
-        except Exception:
-            return jsonify({"error": "Fecha invÃ¡lida"}), 400
-
-        role_snapshot = get_current_role_snapshot(g.current_user, business_id)
-        try:
-            treasury_context = resolve_treasury_context(
-                business_id,
-                treasury_account_id=data.get("treasury_account_id"),
-                payment_method=data.get("payment_method"),
-                allow_account_autoselect=True,
-                require_account=False,
-            )
-        except ValueError as exc:
-            return jsonify({"error": str(exc)}), 400
-
-        expense = create_expense_record(
-            business_id=business_id,
-            expense_date=expense_date,
-            category=recurring_expense.category or "servicios",
-            amount=recurring_expense.amount,
-            description=(str(data.get("description") or "").strip() or f"Pago recurrente {recurring_expense.name}"),
-            source_type="recurring",
-            payment_method=treasury_context.get("payment_method") if treasury_context.get("treasury_account_id") else data.get("payment_method"),
-            treasury_account_id=treasury_context.get("treasury_account_id"),
-            recurring_expense_id=recurring_expense.id,
-            actor_user=g.current_user,
-            role_snapshot=role_snapshot,
-        )
-        _advance_recurring_due_date(recurring_expense, expense_date)
-        mark_business_payloads_dirty(business_id, [expense_date])
-        db.session.commit()
-        return jsonify({"expense": expense.to_dict(), "recurring_expense": recurring_expense.to_dict()}), 201
-
     @app.route("/api/businesses/<int:business_id>/expenses/<int:expense_id>", methods=["PUT"])
     @token_required
     @permission_required('expenses.update')
@@ -6205,12 +5856,21 @@ def create_app(config_class=None):
         if not expense:
             return jsonify({"error": "Gasto no encontrado"}), 404
 
+        if (expense.source_type or "manual") in {"debt_payment", "supplier_payment", "purchase_payment"}:
+            return jsonify({"error": "Este gasto se gestiona desde su flujo de origen y no puede editarse manualmente."}), 400
+
         original_expense_date = expense.expense_date
         data = request.get_json() or {}
+        if "amount" in data:
+            try:
+                next_amount = float(data["amount"])
+                if next_amount <= 0:
+                    raise ValueError()
+                expense.amount = next_amount
+            except (TypeError, ValueError):
+                return jsonify({"error": "Monto debe ser un nÃºmero positivo"}), 400
         if "category" in data:
             expense.category = data["category"].strip()
-        if "amount" in data:
-            expense.amount = float(data["amount"])
         if "description" in data:
             expense.description = data["description"].strip() or None
         if "expense_date" in data:
@@ -6218,9 +5878,23 @@ def create_app(config_class=None):
                 expense.expense_date = datetime.strptime(data["expense_date"], "%Y-%m-%d").date()
             except:
                 pass
+        if "treasury_account_id" in data or "payment_method" in data:
+            try:
+                treasury_context = resolve_treasury_context(
+                    business_id,
+                    treasury_account_id=data.get("treasury_account_id", expense.treasury_account_id),
+                    payment_method=data.get("payment_method", expense.payment_method),
+                    allow_account_autoselect=True,
+                    require_account=False,
+                )
+            except ValueError as exc:
+                return jsonify({"error": str(exc)}), 400
+            expense.treasury_account_id = treasury_context.get("treasury_account_id")
+            expense.payment_method = treasury_context.get("payment_method")
 
         expense.updated_by_user_id = g.current_user.id
         refresh_summary_materialized_days(business_id, original_expense_date, expense.expense_date)
+        mark_business_payloads_dirty(business_id, [original_expense_date, expense.expense_date])
         db.session.commit()
         return jsonify({"expense": expense.to_dict()})
 
@@ -6232,9 +5906,13 @@ def create_app(config_class=None):
         if not expense:
             return jsonify({"error": "Gasto no encontrado"}), 404
 
+        if (expense.source_type or "manual") in {"debt_payment", "supplier_payment", "purchase_payment"}:
+            return jsonify({"error": "Este gasto se corrige desde su flujo de origen y no puede eliminarse manualmente."}), 400
+
         affected_expense_date = expense.expense_date
         db.session.delete(expense)
         refresh_summary_materialized_days(business_id, affected_expense_date)
+        mark_business_payloads_dirty(business_id, [affected_expense_date])
         db.session.commit()
         return jsonify({"ok": True})
 

@@ -8,6 +8,7 @@ import { useTour } from '../../tour/TourProvider';
 import { resolveTutorialAvailability } from '../../tour/tutorialEligibility';
 import { useTutorialRuntimeContext } from '../../tour/tutorialContext';
 import { useTourStore } from '../../tour/tourStore';
+import { isDesktopOfflineMode } from '../../runtime/runtimeMode';
 
 const BLOCKED_AUTO_START_PATH_PREFIXES = ['/admin', '/auth'];
 const MAX_AUTO_START_RETRIES = 8;
@@ -43,6 +44,7 @@ export const LearningCenterOnboarding = () => {
   const hasAutoStartedRef = useRef(false);
   const retryCountRef = useRef(0);
   const [retryTick, setRetryTick] = useState(0);
+  const desktopOfflineMode = isDesktopOfflineMode();
   const isAutoStartPathEligible = useMemo(
     () => !BLOCKED_AUTO_START_PATH_PREFIXES.some((prefix) => location.pathname.startsWith(prefix)),
     [location.pathname]
@@ -54,6 +56,7 @@ export const LearningCenterOnboarding = () => {
 
   useEffect(() => {
     if (!user || !activeBusiness || !onboardingTutorialId) return;
+    if (desktopOfflineMode) return;
     if (isActive || activeTourId) return;
     if (activeScopeKey !== scopeKey) return;
     if (!isAutoStartPathEligible) return;
@@ -94,6 +97,7 @@ export const LearningCenterOnboarding = () => {
     activeBusiness,
     activeTourId,
     activeScopeKey,
+    desktopOfflineMode,
     isActive,
     isAutoStartPathEligible,
     onboardingDefinition?.behavior,

@@ -9,6 +9,7 @@ import {
   InvoiceSettings,
   InvoiceStatus,
 } from '../../types';
+import { isOfflineProductMode } from '../../runtime/runtimeMode';
 
 export const INVOICE_STATUS_META: Record<
   InvoiceStatus,
@@ -43,6 +44,7 @@ export const INVOICE_STATUS_META: Record<
 export const getInvoiceSyncMeta = (
   record?: Pick<Invoice, 'sync_status' | 'is_offline_record'> | Pick<InvoiceReceivable, 'sync_status' | 'is_offline_record'> | null
 ) => {
+  if (isOfflineProductMode()) return null;
   if (!record) return null;
   if (record.sync_status === 'conflicted') {
     return {
@@ -74,6 +76,7 @@ export const getInvoiceSyncMeta = (
 export const getInvoicePaymentSyncMeta = (
   payment?: { sync_status?: InvoicePayment['sync_status']; is_offline_record?: boolean } | null
 ) => {
+  if (isOfflineProductMode()) return null;
   if (!payment) return null;
   if (payment.sync_status === 'conflicted' || payment.sync_status === 'blocked') {
     return {

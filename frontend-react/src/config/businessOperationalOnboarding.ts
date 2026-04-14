@@ -153,6 +153,12 @@ type BusinessQuestion = OnboardingQuestionDefinition<
 
 const unique = <T,>(values: T[]) => Array.from(new Set(values));
 const moduleLabel = (moduleKey: BusinessModuleKey) => BUSINESS_MODULE_META[moduleKey].label;
+const ALWAYS_ACTIVE_MODULES: BusinessModuleKey[] = ['sales', 'customers', 'products', 'accounts_receivable', 'reports', 'quotes', 'raw_inventory'];
+const ALWAYS_VISIBLE_COMMERCIAL_SECTIONS: BusinessCommercialSectionsState = {
+  orders: true,
+  invoices: true,
+  sales_goals: true,
+};
 
 const OPERATIONAL_MODEL_LABELS: Record<BusinessOperationalModel, string> = {
   production_fixed_stock: 'Producción con stock fijo',
@@ -573,15 +579,12 @@ const buildCommercialSections = (
   answers: BusinessOnboardingWizardAnswers,
   flow: OnboardingFlow,
   operationalProfile: BusinessOperationalProfile
-): BusinessCommercialSectionsState => ({
-  orders: answers.salesFlow === 'orders' || operationalProfile.supports_make_to_order,
-  invoices: answers.documentsMode === 'formal' || answers.salesFlow === 'quotes_invoices',
-  sales_goals:
-    flow === 'business'
-    || answers.teamMode !== 'solo'
-    || operationalProfile.manages_raw_materials
-    || answers.ownerFocus === 'profitability_and_growth',
-});
+): BusinessCommercialSectionsState => {
+  void answers;
+  void flow;
+  void operationalProfile;
+  return ALWAYS_VISIBLE_COMMERCIAL_SECTIONS;
+};
 
 const buildActivatedModules = (
   answers: BusinessOnboardingWizardAnswers,
@@ -589,29 +592,11 @@ const buildActivatedModules = (
   flow: OnboardingFlow,
   operationalProfile: BusinessOperationalProfile
 ): BusinessModuleKey[] => {
-  const modules = ['sales', 'customers', 'reports'] as BusinessModuleKey[];
-
-  if (answers.operationalModel !== 'service_no_stock') {
-    modules.push('products');
-  }
-
-  if (answers.salesFlow === 'pending' || answers.homeFocus === 'collections') {
-    modules.push('accounts_receivable');
-  }
-
-  if (operationalProfile.supports_quotes) {
-    modules.push('quotes');
-  }
-
-  if (operationalProfile.uses_raw_inventory) {
-    modules.push('raw_inventory');
-  }
-
-  if (flow === 'business' || businessType === 'production') {
-    modules.push('reports');
-  }
-
-  return unique(modules);
+  void answers;
+  void businessType;
+  void flow;
+  void operationalProfile;
+  return ALWAYS_ACTIVE_MODULES;
 };
 
 const buildHiddenTools = (
@@ -622,21 +607,12 @@ const buildHiddenTools = (
 ) => {
   const hidden: string[] = [];
 
-  if (!activatedModules.includes('quotes')) hidden.push(TOOL_LABELS.quotes);
-  if (!activatedModules.includes('accounts_receivable')) hidden.push(TOOL_LABELS.accounts_receivable);
-  if (!activatedModules.includes('raw_inventory')) hidden.push(TOOL_LABELS.raw_inventory);
-  if (!commercialSections.orders) hidden.push(TOOL_LABELS.orders);
-  if (!commercialSections.invoices) hidden.push(TOOL_LABELS.invoices);
-  if (!commercialSections.sales_goals) hidden.push(TOOL_LABELS.sales_goals);
+  void activatedModules;
+  void commercialSections;
   if (flow !== 'business') {
     hidden.push(TOOL_LABELS.team, TOOL_LABELS.roles, TOOL_LABELS.permissions);
   }
-  if (flow === 'pro') {
-    hidden.push('Equipo y accesos');
-  }
-  if (answers.guidanceMode === 'express') {
-    hidden.push(TOOL_LABELS.reports);
-  }
+  if (answers.guidanceMode === 'express') hidden.push('Ayudas avanzadas');
 
   return unique(hidden);
 };
@@ -648,6 +624,7 @@ const buildHighlightedTools = (
   flow: OnboardingFlow,
   operationalProfile: BusinessOperationalProfile
 ) => {
+  void flow;
   const tools = ['Resumen del negocio', moduleLabel('sales')];
 
   if (answers.homeFocus === 'cash') tools.push('Caja');
@@ -658,11 +635,6 @@ const buildHighlightedTools = (
   if (commercialSections.orders) tools.push(TOOL_LABELS.orders);
   if (operationalProfile.controls_production) tools.push(TOOL_LABELS.production);
   if (commercialSections.invoices) tools.push(TOOL_LABELS.invoices);
-  if (flow === 'business') {
-    tools.push('Equipo');
-    if (answers.roleSetup !== 'owner_only') tools.push('Roles');
-    if (answers.permissionControl !== 'simple') tools.push('Permisos');
-  }
 
   return unique(tools);
 };
@@ -673,6 +645,7 @@ const buildRecommendedTutorials = (
   commercialSections: BusinessCommercialSectionsState,
   flow: OnboardingFlow
 ) => {
+  void flow;
   const tutorials = ['dashboard'];
 
   if (activatedModules.includes('sales')) tutorials.push('sales');
@@ -681,7 +654,7 @@ const buildRecommendedTutorials = (
   if (activatedModules.includes('quotes')) tutorials.push('quotes');
   if (commercialSections.invoices) tutorials.push('invoices');
   if (activatedModules.includes('raw_inventory')) tutorials.push('raw-inventory');
-  if (flow === 'business') tutorials.push('settings', 'team');
+  tutorials.push('settings');
 
   return unique(tutorials);
 };

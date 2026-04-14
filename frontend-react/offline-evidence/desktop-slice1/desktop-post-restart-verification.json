@@ -1,0 +1,9 @@
+{
+  "generatedAt": "2026-04-09T15:20:29.652Z",
+  "url": "/dashboard",
+  "loginVisible": false,
+  "productPersisted": false,
+  "customerPersisted": true,
+  "salesPersisted": false,
+  "dashboardReflectsSale": true
+}

@@ -1,5 +1,7 @@
 import api from './api';
 import { Product, RawMaterial, Recipe, RecipeConsumption, RecipeCosting } from '../types';
+import { isPureOfflineRuntime } from './offlineLocalData';
+import { offlineRecipesLocal } from './offlineRecipesLocal';
 
 export interface RecipeFilters {
   search?: string;
@@ -48,6 +50,9 @@ const normalizeFilters = (filters?: RecipeFilters) => {
 
 export const recipesService = {
   async getReferences(businessId: number): Promise<RecipeReferencesResponse> {
+    if (isPureOfflineRuntime()) {
+      return offlineRecipesLocal.getReferences(businessId);
+    }
     const response = await api.get(`/businesses/${businessId}/recipes/references`);
     return {
       products: response.data?.products || [],
@@ -56,6 +61,9 @@ export const recipesService = {
   },
 
   async list(businessId: number, filters?: RecipeFilters): Promise<Recipe[]> {
+    if (isPureOfflineRuntime()) {
+      return offlineRecipesLocal.list(businessId, filters);
+    }
     const response = await api.get(`/businesses/${businessId}/recipes`, {
       params: normalizeFilters(filters),
     });
@@ -63,6 +71,9 @@ export const recipesService = {
   },
 
   async get(businessId: number, recipeId: number): Promise<RecipeDetailResponse> {
+    if (isPureOfflineRuntime()) {
+      return offlineRecipesLocal.get(businessId, recipeId);
+    }
     const response = await api.get(`/businesses/${businessId}/recipes/${recipeId}`);
     return {
       recipe: response.data.recipe,
@@ -71,31 +82,49 @@ export const recipesService = {
   },
 
   async getCosting(businessId: number, recipeId: number): Promise<RecipeCosting> {
+    if (isPureOfflineRuntime()) {
+      return offlineRecipesLocal.getCosting(businessId, recipeId);
+    }
     const response = await api.get(`/businesses/${businessId}/recipes/${recipeId}/costing`);
     return response.data.costing;
   },
 
   async create(businessId: number, payload: RecipePayload): Promise<Recipe> {
+    if (isPureOfflineRuntime()) {
+      return offlineRecipesLocal.create(businessId, payload);
+    }
     const response = await api.post(`/businesses/${businessId}/recipes`, payload);
     return response.data.recipe;
   },
 
   async update(businessId: number, recipeId: number, payload: RecipePayload): Promise<Recipe> {
+    if (isPureOfflineRuntime()) {
+      return offlineRecipesLocal.update(businessId, recipeId, payload);
+    }
     const response = await api.put(`/businesses/${businessId}/recipes/${recipeId}`, payload);
     return response.data.recipe;
   },
 
   async deactivate(businessId: number, recipeId: number): Promise<Recipe> {
+    if (isPureOfflineRuntime()) {
+      return offlineRecipesLocal.deactivate(businessId, recipeId);
+    }
     const response = await api.delete(`/businesses/${businessId}/recipes/${recipeId}`);
     return response.data.recipe;
   },
 
   async consume(businessId: number, recipeId: number, payload: RecipeConsumptionPayload): Promise<RecipeConsumption> {
+    if (isPureOfflineRuntime()) {
+      return offlineRecipesLocal.consume(businessId, recipeId, payload);
+    }
     const response = await api.post(`/businesses/${businessId}/recipes/${recipeId}/consume`, payload);
     return response.data.recipe_consumption;
   },
 
   async listConsumptions(businessId: number, recipeId: number): Promise<{ recipe: Recipe; consumptions: RecipeConsumption[] }> {
+    if (isPureOfflineRuntime()) {
+      return offlineRecipesLocal.listConsumptions(businessId, recipeId);
+    }
     const response = await api.get(`/businesses/${businessId}/recipes/${recipeId}/consumptions`);
     return {
       recipe: response.data.recipe,
@@ -104,6 +133,9 @@ export const recipesService = {
   },
 
   async getConsumption(businessId: number, consumptionId: number): Promise<RecipeConsumption> {
+    if (isPureOfflineRuntime()) {
+      return offlineRecipesLocal.getConsumption(businessId, consumptionId);
+    }
     const response = await api.get(`/businesses/${businessId}/recipe-consumptions/${consumptionId}`);
     return response.data.recipe_consumption;
   },

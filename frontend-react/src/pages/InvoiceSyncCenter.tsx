@@ -5,8 +5,8 @@ export const InvoiceSyncCenter = () => {
   return (
     <PageLayout data-tour="invoice-sync.panel">
       <PageHeader
-        title="Centro de sincronizacion"
-        description="Revisa operaciones offline, conflictos y reintentos sin depender de un banner permanente."
+        title="Estado local de facturas"
+        description="Revisa operaciones locales, conflictos y reintentos sin depender de un banner permanente."
       />
 
       <PageBody className="app-canvas">

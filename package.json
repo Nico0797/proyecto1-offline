@@ -8,6 +8,11 @@
   },
   "scripts": {
     "build": "cd frontend-react && npm install && npm run build",
+    "android:sync": "cd frontend-react && npm run build && cd .. && npx cap copy android",
+    "android:build": "cd frontend-react && npm run build && cd .. && npx cap copy android && cd android && gradlew assembleDebug",
+    "desktop:dev": "cd frontend-react && npm install && npm run desktop:dev",
+    "desktop:build": "cd frontend-react && npm install && npm run desktop:build",
+    "desktop:validate:slice1": "cd frontend-react && npm install && npm run desktop:validate:slice1",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "repository": {

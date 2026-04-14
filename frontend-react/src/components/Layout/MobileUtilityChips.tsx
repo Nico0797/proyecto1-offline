@@ -1,6 +1,5 @@
 import { Building2 } from 'lucide-react';
 import { useBusinessStore } from '../../store/businessStore';
-import { SyncStatusIndicator } from '../Sync/SyncStatusIndicator';
 
 const getBusinessInitials = (name?: string | null) => {
   if (!name) return 'EN';
@@ -17,9 +16,8 @@ export const MobileUtilityChips = () => {
   const activeBusiness = useBusinessStore((state) => state.activeBusiness);
 
   return (
-    <div className="flex items-center gap-2">
-      <SyncStatusIndicator compact />
-      <div className="app-utility-chip hidden min-[430px]:inline-flex">
+    <div className="flex items-center gap-2 pl-1">
+      <div className="app-utility-chip inline-flex">
         <span className="app-utility-chip__icon">
           <Building2 className="h-3.5 w-3.5" />
         </span>

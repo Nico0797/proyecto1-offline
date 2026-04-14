@@ -1,4 +1,4 @@
-import { ReactNode, Suspense, lazy, useEffect } from 'react';
+import { Component, ErrorInfo, ReactNode, Suspense, lazy, useEffect } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthThemeLayout } from './components/Layout/AuthThemeLayout';
 import { MainLayout } from './components/Layout/MainLayout';
@@ -16,11 +16,11 @@ const InvoiceEditor = lazy(() => import('./pages/InvoiceEditor').then(m => ({ de
 const InvoiceDetail = lazy(() => import('./pages/InvoiceDetail').then(m => ({ default: m.InvoiceDetail })));
 const InvoiceReceivables = lazy(() => import('./pages/InvoiceReceivables').then(m => ({ default: m.InvoiceReceivables })));
 const InvoiceCustomerStatement = lazy(() => import('./pages/InvoiceCustomerStatement').then(m => ({ default: m.InvoiceCustomerStatement })));
-const InvoiceSyncCenter = lazy(() => import('./pages/InvoiceSyncCenter').then(m => ({ default: m.InvoiceSyncCenter })));
 const InvoiceSettings = lazy(() => import('./pages/InvoiceSettings').then(m => ({ default: m.InvoiceSettings })));
 const Expenses = lazy(() => import('./pages/Expenses').then(m => ({ default: m.Expenses })));
 const SalesGoals = lazy(() => import('./pages/SalesGoals').then(m => ({ default: m.SalesGoals })));
 const Orders = lazy(() => import('./pages/Orders').then(m => ({ default: m.Orders })));
+const Agenda = lazy(() => import('./pages/Agenda').then(m => ({ default: m.Agenda })));
 const Payments = lazy(() => import('./pages/Payments').then(m => ({ default: m.Payments })));
 const Products = lazy(() => import('./pages/Products').then(m => ({ default: m.Products })));
 const RawInventory = lazy(() => import('./pages/RawInventory').then(m => ({ default: m.RawInventory })));
@@ -57,7 +57,6 @@ const Help = lazy(() => import('./pages/Help').then(m => ({ default: m.Help })))
 const LandingPage = lazy(() => import('./pages/LandingPage').then(m => ({ default: m.LandingPage })));
 const PrivacyPolicy = lazy(() => import('./pages/PrivacyPolicy').then(m => ({ default: m.PrivacyPolicy })));
 const TermsAndConditions = lazy(() => import('./pages/TermsAndConditions').then(m => ({ default: m.TermsAndConditions })));
-const ProPage = lazy(() => import('./pages/ProPage').then(m => ({ default: m.default })));
 const AcceptInvite = lazy(() => import('./pages/AcceptInvite').then(m => ({ default: m.AcceptInvite })));
 import { ProGate } from './components/ui/ProGate';
 import { canAccessModule, FEATURES } from './auth/plan';
@@ -68,10 +67,68 @@ import { useBusinessStore } from './store/businessStore';
 import { BusinessModuleKey, isBusinessModuleEnabled } from './types';
 import { BusinessCommercialSectionKey, isBusinessCommercialSectionEnabled } from './config/businessPersonalization';
 import { ThemeProvider, useEffectiveTheme } from './components/providers/ThemeProvider';
+import { ConfirmProvider } from './components/ui/ConfirmDialog';
 import { ScrollbarActivityController } from './components/ui/ScrollbarActivityController';
 import { UnsupportedBackendFeature } from './components/Layout/UnsupportedBackendFeature';
 import { BackendCapability, isBackendCapabilitySupported } from './config/backendCapabilities';
 import { useAccess } from './hooks/useAccess';
+import { AppEntryRoute, DesktopAwareLoginRoute, WebOnlyAuthRoute } from './routes/AppEntryRoute';
+import { isOfflineProductMode } from './runtime/runtimeMode';
+
+type GlobalAppErrorBoundaryProps = {
+  children: ReactNode;
+};
+
+type GlobalAppErrorBoundaryState = {
+  hasError: boolean;
+  errorMessage: string;
+};
+
+class GlobalAppErrorBoundary extends Component<GlobalAppErrorBoundaryProps, GlobalAppErrorBoundaryState> {
+  constructor(props: GlobalAppErrorBoundaryProps) {
+    super(props);
+    this.state = { hasError: false, errorMessage: '' };
+  }
+
+  static getDerivedStateFromError(error: unknown): GlobalAppErrorBoundaryState {
+    return {
+      hasError: true,
+      errorMessage: error instanceof Error ? error.message : 'Error desconocido en la app',
+    };
+  }
+
+  componentDidCatch(error: unknown, info: ErrorInfo) {
+    console.error('[App] uncaught render error', error, info);
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div className="app-canvas app-text flex min-h-[100dvh] items-center justify-center px-5">
+          <div className="app-surface w-full max-w-lg rounded-3xl p-6 text-center shadow-sm">
+            <div className="text-lg font-semibold">La app encontró un error al iniciar</div>
+            <div className="mt-2 text-sm app-text-muted">
+              En lugar de dejar la pantalla vacía, se muestra este estado de recuperación para identificar el fallo real.
+            </div>
+            <div className="mt-3 rounded-2xl border border-red-200 bg-red-50 px-3 py-2 text-left text-xs text-red-900 dark:border-red-900/30 dark:bg-red-900/10 dark:text-red-100">
+              <div>rootError=yes</div>
+              <div className="mt-1 break-words">message={this.state.errorMessage || 'sin detalle'}</div>
+            </div>
+            <button
+              type="button"
+              onClick={() => window.location.reload()}
+              className="mt-4 inline-flex h-11 items-center justify-center rounded-2xl bg-blue-600 px-4 text-sm font-semibold text-white transition hover:bg-blue-700"
+            >
+              Recargar aplicación
+            </button>
+          </div>
+        </div>
+      );
+    }
+
+    return this.props.children;
+  }
+}
 
 const ModuleRouteGuard = ({
   moduleKey,
@@ -82,6 +139,9 @@ const ModuleRouteGuard = ({
 }) => {
   const { activeBusiness } = useBusinessStore();
   const { subscriptionPlan } = useAccess();
+  if (isOfflineProductMode()) {
+    return <>{children}</>;
+  }
 
   if (!activeBusiness) {
     return <>{children}</>;
@@ -102,6 +162,9 @@ const CommercialSectionRouteGuard = ({
   children: ReactNode;
 }) => {
   const { activeBusiness } = useBusinessStore();
+  if (isOfflineProductMode()) {
+    return <>{children}</>;
+  }
 
   if (!activeBusiness) {
     return <>{children}</>;
@@ -122,6 +185,9 @@ const PermissionRouteGuard = ({
   children: ReactNode;
 }) => {
   const access = useAccess();
+  if (isOfflineProductMode() && !permission.startsWith('team.')) {
+    return <>{children}</>;
+  }
 
   if (!access.hasPermission(permission)) {
     return <Navigate to="/dashboard" replace />;
@@ -137,6 +203,9 @@ const BackendCapabilityRouteGuard = ({
   capability: BackendCapability;
   children: ReactNode;
 }) => {
+  if (isOfflineProductMode()) {
+    return <>{children}</>;
+  }
   if (!isBackendCapabilitySupported(capability)) {
     return <UnsupportedBackendFeature capability={capability} />;
   }
@@ -188,7 +257,7 @@ const AppContent = () => {
   return (
     <>
       <ScrollbarActivityController />
-      <NotificationController />
+      {isOfflineProductMode() ? null : <NotificationController />}
       <TourProvider>
         <Toaster
           position="top-right"
@@ -205,15 +274,16 @@ const AppContent = () => {
         <Route path="/landing" element={<LandingPage />} />
         <Route path="/privacy" element={<PrivacyPolicy />} />
         <Route path="/terms" element={<TermsAndConditions />} />
-        <Route path="/select-context" element={<ContextSelection />} />
-        <Route path="/account-access" element={<AccountAccessPage />} />
+        <Route path="/select-context" element={<WebOnlyAuthRoute><ContextSelection /></WebOnlyAuthRoute>} />
+        <Route path="/account-access" element={<WebOnlyAuthRoute><AccountAccessPage /></WebOnlyAuthRoute>} />
+        <Route path="/" element={<AppEntryRoute />} />
+        <Route path="/login" element={<DesktopAwareLoginRoute />} />
         <Route element={<AuthThemeLayout />}>
-          <Route path="/" element={<Login />} />
-          <Route path="/login" element={<Login />} />
-          <Route path="/team-login" element={<TeamLogin />} />
-          <Route path="/register" element={<Register />} />
-          <Route path="/accept-invite" element={<AcceptInvite />} />
-          <Route path="/admin/login" element={<AdminLogin />} />
+          <Route path="/auth/login" element={<WebOnlyAuthRoute><Login /></WebOnlyAuthRoute>} />
+          <Route path="/team-login" element={<WebOnlyAuthRoute><TeamLogin /></WebOnlyAuthRoute>} />
+          <Route path="/register" element={<WebOnlyAuthRoute><Register /></WebOnlyAuthRoute>} />
+          <Route path="/accept-invite" element={<WebOnlyAuthRoute><AcceptInvite /></WebOnlyAuthRoute>} />
+          <Route path="/admin/login" element={<WebOnlyAuthRoute><AdminLogin /></WebOnlyAuthRoute>} />
         </Route>
         
         {/* Admin Routes */}
@@ -247,7 +317,7 @@ const AppContent = () => {
 
         <Route element={<MainLayout />}>
           <Route path="/dashboard" element={<Dashboard />} />
-          <Route path="/pro" element={<ProPage />} />
+          <Route path="/pro" element={<Navigate to="/dashboard" replace />} />
           <Route path="/orders" element={
             <CommercialSectionRouteGuard sectionKey="orders">
               <PermissionRouteGuard permission="orders.view">
@@ -258,6 +328,11 @@ const AppContent = () => {
                 </ModuleRouteGuard>
               </PermissionRouteGuard>
             </CommercialSectionRouteGuard>
+          } />
+          <Route path="/agenda" element={
+            <ModuleRouteGuard moduleKey="sales">
+              <Agenda />
+            </ModuleRouteGuard>
           } />
           <Route path="/sales" element={
             <PermissionRouteGuard permission="sales.view">
@@ -312,15 +387,7 @@ const AppContent = () => {
             </BackendCapabilityRouteGuard>
           } />
           <Route path="/invoices/sync" element={
-            <BackendCapabilityRouteGuard capability="invoices">
-              <CommercialSectionRouteGuard sectionKey="invoices">
-                <PermissionRouteGuard permission="invoices.view">
-                  <ModuleRouteGuard moduleKey="sales">
-                    <InvoiceSyncCenter />
-                  </ModuleRouteGuard>
-                </PermissionRouteGuard>
-              </CommercialSectionRouteGuard>
-            </BackendCapabilityRouteGuard>
+            <Navigate to="/invoices" replace />
           } />
           <Route path="/invoices/new" element={
             <BackendCapabilityRouteGuard capability="invoices">
@@ -503,9 +570,13 @@ const AppContent = () => {
 function App() {
   return (
     <BrowserRouter>
-      <ThemeProvider>
-        <AppContent />
-      </ThemeProvider>
+      <GlobalAppErrorBoundary>
+        <ThemeProvider>
+          <ConfirmProvider>
+            <AppContent />
+          </ConfirmProvider>
+        </ThemeProvider>
+      </GlobalAppErrorBoundary>
     </BrowserRouter>
   );
 }

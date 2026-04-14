@@ -2,6 +2,10 @@ type EntityStoreName = 'businesses' | 'customers' | 'products' | 'sales' | 'paym
 
 type StoreName = EntityStoreName | 'metadata' | 'sync_operations';
 
+const INDEXED_DB_OPEN_TIMEOUT_MS = 4000;
+const INDEXED_DB_REQUEST_TIMEOUT_MS = 3000;
+const INDEXED_DB_TRANSACTION_TIMEOUT_MS = 4000;
+
 export type OfflineSyncEntityType = 'sale' | 'payment' | 'customer' | 'product' | 'invoice';
 export type OfflineSyncAction = 'create' | 'update' | 'delete' | 'status_update' | 'payment_create';
 export type SyncOperationStatus = 'pending' | 'syncing' | 'synced' | 'failed' | 'blocked' | 'conflicted';
@@ -76,11 +80,21 @@ let dbPromise: Promise<IDBDatabase> | null = null;
 
 const entityStores: EntityStoreName[] = ['businesses', 'customers', 'products', 'sales', 'payments', 'invoices', 'treasury_accounts'];
 
+const createTimeoutError = (message: string) => {
+  const error = new Error(message);
+  error.name = 'OfflineDbTimeoutError';
+  return error;
+};
+
 const getDb = () => {
   if (dbPromise) return dbPromise;
 
   dbPromise = new Promise((resolve, reject) => {
     const request = window.indexedDB.open(DB_NAME, DB_VERSION);
+    const timeoutId = window.setTimeout(() => {
+      dbPromise = null;
+      reject(createTimeoutError('Timed out opening offline database'));
+    }, INDEXED_DB_OPEN_TIMEOUT_MS);
 
     request.onupgradeneeded = () => {
       const db = request.result;
@@ -132,8 +146,20 @@ const getDb = () => {
       }
     };
 
-    request.onsuccess = () => resolve(request.result);
-    request.onerror = () => reject(request.error || new Error('No se pudo abrir la base offline'));
+    request.onsuccess = () => {
+      window.clearTimeout(timeoutId);
+      resolve(request.result);
+    };
+    request.onerror = () => {
+      window.clearTimeout(timeoutId);
+      dbPromise = null;
+      reject(request.error || new Error('No se pudo abrir la base offline'));
+    };
+    request.onblocked = () => {
+      window.clearTimeout(timeoutId);
+      dbPromise = null;
+      reject(new Error('La base offline quedó bloqueada'));
+    };
   });
 
   return dbPromise;
@@ -145,21 +171,51 @@ const transact = async <T>(storeName: StoreName, mode: IDBTransactionMode, execu
   return new Promise<T>((resolve, reject) => {
     const transaction = db.transaction(storeName, mode);
     const store = transaction.objectStore(storeName);
+    const timeoutId = window.setTimeout(() => {
+      try {
+        transaction.abort();
+      } catch {
+        // noop
+      }
+      reject(createTimeoutError(`Timed out running transaction for ${storeName}`));
+    }, INDEXED_DB_TRANSACTION_TIMEOUT_MS);
 
     Promise.resolve(executor(store))
       .then((result) => {
-        transaction.oncomplete = () => resolve(result);
-        transaction.onerror = () => reject(transaction.error || new Error(`Error en transacción ${storeName}`));
-        transaction.onabort = () => reject(transaction.error || new Error(`Transacción abortada ${storeName}`));
+        transaction.oncomplete = () => {
+          window.clearTimeout(timeoutId);
+          resolve(result);
+        };
+        transaction.onerror = () => {
+          window.clearTimeout(timeoutId);
+          reject(transaction.error || new Error(`Error en transacción ${storeName}`));
+        };
+        transaction.onabort = () => {
+          window.clearTimeout(timeoutId);
+          reject(transaction.error || new Error(`Transacción abortada ${storeName}`));
+        };
       })
-      .catch(reject);
+      .catch((error) => {
+        window.clearTimeout(timeoutId);
+        reject(error);
+      });
   });
 };
 
 const requestToPromise = <T = any>(request: IDBRequest<T>) =>
   new Promise<T>((resolve, reject) => {
-    request.onsuccess = () => resolve(request.result);
-    request.onerror = () => reject(request.error || new Error('Operación IndexedDB falló'));
+    const timeoutId = window.setTimeout(() => {
+      reject(createTimeoutError('Timed out waiting for IndexedDB request'));
+    }, INDEXED_DB_REQUEST_TIMEOUT_MS);
+
+    request.onsuccess = () => {
+      window.clearTimeout(timeoutId);
+      resolve(request.result);
+    };
+    request.onerror = () => {
+      window.clearTimeout(timeoutId);
+      reject(request.error || new Error('Operación IndexedDB falló'));
+    };
   });
 
 const makeEntityKey = (businessId: number, entityId: number) => `${businessId}:${entityId}`;

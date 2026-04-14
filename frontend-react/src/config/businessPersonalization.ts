@@ -1,7 +1,17 @@
 import { Business, BusinessModuleKey, isBusinessModuleEnabled } from '../types';
+import type { BusinessType } from '../types';
 import type { BusinessOperationalModel } from './businessOperationalProfile';
+import { normalizeNavigationPaths } from '../navigation/navigationPathAliases';
 
-export type BusinessTypeKey = 'simple_store' | 'services' | 'production' | 'wholesale';
+export type BusinessTypeKey =
+  | 'simple_store'
+  | 'inventory_store'
+  | 'food_service'
+  | 'services'
+  | 'production'
+  | 'beauty'
+  | 'wholesale'
+  | 'general';
 export type BusinessCommercialSectionKey = 'invoices' | 'orders' | 'sales_goals';
 export type BusinessCommercialSectionsState = Record<BusinessCommercialSectionKey, boolean>;
 export type BusinessOnboardingBusinessCategory = 'products' | 'services' | 'mixed' | 'production';
@@ -107,6 +117,7 @@ export interface BusinessNavigationDefaults {
 
 export interface BusinessPersonalizationSettings {
   business_type?: BusinessTypeKey | null;
+  simple_business_type?: BusinessType | null;
   visibility_mode?: 'basic' | 'advanced' | null;
   navigation_defaults?: BusinessNavigationDefaults | null;
   commercial_sections: BusinessCommercialSectionsState;
@@ -200,6 +211,7 @@ export const DEFAULT_BUSINESS_INITIAL_SETUP: BusinessInitialSetupSettings = {
 
 export const DEFAULT_PERSONALIZATION_SETTINGS: BusinessPersonalizationSettings = {
   business_type: null,
+  simple_business_type: null,
   visibility_mode: null,
   navigation_defaults: null,
   commercial_sections: DEFAULT_BUSINESS_COMMERCIAL_SECTIONS,
@@ -218,38 +230,74 @@ export const BUSINESS_TYPE_PRESETS: Record<BusinessTypeKey, BusinessTypePreset> 
   simple_store: {
     key: 'simple_store',
     label: 'Tienda simple',
-    shortDescription: 'Para negocios que venden rápido y quieren ver solo lo esencial.',
-    longDescription: 'Prioriza registrar ventas, llevar gastos del día, controlar clientes frecuentes, manejar productos y consultar reportes sin saturar la navegación.',
+    shortDescription: 'Vende rapido con una app limpia y sin menus innecesarios.',
+    longDescription: 'Ideal para tiendas pequenas o de mostrador que necesitan vender, registrar productos, revisar gastos y ver reportes sin una experiencia pesada.',
     recommendedModules: ['sales', 'customers', 'products', 'reports'],
     coveredExperiences: ['Ventas', 'Gastos', 'Clientes', 'Productos', 'Alertas y reportes'],
     recommendedMenuPaths: ['/dashboard', '/sales', '/expenses', '/products', '/customers', '/alerts', '/reports'],
   },
+  inventory_store: {
+    key: 'inventory_store',
+    label: 'Tienda con inventario',
+    shortDescription: 'Pensada para catalogo amplio, stock visible y pedidos frecuentes.',
+    longDescription: 'Arranca con una base equilibrada para vender, ordenar productos y revisar pedidos sin convertir la experiencia en una operacion de produccion.',
+    recommendedModules: ['sales', 'customers', 'products', 'reports'],
+    coveredExperiences: ['Ventas', 'Productos', 'Pedidos', 'Gastos', 'Clientes', 'Analisis'],
+    recommendedMenuPaths: ['/dashboard', '/products', '/sales', '/orders', '/expenses', '/customers', '/alerts', '/reports'],
+  },
+  food_service: {
+    key: 'food_service',
+    label: 'Comidas o restaurante',
+    shortDescription: 'Para ventas preparadas con insumos, recetas y costos.',
+    longDescription: 'Activa una base para vender preparados, controlar insumos, compras y costos sin recargar al usuario con preguntas tecnicas.',
+    recommendedModules: ['sales', 'customers', 'products', 'raw_inventory', 'reports'],
+    coveredExperiences: ['Ventas', 'Pedidos', 'Insumos', 'Compras', 'Recetas', 'Analisis'],
+    recommendedMenuPaths: ['/dashboard', '/sales', '/orders', '/raw-inventory', '/raw-purchases', '/recipes', '/cost-calculator', '/expenses', '/reports'],
+  },
   services: {
     key: 'services',
-    label: 'Encargos o servicios',
-    shortDescription: 'Para negocios que cotizan, convierten propuestas y cobran después.',
-    longDescription: 'Da prioridad al flujo comercial desde la cotización hasta el cobro, sin perder de vista los gastos operativos del negocio.',
+    label: 'Servicios',
+    shortDescription: 'Para trabajos, proyectos, agenda o encargos con cobro posterior.',
+    longDescription: 'Prioriza cotizaciones, ventas, clientes y cobros para que el flujo comercial se sienta claro desde el primer dia.',
     recommendedModules: ['sales', 'customers', 'accounts_receivable', 'quotes', 'reports'],
     coveredExperiences: ['Cotizaciones', 'Ventas', 'Gastos', 'Clientes', 'Cartera', 'Alertas y reportes'],
     recommendedMenuPaths: ['/dashboard', '/quotes', '/sales', '/expenses', '/payments', '/customers', '/alerts', '/reports'],
   },
   production: {
     key: 'production',
-    label: 'Producción, restaurante o repostería',
-    shortDescription: 'Para negocios que trabajan con insumos, recetas y control de costos.',
-    longDescription: 'Activa el flujo de bodega para materias primas, compras, gastos operativos, recetas y calculadora de costos, sin crear módulos nuevos.',
-    recommendedModules: ['sales', 'products', 'raw_inventory', 'reports'],
-    coveredExperiences: ['Inventario bodega', 'Compras y proveedores', 'Gastos operativos', 'Recetas', 'Calculadora de costos', 'Rentabilidad'],
-    recommendedMenuPaths: ['/dashboard', '/sales', '/raw-inventory', '/raw-purchases', '/expenses', '/recipes', '/cost-calculator', '/alerts', '/reports'],
+    label: 'Produccion o fabricacion',
+    shortDescription: 'Para negocios que transforman insumos o fabrican por lote o por pedido.',
+    longDescription: 'Activa una base mas operativa con clientes, cotizaciones, bodega y costos para que la configuracion inicial sea realmente util.',
+    recommendedModules: ['sales', 'customers', 'products', 'quotes', 'raw_inventory', 'reports'],
+    coveredExperiences: ['Cotizaciones', 'Clientes', 'Bodega', 'Compras', 'Recetas', 'Costos'],
+    recommendedMenuPaths: ['/dashboard', '/quotes', '/sales', '/customers', '/raw-inventory', '/raw-purchases', '/recipes', '/cost-calculator', '/expenses', '/reports'],
+  },
+  beauty: {
+    key: 'beauty',
+    label: 'Belleza o estetica',
+    shortDescription: 'Para peluquerias, barberias, spas y negocios muy centrados en clientes.',
+    longDescription: 'Deja la experiencia enfocada en ventas, clientes, cartera, gastos y metas, sin activar bodega avanzada por defecto.',
+    recommendedModules: ['sales', 'customers', 'accounts_receivable', 'reports'],
+    coveredExperiences: ['Ventas', 'Clientes', 'Cobros', 'Gastos', 'Metas', 'Analisis'],
+    recommendedMenuPaths: ['/dashboard', '/sales', '/customers', '/payments', '/expenses', '/sales-goals', '/reports'],
   },
   wholesale: {
     key: 'wholesale',
-    label: 'Mayorista o distribuidor',
-    shortDescription: 'Para negocios con catálogo amplio, clientes recurrentes y cartera activa.',
-    longDescription: 'Enfoca la navegación en ventas, cartera, gastos recurrentes y reportes, dejando bodega avanzada solo si realmente la necesitas.',
+    label: 'Distribucion o mayorista',
+    shortDescription: 'Para negocios con pedidos, facturas, clientes recurrentes y cartera.',
+    longDescription: 'Balancea ventas, clientes, productos, pedidos, cobros y metas para una base comercial fuerte y editable despues.',
     recommendedModules: ['sales', 'customers', 'products', 'accounts_receivable', 'reports'],
-    coveredExperiences: ['Ventas', 'Clientes', 'Cobros', 'Gastos', 'Productos', 'Rentabilidad y reportes'],
-    recommendedMenuPaths: ['/dashboard', '/sales', '/customers', '/payments', '/expenses', '/products', '/alerts', '/reports'],
+    coveredExperiences: ['Ventas', 'Pedidos', 'Clientes', 'Cobros', 'Facturas', 'Metas'],
+    recommendedMenuPaths: ['/dashboard', '/sales', '/orders', '/customers', '/payments', '/expenses', '/products', '/sales-goals', '/reports'],
+  },
+  general: {
+    key: 'general',
+    label: 'Otro o general',
+    shortDescription: 'Una base equilibrada para empezar rapido y personalizar despues.',
+    longDescription: 'Si tu negocio no entra perfecto en una categoria, arranca con ventas, clientes, productos y analisis sin dejarte la app vacia.',
+    recommendedModules: ['sales', 'customers', 'products', 'reports'],
+    coveredExperiences: ['Ventas', 'Clientes', 'Productos', 'Gastos', 'Analisis'],
+    recommendedMenuPaths: ['/dashboard', '/sales', '/customers', '/products', '/expenses', '/alerts', '/reports'],
   },
 };
 
@@ -264,10 +312,11 @@ export const inferBusinessTypeFromBusiness = (business?: Business | null): Busin
   if (isBusinessModuleEnabled(business?.modules, 'raw_inventory')) return 'production';
   if (isBusinessModuleEnabled(business?.modules, 'quotes')) return 'services';
   if (isBusinessModuleEnabled(business?.modules, 'accounts_receivable')) return 'wholesale';
+  if (isBusinessModuleEnabled(business?.modules, 'products')) return 'inventory_store';
   return 'simple_store';
 };
 
-const uniquePaths = (paths?: string[]) => Array.from(new Set((paths || []).filter(Boolean)));
+const uniquePaths = (paths?: string[]) => normalizeNavigationPaths(paths);
 
 export const getBusinessBaseState = (source?: Business | Record<string, any> | null): BusinessBaseState => {
   const personalization = getBusinessPersonalizationSettings(source);
@@ -343,6 +392,7 @@ export const getBusinessPersonalizationSettings = (source?: Business | Record<st
 
   return {
     business_type: personalization?.business_type || null,
+    simple_business_type: personalization?.simple_business_type || null,
     visibility_mode: personalization?.visibility_mode || null,
     navigation_defaults: personalization?.navigation_defaults
       ? {
@@ -512,9 +562,13 @@ export const suggestBusinessTypeFromAnswers = (answers: BusinessPersonalizationA
 
   const scores: Record<BusinessTypeKey, number> = {
     simple_store: 0,
+    inventory_store: 0,
+    food_service: 0,
     services: 0,
     production: 0,
+    beauty: 0,
     wholesale: 0,
+    general: 0,
   };
 
   if (answers.businessModel) {

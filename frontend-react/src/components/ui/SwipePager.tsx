@@ -1,7 +1,54 @@
-import React, { useEffect, useState, useCallback, ReactNode, useMemo } from 'react';
-import useEmblaCarousel from 'embla-carousel-react';
+import React, { useEffect, useState, ReactNode, useMemo } from 'react';
 import { cn } from '../../utils/cn';
-import { MobileInlineTabs, MobileUtilityBar, MobileViewSwitcher } from '../mobile/MobileContentFirst';
+import { MobileInlineTabs, MobileViewSwitcher } from '../mobile/MobileContentFirst';
+
+type PageErrorBoundaryProps = {
+  pageId: string;
+  children: ReactNode;
+};
+
+type PageErrorBoundaryState = {
+  hasError: boolean;
+  errorMessage: string;
+};
+
+class PageErrorBoundary extends React.Component<PageErrorBoundaryProps, PageErrorBoundaryState> {
+  constructor(props: PageErrorBoundaryProps) {
+    super(props);
+    this.state = { hasError: false, errorMessage: '' };
+  }
+
+  static getDerivedStateFromError(error: unknown): PageErrorBoundaryState {
+    return {
+      hasError: true,
+      errorMessage: error instanceof Error ? error.message : 'Error de render desconocido',
+    };
+  }
+
+  componentDidCatch(error: unknown) {
+    console.error(`[SwipePager] page render failed (${this.props.pageId})`, error);
+  }
+
+  componentDidUpdate(prevProps: PageErrorBoundaryProps) {
+    if (prevProps.pageId !== this.props.pageId && this.state.hasError) {
+      this.setState({ hasError: false, errorMessage: '' });
+    }
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div className="rounded-2xl border border-red-200 bg-red-50 px-4 py-4 text-sm text-red-800 dark:border-red-900/30 dark:bg-red-900/10 dark:text-red-200">
+          <div className="font-semibold">Esta vista falló al renderizar</div>
+          <div className="mt-1">Pestaña: {this.props.pageId}</div>
+          <div className="mt-1 break-words">Error: {this.state.errorMessage || 'sin detalle'}</div>
+        </div>
+      );
+    }
+
+    return this.props.children;
+  }
+}
 
 interface Page {
   id: string;
@@ -65,21 +112,19 @@ export const MobileInternalNav: React.FC<MobileInternalNavProps> = ({
   if (!activePage) return null;
 
   return (
-    <div className="app-page-header shrink-0 z-20 transition-all">
-      <MobileUtilityBar>
-        {options.length <= 3 ? (
-          <MobileInlineTabs options={options} activeId={activePageId} onChange={onPageChange} className="w-full" />
-        ) : (
-          <MobileViewSwitcher
-            options={options}
-            activeId={activePageId}
-            onChange={onPageChange}
-            label={switcherLabel}
-            title={switcherTitle}
-            buttonClassName="w-full justify-between"
-          />
-        )}
-      </MobileUtilityBar>
+    <div className="app-shell-gutter shrink-0 z-20 py-2">
+      {options.length <= 3 ? (
+        <MobileInlineTabs options={options} activeId={activePageId} onChange={onPageChange} className="w-full" />
+      ) : (
+        <MobileViewSwitcher
+          options={options}
+          activeId={activePageId}
+          onChange={onPageChange}
+          label={switcherLabel}
+          title={switcherTitle}
+          buttonClassName="w-full justify-between"
+        />
+      )}
     </div>
   );
 };
@@ -93,18 +138,11 @@ export const SwipePager: React.FC<SwipePagerProps> = ({
   desktopContentClassName,
   mobileBreakpoint = 1024, // Increased to cover tablets/small laptops for better touch experience
   contentScroll = 'auto',
-  enableSwipe = true,
+  enableSwipe: _enableSwipe = true,
   mobileSwitcherLabel,
   mobileSwitcherTitle,
 }) => {
   const [isMobile, setIsMobile] = useState(() => typeof window !== 'undefined' ? window.innerWidth < mobileBreakpoint : false);
-
-  // We only enable drag on mobile.
-  const [emblaRef, emblaApi] = useEmblaCarousel({ 
-    loop: false, 
-    watchDrag: isMobile && enableSwipe,
-    duration: 25 // Fast snap
-  });
 
   // Handle Resize / Breakpoint
   useEffect(() => {
@@ -118,41 +156,8 @@ export const SwipePager: React.FC<SwipePagerProps> = ({
     return () => window.removeEventListener('resize', checkMobile);
   }, [mobileBreakpoint]);
 
-  // Sync Embla with activePageId (only if mobile/embla active)
-  useEffect(() => {
-    if (!emblaApi || !isMobile) return;
-    
-    const index = pages.findIndex(p => p.id === activePageId);
-    if (index !== -1 && index !== emblaApi.selectedScrollSnap()) {
-      emblaApi.scrollTo(index);
-    }
-  }, [activePageId, emblaApi, pages, isMobile]);
-
-  // Listen to Embla select event to update activePageId
-  const onSelect = useCallback(() => {
-    if (!emblaApi || !isMobile) return;
-    const index = emblaApi.selectedScrollSnap();
-    const page = pages[index];
-    if (page && page.id !== activePageId) {
-      onPageChange(page.id);
-    }
-  }, [emblaApi, pages, activePageId, onPageChange, isMobile]);
-
-  useEffect(() => {
-    if (!emblaApi) return;
-    emblaApi.on('select', onSelect);
-    return () => {
-      emblaApi.off('select', onSelect);
-    };
-  }, [emblaApi, onSelect]);
-
-  // Re-init embla when mobile state changes
-  useEffect(() => {
-    if (emblaApi) emblaApi.reInit();
-  }, [isMobile, emblaApi]);
-
   return (
-    <div className={cn("flex min-h-0 w-full flex-col overflow-hidden", className)}>
+    <div className={cn("flex min-h-0 w-full flex-col", className)}>
       {isMobile ? (
         <MobileInternalNav
           pages={pages}
@@ -200,20 +205,13 @@ export const SwipePager: React.FC<SwipePagerProps> = ({
         </div>
       )}
 
-      <div className="app-canvas flex-1 min-h-0 relative overflow-hidden">
+      <div className="app-canvas relative flex-1 min-h-0">
         {isMobile ? (
-          <div className="h-full" ref={emblaRef}>
-            <div className="flex h-full touch-pan-y"> 
-              {pages.map((page) => (
-                <div 
-                  key={page.id} 
-                  className="flex-[0_0_100%] min-w-0 h-full relative"
-                >
-                  <div className={`app-canvas h-full w-full ${contentScroll === 'visible' ? 'overflow-y-visible' : 'overflow-y-auto'} overflow-x-hidden px-3.5 py-3.5 pb-28 sm:px-6 sm:py-6`}>
-                      {page.content}
-                  </div>
-                </div>
-              ))}
+          <div className="h-full overflow-visible">
+            <div className="app-canvas h-auto w-full overflow-visible px-3.5 py-4 pb-28 sm:px-6 sm:py-6">
+              <PageErrorBoundary pageId={activePageId}>
+                {pages.find((page) => page.id === activePageId)?.content}
+              </PageErrorBoundary>
             </div>
           </div>
         ) : (
@@ -221,7 +219,9 @@ export const SwipePager: React.FC<SwipePagerProps> = ({
             `app-canvas h-full w-full ${contentScroll === 'visible' ? 'overflow-y-visible' : 'overflow-y-auto'} overflow-x-hidden px-4 py-5 sm:px-6 lg:px-8 lg:py-7 xl:px-10 xl:py-8`,
             desktopContentClassName
           )}>
-             {pages.find(p => p.id === activePageId)?.content}
+             <PageErrorBoundary pageId={activePageId}>
+               {pages.find(p => p.id === activePageId)?.content}
+             </PageErrorBoundary>
           </div>
         )}
       </div>

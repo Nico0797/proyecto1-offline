@@ -1,0 +1,86 @@
+{
+  "createResults": {
+    "productId": -1775686411148532,
+    "customerId": -1775686411150384,
+    "saleId": -1775686411185628
+  },
+  "persisted": {
+    "productPersisted": true,
+    "customerPersisted": true,
+    "salePersisted": true,
+    "productRecord": {
+      "id": -1775686411148532,
+      "business_id": 101,
+      "name": "Producto Offline Nuevo",
+      "description": "Creado en prueba offline",
+      "type": "product",
+      "sku": "OFF-NEW-01",
+      "price": 33000,
+      "cost": 12000,
+      "unit": "unidad",
+      "stock": 8,
+      "low_stock_threshold": 2,
+      "fulfillment_mode": "resale_stock",
+      "active": true,
+      "barcodes": [],
+      "created_at": "2026-04-08T22:13:31.148Z",
+      "sync_status": "pending",
+      "is_offline_record": true,
+      "client_operation_id": "product_1775686411148_efj9ydzk"
+    },
+    "customerRecord": {
+      "id": -1775686411150384,
+      "business_id": 101,
+      "name": "Cliente Offline Nuevo",
+      "phone": "3000000002",
+      "address": "Calle 2",
+      "notes": "Creado offline",
+      "balance": 0,
+      "active": true,
+      "created_at": "2026-04-08T22:13:31.150Z",
+      "created_by_name": "Negocio Offline QA",
+      "sync_status": "pending",
+      "is_offline_record": true,
+      "client_operation_id": "customer_1775686411150_96g8xewa"
+    },
+    "saleRecord": {
+      "id": -1775686411185628,
+      "business_id": 101,
+      "customer_id": -1775686411150384,
+      "customer_name": "Cliente Offline Nuevo",
+      "sale_date": "2026-04-08",
+      "items": [
+        {
+          "product_id": -1775686411148532,
+          "qty": 1,
+          "quantity": 1,
+          "unit_price": 33000,
+          "price": 33000,
+          "name": "Producto Offline Nuevo",
+          "total": 33000,
+          "subtotal": 33000
+        }
+      ],
+      "subtotal": 33000,
+      "discount": 0,
+      "total": 33000,
+      "balance": 0,
+      "collected_amount": 33000,
+      "total_cost": 12000,
+      "payment_method": "cash",
+      "treasury_account_id": null,
+      "treasury_account_name": null,
+      "treasury_account_type": null,
+      "paid": true,
+      "note": "Venta offline nueva",
+      "created_at": "2026-04-08T22:13:31.220Z",
+      "is_offline_record": true,
+      "sync_status": "pending",
+      "offline_deleted": false,
+      "client_operation_id": "sale_1775686411185_nf03afon"
+    }
+  },
+  "noToken": true,
+  "noPlaceholder": true,
+  "finalUrl": "http://127.0.0.1:4174/dashboard"
+}

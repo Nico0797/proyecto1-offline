@@ -171,11 +171,12 @@ export const ProductModal: React.FC<ProductModalProps> = ({ isOpen, onClose, pro
 
       if (product) {
         const result = await updateProduct(activeBusiness.id, product.id, productData);
-        if (!result.persisted) {
-          setSubmitError('El cambio solo quedó local y no se confirmó en backend. Verifica tu conexión antes de cerrar.');
-          return;
+        productId = result.product?.id ?? product.id;
+        if (result.source === 'offline' || !result.persisted) {
+          toast.success('Producto actualizado localmente');
+        } else {
+          toast.success('Producto actualizado');
         }
-        toast.success('Producto actualizado');
       } else {
         // Since addProduct returns void in the store but updates the state, we can't get the ID easily unless the store returns it.
         // For now, let's assume we can't assign category immediately for new products if store doesn't return ID.
@@ -186,17 +187,18 @@ export const ProductModal: React.FC<ProductModalProps> = ({ isOpen, onClose, pro
         // Wait, I can modify the store to return the product. But user said "No romper CRUD actual".
         // I will just execute the addProduct.
         const result = await addProduct(activeBusiness.id, productData);
-        if (!result.persisted) {
-          setSubmitError('El producto solo quedó local y no se confirmó en backend. Verifica tu conexión antes de cerrar.');
-          return;
-        }
+        productId = result.product?.id;
         if (formData.categoryId) {
-          const created = [...products].reverse().find(p => p.name === formData.name && p.sku === formData.sku && p.active === true);
+          const created = result.product || [...products].reverse().find(p => p.name === formData.name && p.sku === formData.sku && p.active === true);
           if (created) {
             assignCategory(created.id, formData.categoryId);
           }
         }
-        toast.success('Producto creado');
+        if (result.source === 'offline' || !result.persisted) {
+          toast.success('Producto guardado localmente');
+        } else {
+          toast.success('Producto creado');
+        }
       }
 
       // If we have an ID (edit mode), we can assign category.

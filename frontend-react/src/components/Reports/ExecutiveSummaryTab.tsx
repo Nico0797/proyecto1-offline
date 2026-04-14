@@ -39,6 +39,7 @@ export const ExecutiveSummaryTab: React.FC<ExecutiveSummaryTabProps> = ({ data, 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         {kpis.map((kpi: KPI) => {
           const Icon = getIcon(kpi.id);
+          const changeValue = Number(kpi.change ?? 0);
           
           return (
             <Card key={kpi.id} className="border-none shadow-sm bg-white dark:bg-gray-800">
@@ -47,12 +48,12 @@ export const ExecutiveSummaryTab: React.FC<ExecutiveSummaryTabProps> = ({ data, 
                   <div className="p-3 bg-gray-100 dark:bg-gray-700/50 rounded-lg">
                     <Icon className="w-6 h-6 text-gray-700 dark:text-gray-300" />
                   </div>
-                  {kpi.change !== 0 && !isNaN(kpi.change) && (
+                  {changeValue !== 0 && !Number.isNaN(changeValue) && (
                     <div className={cn("flex items-center text-xs font-bold px-2 py-1 rounded-full bg-opacity-10", 
                       getColor(kpi)
                     )}>
                       {kpi.trend === 'up' ? <TrendingUp className="w-3 h-3 mr-1" /> : <TrendingDown className="w-3 h-3 mr-1" />}
-                      {Math.abs(kpi.change).toFixed(1)}%
+                      {Math.abs(changeValue).toFixed(1)}%
                     </div>
                   )}
                 </div>
@@ -65,7 +66,7 @@ export const ExecutiveSummaryTab: React.FC<ExecutiveSummaryTabProps> = ({ data, 
                   </h3>
                   {kpi.previousValue !== undefined && (
                     <p className="text-xs text-gray-400 mt-2">
-                      vs ${(kpi.previousValue || 0).toLocaleString()} anterior
+                      vs {(kpi.previousValue || 0).toLocaleString()} anterior
                     </p>
                   )}
                 </div>

@@ -6,24 +6,20 @@ import {
   HelpCircle,
   History,
   LayoutTemplate,
-  RefreshCw,
   ShieldCheck,
   Sparkles,
-  Star,
   User,
   Users,
 } from 'lucide-react';
 import { FEATURES } from '../auth/plan';
 import { BusinessAuditTab } from '../components/Settings/BusinessAuditTab';
+import { BusinessPersonalizationSimple } from '../components/Settings/BusinessPersonalizationSimple';
 import { BusinessSettingsTab } from '../components/Settings/BusinessSettingsTab';
-import { BusinessPersonalizationExperience } from '../components/Settings/BusinessPersonalizationExperience';
-import { MembershipTab } from '../components/Settings/MembershipTab';
 import { NotificationSettingsTab } from '../components/Settings/NotificationSettingsTab';
 import { ProfileSettingsTab } from '../components/Settings/ProfileSettingsTab';
 import { RolesPermissionsTab } from '../components/Settings/RolesPermissionsTab';
 import { SettingsMobileIndex, type SettingsMobileEntry } from '../components/Settings/SettingsMobileIndex';
 import { SettingsSectionPage } from '../components/Settings/SettingsSectionPage';
-import { SyncCenterPanel } from '../components/Settings/SyncCenterPanel';
 import TeamSettingsTab from '../components/Settings/TeamSettingsTab';
 import { TemplatesSettingsTab } from '../components/Settings/TemplatesSettingsTab';
 import { ProGate } from '../components/ui/ProGate';
@@ -31,6 +27,7 @@ import { ElevatedCard } from '../components/ui/ElevatedCard';
 import { IconContainer } from '../components/ui/IconContainer';
 import { AppStatusBadge } from '../components/ui/AppStatusBadge';
 import { useAccess } from '../hooks/useAccess';
+import { isOfflineProductMode } from '../runtime/runtimeMode';
 
 type SettingsSectionId =
   | 'profile'
@@ -40,9 +37,7 @@ type SettingsSectionId =
   | 'team'
   | 'roles'
   | 'notifications'
-  | 'templates'
-  | 'membership'
-  | 'sync';
+  | 'templates';
 
 type SettingsSectionDefinition = SettingsMobileEntry & {
   id: SettingsSectionId;
@@ -50,7 +45,7 @@ type SettingsSectionDefinition = SettingsMobileEntry & {
 
 const createSection = (section: SettingsSectionDefinition) => section;
 
-const MOBILE_PRIMARY_SECTIONS: SettingsSectionId[] = ['business', 'personalization', 'team', 'sync'];
+const MOBILE_PRIMARY_SECTIONS: SettingsSectionId[] = ['business', 'personalization', 'notifications', 'templates'];
 
 const useIsDesktop = () => {
   const [isDesktop, setIsDesktop] = useState(() =>
@@ -72,8 +67,8 @@ const useIsDesktop = () => {
 };
 
 export const Settings = () => {
+  const offlineProductMode = isOfflineProductMode();
   const {
-    isOwner,
     canManageBusinessExperience,
     canViewAudit,
     canViewTeamWorkspace,
@@ -87,14 +82,14 @@ export const Settings = () => {
       createSection({
         id: 'profile',
         title: 'Perfil y cuenta',
-        description: 'Datos personales, acceso y preferencias basicas de la cuenta.',
+        description: 'Datos de acceso y preferencias personales.',
         icon: User,
         tone: 'settings',
       }),
       createSection({
         id: 'business',
         title: 'Negocio',
-        description: 'Informacion operativa, identidad base y datos del negocio activo.',
+        description: 'Identidad, moneda y datos del negocio activo.',
         icon: Building2,
         tone: 'settings',
       }),
@@ -102,68 +97,51 @@ export const Settings = () => {
         ? [createSection({
             id: 'personalization',
             title: 'Personalizacion y modulos',
-            description: 'Experiencia del negocio, menu, vistas activas y herramientas habilitadas.',
+            description: 'Menu, modulos y experiencia del negocio.',
             icon: Sparkles,
             tone: 'products',
           })]
         : []),
-      ...(canViewTeamWorkspace
+      ...(!offlineProductMode && canViewTeamWorkspace
         ? [createSection({
             id: 'team',
             title: 'Equipo',
-            description: 'Invitaciones, miembros, roles operativos y comunicación del equipo.',
+            description: 'Miembros, invitaciones y roles del equipo.',
             icon: Users,
             tone: 'sales',
           })]
         : []),
-      ...(canManageRoles
+      ...(!offlineProductMode && canManageRoles
         ? [createSection({
             id: 'roles',
             title: 'Roles y permisos',
-            description: 'Control fino de accesos para proteger areas y acciones sensibles.',
+            description: 'Controla accesos y acciones sensibles.',
             icon: ShieldCheck,
             tone: 'alerts',
-            badge: isOwner ? 'Propietario' : 'Acceso',
+            badge: 'Acceso',
           })]
         : []),
       createSection({
         id: 'notifications',
         title: 'Notificaciones',
-        description: 'Preferencias de avisos y alertas visibles para este usuario.',
+        description: 'Avisos y alertas para este usuario.',
         icon: Bell,
         tone: 'alerts',
       }),
       createSection({
         id: 'templates',
         title: 'Plantillas e integraciones',
-        description: 'Mensajes y plantillas reutilizables para la operacion comercial.',
+        description: 'Plantillas comerciales e integraciones clave.',
         icon: LayoutTemplate,
         tone: 'products',
-      }),
-      createSection({
-        id: 'sync',
-        title: 'Sincronizacion y respaldo',
-        description: 'Estado discreto arriba, detalle completo aqui: cola, conflictos y reintentos.',
-        icon: RefreshCw,
-        tone: 'sync',
       }),
       ...(canViewAudit
         ? [createSection({
             id: 'audit',
             title: 'Historial',
-            description: 'Cambios relevantes del negocio y trazabilidad de administracion.',
+            description: 'Cambios y trazabilidad del negocio.',
             icon: History,
             tone: 'neutral',
-          })]
-        : []),
-      ...(isOwner
-        ? [createSection({
-            id: 'membership',
-            title: 'Plan y suscripcion',
-            description: 'Estado del plan, beneficios activos y gestion de membresia.',
-            icon: Star,
-            tone: 'expenses',
-            badge: 'Facturacion',
           })]
         : []),
     ];
@@ -172,7 +150,7 @@ export const Settings = () => {
     nextSections.forEach((section) => deduped.set(section.id, section));
 
     return Array.from(deduped.values());
-  }, [canManageBusinessExperience, canManageRoles, canViewAudit, canViewTeamWorkspace, isOwner]);
+  }, [canManageBusinessExperience, canManageRoles, canViewAudit, canViewTeamWorkspace, offlineProductMode]);
 
   const mobileSections = useMemo<SettingsMobileEntry[]>(
     () => [
@@ -180,7 +158,7 @@ export const Settings = () => {
       {
         id: 'help',
         title: 'Ayuda',
-        description: 'Tutoriales, soporte y documentacion guiada.',
+        description: 'Tutoriales, soporte y guias practicas.',
         icon: HelpCircle,
         tone: 'neutral',
         href: '/help',
@@ -230,9 +208,9 @@ export const Settings = () => {
       case 'business':
         return <BusinessSettingsTab />;
       case 'personalization':
-        return <BusinessPersonalizationExperience />;
+        return <BusinessPersonalizationSimple />;
       case 'audit':
-        return (
+        return offlineProductMode ? <BusinessAuditTab /> : (
           <ProGate feature={FEATURES.AUDIT_TRAIL} mode="block">
             <BusinessAuditTab />
           </ProGate>
@@ -240,7 +218,7 @@ export const Settings = () => {
       case 'team':
         return <TeamSettingsTab />;
       case 'roles':
-        return (
+        return offlineProductMode ? null : (
           <ProGate feature={FEATURES.TEAM_MANAGEMENT} mode="block">
             <RolesPermissionsTab />
           </ProGate>
@@ -248,15 +226,11 @@ export const Settings = () => {
       case 'notifications':
         return <NotificationSettingsTab />;
       case 'templates':
-        return (
+        return offlineProductMode ? <TemplatesSettingsTab /> : (
           <ProGate feature={FEATURES.WHATSAPP_TEMPLATES} mode="block">
             <TemplatesSettingsTab />
           </ProGate>
         );
-      case 'membership':
-        return <MembershipTab />;
-      case 'sync':
-        return <SyncCenterPanel embedded />;
       default:
         return null;
     }
@@ -295,7 +269,7 @@ export const Settings = () => {
             <div className="text-[11px] font-semibold uppercase tracking-[0.24em] app-text-muted">Configuracion</div>
             <h1 className="mt-2 text-2xl font-bold tracking-tight app-text sm:text-3xl">Ajustes del negocio</h1>
             <p className="mt-2 text-sm leading-6 app-text-muted">
-              Cuenta, negocio, sincronizacion y experiencia de uso en una arquitectura clara.
+              Cuenta, negocio y experiencia de uso en un solo lugar.
             </p>
           </div>
 
@@ -308,13 +282,13 @@ export const Settings = () => {
                   key={section.id}
                   type="button"
                   onClick={() => setSectionParam(section.id)}
-                  data-tour={`settings.${section.id === 'membership' ? 'membership' : section.id}`}
+                  data-tour={`settings.${section.id}`}
                   className={`w-full rounded-[1.35rem] text-left transition-all ${
                     isActive ? 'app-tab-active shadow-sm' : 'app-tab-idle'
                   }`}
                 >
-                  <div className="flex items-start gap-3 px-3.5 py-3">
-                    <IconContainer icon={section.icon} tone={section.tone} size="sm" />
+                  <div className="flex items-start gap-4 px-4 py-3.5">
+                    <IconContainer icon={section.icon} tone={section.tone} size="md" className="shrink-0" />
                     <div className="min-w-0 flex-1">
                       <div className="flex flex-wrap items-center gap-2">
                         <div className="text-sm font-semibold app-text">{section.title}</div>
@@ -331,12 +305,12 @@ export const Settings = () => {
 
         <div className="mt-4">
           <ElevatedCard tone="neutral" className="p-4">
-            <div className="flex items-start gap-3">
-              <IconContainer icon={HelpCircle} tone="neutral" size="sm" />
+            <div className="flex items-start gap-4">
+              <IconContainer icon={HelpCircle} tone="neutral" size="md" className="shrink-0" />
               <div className="min-w-0 flex-1">
                 <div className="text-sm font-semibold app-text">Ayuda y aprendizaje</div>
                 <p className="mt-1 text-xs leading-5 app-text-muted">
-                  Tutoriales, soporte y material guiado siguen disponibles desde la seccion de ayuda.
+                  Tutoriales, soporte y material guiado siguen disponibles desde Ayuda.
                 </p>
               </div>
             </div>

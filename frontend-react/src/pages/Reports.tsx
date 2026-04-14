@@ -56,15 +56,15 @@ export const Reports = () => {
   }
 
   const modeSwitcher = (
-    <div className="app-muted-panel flex w-full rounded-2xl p-1 shadow-sm sm:w-auto">
+    <div className="app-segmented-control flex w-full sm:w-auto">
       <button
         onClick={() => {
           setActiveTab('native');
           updateReportsParams({ tab: 'native' });
         }}
-        className={`flex-1 rounded-xl px-4 py-2 text-sm font-medium transition-all sm:flex-none ${
+        className={`app-segmented-control__item flex-1 px-4 py-2 text-sm font-medium transition-all sm:flex-none ${
           activeTab === 'native'
-            ? 'app-surface text-gray-900 shadow-sm dark:text-white'
+            ? 'app-segmented-control__item-active text-gray-900 dark:text-white'
             : 'text-gray-500 hover:text-gray-700 dark:hover:text-gray-300'
         }`}
       >
@@ -75,9 +75,9 @@ export const Reports = () => {
           setActiveTab('bi');
           updateReportsParams({ tab: 'bi' });
         }}
-        className={`flex flex-1 items-center justify-center gap-2 rounded-xl px-4 py-2 text-sm font-medium transition-all sm:flex-none ${
+        className={`app-segmented-control__item flex flex-1 items-center justify-center gap-2 px-4 py-2 text-sm font-medium transition-all sm:flex-none ${
           activeTab === 'bi'
-            ? 'app-surface text-blue-600 shadow-sm dark:text-blue-400'
+            ? 'app-segmented-control__item-active text-blue-600 dark:text-blue-400'
             : 'text-gray-500 hover:text-gray-700 dark:hover:text-gray-300'
         }`}
       >

@@ -1,4 +1,5 @@
 import { 
+  AnalyticsCostCoverage,
   KPI, 
   Insight, 
   Forecast, 
@@ -11,7 +12,17 @@ import type { Sale, Expense, Customer } from '../types';
 import api from './api';
 import { buildBusinessExpensesQueryParams, getBusinessExpensesPath } from './businessApiRoutes';
 import { balanceService } from './balanceService';
+import { hasOfflineSessionSeed } from './offlineSession';
+import { isOfflineProductMode } from '../runtime/runtimeMode';
 import { requestGeneratedFile, type DownloadedFilePayload } from '../utils/downloadHelper';
+import {
+  buildLocalMergedCustomers,
+  filterLocalExpensesByRange,
+  filterLocalSalesByRange,
+  isPureOfflineRuntime,
+  readCompatibleOfflineExpenses,
+  readOfflineSales,
+} from './offlineLocalData';
 
 type AnalyticsDatasetKey = 'sales' | 'expenses' | 'customers' | 'debtors';
 
@@ -31,7 +42,15 @@ interface RawAnalyticsResult {
 interface AnalyticsSummary {
   sales: { total: number; count: number };
   expenses: { total: number; count: number };
-  profit: { net: number; gross: number };
+  costs: { total: number; coveredSalesTotal: number; uncoveredSalesTotal: number; missingSalesCount: number };
+  profit: {
+    net: number | null;
+    gross: number;
+    operatingBalance: number;
+    coverage: AnalyticsCostCoverage;
+    displayLabel: string;
+    displayValue: number | string;
+  };
   health?: {
     overdueReceivables: number;
     overdueReceivableCustomersCount: number;
@@ -42,15 +61,54 @@ interface AnalyticsSummary {
     uncostedSalesTotal: number;
     missingCostSalesCount: number;
     previousSalesTotal: number;
+    costCoverage: AnalyticsCostCoverage;
+    operatingBalance: number;
   };
   degraded?: boolean;
   issues?: AnalyticsDegradationIssue[];
 }
 
+const roundCurrency = (value: number) => Math.round((safeNumber(value) + Number.EPSILON) * 100) / 100;
+
+const resolveCostCoverage = (coveredSalesTotal: number, uncoveredSalesTotal: number, missingSalesCount: number): AnalyticsCostCoverage => {
+  if (missingSalesCount <= 0 && uncoveredSalesTotal <= 0.01) return 'complete';
+  if (coveredSalesTotal > 0.01) return 'partial';
+  return 'missing';
+};
+
+const shouldUseLocalOnly = () => isOfflineProductMode() || (!localStorage.getItem('token') && hasOfflineSessionSeed());
+
+const safeNumber = (value: any) => {
+  const parsed = Number(value || 0);
+  return Number.isFinite(parsed) ? parsed : 0;
+};
+
+const buildLocalRawAnalyticsResult = async (
+  businessId: number,
+  startDate: string,
+  endDate: string,
+): Promise<RawAnalyticsResult> => {
+  const [sales, mergedCustomers] = await Promise.all([
+    readOfflineSales(businessId),
+    buildLocalMergedCustomers(businessId),
+  ]);
+
+  const localExpenses = filterLocalExpensesByRange(readCompatibleOfflineExpenses(businessId), startDate, endDate);
+  const localSales = filterLocalSalesByRange(sales, startDate, endDate);
+
+  return {
+    sales: localSales,
+    expenses: localExpenses,
+    customers: mergedCustomers.customers,
+    degraded: false,
+    issues: [],
+  };
+};
+
 class AnalyticsService {
   private isOperationalExecutedExpense(expense: Expense) {
     const sourceType = String(expense.source_type || 'manual').toLowerCase();
-    return sourceType !== 'supplier_payment' && sourceType !== 'debt_payment';
+    return sourceType !== 'supplier_payment' && sourceType !== 'debt_payment' && sourceType !== 'purchase_payment';
   }
 
   private buildIssue(dataset: AnalyticsDatasetKey, error: any): AnalyticsDegradationIssue {
@@ -70,6 +128,10 @@ class AnalyticsService {
   // --- Data Fetching (Raw) ---
 
   private async fetchRawData(businessId: number, startDate: string, endDate: string): Promise<RawAnalyticsResult> {
+    if (isPureOfflineRuntime() || shouldUseLocalOnly()) {
+      return buildLocalRawAnalyticsResult(businessId, startDate, endDate);
+    }
+
     try {
       const access = getAccessSnapshot();
       const canAccessSales = access.hasModule('sales') && access.hasPermission('sales.view');
@@ -185,13 +247,84 @@ class AnalyticsService {
     const countSales = raw.sales.length;
     const executedOperationalExpenses = raw.expenses.filter((expense) => this.isOperationalExecutedExpense(expense));
     const totalExpenses = financialSummary?.expensesTotal ?? executedOperationalExpenses.reduce((sum, e) => sum + e.amount, 0);
-    const netProfit = financialSummary?.netProfit ?? (totalSales - totalExpenses);
-    const grossProfit = financialSummary?.grossProfit ?? totalSales;
+    const totalCost = financialSummary?.salesCogsTotal ?? raw.sales.reduce((sum, sale) => sum + safeNumber((sale as any).total_cost), 0);
+    const coveredSalesTotal = financialSummary?.costedSalesTotal ?? raw.sales
+      .filter((sale) => safeNumber((sale as any).total_cost) > 0.0001)
+      .reduce((sum, sale) => sum + safeNumber(sale.total), 0);
+    const uncoveredSalesTotal = financialSummary?.uncostedSalesTotal ?? raw.sales
+      .filter((sale) => safeNumber((sale as any).total_cost) <= 0.0001)
+      .reduce((sum, sale) => sum + safeNumber(sale.total), 0);
+    const missingSalesCount = financialSummary?.missingCostSalesCount ?? raw.sales.filter((sale) => safeNumber((sale as any).total_cost) <= 0.0001).length;
+    const coverage = resolveCostCoverage(coveredSalesTotal, uncoveredSalesTotal, missingSalesCount);
+    const grossProfit = roundCurrency(coveredSalesTotal - totalCost);
+    const operatingBalance = roundCurrency(totalSales - totalExpenses);
+    const netProfit = coverage === 'complete'
+      ? roundCurrency(grossProfit - totalExpenses)
+      : null;
+    const displayLabel = coverage === 'complete'
+      ? 'Utilidad Neta'
+      : coverage === 'partial'
+        ? 'Resultado Operativo'
+        : 'Balance Operativo';
+    const displayValue = coverage === 'complete'
+      ? roundCurrency(netProfit || 0)
+      : coverage === 'partial'
+        ? operatingBalance
+        : operatingBalance;
+
+    if (isPureOfflineRuntime() || shouldUseLocalOnly()) {
+      return {
+        sales: { total: totalSales, count: countSales },
+        expenses: { total: totalExpenses, count: executedOperationalExpenses.length },
+        costs: {
+          total: roundCurrency(totalCost),
+          coveredSalesTotal: roundCurrency(coveredSalesTotal),
+          uncoveredSalesTotal: roundCurrency(uncoveredSalesTotal),
+          missingSalesCount,
+        },
+        profit: {
+          net: netProfit,
+          gross: grossProfit,
+          operatingBalance,
+          coverage,
+          displayLabel,
+          displayValue,
+        },
+        health: financialSummary ? {
+          overdueReceivables: financialSummary.overdueReceivables,
+          overdueReceivableCustomersCount: financialSummary.receivableOverdueCustomersCount,
+          dueSoonReceivables: financialSummary.dueSoonReceivables,
+          receivableCustomersCount: financialSummary.receivableCustomersCount,
+          marginPercent: financialSummary.margin,
+          costedSalesTotal: financialSummary.costedSalesTotal,
+          uncostedSalesTotal: financialSummary.uncostedSalesTotal,
+          missingCostSalesCount: financialSummary.missingCostSalesCount,
+          previousSalesTotal: financialSummary.previousSalesTotal,
+          costCoverage: coverage,
+          operatingBalance,
+        } : undefined,
+        degraded: false,
+        issues: [],
+      };
+    }
 
     return {
       sales: { total: totalSales, count: countSales },
       expenses: { total: totalExpenses, count: executedOperationalExpenses.length },
-      profit: { net: netProfit, gross: grossProfit },
+      costs: {
+        total: roundCurrency(totalCost),
+        coveredSalesTotal: roundCurrency(coveredSalesTotal),
+        uncoveredSalesTotal: roundCurrency(uncoveredSalesTotal),
+        missingSalesCount,
+      },
+      profit: {
+        net: netProfit,
+        gross: grossProfit,
+        operatingBalance,
+        coverage,
+        displayLabel,
+        displayValue,
+      },
       health: financialSummary ? {
         overdueReceivables: financialSummary.overdueReceivables,
         overdueReceivableCustomersCount: financialSummary.receivableOverdueCustomersCount,
@@ -202,6 +335,8 @@ class AnalyticsService {
         uncostedSalesTotal: financialSummary.uncostedSalesTotal,
         missingCostSalesCount: financialSummary.missingCostSalesCount,
         previousSalesTotal: financialSummary.previousSalesTotal,
+        costCoverage: coverage,
+        operatingBalance,
       } : undefined,
       degraded: raw.degraded || financialResult.status === 'rejected',
       issues: issues.filter((issue, index, array) => index === array.findIndex((item) => item.dataset === issue.dataset && item.message === issue.message)),
@@ -244,7 +379,16 @@ class AnalyticsService {
       });
     }
 
-    if (summary.profit.net < 0) {
+    if (health?.costCoverage !== 'complete') {
+      score -= health?.costCoverage === 'partial' ? 10 : 20;
+      indicators.push({
+        label: 'Utilidad neta',
+        status: 'warning',
+        message: health?.costCoverage === 'partial'
+          ? 'La utilidad neta no es totalmente confiable; se muestra margen bruto parcial sobre ventas costeadas.'
+          : 'La utilidad neta no es estimable todavía porque faltan costos confiables en las ventas del periodo.',
+      });
+    } else if ((summary.profit.net || 0) < 0) {
       score -= 25;
       indicators.push({
         label: 'Utilidad neta',
@@ -418,7 +562,15 @@ class AnalyticsService {
     const emptySummary: AnalyticsSummary = {
       sales: { total: 0, count: 0 },
       expenses: { total: 0, count: 0 },
-      profit: { net: 0, gross: 0 },
+      costs: { total: 0, coveredSalesTotal: 0, uncoveredSalesTotal: 0, missingSalesCount: 0 },
+      profit: {
+        net: null,
+        gross: 0,
+        operatingBalance: 0,
+        coverage: 'missing',
+        displayLabel: 'Balance Operativo',
+        displayValue: 0,
+      },
       degraded: true,
       issues: [],
     };
@@ -447,10 +599,10 @@ class AnalyticsService {
       return ((safeCurr - safePrev) / safePrev) * 100;
     };
 
-    return [
+    const kpis: KPI[] = [
       {
         id: 'sales',
-        label: 'Ingresos Totales',
+        label: 'Ventas generadas',
         value: current.sales.total,
         previousValue: prev.sales.total,
         change: calculateChange(current.sales.total, prev.sales.total),
@@ -458,23 +610,46 @@ class AnalyticsService {
         format: 'currency' as const
       },
       {
+        id: 'costs',
+        label: current.profit.coverage === 'complete' ? 'Costo de ventas' : 'Costo costeado',
+        value: current.costs.total,
+        previousValue: prev.costs.total,
+        change: calculateChange(current.costs.total, prev.costs.total),
+        trend: current.costs.total <= prev.costs.total ? 'up' : 'down',
+        format: 'currency' as const,
+        inverse: true,
+      },
+      {
         id: 'expenses',
         label: 'Gasto Operativo Ejecutado',
         value: current.expenses.total,
         previousValue: prev.expenses.total,
         change: calculateChange(current.expenses.total, prev.expenses.total),
-        trend: current.expenses.total <= prev.expenses.total ? 'up' : 'down', 
+        trend: current.expenses.total <= prev.expenses.total ? 'up' : 'down',
         format: 'currency' as const,
-        inverse: true 
+        inverse: true
+      },
+      {
+        id: 'gross-profit',
+        label: current.profit.coverage === 'complete' ? 'Utilidad Bruta' : 'Margen Bruto Parcial',
+        value: current.profit.gross,
+        previousValue: prev.profit.gross,
+        change: calculateChange(current.profit.gross, prev.profit.gross),
+        trend: current.profit.gross >= prev.profit.gross ? 'up' : 'down',
+        format: 'currency' as const
       },
       {
         id: 'profit',
-        label: 'Utilidad Neta',
-        value: current.profit.net,
-        previousValue: prev.profit.net,
-        change: calculateChange(current.profit.net, prev.profit.net),
-        trend: current.profit.net >= prev.profit.net ? 'up' : 'down',
-        format: 'currency' as const
+        label: current.profit.displayLabel,
+        value: current.profit.displayValue,
+        previousValue: current.profit.coverage === 'complete' && prev.profit.coverage === 'complete' && prev.profit.net != null ? prev.profit.net : undefined,
+        change: current.profit.coverage === 'complete' && prev.profit.coverage === 'complete' && current.profit.net != null && prev.profit.net != null
+          ? calculateChange(current.profit.net, prev.profit.net)
+          : undefined,
+        trend: current.profit.coverage === 'complete'
+          ? ((current.profit.net || 0) >= (prev.profit.net || 0) ? 'up' : 'down')
+          : 'neutral',
+        format: typeof current.profit.displayValue === 'number' ? 'currency' as const : undefined
       },
       {
         id: 'ticket',
@@ -485,10 +660,14 @@ class AnalyticsService {
         trend: 'neutral',
         format: 'currency' as const
       }
-    ].map(kpi => ({
+    ];
+
+    return kpis.map((kpi) => ({
         ...kpi,
-        change: kpi.id === 'ticket' ? calculateChange(kpi.value, kpi.previousValue || 0) : kpi.change,
-        trend: kpi.value >= (kpi.previousValue || 0) ? 'up' : 'down'
+        change: kpi.id === 'ticket' && typeof kpi.value === 'number' ? calculateChange(kpi.value, kpi.previousValue || 0) : kpi.change,
+        trend: kpi.id === 'ticket' && typeof kpi.value === 'number'
+          ? (kpi.value >= (kpi.previousValue || 0) ? 'up' : 'down')
+          : kpi.trend
     }));
   }
 
@@ -500,20 +679,21 @@ class AnalyticsService {
     // Sales Insight
     const salesKPI = kpis.find(k => k.id === 'sales');
     if (salesKPI) {
-      if (salesKPI.change > 10) {
+      const salesChange = typeof salesKPI.change === 'number' ? salesKPI.change : null;
+      if (salesChange !== null && salesChange > 10) {
         insights.push({
           id: 'sales-growth',
           type: 'positive',
           title: 'Crecimiento de Ingresos',
-          description: `Tus ingresos han aumentado un ${salesKPI.change.toFixed(1)}% respecto al periodo anterior.`,
+          description: `Tus ingresos han aumentado un ${salesChange.toFixed(1)}% respecto al periodo anterior.`,
           metric: 'sales'
         });
-      } else if (salesKPI.change < -10) {
+      } else if (salesChange !== null && salesChange < -10) {
         insights.push({
           id: 'sales-drop',
           type: 'negative',
           title: 'Caída de Ingresos',
-          description: `Tus ingresos han disminuido un ${Math.abs(salesKPI.change).toFixed(1)}%. Revisa tus estrategias de venta.`,
+          description: `Tus ingresos han disminuido un ${Math.abs(salesChange).toFixed(1)}%. Revisa tus estrategias de venta.`,
           metric: 'sales'
         });
       }
@@ -533,7 +713,7 @@ class AnalyticsService {
 
     // Profit Insight
     const profitKPI = kpis.find(k => k.id === 'profit');
-    if (profitKPI && profitKPI.value < 0) {
+    if (profitKPI && typeof profitKPI.value === 'number' && profitKPI.value < 0) {
        insights.push({
          id: 'loss-warning',
          type: 'warning',
@@ -547,7 +727,7 @@ class AnalyticsService {
   }
 
   // --- Simple Forecast (projection) ---
-  calculateForecast(currentTotal: number, daysElapsed: number, totalDaysInPeriod: number): Forecast {
+  calculateForecast(currentTotal: number, daysElapsed: number, totalDaysInPeriod: number, coverage: AnalyticsCostCoverage = 'missing'): Forecast {
     const safeElapsed = Math.max(1, daysElapsed || 0);
     const safeTotalDays = Math.max(safeElapsed, totalDaysInPeriod || 0);
     const dailyAvg = currentTotal / safeElapsed;
@@ -557,7 +737,16 @@ class AnalyticsService {
     const margin = 0.15 * (1 - ratio);
     const min = projectedRevenue * (1 - margin);
     const max = projectedRevenue * (1 + margin);
-    const projectedProfit = projectedRevenue * 0.25;
+    const projectedResult = coverage === 'complete'
+      ? projectedRevenue * 0.25
+      : coverage === 'partial'
+        ? projectedRevenue * 0.18
+        : projectedRevenue;
+    const resultLabel = coverage === 'complete'
+      ? 'Utilidad neta estimada'
+      : coverage === 'partial'
+        ? 'Margen bruto parcial estimado'
+        : 'Ventas estimadas';
     const suggestions: string[] = [
       'Refuerza campañas en días de baja',
       'Impulsa productos con mayor margen',
@@ -565,7 +754,8 @@ class AnalyticsService {
     ];
     return {
       projectedRevenue: Math.round(projectedRevenue),
-      projectedProfit: Math.round(projectedProfit),
+      projectedResult: Math.round(projectedResult),
+      resultLabel,
       confidence: { min: Math.round(min), max: Math.round(max), level: Math.round(level * 100) / 100 },
       trend: projectedRevenue >= currentTotal ? 'up' : 'down',
       suggestions

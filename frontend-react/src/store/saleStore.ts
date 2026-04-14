@@ -1,7 +1,7 @@
 import { create } from 'zustand';
-import api from '../services/api';
 import { Sale } from '../types';
 import { offlineSyncService } from '../services/offlineSyncService';
+import { salesRepository } from '../repositories/salesRepository';
 
 interface FetchSalesOptions {
   includeItems?: boolean;
@@ -17,34 +17,31 @@ interface SaleState {
   deleteSale: (businessId: number, id: number) => Promise<void>;
 }
 
+const getSaleSortTimestamp = (sale: Sale) => {
+  const createdAt = sale.created_at ? new Date(sale.created_at).getTime() : Number.NaN;
+  if (Number.isFinite(createdAt)) return createdAt;
+  const saleDate = sale.sale_date ? new Date(sale.sale_date).getTime() : Number.NaN;
+  if (Number.isFinite(saleDate)) return saleDate;
+  return 0;
+};
+
+const sortSalesByRecency = (sales: Sale[]) =>
+  [...sales].sort((left, right) => {
+    const timestampDelta = getSaleSortTimestamp(right) - getSaleSortTimestamp(left);
+    if (timestampDelta !== 0) return timestampDelta;
+    return Number(right.id || 0) - Number(left.id || 0);
+  });
+
 export const useSaleStore = create<SaleState>((set, get) => ({
   sales: [],
   loading: false,
   error: null,
   fetchSales: async (businessId, options) => {
-    const token = localStorage.getItem('token');
-    if (!token) {
-      set({ sales: [], loading: false });
-      return;
-    }
     set({ loading: true, error: null });
     try {
-      const includeItems = options?.includeItems ?? false;
-      const response = await api.get(`/businesses/${businessId}/sales`, {
-        params: { include_items: includeItems ? 'true' : 'false' },
-      });
-      const sales = response.data.sales || [];
-      if (includeItems) {
-        await offlineSyncService.cacheSales(businessId, sales);
-      }
-      set({ sales });
+      const sales = await salesRepository.list(businessId, options);
+      set({ sales: sortSalesByRecency(sales) });
     } catch (error: any) {
-      if (error?.isOfflineRequestError || !error?.response) {
-        const sales = await offlineSyncService.getSalesFromLocal(businessId);
-        set({ sales, error: null });
-        return;
-      }
-
       set({ error: error.message });
     } finally {
       set({ loading: false });
@@ -53,25 +50,21 @@ export const useSaleStore = create<SaleState>((set, get) => ({
   createSale: async (businessId, saleData) => {
     set({ loading: true, error: null });
     try {
-      const response = await api.post(`/businesses/${businessId}/sales`, saleData);
-      const nextSale = response.data.sale;
-      await offlineSyncService.cacheSales(businessId, [nextSale, ...get().sales.filter((sale: Sale) => sale.id !== nextSale.id)]);
+      const nextSale = await salesRepository.create(businessId, saleData);
+      await offlineSyncService.cacheSales(
+        businessId,
+        sortSalesByRecency([nextSale, ...get().sales.filter((sale: Sale) => sale.id !== nextSale.id)])
+      );
       set((state) => {
         const existingIndex = state.sales.findIndex((sale) => sale.id === nextSale.id);
         if (existingIndex >= 0) {
           const updatedSales = [...state.sales];
           updatedSales[existingIndex] = nextSale;
-          return { sales: updatedSales };
+          return { sales: sortSalesByRecency(updatedSales) };
         }
-        return { sales: [nextSale, ...state.sales] };
+        return { sales: sortSalesByRecency([nextSale, ...state.sales]) };
       });
     } catch (error: any) {
-      if (error?.isOfflineRequestError || !error?.response) {
-        const offlineSale = await offlineSyncService.createOfflineSale(businessId, saleData);
-        set((state) => ({ sales: [offlineSale, ...state.sales.filter((sale) => sale.id !== offlineSale.id)] }));
-        return;
-      }
-
       set({ error: error.response?.data?.error || error.message });
       throw error;
     } finally {
@@ -81,25 +74,16 @@ export const useSaleStore = create<SaleState>((set, get) => ({
   updateSale: async (businessId, id, saleData) => {
     set({ loading: true, error: null });
     try {
-      const response = await api.put(`/businesses/${businessId}/sales/${id}`, saleData);
-      const updated: Sale = response.data.sale || { ...saleData, id, business_id: businessId } as Sale;
-      await offlineSyncService.cacheSales(
-        businessId,
+      const updated = await salesRepository.update(businessId, id, saleData);
+      const nextSales = sortSalesByRecency(
         get().sales.map((sale: Sale) => (sale.id === id ? { ...sale, ...updated } : sale))
       );
-      set((state) => ({
-        sales: state.sales.map((sale) => (sale.id === id ? { ...sale, ...updated } : sale)),
-      }));
+      await offlineSyncService.cacheSales(
+        businessId,
+        nextSales
+      );
+      set({ sales: nextSales });
     } catch (error: any) {
-      if (error?.isOfflineRequestError || !error?.response) {
-        const offlineSale = await offlineSyncService.updateOfflineSale(businessId, id, saleData);
-        set((state) => ({
-          sales: state.sales.map((sale) => (sale.id === id ? { ...sale, ...offlineSale } : sale)),
-          error: null,
-        }));
-        return;
-      }
-
       set({ error: error.response?.data?.error || error.message });
       throw error;
     } finally {
@@ -109,24 +93,15 @@ export const useSaleStore = create<SaleState>((set, get) => ({
   deleteSale: async (businessId, id) => {
     set({ loading: true, error: null });
     try {
-      await api.delete(`/businesses/${businessId}/sales/${id}`);
+      await salesRepository.remove(businessId, id);
       await offlineSyncService.cacheSales(
         businessId,
         get().sales.filter((sale: Sale) => sale.id !== id)
       );
       set((state) => ({
-        sales: state.sales.filter((s) => s.id !== id),
+        sales: state.sales.filter((sale) => sale.id !== id),
       }));
     } catch (error: any) {
-      if (error?.isOfflineRequestError || !error?.response) {
-        await offlineSyncService.deleteOfflineSale(businessId, id);
-        set((state) => ({
-          sales: state.sales.filter((sale) => sale.id !== id),
-          error: null,
-        }));
-        return;
-      }
-
       set({ error: error.response?.data?.error || error.message });
       throw error;
     } finally {

@@ -98,13 +98,23 @@ export const BUSINESS_MODULE_META: Record<
   },
 };
 
+const BUSINESS_MODULE_KEY_ALIASES: Record<string, BusinessModuleKey> = {
+  analytics: 'reports',
+};
+
+export const normalizeBusinessModuleKey = (moduleKey?: string | null): BusinessModuleKey | null => {
+  const normalized = String(moduleKey || '').trim();
+  if (!normalized) return null;
+  return BUSINESS_MODULE_KEY_ALIASES[normalized] || (normalized as BusinessModuleKey);
+};
+
 export const isBusinessModuleEnabled = (
   modules: BusinessModuleState[] | undefined | null,
   moduleKey: BusinessModuleKey
 ): boolean => {
   const fallback = BUSINESS_MODULE_META[moduleKey].defaultEnabled;
   if (!modules || modules.length === 0) return fallback;
-  const moduleState = modules.find((item) => item.module_key === moduleKey);
+  const moduleState = modules.find((item) => normalizeBusinessModuleKey(item.module_key) === moduleKey);
   return moduleState ? !!moduleState.enabled : fallback;
 };
 
@@ -1238,4 +1248,73 @@ export interface Reminder {
   created_at: string;
   created_by_name?: string;
   created_by_role?: string;
+}
+
+// ── Services / Agenda domain ─────────────────────────────────────────
+
+export type BusinessType = 'retail' | 'services' | 'hybrid';
+export type EmployeeCompensationType = 'salary' | 'percentage';
+
+export interface Employee {
+  id: number;
+  business_id: number;
+  name: string;
+  phone?: string | null;
+  role?: string | null;
+  active: boolean;
+  color?: string | null;
+  compensation_type?: EmployeeCompensationType | null;
+  salary_amount?: number | null;
+  commission_percent?: number | null;
+  compensation_notes?: string | null;
+  created_at: string;
+  [key: string]: any;
+}
+
+export interface ServiceItem {
+  id: number;
+  business_id: number;
+  name: string;
+  duration_minutes: number;
+  price: number;
+  category?: string | null;
+  active: boolean;
+  requires_employee: boolean;
+  created_at: string;
+  [key: string]: any;
+}
+
+export type AppointmentStatus = 'scheduled' | 'completed' | 'cancelled' | 'no_show';
+
+export interface Appointment {
+  id: number;
+  business_id: number;
+  customer_id?: number | null;
+  customer_name?: string | null;
+  service_id: number;
+  service_name_snapshot: string;
+  employee_id?: number | null;
+  employee_name_snapshot?: string | null;
+  starts_at: string;
+  ends_at: string;
+  status: AppointmentStatus;
+  price_snapshot: number;
+  notes?: string | null;
+  created_at: string;
+  completed_at?: string | null;
+  linked_sale_id?: number | null;
+  [key: string]: any;
+}
+
+export type AppointmentPaymentStatus = 'paid' | 'partial' | 'pending';
+
+export interface AppointmentPayment {
+  id: number;
+  appointment_id: number;
+  payment_method: string;
+  amount_paid: number;
+  payment_status: AppointmentPaymentStatus;
+  balance_due: number;
+  created_at: string;
+  [key: string]: any;
 }

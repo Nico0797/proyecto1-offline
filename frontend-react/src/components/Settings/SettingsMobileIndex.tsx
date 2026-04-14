@@ -31,13 +31,11 @@ const SectionCard = ({
 }) => {
   const content = (
     <>
-      <div className="flex items-start justify-between gap-3">
-        <div className="flex items-start gap-3">
-          <IconContainer icon={entry.icon} tone={entry.tone} />
-          <div className="min-w-0">
+      <div className="grid grid-cols-[auto_minmax(0,1fr)_auto] items-start gap-4">
+        <IconContainer icon={entry.icon} tone={entry.tone} size="md" className="shrink-0" />
+        <div className="min-w-0">
             <div className="text-sm font-semibold app-text">{entry.title}</div>
             <p className="mt-1 text-sm leading-6 app-text-muted">{entry.description}</p>
-          </div>
         </div>
         <ChevronRight className="mt-1 h-4 w-4 shrink-0 app-text-muted" />
       </div>
@@ -80,13 +78,13 @@ export const SettingsMobileIndex = ({
   return (
     <div className="space-y-4 pb-4 lg:hidden">
       <ElevatedCard tone="settings" className="p-5">
-        <div className="flex items-start gap-3">
-          <IconContainer icon={primarySections[0]?.icon || sections[0].icon} tone="settings" size="lg" />
-          <div>
+        <div className="grid grid-cols-[auto_minmax(0,1fr)] items-start gap-4">
+          <IconContainer icon={primarySections[0]?.icon || sections[0].icon} tone="settings" size="lg" className="shrink-0" />
+          <div className="min-w-0">
             <div className="text-[11px] font-semibold uppercase tracking-[0.24em] app-text-muted">Configuracion</div>
-            <h1 className="mt-2 text-xl font-semibold tracking-tight app-text">Todo el ajuste del negocio, sin tabs rotas</h1>
+            <h1 className="mt-2 text-xl font-semibold tracking-tight app-text">Ajustes del negocio en vistas simples</h1>
             <p className="mt-2 text-sm leading-6 app-text-muted">
-              En movil cada bloque abre su propia vista para que no se pierda ninguna seccion importante.
+              En movil cada bloque abre su propia vista para que todo se sienta claro y ordenado.
             </p>
           </div>
         </div>

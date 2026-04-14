@@ -4,6 +4,9 @@ import { resolveApiBaseUrl } from '../services/apiBase';
 import { useBusinessStore } from './businessStore';
 import { useAccountAccessStore } from './accountAccessStore';
 import { resetDemoPreviewSimulation } from '../services/demoPreviewSimulation';
+import { getOfflineSessionSeed, hasOfflineSessionSeed, restoreOfflineSession, restoreOfflineSessionSafely } from '../services/offlineSession';
+import { pushBootTrace } from '../debug/bootTrace';
+import { getRuntimeModeSnapshot, isOfflineProductMode } from '../runtime/runtimeMode';
 
 const USER_STORAGE_KEY = 'user';
 const TOKEN_STORAGE_KEY = 'token';
@@ -12,8 +15,10 @@ const ACCESSIBLE_CONTEXTS_STORAGE_KEY = 'accessibleContexts';
 const REFRESH_TOKEN_STORAGE_KEY = 'refresh_token';
 const ACCOUNT_ACCESS_STORAGE_KEY = 'account_access_snapshot';
 
+let inFlightFetchUserPromise: Promise<void> | null = null;
+
 const hasPersistedSession = () => Boolean(
-  localStorage.getItem(TOKEN_STORAGE_KEY) || localStorage.getItem(REFRESH_TOKEN_STORAGE_KEY)
+  localStorage.getItem(TOKEN_STORAGE_KEY) || localStorage.getItem(REFRESH_TOKEN_STORAGE_KEY) || hasOfflineSessionSeed()
 );
 
 const readJsonStorage = <T>(key: string, fallback: T): T => {
@@ -85,7 +90,7 @@ export const syncAuthToken = (token: string | null) => {
   useAuthStore.setState((state) => ({
     ...state,
     token,
-    isAuthenticated: Boolean(token || localStorage.getItem(REFRESH_TOKEN_STORAGE_KEY)),
+    isAuthenticated: Boolean(token || localStorage.getItem(REFRESH_TOKEN_STORAGE_KEY) || hasOfflineSessionSeed()),
     isHydrating: false,
   }));
 };
@@ -134,10 +139,10 @@ const requestTokenRefresh = async (): Promise<string | null> => {
 };
 
 export const useAuthStore = create<AuthState>((set) => ({
-  user: readJsonStorage<User | null>(USER_STORAGE_KEY, null),
+  user: readJsonStorage<User | null>(USER_STORAGE_KEY, getOfflineSessionSeed().user),
   token: localStorage.getItem(TOKEN_STORAGE_KEY),
-  activeContext: readJsonStorage<ActiveContext | null>(ACTIVE_CONTEXT_STORAGE_KEY, null),
-  accessibleContexts: readJsonStorage<AccessibleContext[]>(ACCESSIBLE_CONTEXTS_STORAGE_KEY, []),
+  activeContext: readJsonStorage<ActiveContext | null>(ACTIVE_CONTEXT_STORAGE_KEY, getOfflineSessionSeed().activeContext),
+  accessibleContexts: readJsonStorage<AccessibleContext[]>(ACCESSIBLE_CONTEXTS_STORAGE_KEY, getOfflineSessionSeed().accessibleContexts),
   isAuthenticated: hasPersistedSession(),
   isHydrating: hasPersistedSession(),
   login: (user: User, token: string, activeContext?: ActiveContext | null, accessibleContexts?: AccessibleContext[]) => {
@@ -183,77 +188,217 @@ export const useAuthStore = create<AuthState>((set) => ({
     resetAuthSessionState();
   },
   fetchUser: async () => {
-    set((state) => ({
-      ...state,
-      isHydrating: true,
-      isAuthenticated: hasPersistedSession(),
-    }));
+    if (inFlightFetchUserPromise) {
+      return inFlightFetchUserPromise;
+    }
 
-    try {
-      let token = localStorage.getItem(TOKEN_STORAGE_KEY);
-      const apiBaseUrl = resolveApiBaseUrl();
+    const runFetchUser = async () => {
+      set((state) => ({
+        ...state,
+        isHydrating: true,
+        isAuthenticated: hasPersistedSession(),
+      }));
 
-      if (!token && localStorage.getItem(REFRESH_TOKEN_STORAGE_KEY)) {
-        token = await requestTokenRefresh();
-      }
-
-      if (!token) {
-        resetAuthSessionState();
-        return;
-      }
-
-      let res = await fetch(`${apiBaseUrl}/auth/me`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
-        credentials: apiBaseUrl.startsWith('/') ? 'include' : 'same-origin',
+      pushBootTrace('authStore.fetchUser.start', {
+        hasPersistedSession: hasPersistedSession(),
+        hasOfflineSeed: hasOfflineSessionSeed(),
+        hasToken: Boolean(localStorage.getItem(TOKEN_STORAGE_KEY)),
+        hasRefreshToken: Boolean(localStorage.getItem(REFRESH_TOKEN_STORAGE_KEY)),
       });
 
-      if (res.status === 401 && localStorage.getItem(REFRESH_TOKEN_STORAGE_KEY)) {
-        token = await requestTokenRefresh();
+      console.info('[startup][authStore] fetchUser:start', {
+        runtime: getRuntimeModeSnapshot(),
+        hasPersistedSession: hasPersistedSession(),
+        hasOfflineSeed: hasOfflineSessionSeed(),
+        hasToken: Boolean(localStorage.getItem(TOKEN_STORAGE_KEY)),
+        hasRefreshToken: Boolean(localStorage.getItem(REFRESH_TOKEN_STORAGE_KEY)),
+      });
+
+      try {
+        if (isOfflineProductMode()) {
+          const offlineSession = await restoreOfflineSessionSafely(undefined, 2500);
+
+          if (offlineSession) {
+            persistSessionSnapshot({
+              user: offlineSession.user,
+              token: null,
+              activeContext: offlineSession.activeContext,
+              accessibleContexts: offlineSession.accessibleContexts,
+            });
+            set({
+              user: offlineSession.user,
+              token: null,
+              activeContext: offlineSession.activeContext,
+              accessibleContexts: offlineSession.accessibleContexts,
+              isAuthenticated: Boolean(offlineSession.activeBusiness),
+              isHydrating: false,
+            });
+            pushBootTrace('authStore.fetchUser.offlineResolved', {
+              activeBusinessId: offlineSession.activeBusiness?.id ?? null,
+              activeContextBusinessId: offlineSession.activeContext?.business_id ?? null,
+              accessibleContextsCount: offlineSession.accessibleContexts.length,
+            });
+            console.info('[startup][authStore] fetchUser:offline-resolved', {
+              runtime: getRuntimeModeSnapshot(),
+              hasActiveBusiness: Boolean(offlineSession.activeBusiness),
+              activeBusinessId: offlineSession.activeBusiness?.id ?? null,
+            });
+            return;
+          }
+
+          set({
+            user: null,
+            token: null,
+            activeContext: null,
+            accessibleContexts: [],
+            isAuthenticated: false,
+            isHydrating: false,
+          });
+          pushBootTrace('authStore.fetchUser.offlineEmpty', {});
+          console.info('[startup][authStore] fetchUser:offline-empty', {
+            runtime: getRuntimeModeSnapshot(),
+          });
+          return;
+        }
+
+        let token = localStorage.getItem(TOKEN_STORAGE_KEY);
+        const apiBaseUrl = resolveApiBaseUrl();
+
+        if (!token && localStorage.getItem(REFRESH_TOKEN_STORAGE_KEY)) {
+          token = await requestTokenRefresh();
+        }
+
         if (!token) {
+          if (hasOfflineSessionSeed()) {
+            const offlineSession = await restoreOfflineSession();
+            if (offlineSession) {
+              persistSessionSnapshot({
+                user: offlineSession.user,
+                token: null,
+                activeContext: offlineSession.activeContext,
+                accessibleContexts: offlineSession.accessibleContexts,
+              });
+              set({
+                user: offlineSession.user,
+                token: null,
+                activeContext: offlineSession.activeContext,
+                accessibleContexts: offlineSession.accessibleContexts,
+                isAuthenticated: true,
+                isHydrating: false,
+              });
+              pushBootTrace('authStore.fetchUser.seedResolved', {
+                activeBusinessId: offlineSession.activeBusiness?.id ?? null,
+                activeContextBusinessId: offlineSession.activeContext?.business_id ?? null,
+              });
+              return;
+            }
+          }
           resetAuthSessionState();
           return;
         }
 
-        res = await fetch(`${apiBaseUrl}/auth/me`, {
+        let res = await fetch(`${apiBaseUrl}/auth/me`, {
           headers: {
             Authorization: `Bearer ${token}`,
             'Content-Type': 'application/json',
           },
           credentials: apiBaseUrl.startsWith('/') ? 'include' : 'same-origin',
         });
-      }
 
-      if (res.ok) {
-        const data = await res.json();
-        const userData = data.user || data;
-        useAccountAccessStore.getState().setAccess(data.account_access || null);
+        if (res.status === 401 && localStorage.getItem(REFRESH_TOKEN_STORAGE_KEY)) {
+          token = await requestTokenRefresh();
+          if (!token) {
+            resetAuthSessionState();
+            return;
+          }
 
-        persistSessionSnapshot({
-          user: userData,
-          token,
+          res = await fetch(`${apiBaseUrl}/auth/me`, {
+            headers: {
+              Authorization: `Bearer ${token}`,
+              'Content-Type': 'application/json',
+            },
+            credentials: apiBaseUrl.startsWith('/') ? 'include' : 'same-origin',
+          });
+        }
+
+        if (res.ok) {
+          const data = await res.json();
+          const userData = data.user || data;
+          useAccountAccessStore.getState().setAccess(data.account_access || null);
+
+          persistSessionSnapshot({
+            user: userData,
+            token,
+          });
+          set({ user: userData, token, isAuthenticated: Boolean(token), isHydrating: false });
+          pushBootTrace('authStore.fetchUser.remoteResolved', {
+            userId: userData?.id ?? null,
+            hasToken: Boolean(token),
+          });
+          console.info('[startup][authStore] fetchUser:remote-resolved', {
+            runtime: getRuntimeModeSnapshot(),
+            userId: userData?.id ?? null,
+          });
+          return;
+        }
+
+        if (res.status === 401) {
+          resetAuthSessionState();
+        } else {
+          set((state) => ({
+            ...state,
+            isHydrating: false,
+          }));
+        }
+      } catch (e) {
+        console.error('[startup][authStore] fetchUser:error', {
+          runtime: getRuntimeModeSnapshot(),
+          error: e,
         });
-        set({ user: userData, token, isAuthenticated: Boolean(token), isHydrating: false });
-        return;
-      }
+        pushBootTrace('authStore.fetchUser.error', {
+          message: e instanceof Error ? e.message : String(e),
+        });
+        const refreshStatus = (e as { status?: number })?.status;
+        if (hasOfflineSessionSeed()) {
+          const offlineSession = await restoreOfflineSessionSafely(undefined, 2500);
+          if (offlineSession) {
+            persistSessionSnapshot({
+              user: offlineSession.user,
+              token: null,
+              activeContext: offlineSession.activeContext,
+              accessibleContexts: offlineSession.accessibleContexts,
+            });
+            set({
+              user: offlineSession.user,
+              token: null,
+              activeContext: offlineSession.activeContext,
+              accessibleContexts: offlineSession.accessibleContexts,
+              isAuthenticated: true,
+              isHydrating: false,
+            });
+            pushBootTrace('authStore.fetchUser.errorRecoveredOffline', {
+              activeBusinessId: offlineSession.activeBusiness?.id ?? null,
+              activeContextBusinessId: offlineSession.activeContext?.business_id ?? null,
+            });
+            return;
+          }
+        }
+        if (refreshStatus === 401 || !localStorage.getItem(REFRESH_TOKEN_STORAGE_KEY)) {
+          resetAuthSessionState();
+          return;
+        }
 
-      if (res.status === 401) {
-        resetAuthSessionState();
+        set((state) => ({
+          ...state,
+          isHydrating: false,
+        }));
       }
-    } catch (e) {
-      console.error('Failed to refresh user data', e);
-      const refreshStatus = (e as { status?: number })?.status;
-      if (refreshStatus === 401 || !localStorage.getItem(REFRESH_TOKEN_STORAGE_KEY)) {
-        resetAuthSessionState();
-        return;
-      }
+    };
 
-      set((state) => ({
-        ...state,
-        isHydrating: false,
-      }));
-    }
+    inFlightFetchUserPromise = runFetchUser().finally(() => {
+      inFlightFetchUserPromise = null;
+    });
+
+    return inFlightFetchUserPromise;
   },
 }));

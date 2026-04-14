@@ -21,15 +21,22 @@ if (Test-Path $jdkDir) {
     exit 1
 }
 
-# Run the build
+# Build web assets first
+Write-Host "Building frontend-react..." -ForegroundColor Cyan
+Set-Location "frontend-react"
+npm.cmd run build
+
+# Copy web assets into Android
+Write-Host "Copying Capacitor assets to Android..." -ForegroundColor Cyan
+Set-Location ".."
+npx.cmd cap copy android
+
+# Run Android build
 Write-Host "Starting Android Build..." -ForegroundColor Cyan
 Set-Location "android"
 
-# Clean first to ensure fresh environment
-# ./gradlew clean
-
 try {
-    ./gradlew assembleDebug
+    ./gradlew.bat clean assembleDebug
     Write-Host "Build Successful! APK is located at: android\app\build\outputs\apk\debug\app-debug.apk" -ForegroundColor Green
 } catch {
     Write-Error "Build failed. Please check the logs above."

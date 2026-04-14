@@ -7,8 +7,8 @@ android {
         applicationId "com.encaja.app"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 1
-        versionName "1.0"
+        versionCode 3
+        versionName "1.0.2"
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         // Optimización: Solo incluir recursos para Inglés y Español
         // Esto elimina strings de librerías en otros idiomas (fr, de, ru, etc.)

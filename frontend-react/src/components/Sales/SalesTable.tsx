@@ -1,7 +1,7 @@
 import React from 'react';
 import { Sale } from '../../types';
 import { formatCOP, getStatusColor, getStatusLabel } from './helpers';
-import { Eye, Trash2, DollarSign } from 'lucide-react';
+import { Eye, Trash2, DollarSign, Pencil, CalendarDays } from 'lucide-react';
 import { DataTableContainer } from '../Layout/PageLayout';
 import { TeachingEmptyState } from '../ui/TeachingEmptyState';
 
@@ -17,11 +17,12 @@ interface SalesTableProps {
   sales: Sale[];
   loading: boolean;
   onView: (sale: Sale) => void;
+  onEdit: (sale: Sale) => void;
   onDelete: (id: number) => void;
   onCreate?: () => void;
 }
 
-export const SalesTable: React.FC<SalesTableProps> = ({ sales, loading, onView, onDelete, onCreate }) => {
+export const SalesTable: React.FC<SalesTableProps> = ({ sales, loading, onView, onEdit, onDelete, onCreate }) => {
   if (loading) {
     return (
       <div className="p-8 text-center text-gray-500 dark:text-gray-400">Cargando ventas...</div>
@@ -55,6 +56,11 @@ export const SalesTable: React.FC<SalesTableProps> = ({ sales, loading, onView, 
               <div>
                 <span className="text-xs font-medium text-gray-400 dark:text-gray-500 block mb-1">{formatDate(sale.sale_date)}</span>
                 <h3 className="font-semibold text-gray-900 dark:text-white text-base">{sale.customer_name || 'Cliente Casual'}</h3>
+                {sale.sale_origin === 'appointment' && (
+                  <span className="mt-1 inline-flex items-center gap-1 rounded-full border border-indigo-200 bg-indigo-50 px-2 py-0.5 text-[10px] font-medium text-indigo-700 dark:border-indigo-500/30 dark:bg-indigo-500/10 dark:text-indigo-300">
+                    <CalendarDays className="h-3 w-3" /> Cita
+                  </span>
+                )}
               </div>
               <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold ${getStatusColor(sale.status || 'completed', sale.paid)}`}>
                   {getStatusLabel(sale.status || 'completed', sale.paid)}
@@ -76,6 +82,25 @@ export const SalesTable: React.FC<SalesTableProps> = ({ sales, loading, onView, 
                         <span className="text-xs text-green-600 font-medium">Pagado</span>
                     </div>
                 )}
+            </div>
+
+            <div className="mt-3 flex items-center justify-end gap-2 border-t border-gray-100 pt-3 dark:border-gray-700">
+              <button
+                type="button"
+                onClick={(e) => { e.stopPropagation(); onEdit(sale); }}
+                className="inline-flex min-h-9 items-center gap-1.5 rounded-full border border-gray-200 px-3 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-50 dark:border-gray-700 dark:text-gray-200 dark:hover:bg-gray-800"
+              >
+                <Pencil className="h-4 w-4" />
+                Editar
+              </button>
+              <button
+                type="button"
+                onClick={(e) => { e.stopPropagation(); onDelete(sale.id); }}
+                className="inline-flex min-h-9 items-center gap-1.5 rounded-full border border-red-200 px-3 text-sm font-medium text-red-600 transition-colors hover:bg-red-50 dark:border-red-500/30 dark:text-red-300 dark:hover:bg-red-900/20"
+              >
+                <Trash2 className="h-4 w-4" />
+                Eliminar
+              </button>
             </div>
           </div>
         ))}
@@ -106,6 +131,14 @@ export const SalesTable: React.FC<SalesTableProps> = ({ sales, loading, onView, 
                               <span>{formatDate(sale.sale_date)}</span>
                               <span className="text-gray-300 dark:text-gray-600">•</span>
                               <span>Venta #{sale.id}</span>
+                              {sale.sale_origin === 'appointment' && (
+                                <>
+                                  <span className="text-gray-300 dark:text-gray-600">•</span>
+                                  <span className="inline-flex items-center gap-1 text-indigo-600 dark:text-indigo-400">
+                                    <CalendarDays className="h-3 w-3" /> Desde cita
+                                  </span>
+                                </>
+                              )}
                               <span className="text-gray-300 dark:text-gray-600">•</span>
                               <span>
                                 {sale.created_by_name
@@ -146,6 +179,14 @@ export const SalesTable: React.FC<SalesTableProps> = ({ sales, loading, onView, 
                         >
                             <Eye className="w-3.5 h-3.5" />
                             Ver
+                        </button>
+                        <button 
+                            onClick={(e) => { e.stopPropagation(); onEdit(sale); }}
+                            className="app-inline-action inline-flex items-center gap-1 rounded-lg px-2.5 py-1.5 text-xs font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 focus-visible:ring-offset-white dark:focus-visible:ring-offset-gray-800"
+                            title="Editar"
+                        >
+                            <Pencil className="w-3.5 h-3.5" />
+                            Editar
                         </button>
                         <button 
                             onClick={(e) => { e.stopPropagation(); onDelete(sale.id); }}

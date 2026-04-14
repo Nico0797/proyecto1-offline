@@ -43,6 +43,7 @@ export const BalanceTab: React.FC<BalanceTabProps> = ({ onOpenAnalytics }) => {
   const [expenseCategories, setExpenseCategories] = React.useState<BalanceExpenseCategory[]>([]);
   const [cashOutBreakdown, setCashOutBreakdown] = React.useState<BalanceBreakdownItem[]>([]);
   const [loading, setLoading] = React.useState(false);
+  const [fatalError, setFatalError] = React.useState<string | null>(null);
   const [showAdvanced, setShowAdvanced] = React.useState(false);
   const [showMovements, setShowMovements] = React.useState(false);
 
@@ -86,12 +87,18 @@ export const BalanceTab: React.FC<BalanceTabProps> = ({ onOpenAnalytics }) => {
 
     try {
       const dashboard = await balanceService.getDashboard(activeBusiness.id, startStr, endStr);
-      setSummary(dashboard.summary);
-      setMovements(dashboard.movements);
-      setExpenseCategories(dashboard.expenseCategories);
-      setCashOutBreakdown(dashboard.cashOutBreakdown);
+      setFatalError(null);
+      setSummary(dashboard?.summary || null);
+      setMovements(Array.isArray(dashboard?.movements) ? dashboard.movements : []);
+      setExpenseCategories(Array.isArray(dashboard?.expenseCategories) ? dashboard.expenseCategories : []);
+      setCashOutBreakdown(Array.isArray(dashboard?.cashOutBreakdown) ? dashboard.cashOutBreakdown : []);
     } catch (err) {
       console.error('Error loading balance data', err);
+      setFatalError(err instanceof Error ? err.message : 'No fue posible cargar caja.');
+      setSummary(null);
+      setMovements([]);
+      setExpenseCategories([]);
+      setCashOutBreakdown([]);
     } finally {
       setLoading(false);
     }
@@ -158,6 +165,9 @@ export const BalanceTab: React.FC<BalanceTabProps> = ({ onOpenAnalytics }) => {
     return insights.slice(0, 3);
   };
 
+  const safeExpenseCategories = Array.isArray(expenseCategories) ? expenseCategories : [];
+  const safeCashOutBreakdown = Array.isArray(cashOutBreakdown) ? cashOutBreakdown : [];
+  const safeMovements = Array.isArray(movements) ? movements : [];
   const insights = getInsights();
   const operationalPaymentsTotal = (summary?.supplierPaymentsTotal || 0) + (summary?.operationalObligationPaymentsTotal || 0);
   const flowHighlights = [
@@ -210,7 +220,7 @@ export const BalanceTab: React.FC<BalanceTabProps> = ({ onOpenAnalytics }) => {
     ],
   };
 
-  const visibleCashOutBreakdown = cashOutBreakdown.filter((item) => Number(item.total || 0) > 0.0001);
+  const visibleCashOutBreakdown = safeCashOutBreakdown.filter((item) => Number(item.total || 0) > 0.0001);
   const doughnutData = {
     labels: visibleCashOutBreakdown.map((item) => item.label),
     datasets: [
@@ -228,7 +238,7 @@ export const BalanceTab: React.FC<BalanceTabProps> = ({ onOpenAnalytics }) => {
     (summary?.overdueReceivables || 0) +
     (summary?.dueTodayReceivables || 0) +
     (summary?.dueSoonReceivables || 0);
-  const movementPreview = movements.slice(0, 5);
+  const movementPreview = safeMovements.slice(0, 5);
   const mobileBalanceControls = useMobileFilterDraft({
     value: { period, startDate, endDate, showAdvanced, showMovements },
     onApply: (nextValue) => {
@@ -247,6 +257,50 @@ export const BalanceTab: React.FC<BalanceTabProps> = ({ onOpenAnalytics }) => {
     }),
   });
 
+  const balanceActionsContent = (
+    <div className="flex flex-wrap gap-2">
+      <Button variant="secondary" size="sm" onClick={() => setShowMovements((current) => !current)} className="flex-1 sm:flex-none">
+        {showMovements ? 'Ocultar movimientos' : 'Ver movimientos'}
+      </Button>
+      <Button variant="ghost" size="sm" onClick={() => setShowAdvanced((current) => !current)} className="flex-1 sm:flex-none">
+        {showAdvanced ? 'Ocultar detalle' : 'Ver detalle'}
+      </Button>
+      {onOpenAnalytics && (
+        <Button size="sm" onClick={onOpenAnalytics} className="flex-1 sm:flex-none">
+          Ir a análisis
+          <ArrowRight className="w-4 h-4" />
+        </Button>
+      )}
+    </div>
+  );
+
+  const mobileDraftActionsContent = (
+    <div className="flex flex-wrap gap-2">
+      <Button
+        variant="secondary"
+        size="sm"
+        onClick={() => mobileBalanceControls.setDraft((current) => ({ ...current, showMovements: !current.showMovements }))}
+        className="flex-1"
+      >
+        {mobileBalanceControls.draft.showMovements ? 'Ocultar movimientos' : 'Ver movimientos'}
+      </Button>
+      <Button
+        variant="ghost"
+        size="sm"
+        onClick={() => mobileBalanceControls.setDraft((current) => ({ ...current, showAdvanced: !current.showAdvanced }))}
+        className="flex-1"
+      >
+        {mobileBalanceControls.draft.showAdvanced ? 'Ocultar detalle' : 'Ver detalle'}
+      </Button>
+      {onOpenAnalytics && (
+        <Button size="sm" onClick={onOpenAnalytics} className="w-full sm:w-auto">
+          Ir a análisis
+          <ArrowRight className="w-4 h-4" />
+        </Button>
+      )}
+    </div>
+  );
+
   const balanceControlsContent = (
     <div className="app-toolbar-stack">
       <PeriodSelector
@@ -260,20 +314,7 @@ export const BalanceTab: React.FC<BalanceTabProps> = ({ onOpenAnalytics }) => {
         }}
       />
 
-      <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 xl:grid-cols-3">
-        <Button variant="secondary" onClick={() => setShowMovements((current) => !current)} className="w-full">
-          {showMovements ? 'Ocultar movimientos' : 'Ver movimientos'}
-        </Button>
-        <Button variant="ghost" onClick={() => setShowAdvanced((current) => !current)} className="w-full">
-          {showAdvanced ? 'Ocultar detalle' : 'Ver detalle'}
-        </Button>
-        {onOpenAnalytics && (
-          <Button onClick={onOpenAnalytics} className="w-full">
-            Ir a análisis
-            <ArrowRight className="w-4 h-4" />
-          </Button>
-        )}
-      </div>
+      {balanceActionsContent}
     </div>
   );
 
@@ -325,31 +366,23 @@ export const BalanceTab: React.FC<BalanceTabProps> = ({ onOpenAnalytics }) => {
 
   return (
     <div className="app-content-stack animate-in fade-in slide-in-from-bottom-2 duration-300 pb-10">
+      {fatalError ? (
+        <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800 dark:border-red-900/30 dark:bg-red-900/10 dark:text-red-200">
+          Caja sigue disponible, pero ocurrió un error: {fatalError}
+        </div>
+      ) : null}
       <div className="dashboard-balance-desktop-stack hidden lg:flex lg:flex-col">
-        {balanceControlsContent}
-
         <div className="app-toolbar">
-          <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+          <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
             <div className="max-w-2xl">
               <div className="text-xs sm:text-sm font-semibold text-blue-600 dark:text-blue-400">Caja</div>
-              <h2 className="mt-1.5 text-xl sm:text-2xl font-bold text-gray-900 dark:text-white">Lo esencial del dinero del período</h2>
-              <p className="mt-1.5 text-sm text-gray-600 dark:text-gray-300">
+              <h2 className="mt-1 text-xl sm:text-2xl font-bold text-gray-900 dark:text-white">Lo esencial del dinero del período</h2>
+              <p className="mt-1 text-sm text-gray-600 dark:text-gray-300">
                 Empieza por lo simple: cuánto entró, cuánto salió, cómo quedó el neto y cuánto te deben.
               </p>
             </div>
-            <div className="grid w-full grid-cols-1 gap-2 sm:w-auto sm:min-w-[280px]">
-              <Button variant="secondary" onClick={() => setShowMovements((current) => !current)} className="w-full sm:w-auto">
-                {showMovements ? 'Ocultar movimientos' : 'Ver movimientos'}
-              </Button>
-              <Button variant="ghost" onClick={() => setShowAdvanced((current) => !current)} className="w-full sm:w-auto">
-                {showAdvanced ? 'Ocultar detalle' : 'Ver detalle'}
-              </Button>
-              {onOpenAnalytics && (
-                <Button onClick={onOpenAnalytics} className="w-full sm:w-auto">
-                  Ir a análisis
-                  <ArrowRight className="w-4 h-4" />
-                </Button>
-              )}
+            <div className="w-full lg:max-w-[26rem]">
+              {balanceControlsContent}
             </div>
           </div>
         </div>
@@ -372,20 +405,7 @@ export const BalanceTab: React.FC<BalanceTabProps> = ({ onOpenAnalytics }) => {
                   }}
                 />
 
-                <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 xl:grid-cols-3">
-                  <Button variant="secondary" onClick={() => mobileBalanceControls.setDraft((current) => ({ ...current, showMovements: !current.showMovements }))} className="w-full">
-                    {mobileBalanceControls.draft.showMovements ? 'Ocultar movimientos' : 'Ver movimientos'}
-                  </Button>
-                  <Button variant="ghost" onClick={() => mobileBalanceControls.setDraft((current) => ({ ...current, showAdvanced: !current.showAdvanced }))} className="w-full">
-                    {mobileBalanceControls.draft.showAdvanced ? 'Ocultar detalle' : 'Ver detalle'}
-                  </Button>
-                  {onOpenAnalytics && (
-                    <Button onClick={onOpenAnalytics} className="w-full">
-                      Ir a análisis
-                      <ArrowRight className="w-4 h-4" />
-                    </Button>
-                  )}
-                </div>
+                {mobileDraftActionsContent}
               </div>
             </MobileFilterDrawer>
             <MobileSummaryDrawer summary="Resumen de caja">
@@ -528,7 +548,7 @@ export const BalanceTab: React.FC<BalanceTabProps> = ({ onOpenAnalytics }) => {
                 ))}
               </div>
             )}
-            <MovementsTable movements={movements} loading={loading} currency={currency} />
+            <MovementsTable movements={safeMovements} loading={loading} currency={currency} />
           </div>
         </div>
       )}
@@ -676,13 +696,13 @@ export const BalanceTab: React.FC<BalanceTabProps> = ({ onOpenAnalytics }) => {
                     </div>
                   )}
                 </div>
-                {expenseCategories.length > 0 && (
+                {safeExpenseCategories.length > 0 && (
                   <div className="mt-4 space-y-2 border-t border-gray-200 pt-4 dark:border-gray-800">
                     <div className="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">
                       Categorías del gasto operativo ejecutado
                     </div>
                     <div className="space-y-2">
-                      {expenseCategories.slice(0, 5).map((item, index) => (
+                      {safeExpenseCategories.slice(0, 5).map((item, index) => (
                         <div key={`${item.key}-${index}`} className="flex items-center justify-between text-sm">
                           <span className="text-gray-600 dark:text-gray-300">{item.category}</span>
                           <span className="font-medium text-gray-900 dark:text-white">{formatCurrency(item.total)}</span>

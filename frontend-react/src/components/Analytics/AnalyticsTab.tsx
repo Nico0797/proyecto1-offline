@@ -19,9 +19,11 @@ import { useBusinessStore } from '../../store/businessStore';
 import { PeriodSelector } from '../Balance/PeriodSelector';
 import type { PeriodType } from '../Balance/PeriodSelector';
 import { ContentSection, SectionStack } from '../Layout/PageLayout';
+import { isOfflineProductMode } from '../../runtime/runtimeMode';
 
 export const AnalyticsTab = () => {
   const { activeBusiness } = useBusinessStore();
+  const offlineProductMode = isOfflineProductMode();
   const [loading, setLoading] = useState(false);
   const [period, setPeriod] = useState<PeriodType>('monthly');
   const [startDate, setStartDate] = useState(() => startOfMonth(new Date()));
@@ -78,7 +80,7 @@ export const AnalyticsTab = () => {
 
       if (summaryResult.status === 'rejected') {
         console.error('Error fetching analytics summary:', summaryResult.reason);
-        issues.push({ dataset: 'sales', message: 'No fue posible calcular el resumen analítico.' });
+        issues.push({ dataset: 'sales', message: 'No fue posible calcular el resumen analitico.' });
       }
 
       const summary =
@@ -87,7 +89,15 @@ export const AnalyticsTab = () => {
           : {
               sales: { total: 0, count: 0 },
               expenses: { total: 0, count: 0 },
-              profit: { net: 0, gross: 0 },
+              costs: { total: 0, coveredSalesTotal: 0, uncoveredSalesTotal: 0, missingSalesCount: 0 },
+              profit: {
+                net: null,
+                gross: 0,
+                operatingBalance: 0,
+                coverage: 'missing' as const,
+                displayLabel: 'Balance Operativo',
+                displayValue: 0,
+              },
               degraded: true,
               issues: [],
             };
@@ -101,7 +111,7 @@ export const AnalyticsTab = () => {
       } else {
         console.error('Error fetching analytics KPIs:', kpisResult.reason);
         setKpis([]);
-        issues.push({ dataset: 'sales', message: 'No fue posible calcular los KPIs comparativos.' });
+        issues.push({ dataset: 'sales', message: 'No fue posible calcular los indicadores comparativos.' });
       }
 
       if (trendResult.status === 'fulfilled') {
@@ -126,14 +136,16 @@ export const AnalyticsTab = () => {
       } else {
         console.error('Error fetching expenses by category:', expensesResult.reason);
         setExpensesByCategory([]);
-        issues.push({ dataset: 'expenses', message: 'No fue posible cargar la distribución de gastos.' });
+        issues.push({ dataset: 'expenses', message: 'No fue posible cargar la distribucion de gastos.' });
       }
 
       setDegradationIssues(
-        issues.filter(
-          (issue, index, array) =>
-            index === array.findIndex((item) => item.dataset === issue.dataset && item.message === issue.message),
-        ),
+        offlineProductMode
+          ? []
+          : issues.filter(
+              (issue, index, array) =>
+                index === array.findIndex((item) => item.dataset === issue.dataset && item.message === issue.message),
+            ),
       );
 
       const generatedInsights = analyticsService.generateInsights(
@@ -148,12 +160,17 @@ export const AnalyticsTab = () => {
         1,
         Math.ceil((effectiveEndDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24)) + 1,
       );
-      const forecastData = analyticsService.calculateForecast(summary.sales?.total || 0, daysElapsed, rangeDays);
+      const forecastData = analyticsService.calculateForecast(
+        summary.sales?.total || 0,
+        daysElapsed,
+        rangeDays,
+        summary.profit.coverage,
+      );
       setForecast(forecastData);
       setHealthScore(analyticsService.buildHealthScore(summary));
     } catch (error) {
       console.error('Error fetching analytics:', error);
-      setFatalError('No fue posible cargar la analítica en este momento. Intenta de nuevo.');
+      setFatalError('No fue posible preparar el analisis en este momento. Intenta de nuevo.');
       setKpis([]);
       setSalesTrend([]);
       setExpensesByCategory([]);
@@ -164,14 +181,14 @@ export const AnalyticsTab = () => {
     } finally {
       setLoading(false);
     }
-  }, [activeBusiness, endDate, startDate]);
+  }, [activeBusiness, endDate, offlineProductMode, startDate]);
 
   useEffect(() => {
     fetchData();
   }, [fetchData]);
 
   if (!activeBusiness) {
-    return <div className="p-8 text-center text-gray-500">Selecciona un negocio para ver analíticas.</div>;
+    return <div className="p-8 text-center text-gray-500">Selecciona un negocio para ver analiticas.</div>;
   }
 
   return (
@@ -201,7 +218,7 @@ export const AnalyticsTab = () => {
 
       {!fatalError && degradationIssues.length > 0 ? (
         <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800 dark:border-amber-900/30 dark:bg-amber-900/10 dark:text-amber-200">
-          <p className="font-medium">Vista degradada: algunas fuentes no respondieron y se muestran datos parciales.</p>
+          <p className="font-medium">Algunos calculos no estuvieron disponibles y se muestran los datos listos para este rango.</p>
           <ul className="mt-2 space-y-1">
             {degradationIssues.map((issue, index) => (
               <li key={`${issue.dataset}-${index}`}>

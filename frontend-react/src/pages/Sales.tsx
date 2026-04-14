@@ -3,6 +3,7 @@ import { Plus, ShoppingCart, Wallet } from 'lucide-react';
 import {
   ContentSection,
   PageHeader,
+  PageHeaderActionButton,
   PageLayout,
   PageNotice,
   PageStack,
@@ -16,7 +17,7 @@ import { SaleDetailsModal } from '../components/Sales/SaleDetailsModal';
 import { SalesKpis } from '../components/Sales/SalesKpis';
 import { SalesTable } from '../components/Sales/SalesTable';
 import { SalesToolbar } from '../components/Sales/SalesToolbar';
-import { Button } from '../components/ui/Button';
+import { useConfirm } from '../components/ui/ConfirmDialog';
 import { SwipePager } from '../components/ui/SwipePager';
 import {
   MobileFilterDrawer,
@@ -26,6 +27,7 @@ import {
   MobileUtilityBar,
   useMobileFilterDraft,
 } from '../components/mobile/MobileContentFirst';
+import { toast } from 'react-hot-toast';
 import { useBusinessStore } from '../store/businessStore';
 import { useSaleStore } from '../store/saleStore';
 import { Sale } from '../types';
@@ -34,6 +36,7 @@ import { DateRange, getPeriodPreference } from '../utils/dateRange.utils';
 export const Sales = () => {
   const { activeBusiness } = useBusinessStore();
   const { sales, loading, fetchSales, deleteSale } = useSaleStore();
+  const confirm = useConfirm();
   const [activeTab, setActiveTab] = useState<string>('list');
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
@@ -41,6 +44,7 @@ export const Sales = () => {
 
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [selectedSale, setSelectedSale] = useState<Sale | null>(null);
+  const [editingSale, setEditingSale] = useState<Sale | null>(null);
 
   useEffect(() => {
     if (activeBusiness) {
@@ -50,13 +54,20 @@ export const Sales = () => {
 
   const handleDelete = async (id: number) => {
     if (!activeBusiness) return;
-    if (window.confirm('Estas seguro de que quieres eliminar esta venta? Esta accion no se puede deshacer.')) {
-      try {
-        await deleteSale(activeBusiness.id, id);
-      } catch (error) {
-        console.error('Error deleting sale:', error);
-        alert('Error al eliminar la venta');
-      }
+    const accepted = await confirm({
+      title: 'Eliminar venta',
+      message: 'Esta accion no se puede deshacer. La venta se eliminara del historial.',
+      confirmLabel: 'Eliminar',
+      cancelLabel: 'Cancelar',
+      variant: 'destructive',
+    });
+    if (!accepted) return;
+
+    try {
+      await deleteSale(activeBusiness.id, id);
+    } catch (error) {
+      console.error('Error deleting sale:', error);
+      toast.error('No fue posible eliminar la venta');
     }
   };
 
@@ -86,6 +97,13 @@ export const Sales = () => {
   });
 
   const handleNewSale = () => {
+    setEditingSale(null);
+    setIsCreateModalOpen(true);
+  };
+
+  const handleEditSale = (sale: Sale) => {
+    setSelectedSale(null);
+    setEditingSale(sale);
     setIsCreateModalOpen(true);
   };
 
@@ -110,14 +128,21 @@ export const Sales = () => {
     <PageLayout data-tour="sales.panel">
       <PageHeader
         title="Ventas"
-        description="Registra lo que ya vendiste, revisa el estado de pago y sigue los saldos pendientes sin perder contexto."
+        description="Registra ventas y revisa cobros pendientes."
+        mobileFab={{
+          label: '+Venta',
+          icon: Plus,
+          onClick: handleNewSale,
+        }}
         action={
-          <div className="w-full sm:w-auto" data-tour="sales.primaryAction.mobile">
-            <Button onClick={handleNewSale} className="w-full sm:w-auto" data-tour="sales.primaryAction.desktop">
-              <Plus className="w-4 h-4" />
-              <span className="hidden sm:inline">Registrar venta</span>
-              <span className="sm:hidden">Vender</span>
-            </Button>
+          <div data-tour="sales.primaryAction.mobile">
+            <PageHeaderActionButton
+              onClick={handleNewSale}
+              icon={Plus}
+              label="Registrar venta"
+              mobileLabel="Vender"
+              data-tour="sales.primaryAction.desktop"
+            />
           </div>
         }
       />
@@ -190,6 +215,7 @@ export const Sales = () => {
                         sales={filteredSales}
                         loading={loading}
                         onView={setSelectedSale}
+                        onEdit={handleEditSale}
                         onDelete={handleDelete}
                         onCreate={handleNewSale}
                       />
@@ -211,11 +237,20 @@ export const Sales = () => {
 
       <CreateSaleModal
         isOpen={isCreateModalOpen}
-        onClose={() => setIsCreateModalOpen(false)}
+        onClose={() => {
+          setIsCreateModalOpen(false);
+          setEditingSale(null);
+        }}
         onSuccess={() => activeBusiness && fetchSales(activeBusiness.id, { includeItems: false })}
+        editingSale={editingSale}
       />
 
-      <SaleDetailsModal isOpen={!!selectedSale} onClose={() => setSelectedSale(null)} sale={selectedSale} />
+      <SaleDetailsModal
+        isOpen={!!selectedSale}
+        onClose={() => setSelectedSale(null)}
+        sale={selectedSale}
+        onEdit={handleEditSale}
+      />
     </PageLayout>
   );
 };

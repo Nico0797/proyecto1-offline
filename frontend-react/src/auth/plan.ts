@@ -1,4 +1,5 @@
 import { User } from '../types';
+import { isOfflineProductMode } from '../runtime/runtimeMode';
 
 export type Plan = 'free' | 'basic' | 'pro' | 'business';
 
@@ -32,7 +33,9 @@ export const MODULE_MINIMUM_PLAN = {
 } as const;
 
 export const canAccessModule = (plan: string | null | undefined, moduleKey: keyof typeof MODULE_MINIMUM_PLAN): boolean => {
-  return isPlanAtLeast(plan, MODULE_MINIMUM_PLAN[moduleKey]);
+  void plan;
+  void moduleKey;
+  return true;
 };
 
 export const FEATURES = {
@@ -75,32 +78,8 @@ export const canAccessFeatureInPlan = (
   feature: FeatureKey,
   plan: string | null | undefined
 ): boolean => {
-  const effectivePlan = normalizePlan(plan);
-  const isBusiness = effectivePlan === 'business';
-  const isPro = effectivePlan === 'pro' || isBusiness;
-
-  if (isBusiness) return true;
-
-  if (BUSINESS_ONLY_FEATURES.includes(feature)) {
-    return false;
-  }
-
-  if (isPro) return true;
-
-  switch (feature) {
-    case FEATURES.MULTI_BUSINESS:
-    case FEATURES.DASHBOARD_ANALYTICS:
-    case FEATURES.DASHBOARD_REMINDERS:
-    case FEATURES.ORDERS:
-    case FEATURES.RECURRING_EXPENSES:
-    case FEATURES.REPORTS:
-    case FEATURES.ALERTS:
-    case FEATURES.DEBTS:
-    case FEATURES.WHATSAPP_TEMPLATES:
-      return false;
-    default:
-      return true;
-  }
+  void plan;
+  return feature !== FEATURES.TEAM_MANAGEMENT;
 };
 
 export const FREE_LIMITS = {
@@ -122,6 +101,9 @@ export const hasBusiness = (user: User | null): boolean => {
 };
 
 export const canAccess = (feature: FeatureKey, user: User | null, planOverride?: string): boolean => {
+  if (isOfflineProductMode()) {
+    return canAccessFeatureInPlan(feature, planOverride || user?.plan);
+  }
   if (!user) return false;
   return canAccessFeatureInPlan(feature, planOverride || user.plan);
 };

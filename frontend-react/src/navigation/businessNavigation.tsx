@@ -4,6 +4,7 @@ import { BusinessModuleKey } from '../types';
 import {
   Bell,
   Boxes,
+  CalendarDays,
   Calculator,
   ClipboardList,
   CreditCard,
@@ -23,6 +24,7 @@ import {
   LucideIcon,
   FlaskConical,
 } from 'lucide-react';
+import type { BusinessType } from '../types';
 
 export interface NavigationItemDefinition {
   path: string;
@@ -37,6 +39,7 @@ export interface NavigationItemDefinition {
   mobilePriority?: number;
   allowHide?: boolean;
   allowFavorite?: boolean;
+  businessTypeVisibility?: BusinessType[];
 }
 
 export interface NavigationSectionDefinition {
@@ -120,6 +123,17 @@ export const BUSINESS_NAVIGATION_SECTIONS: NavigationSectionDefinition[] = [
         commercialSectionKey: 'orders',
         feature: FEATURES.ORDERS,
         mobilePriority: 8,
+        businessTypeVisibility: ['retail', 'hybrid'],
+      },
+      {
+        path: '/agenda',
+        label: 'Agenda',
+        shortLabel: 'Agenda',
+        description: 'Citas, servicios y atencion a clientes.',
+        icon: CalendarDays,
+        moduleKey: 'sales',
+        mobilePriority: 3,
+        businessTypeVisibility: ['services', 'hybrid'],
       },
     ],
   },

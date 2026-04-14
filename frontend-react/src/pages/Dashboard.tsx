@@ -1,10 +1,12 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useBusinessStore } from '../store/businessStore';
-import api from '../services/api';
 import { useAuthStore } from '../store/authStore';
 import { useAlertsSnoozeStore } from '../store/alertsSnooze.store';
 import { useAlertsStore } from '../store/alertsStore';
+import { pushBootTrace } from '../debug/bootTrace';
+import { useDebugFlag } from '../debug/debugFlags';
+import { getRuntimeModeSnapshot, isOfflineProductMode } from '../runtime/runtimeMode';
 import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
 import { CreateSaleModal } from '../components/Sales/CreateSaleModal';
@@ -12,30 +14,29 @@ import { CreateExpenseModal } from '../components/Expenses/CreateExpenseModal';
 import { CreateBusinessModal } from '../components/Business/CreateBusinessModal';
 import { RemindersTab } from '../components/Dashboard/RemindersTab';
 import { BalanceTab } from '../components/Dashboard/BalanceTab';
+import { ServiceKpisPanel } from '../components/Dashboard/ServiceKpisPanel';
 import { AnalyticsTab } from '../components/Analytics/AnalyticsTab';
-import { reminderService } from '../services/reminderService';
 import { ProGate } from '../components/ui/ProGate';
 import { FEATURES } from '../auth/plan';
 import { SwipePager } from '../components/ui/SwipePager';
 import { TeachingEmptyState } from '../components/ui/TeachingEmptyState';
 import { PageHeader, PageLayout } from '../components/Layout/PageLayout';
 import {
-  MobileCenteredModalTrigger,
-  MobileHelpDisclosure,
   MobileSummaryDrawer,
   MobileUnifiedPageShell,
   MobileUtilityBar,
 } from '../components/mobile/MobileContentFirst';
-import { rawInventoryService } from '../services/rawInventoryService';
-import { profitabilityService } from '../services/profitabilityService';
 import { isBackendCapabilitySupported } from '../config/backendCapabilities';
 import { ProfitabilitySummary } from '../types';
+import { buildInfo } from '../generated/buildInfo';
+import { resolveApiBaseUrl } from '../services/apiBase';
 import { getPeriodRange } from '../utils/dateRange.utils';
 import { cn } from '../utils/cn';
 import { getBusinessBaseState, getBusinessInitialSetup } from '../config/businessPersonalization';
 import { useNavigationPreferences } from '../store/navigationPreferences.store';
-import { resolveBusinessNavigationState } from '../navigation/navigationPersonalization';
+import { resolveBusinessNavigationState, resolveDashboardHomeState } from '../navigation/navigationPersonalization';
 import { useAccess } from '../hooks/useAccess';
+import { dashboardRepository } from '../repositories/dashboardRepository';
 import {
   AlertTriangle,
   ShoppingCart,
@@ -56,11 +57,29 @@ const formatDate = (dateString: string) => {
 };
 
 export const Dashboard = () => {
+  const DASHBOARD_LOAD_WATCHDOG_MS = 4500;
   const { activeBusiness, fetchBusinesses } = useBusinessStore();
   const { hasPermission, hasModule, canAccess } = useAccess();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const [stats, setStats] = useState<any>(null);
+  const [dashboardDebug, setDashboardDebug] = useState<{
+    loaded: boolean;
+    failed: boolean;
+    error: string;
+    salesCount: number;
+    expensesCount: number;
+    recentSalesCount: number;
+    topProductsCount: number;
+  }>({
+    loaded: false,
+    failed: false,
+    error: '',
+    salesCount: 0,
+    expensesCount: 0,
+    recentSalesCount: 0,
+    topProductsCount: 0,
+  });
   const { user } = useAuthStore();
   const { alerts } = useAlertsStore();
   const snooze = useAlertsSnoozeStore();
@@ -69,65 +88,85 @@ export const Dashboard = () => {
   const [activeRemindersCount, setActiveRemindersCount] = useState(0);
   const [rawInventoryLowStockCount, setRawInventoryLowStockCount] = useState(0);
   const [profitabilitySummary, setProfitabilitySummary] = useState<ProfitabilitySummary | null>(null);
+  const currentLoadRequestIdRef = useRef(0);
+  const loadWatchdogTimeoutRef = useRef<number | null>(null);
 
   // Modals
   const [isSaleModalOpen, setIsSaleModalOpen] = useState(false);
   const [isExpenseModalOpen, setIsExpenseModalOpen] = useState(false);
   const [isCreateBusinessModalOpen, setIsCreateBusinessModalOpen] = useState(false);
+  const showDashboardDebug = useDebugFlag('dashboard');
 
   // Cash Register (Caja Hoy)
   const [openingBalance, setOpeningBalance] = useState<number>(0);
   const [isEditingBalance, setIsEditingBalance] = useState(false);
   const [tempBalance, setTempBalance] = useState('');
+  const offlineProductMode = isOfflineProductMode();
   const hasSalesModule = hasModule('sales');
   const hasAccountsReceivableModule = hasModule('accounts_receivable');
   const hasReportsModule = hasModule('reports');
   const hasRawInventoryModule = hasModule('raw_inventory');
+  const canAccessDashboardAnalytics = hasReportsModule && hasPermission('analytics.view') && canAccess(FEATURES.DASHBOARD_ANALYTICS);
+  const canIncludeDashboardAnalyticsInHome = offlineProductMode
+    ? canAccess(FEATURES.DASHBOARD_ANALYTICS)
+    : canAccessDashboardAnalytics;
+  const canViewSummary = hasPermission('reports.view');
+  const canViewExpenses = hasPermission('expenses.view');
+  const canViewSales = hasSalesModule && hasPermission('sales.view');
+  const canViewRawInventory = hasRawInventoryModule && hasPermission('raw_inventory.view') && isBackendCapabilitySupported('raw_inventory');
+  const canViewProfitability = canAccessDashboardAnalytics && hasPermission('sales.view') && isBackendCapabilitySupported('profitability');
   const businessBaseState = getBusinessBaseState(activeBusiness);
   const initialSetup = useMemo(() => getBusinessInitialSetup(activeBusiness), [activeBusiness]);
   const getScopeKey = useNavigationPreferences((state) => state.getScopeKey);
-  const scopeKey = getScopeKey(user?.id, activeBusiness?.id);
-  const storedNavigationPreferences = useNavigationPreferences((state) => state.preferencesByScope[scopeKey]);
+  const preferencesByScope = useNavigationPreferences((state) => state.preferencesByScope);
+  const getPreferences = useNavigationPreferences((state) => state.getPreferences);
+  const scopeKey = useMemo(() => getScopeKey(user?.id, activeBusiness?.id), [activeBusiness?.id, getScopeKey, user?.id]);
+  const storedNavigationPreferences = preferencesByScope[scopeKey];
+  const resolvedNavigationPreferences = useMemo(
+    () => getPreferences(scopeKey),
+    [getPreferences, preferencesByScope, scopeKey]
+  );
 
-  const { visibleItems } = useMemo(
+  const navigationState = useMemo(
     () =>
       resolveBusinessNavigationState({
         business: activeBusiness,
-        storedPreferences: storedNavigationPreferences,
+        storedPreferences: storedNavigationPreferences ?? resolvedNavigationPreferences,
         hasPermission,
         hasModule,
         canAccessFeature: canAccess,
       }),
-    [activeBusiness, canAccess, hasModule, hasPermission, storedNavigationPreferences]
+    [activeBusiness, canAccess, hasModule, hasPermission, resolvedNavigationPreferences, storedNavigationPreferences]
   );
+  const { availableItems, visibleItems } = navigationState;
 
   const canManageReminders = hasPermission('reminders.manage');
+  const dashboardHomeState = useMemo(
+    () =>
+      resolveDashboardHomeState({
+        navigationState,
+        initialDashboardTab: initialSetup.initial_dashboard_tab || 'hoy',
+        canManageReminders,
+        additionalAvailablePanels: canIncludeDashboardAnalyticsInHome ? ['analiticas'] : [],
+      }),
+    [canIncludeDashboardAnalyticsInHome, canManageReminders, initialSetup.initial_dashboard_tab, navigationState]
+  );
+  const { availableTabs, canViewBalance, canViewAnalytics, initialTab: resolvedDashboardTab, priorityPanels } = dashboardHomeState;
   const canQuickCreateSale = hasSalesModule && hasPermission('sales.create') && visibleItems.some((item) => item.path === '/sales');
   const canQuickCreateExpense = hasPermission('expenses.create') && visibleItems.some((item) => item.path === '/expenses');
   const canOpenAlertsPanel = visibleItems.some((item) => item.path === '/alerts');
   const canOpenReportsPanel = visibleItems.some((item) => item.path === '/reports');
   const canOpenPaymentsPanel = visibleItems.some((item) => item.path === '/payments');
   const canOpenRawInventoryPanel = visibleItems.some((item) => item.path === '/raw-inventory');
+  const canOpenProfitabilityReport = canOpenReportsPanel && isBackendCapabilitySupported('profitability');
   const needsBaseConfigurationReview = businessBaseState.needsReview;
-  const canViewBalance = hasReportsModule && hasPermission('analytics.view') && isBackendCapabilitySupported('treasury');
-  const canViewAnalytics = hasReportsModule && canOpenReportsPanel;
 
   useEffect(() => {
     if (!activeBusiness) return;
-
-    const preferredTab = initialSetup.initial_dashboard_tab || 'hoy';
-    const allowedTabs = new Set<string>(['hoy']);
-    if (canViewBalance) allowedTabs.add('balance');
-    if (canViewAnalytics) allowedTabs.add('analiticas');
-    if (canManageReminders) allowedTabs.add('recordatorios');
-
-    setActiveTab(allowedTabs.has(preferredTab) ? preferredTab : 'hoy');
+    setActiveTab(resolvedDashboardTab);
   }, [
     activeBusiness?.id,
-    canManageReminders,
-    canViewAnalytics,
-    canViewBalance,
-    initialSetup.initial_dashboard_tab,
+    resolvedDashboardTab,
   ]);
 
   const priorityAlerts = useMemo(() => {
@@ -220,124 +259,126 @@ export const Dashboard = () => {
   const loadDashboardData = async (businessId?: number | null) => {
     if (!activeBusiness || !businessId) return;
 
+    const requestId = currentLoadRequestIdRef.current + 1;
+    currentLoadRequestIdRef.current = requestId;
+
+    if (loadWatchdogTimeoutRef.current != null) {
+      window.clearTimeout(loadWatchdogTimeoutRef.current);
+    }
+
+    loadWatchdogTimeoutRef.current = window.setTimeout(() => {
+      if (currentLoadRequestIdRef.current !== requestId) {
+        return;
+      }
+
+      pushBootTrace('Dashboard.load.watchdogTimeout', {
+        businessId,
+        requestId,
+      });
+
+      setStats((current: any) => current ?? {
+        summary: {
+          sales: { total: 0, count: 0 },
+          expenses: { total: 0, count: 0 },
+          cash_flow: { in: 0, out: 0 },
+          accounts_receivable: 0,
+        },
+        dashboard: {
+          recent_sales: [],
+          fiados_alerts: { customers_count: 0 },
+          top_products: [],
+        },
+      });
+      setDashboardDebug({
+        loaded: false,
+        failed: true,
+        error: 'La carga del dashboard tardó demasiado. Se mostró un resumen seguro.',
+        salesCount: 0,
+        expensesCount: 0,
+        recentSalesCount: 0,
+        topProductsCount: 0,
+      });
+      setLoading(false);
+    }, DASHBOARD_LOAD_WATCHDOG_MS);
+
+    pushBootTrace('Dashboard.load.start', {
+      businessId,
+      requestId,
+      canViewSummary,
+      canManageReminders,
+      canViewRawInventory,
+      canViewProfitability,
+      canViewSales,
+      canViewExpenses,
+    });
     setLoading(true);
+    setDashboardDebug((current) => ({ ...current, loaded: false, failed: false, error: '' }));
     try {
-      const canViewSummary = hasPermission('reports.view');
-      const canViewRawInventory = hasRawInventoryModule && hasPermission('raw_inventory.view') && isBackendCapabilitySupported('raw_inventory');
-      const canViewProfitability = hasReportsModule && canOpenReportsPanel && hasPermission('sales.view') && isBackendCapabilitySupported('profitability');
       const monthRange = canViewProfitability ? getPeriodRange('month') : null;
 
-      const [dashboardData, remindersData, lowStockCount, profitSummary] = await Promise.all([
-        canViewSummary
-          ? api.get(`/businesses/${businessId}/dashboard`)
-              .then((response) => response.data || {})
-              .catch((err) => {
-                console.warn('Dashboard stats failed', err);
-                return {};
-              })
-          : Promise.resolve({}),
-        canManageReminders
-          ? reminderService.list(businessId)
-              .then((reminders) => reminders.filter((reminder) => reminder.status === 'active'))
-              .catch((e) => {
-                console.warn('Reminders failed', e);
-                return [] as any[];
-              })
-          : Promise.resolve([] as any[]),
-        canViewRawInventory
-          ? rawInventoryService.list(businessId, { low_stock_only: true }, { silenceNotFound: true })
-              .then((lowStockMaterials) => lowStockMaterials.length)
-              .catch((e) => {
-                console.warn('Raw inventory low stock failed', e);
-                return 0;
-              })
-          : Promise.resolve(0),
-        canViewProfitability && monthRange
-          ? profitabilityService.getSummary(businessId, {
-              start_date: monthRange.start,
-              end_date: monthRange.end,
-            }, { silenceNotFound: true }).catch((e) => {
-              console.warn('Profitability dashboard loading failed', e);
-              return null;
-            })
-          : Promise.resolve(null),
-      ]);
+      const { dashboardData, remindersData, lowStockCount, profitSummary } = await dashboardRepository.load({
+        businessId,
+        canViewSummary,
+        canManageReminders,
+        canViewRawInventory,
+        canViewProfitability,
+        canViewSales,
+        canViewExpenses,
+        monthRange,
+      });
+
+      const safeDashboardData = {
+        summary: {
+          sales: {
+            total: Number(dashboardData?.summary?.sales?.total || 0),
+            count: Number(dashboardData?.summary?.sales?.count || 0),
+          },
+          expenses: {
+            total: Number(dashboardData?.summary?.expenses?.total || 0),
+            count: Number(dashboardData?.summary?.expenses?.count || 0),
+          },
+          cash_flow: {
+            in: Number(dashboardData?.summary?.cash_flow?.in || 0),
+            out: Number(dashboardData?.summary?.cash_flow?.out || 0),
+          },
+          accounts_receivable: Number(dashboardData?.summary?.accounts_receivable || 0),
+        },
+        dashboard: {
+          recent_sales: Array.isArray(dashboardData?.dashboard?.recent_sales) ? dashboardData.dashboard.recent_sales : [],
+          fiados_alerts: {
+            customers_count: Number(dashboardData?.dashboard?.fiados_alerts?.customers_count || 0),
+          },
+          top_products: Array.isArray(dashboardData?.dashboard?.top_products) ? dashboardData.dashboard.top_products : [],
+        },
+      };
+
+      if (currentLoadRequestIdRef.current !== requestId) {
+        pushBootTrace('Dashboard.load.staleResolvedIgnored', {
+          businessId,
+          requestId,
+        });
+        return;
+      }
 
       setRawInventoryLowStockCount(lowStockCount);
       setProfitabilitySummary(profitSummary);
+      setStats(safeDashboardData);
+      setDashboardDebug({
+        loaded: true,
+        failed: false,
+        error: '',
+        salesCount: safeDashboardData.summary.sales.count,
+        expensesCount: safeDashboardData.summary.expenses.count,
+        recentSalesCount: safeDashboardData.dashboard.recent_sales.length,
+        topProductsCount: safeDashboardData.dashboard.top_products.length,
+      });
 
-      let data = dashboardData;
-      // Fallback compute if backend dashboard lacks summary fields
-      // Use local date instead of UTC to fix timezone issues (e.g. evening in LATAM showing as tomorrow)
+      // Load opening balance from local storage
       const d = new Date();
       const year = d.getFullYear();
       const month = String(d.getMonth() + 1).padStart(2, '0');
       const day = String(d.getDate()).padStart(2, '0');
       const todayStr = `${year}-${month}-${day}`;
-
-      if (!data.summary || typeof data.summary !== 'object') data.summary = {};
-      const summary = data.summary;
-
-      const canViewSales = hasSalesModule && hasPermission('sales.view');
-      const canViewExpenses = hasPermission('expenses.view');
-
-      const needsSalesFallback = (summary.sales == null || typeof summary.sales.total !== 'number') && canViewSales;
-      const needsExpensesFallback = (summary.expenses == null || typeof summary.expenses.total !== 'number') && canViewExpenses;
-
-      const [salesFallback, expensesFallback] = await Promise.all([
-        needsSalesFallback
-          ? api.get(`/businesses/${businessId}/sales`, { params: { start_date: todayStr, end_date: todayStr } })
-              .then((response) => response.data.sales || [])
-              .catch((e) => {
-                console.warn('Could not load sales for dashboard', e);
-                return null;
-              })
-          : Promise.resolve(null),
-        needsExpensesFallback
-          ? api.get(`/businesses/${businessId}/expenses`, { params: { start_date: todayStr, end_date: todayStr } })
-              .then((response) => response.data.expenses || [])
-              .catch((e) => {
-                console.warn('Could not load expenses for dashboard', e);
-                return null;
-              })
-          : Promise.resolve(null),
-      ]);
-
-      if (needsSalesFallback) {
-        if (salesFallback) {
-          const todaysSales: any[] = salesFallback.filter((sale: any) => (sale.sale_date || '').startsWith(todayStr));
-          summary.sales = {
-            total: todaysSales.reduce((sum: number, sale: any) => sum + (sale.total || 0), 0),
-            count: todaysSales.length
-          };
-          data.dashboard = data.dashboard || {};
-          data.dashboard.recent_sales = todaysSales
-            .sort((a: any, b: any) => new Date(b.sale_date).getTime() - new Date(a.sale_date).getTime())
-            .slice(0, 10);
-        } else {
-          summary.sales = { total: 0, count: 0 };
-        }
-      }
-
-      if (needsExpensesFallback) {
-        if (expensesFallback) {
-          summary.expenses = {
-            total: expensesFallback.reduce((sum: number, expense: any) => sum + (expense.amount || 0), 0),
-            count: expensesFallback.length
-          };
-        } else {
-          summary.expenses = { total: 0, count: 0 };
-        }
-      }
-
-      if (summary.cash_flow == null) {
-        summary.cash_flow = { in: 0, out: 0 };
-      }
-
-      setStats(data);
-
-      // Load opening balance from local storage
-      // Reuse todayStr which is local date
       const storedBalance = localStorage.getItem(`openingBalance_${businessId}_${todayStr}`);
       if (storedBalance) {
         setOpeningBalance(parseFloat(storedBalance));
@@ -346,33 +387,123 @@ export const Dashboard = () => {
       }
 
       setActiveRemindersCount(remindersData.length);
+      pushBootTrace('Dashboard.load.resolved', {
+        businessId,
+        requestId,
+        salesCount: safeDashboardData.summary.sales.count,
+        expensesCount: safeDashboardData.summary.expenses.count,
+        recentSalesCount: safeDashboardData.dashboard.recent_sales.length,
+        topProductsCount: safeDashboardData.dashboard.top_products.length,
+      });
 
     } catch (error) {
       console.error('Error loading dashboard:', error);
+      if (currentLoadRequestIdRef.current !== requestId) {
+        pushBootTrace('Dashboard.load.staleErrorIgnored', {
+          businessId,
+          requestId,
+          message: error instanceof Error ? error.message : 'Error desconocido cargando el dashboard',
+        });
+        return;
+      }
+      pushBootTrace('Dashboard.load.error', {
+        businessId,
+        requestId,
+        message: error instanceof Error ? error.message : 'Error desconocido cargando el dashboard',
+      });
+      setStats({
+        summary: {
+          sales: { total: 0, count: 0 },
+          expenses: { total: 0, count: 0 },
+          cash_flow: { in: 0, out: 0 },
+          accounts_receivable: 0,
+        },
+        dashboard: {
+          recent_sales: [],
+          fiados_alerts: { customers_count: 0 },
+          top_products: [],
+        },
+      });
+      setDashboardDebug({
+        loaded: false,
+        failed: true,
+        error: error instanceof Error ? error.message : 'Error desconocido cargando el dashboard',
+        salesCount: 0,
+        expensesCount: 0,
+        recentSalesCount: 0,
+        topProductsCount: 0,
+      });
     } finally {
+      if (loadWatchdogTimeoutRef.current != null) {
+        window.clearTimeout(loadWatchdogTimeoutRef.current);
+        loadWatchdogTimeoutRef.current = null;
+      }
+      if (currentLoadRequestIdRef.current !== requestId) {
+        pushBootTrace('Dashboard.load.finallyIgnored', {
+          businessId,
+          requestId,
+        });
+        return;
+      }
       setLoading(false);
+      pushBootTrace('Dashboard.load.end', {
+        businessId,
+        requestId,
+      });
     }
   };
 
   useEffect(() => {
+    return () => {
+      if (loadWatchdogTimeoutRef.current != null) {
+        window.clearTimeout(loadWatchdogTimeoutRef.current);
+      }
+    };
+  }, []);
+
+  useEffect(() => {
     if (!activeBusiness?.id) {
+      currentLoadRequestIdRef.current += 1;
+      if (loadWatchdogTimeoutRef.current != null) {
+        window.clearTimeout(loadWatchdogTimeoutRef.current);
+        loadWatchdogTimeoutRef.current = null;
+      }
       setStats(null);
+      setDashboardDebug({
+        loaded: false,
+        failed: false,
+        error: '',
+        salesCount: 0,
+        expensesCount: 0,
+        recentSalesCount: 0,
+        topProductsCount: 0,
+      });
       setLoading(false);
       return;
     }
 
+    pushBootTrace('Dashboard.effect.loadRequested', {
+      businessId: activeBusiness.id,
+      canViewSummary,
+      canManageReminders,
+      canViewRawInventory,
+      canViewProfitability,
+      canViewSales,
+      canViewExpenses,
+    });
     void loadDashboardData(activeBusiness.id);
-  }, [activeBusiness?.id, canManageReminders, canOpenReportsPanel, hasRawInventoryModule, hasReportsModule, hasSalesModule]);
+  }, [activeBusiness?.id, canManageReminders, canViewExpenses, canViewProfitability, canViewRawInventory, canViewSales, canViewSummary]);
 
   const refreshDashboardData = () => {
     void loadDashboardData(activeBusiness?.id);
   };
 
   useEffect(() => {
-    if (!hasReportsModule && (activeTab === 'balance' || activeTab === 'analiticas')) {
-      setActiveTab('hoy');
+    const normalizedActiveTab = activeTab as 'hoy' | 'balance' | 'analiticas' | 'recordatorios';
+    if (!availableTabs.has(normalizedActiveTab)) {
+      setActiveTab(resolvedDashboardTab);
     }
-  }, [hasReportsModule, activeTab]);
+  }, [activeTab, availableTabs, resolvedDashboardTab]);
 
   const saveOpeningBalance = () => {
     if (!activeBusiness) return;
@@ -391,7 +522,7 @@ export const Dashboard = () => {
     status?: string;
     productQuery?: string;
   }) => {
-    if (!canOpenReportsPanel || !isBackendCapabilitySupported('profitability')) return;
+    if (!canOpenProfitabilityReport) return;
     const monthRange = getPeriodRange('month');
     const params = new URLSearchParams({
       tab: 'native',
@@ -603,6 +734,114 @@ export const Dashboard = () => {
     summary?.sales?.total,
   ]);
 
+  const mobilePriorityCards = useMemo(() => {
+    const cards: Array<{
+      id: string;
+      title: string;
+      value: string;
+      helper: string;
+      icon: typeof Wallet;
+      accent: string;
+      onClick: () => void;
+    }> = [];
+
+    if (canViewBalance) {
+      cards.push({
+        id: 'balance',
+        title: 'Caja',
+        value: formatCurrency(cashOnHand),
+        helper: `Entró ${formatCurrency(cashIn)} y salió ${formatCurrency(cashOut)}`,
+        icon: Wallet,
+        accent: 'bg-blue-50 text-blue-600 dark:bg-blue-900/20 dark:text-blue-300',
+        onClick: () => setActiveTab('balance'),
+      });
+    }
+
+    if (canViewAnalytics) {
+      const hasReliableProfitability = (profitabilitySummary?.complete_sales_count || 0) > 0;
+      const hasAnyAnalyticalActivity = (profitabilitySummary?.sales_count || 0) > 0 || (summary?.sales?.count || 0) > 0 || (summary?.expenses?.count || 0) > 0;
+      const analyticsValue = hasReliableProfitability
+        ? formatCurrency(profitabilitySummary?.gross_margin_total || 0)
+        : formatCurrency(profitabilitySummary?.revenue_total ?? summary?.sales?.total ?? 0);
+      const analyticsHelper = hasReliableProfitability
+        ? `${profitabilitySummary?.complete_sales_count || 0} venta(s) con costo calculado`
+        : hasAnyAnalyticalActivity
+          ? `Visible aunque falte costeo confiable. ${((profitabilitySummary?.incomplete_sales_count || 0) + (profitabilitySummary?.no_consumption_sales_count || 0) + (profitabilitySummary?.missing_cost_sales_count || 0)) || 0} venta(s) requieren revisión`
+          : 'Disponible aunque todavía no haya datos suficientes';
+
+      cards.push({
+        id: 'analiticas',
+        title: 'Análisis',
+        value: analyticsValue,
+        helper: analyticsHelper,
+        icon: BarChart2,
+        accent: 'bg-emerald-50 text-emerald-600 dark:bg-emerald-900/20 dark:text-emerald-300',
+        onClick: () => setActiveTab('analiticas'),
+      });
+    }
+
+    const panelOrder = priorityPanels.map((panel) => panel.id);
+    return cards.sort((left, right) => panelOrder.indexOf(left.id as 'balance' | 'analiticas') - panelOrder.indexOf(right.id as 'balance' | 'analiticas'));
+  }, [
+    canViewAnalytics,
+    canViewBalance,
+    cashIn,
+    cashOnHand,
+    cashOut,
+    priorityPanels,
+    profitabilitySummary,
+    summary?.expenses?.count,
+    summary?.expenses?.total,
+    summary?.sales?.count,
+    summary?.sales?.total,
+  ]);
+
+  const mobileHomeDiagnostics = useMemo(() => {
+    try {
+      const resolvedHomeModules = Array.isArray(priorityPanels)
+        ? priorityPanels.map((panel) => {
+            if (panel?.id === 'balance') return 'treasury';
+            if (panel?.id === 'analiticas') return 'analiticas';
+            return String(panel?.path || '').replace('/', '');
+          }).filter(Boolean)
+        : [];
+      const runtime = getRuntimeModeSnapshot();
+      const offlineRuntime = Boolean(runtime?.offlineProductMode);
+      return {
+        buildLabel: `${buildInfo?.builtAtDisplay || 'unknown'} · ${buildInfo?.gitCommitShort || 'unknown'}`,
+        buildIso: buildInfo?.builtAtIso || 'unknown',
+        embeddedApiBase: offlineRuntime ? 'offline-local' : (buildInfo?.apiBaseUrl || '/api'),
+        resolvedApiBase: offlineRuntime ? 'offline-local' : (resolveApiBaseUrl() || '/api'),
+        runtime: runtime || {
+          desktopShell: false,
+          mobileNativeShell: false,
+          desktopOfflineMode: false,
+          offlineProductMode: false,
+        },
+        resolvedHomeModules,
+        availablePaths: Array.isArray(availableItems) ? availableItems.map((item) => item.path) : [],
+        visiblePaths: Array.isArray(visibleItems) ? visibleItems.map((item) => item.path) : [],
+      };
+    } catch (error) {
+      console.warn('[Dashboard] mobile diagnostics fallback', error);
+      return {
+        buildLabel: 'unknown · unknown',
+        buildIso: 'unknown',
+        embeddedApiBase: '/api',
+        resolvedApiBase: '/api',
+        runtime: {
+          desktopShell: false,
+          mobileNativeShell: false,
+          desktopOfflineMode: false,
+          offlineProductMode: false,
+        },
+        resolvedHomeModules: [] as string[],
+        availablePaths: [] as string[],
+        visiblePaths: [] as string[],
+      };
+    }
+  }, [availableItems, priorityPanels, visibleItems]);
+
   const attentionItems = useMemo(() => {
     const items: Array<{
       id: string;
@@ -725,6 +964,36 @@ export const Dashboard = () => {
 
     return items.slice(0, 3);
   }, [canOpenAlertsPanel, canOpenReportsPanel, canViewAnalytics, canViewBalance, navigate]);
+
+  const finalComponent = !activeBusiness && !loading
+    ? 'DashboardEmptyState'
+    : loading
+      ? 'DashboardLoading'
+      : 'DashboardContent';
+
+  useEffect(() => {
+    pushBootTrace('Dashboard.render', {
+      activeBusinessId: activeBusiness?.id ?? null,
+      loading,
+      finalComponent,
+      dashboardReady: dashboardDebug.loaded,
+      dashboardFailed: dashboardDebug.failed,
+      activeTab,
+    });
+    console.info('[startup][Dashboard] render', {
+      runtime: getRuntimeModeSnapshot(),
+      hasActiveBusiness: Boolean(activeBusiness?.id),
+      activeBusinessId: activeBusiness?.id ?? null,
+      loading,
+      finalComponent,
+    });
+  }, [activeBusiness?.id, finalComponent, loading]);
+
+  useEffect(() => {
+    if (!activeBusiness && !loading && isOfflineProductMode()) {
+      setIsCreateBusinessModalOpen(true);
+    }
+  }, [activeBusiness, loading]);
 
 
 
@@ -903,6 +1172,8 @@ export const Dashboard = () => {
           </div>
         ))}
       </div>
+
+      <ServiceKpisPanel />
     </div>
   );
 
@@ -973,34 +1244,55 @@ export const Dashboard = () => {
             <MobileSummaryDrawer summary="Resumen de hoy">
               {dashboardOverviewContent}
             </MobileSummaryDrawer>
-            <MobileCenteredModalTrigger title="Atajos" label="Atajos" summary="Acciones y vistas">
-              {dashboardShortcutsContent}
-            </MobileCenteredModalTrigger>
-            <MobileHelpDisclosure summary="Qué mirar primero">
-              <div className="space-y-3 text-sm text-gray-600 dark:text-gray-300">
-                <p>{mainGuidance.title}</p>
-                <p>{mainGuidance.description}</p>
-                {firstSteps.length > 0 ? (
-                  <div className="space-y-2">
-                    {firstSteps.slice(0, 3).map((step, index) => (
-                      <button
-                        key={step.id}
-                        type="button"
-                        onClick={step.onClick}
-                        className="app-soft-surface w-full rounded-2xl px-4 py-3 text-left"
-                      >
-                        <div className="text-xs font-semibold uppercase tracking-wide text-blue-600 dark:text-blue-300">Paso {index + 1}</div>
-                        <div className="mt-1 font-semibold text-gray-900 dark:text-white">{step.title}</div>
-                        <div className="mt-1 text-xs text-gray-500 dark:text-gray-400">{step.description}</div>
-                      </button>
-                    ))}
-                  </div>
-                ) : null}
-              </div>
-            </MobileHelpDisclosure>
           </MobileUtilityBar>
         )}
       >
+      {showDashboardDebug ? (
+        <>
+          <div className={cn(
+            'rounded-[20px] border px-3.5 py-3 text-xs lg:hidden',
+            dashboardDebug.failed
+              ? 'border-red-200 bg-red-50 text-red-900 dark:border-red-900/30 dark:bg-red-950/20 dark:text-red-100'
+              : 'border-emerald-200 bg-emerald-50/80 text-emerald-900 dark:border-emerald-900/30 dark:bg-emerald-950/20 dark:text-emerald-100'
+          )}>
+            <div className="font-semibold">Debug dashboard</div>
+            <div className="mt-1">loaded={dashboardDebug.loaded ? 'yes' : 'no'} failed={dashboardDebug.failed ? 'yes' : 'no'}</div>
+            <div className="mt-1 break-words">error={dashboardDebug.error || 'none'}</div>
+            <div className="mt-1">sales={dashboardDebug.salesCount} expenses={dashboardDebug.expensesCount} recent={dashboardDebug.recentSalesCount} topProducts={dashboardDebug.topProductsCount}</div>
+          </div>
+          <div className="rounded-[20px] border border-dashed border-blue-200 bg-blue-50/80 px-3.5 py-3 text-xs text-blue-900 dark:border-blue-900/30 dark:bg-blue-950/20 dark:text-blue-100 lg:hidden">
+            <div className="font-semibold">Build movil: {mobileHomeDiagnostics.buildLabel}</div>
+            <div className="mt-1">API build: {mobileHomeDiagnostics.embeddedApiBase}</div>
+            <div className="mt-1">API runtime: {mobileHomeDiagnostics.resolvedApiBase}</div>
+            <div className="mt-1">Runtime: native={mobileHomeDiagnostics.runtime.mobileNativeShell ? 'yes' : 'no'} offline={mobileHomeDiagnostics.runtime.offlineProductMode ? 'yes' : 'no'}</div>
+            <div className="mt-1">Home resolved modules: {mobileHomeDiagnostics.resolvedHomeModules.length > 0 ? mobileHomeDiagnostics.resolvedHomeModules.join(', ') : 'none'}</div>
+          </div>
+        </>
+      ) : null}
+      {mobilePriorityCards.length > 0 && (
+        <div className="grid grid-cols-1 gap-3 lg:hidden">
+          {mobilePriorityCards.map((card) => (
+            <button
+              key={card.id}
+              type="button"
+              onClick={card.onClick}
+              className="app-surface flex items-start gap-3 rounded-[22px] px-4 py-3.5 text-left shadow-sm transition-colors hover:border-gray-300 dark:hover:border-slate-700 active:scale-[0.99]"
+            >
+              <div className={cn('rounded-2xl p-2.5', card.accent)}>
+                <card.icon className="h-5 w-5" />
+              </div>
+              <div className="min-w-0 flex-1">
+                <div className="flex items-center justify-between gap-3">
+                  <div className="text-sm font-semibold text-gray-900 dark:text-white">{card.title}</div>
+                  <span className="text-xs font-medium text-blue-600 dark:text-blue-300">Abrir</span>
+                </div>
+                <div className="mt-1 text-lg font-bold text-gray-900 dark:text-white">{card.value}</div>
+                <div className="mt-1 text-xs text-gray-500 dark:text-gray-400">{card.helper}</div>
+              </div>
+            </button>
+          ))}
+        </div>
+      )}
 
       <div className="grid grid-cols-1 gap-4 xl:grid-cols-[minmax(0,1.3fr)_minmax(0,1fr)]">
         <div className="app-surface rounded-[24px] p-4 shadow-sm sm:p-5" data-tour="dashboard.alerts">
@@ -1102,6 +1394,15 @@ export const Dashboard = () => {
                   </div>
                 </div>
               ))
+            ) : dashboardDebug.failed ? (
+              <TeachingEmptyState
+                compact
+                icon={AlertTriangle}
+                title="El resumen falló, pero la app sigue activa"
+                description={dashboardDebug.error || 'No fue posible preparar las ventas recientes.'}
+                primaryActionLabel="Reintentar"
+                onPrimaryAction={refreshDashboardData}
+              />
             ) : (
               <TeachingEmptyState
                 compact
@@ -1116,7 +1417,7 @@ export const Dashboard = () => {
         </div>
 
         <div className="space-y-4">
-          {profitabilitySummary && canOpenReportsPanel && (
+          {profitabilitySummary && canOpenProfitabilityReport && (
             <button
               type="button"
               onClick={() => openProfitabilityReport()}
@@ -1247,8 +1548,8 @@ export const Dashboard = () => {
       <PageHeader
         title="Inicio"
         description={activeBusiness?.name
-          ? `Lo más importante de hoy en ${activeBusiness.name}.`
-          : 'Lo más importante del negocio, sin vueltas.'}
+          ? `Tu dia en ${activeBusiness.name}, en un vistazo.`
+          : 'Tu dia, ventas y alertas en un vistazo.'}
       />
 
       <SwipePager 

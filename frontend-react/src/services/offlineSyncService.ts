@@ -36,6 +36,7 @@ import {
 } from './invoiceOfflineState';
 import { isBackendCapabilitySupported } from '../config/backendCapabilities';
 import { hasPermissionMatch } from '../auth/permissions';
+import { isDesktopOfflineMode, isMobileNativeShell } from '../runtime/runtimeMode';
 
 export const OFFLINE_SYNC_EVENT = 'encaja-offline-changed';
 export const OFFLINE_SNAPSHOT_APPLIED_EVENT = 'encaja-offline-snapshot-applied';
@@ -201,8 +202,9 @@ const getBaseUrl = () => {
   const storedBaseUrl = window.localStorage.getItem('API_BASE_URL')?.trim();
   const isFileProtocol = window.location.protocol === 'file:';
   const isEnvRelative = envBaseUrl.startsWith('/');
+  const mobileNativeShell = isMobileNativeShell();
 
-  if (storedBaseUrl && (isFileProtocol || !isEnvRelative)) {
+  if (storedBaseUrl && (isFileProtocol || mobileNativeShell || !isEnvRelative)) {
     return storedBaseUrl;
   }
 
@@ -357,6 +359,9 @@ const sortSalesByDateAsc = (sales: Sale[]) =>
 
 const toBusinessScope = () => {
   const userId = getCurrentUserId();
+  if (!userId && isDesktopOfflineMode()) {
+    return 1;
+  }
   if (!userId) {
     throw new Error('No hay usuario autenticado para almacenamiento offline');
   }
@@ -427,8 +432,8 @@ const computeReceivableStatus = (dueDate: string, dueSoonDays: number) => {
 
 const normalizeSale = (sale: Sale): Sale => ({
   ...sale,
-  collected_amount: Number(sale.collected_amount || 0),
-  balance: Number(sale.balance || 0),
+  collected_amount: Number(sale.collected_amount ?? sale.amount_paid ?? 0),
+  balance: Number(sale.balance ?? Math.max(Number(sale.total || 0) - Number(sale.collected_amount ?? sale.amount_paid ?? 0), 0)),
   subtotal: Number(sale.subtotal || 0),
   discount: Number(sale.discount || 0),
   total: Number(sale.total || 0),
@@ -1072,11 +1077,12 @@ const buildLocalSaleRecord = async (
     ? (payload.treasury_account_id == null || payload.treasury_account_id === '' ? null : Number(payload.treasury_account_id))
     : baseSale?.treasury_account_id ?? null;
   const treasuryAccount = treasuryAccountId != null ? treasuryAccounts.get(treasuryAccountId) : null;
-  const totalCost = items.reduce((sum: number, item: any) => {
+  const derivedItemCost = items.reduce((sum: number, item: any) => {
     const productId = item?.product_id != null ? Number(item.product_id) : null;
     const product = productId != null ? products.get(productId) : null;
     return sum + (Number(product?.cost || 0) * Number(item?.qty || 0));
   }, 0);
+  const totalCost = Number(payload.total_cost ?? baseSale?.total_cost ?? derivedItemCost);
 
   return normalizeSale({
     ...baseSale,
@@ -1576,7 +1582,11 @@ export const offlineSyncService = {
       } catch {}
     }
 
-    if (canSnapshotResource(business, { permission: 'treasury.view' }) && isBackendCapabilitySupported('treasury')) {
+    if (
+      !isDesktopOfflineMode()
+      && canSnapshotResource(business, { permission: 'treasury.view' })
+      && isBackendCapabilitySupported('treasury')
+    ) {
       try {
         const treasuryPayload = await authorizedJsonRequest<{ accounts: TreasuryAccount[] }>(`/businesses/${businessId}/treasury/accounts?include_inactive=1`);
         await this.cacheTreasuryAccounts(businessId, treasuryPayload.accounts || []);

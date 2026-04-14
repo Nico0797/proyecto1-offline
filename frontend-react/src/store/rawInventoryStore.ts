@@ -42,12 +42,6 @@ export const useRawInventoryStore = create<RawInventoryState>((set) => ({
   error: null,
 
   fetchMaterials: async (businessId, filters) => {
-    const token = localStorage.getItem('token');
-    if (!token) {
-      set({ materials: [], loading: false });
-      return;
-    }
-
     set({ loading: true, error: null });
     try {
       const materials = await rawInventoryService.list(businessId, filters);

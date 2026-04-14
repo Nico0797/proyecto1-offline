@@ -1,0 +1,14 @@
+{
+  "dashboardCheck": {
+    "url": "/dashboard",
+    "hasLogin": false,
+    "hasSyncCopy": false,
+    "hasPlanCopy": false
+  },
+  "settingsCheck": {
+    "url": "/settings",
+    "showsRestrictedSections": false,
+    "showsTemplates": true,
+    "showsBusiness": true
+  }
+}

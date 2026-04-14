@@ -1,15 +1,31 @@
 import { create } from 'zustand';
-import { Business, BusinessModuleKey, BusinessModuleState } from '../types';
+import {
+  BUSINESS_MODULE_META,
+  BUSINESS_MODULE_ORDER,
+  Business,
+  BusinessModuleKey,
+  BusinessModuleState,
+} from '../types';
 import api from '../services/api';
 import { offlineSyncService } from '../services/offlineSyncService';
 import { useAccountAccessStore } from './accountAccessStore';
+import { pushBootTrace } from '../debug/bootTrace';
+import {
+  buildDesktopOfflineUser,
+  hasOfflineSessionSeed,
+  normalizeOfflineBusinessRecord,
+  persistOfflineSessionSnapshot,
+  restoreOfflineSession,
+  restoreOfflineSessionSafely,
+} from '../services/offlineSession';
+import { getRuntimeModeSnapshot, isOfflineProductMode } from '../runtime/runtimeMode';
 
 // Helper to get initial active business from localStorage
 const getInitialActiveBusiness = (): Business | null => {
   if (typeof window === 'undefined') return null;
   try {
     const stored = localStorage.getItem('activeBusiness');
-    return stored ? JSON.parse(stored) : null;
+    return stored ? normalizeOfflineBusinessRecord(JSON.parse(stored)) : null;
   } catch {
     return null;
   }
@@ -54,8 +70,41 @@ const replaceBusinessInState = (state: BusinessState, businessId: number, update
   return { businesses, activeBusiness };
 };
 
+const buildDefaultModules = (): BusinessModuleState[] =>
+  BUSINESS_MODULE_ORDER.map((moduleKey) => ({
+    module_key: moduleKey,
+    enabled: BUSINESS_MODULE_META[moduleKey].defaultEnabled,
+    config: null,
+    updated_at: new Date().toISOString(),
+  }));
+
 let inFlightBootstrapKey: string | null = null;
 let inFlightBootstrapPromise: Promise<void> | null = null;
+
+const resolveHydratedActiveBusiness = ({
+  businesses,
+  explicitActiveBusiness,
+  currentActiveBusiness,
+  storedActiveBusiness,
+}: {
+  businesses: Business[];
+  explicitActiveBusiness: Business | null;
+  currentActiveBusiness: Business | null;
+  storedActiveBusiness: Business | null;
+}) => {
+  const candidateIds = [
+    explicitActiveBusiness?.id ?? null,
+    currentActiveBusiness?.id ?? null,
+    storedActiveBusiness?.id ?? null,
+  ].filter((value): value is number => typeof value === 'number' && Number.isFinite(value) && value > 0);
+
+  for (const id of candidateIds) {
+    const match = businesses.find((business) => business.id === id);
+    if (match) return match;
+  }
+
+  return explicitActiveBusiness ?? currentActiveBusiness ?? storedActiveBusiness ?? businesses[0] ?? null;
+};
 
 export const useBusinessStore = create<BusinessState>((set, get) => ({
   businesses: [],
@@ -67,18 +116,121 @@ export const useBusinessStore = create<BusinessState>((set, get) => ({
     set({ businesses: [], activeBusiness: null, isLoading: false, error: null });
   },
   hydrateBootstrap: async (businesses, activeBusiness) => {
-    const nextBusinesses = Array.isArray(businesses) ? businesses : [];
-    const resolvedActiveBusiness = activeBusiness ?? nextBusinesses[0] ?? null;
-    await offlineSyncService.cacheBusinesses(nextBusinesses);
-    if (resolvedActiveBusiness) {
-      await offlineSyncService.cacheBusiness(resolvedActiveBusiness);
-    }
+    pushBootTrace('businessStore.hydrateBootstrap.start', {
+      inputBusinessesCount: Array.isArray(businesses) ? businesses.length : 0,
+      inputActiveBusinessId: normalizeOfflineBusinessRecord(activeBusiness)?.id ?? null,
+    });
+    const nextBusinesses = (Array.isArray(businesses) ? businesses : [])
+      .map((business) => normalizeOfflineBusinessRecord(business))
+      .filter((business): business is Business => Boolean(business));
+    const normalizedActiveBusiness = normalizeOfflineBusinessRecord(activeBusiness);
+    const resolvedActiveBusiness = resolveHydratedActiveBusiness({
+      businesses: nextBusinesses,
+      explicitActiveBusiness: normalizedActiveBusiness,
+      currentActiveBusiness: normalizeOfflineBusinessRecord(get().activeBusiness),
+      storedActiveBusiness: getInitialActiveBusiness(),
+    });
     persistActiveBusiness(resolvedActiveBusiness);
+    persistOfflineSessionSnapshot({
+      businesses: nextBusinesses,
+      activeBusiness: resolvedActiveBusiness,
+    });
+    console.info('[startup][businessStore] hydrateBootstrap', {
+      runtime: getRuntimeModeSnapshot(),
+      businessesCount: nextBusinesses.length,
+      activeBusinessId: resolvedActiveBusiness?.id ?? null,
+      hasActiveBusiness: Boolean(resolvedActiveBusiness),
+    });
     set({ businesses: nextBusinesses, activeBusiness: resolvedActiveBusiness, isLoading: false, error: null });
+    pushBootTrace('businessStore.hydrateBootstrap.resolved', {
+      businessesCount: nextBusinesses.length,
+      activeBusinessId: resolvedActiveBusiness?.id ?? null,
+    });
+
+    void Promise.allSettled([
+      offlineSyncService.cacheBusinesses(nextBusinesses),
+      resolvedActiveBusiness ? offlineSyncService.cacheBusiness(resolvedActiveBusiness) : Promise.resolve(),
+    ]).then((results) => {
+      const rejected = results.find((result) => result.status === 'rejected');
+      if (rejected) {
+        console.error('[startup][businessStore] hydrateBootstrap:cache-persist-failed', {
+          runtime: getRuntimeModeSnapshot(),
+          error: rejected.reason,
+          activeBusinessId: resolvedActiveBusiness?.id ?? null,
+        });
+      }
+    });
   },
   fetchAuthBootstrap: async (preferredBusinessId) => {
     const token = localStorage.getItem('token');
+    const offlineProductMode = isOfflineProductMode();
+    pushBootTrace('businessStore.fetchAuthBootstrap.start', {
+      preferredBusinessId: preferredBusinessId ?? null,
+      hasToken: Boolean(token),
+      hasOfflineSeed: hasOfflineSessionSeed(),
+      offlineProductMode,
+      storedActiveBusinessId: get().activeBusiness?.id ?? null,
+    });
+    console.info('[startup][businessStore] fetchAuthBootstrap:start', {
+      runtime: getRuntimeModeSnapshot(),
+      preferredBusinessId: preferredBusinessId ?? null,
+      hasToken: Boolean(token),
+      hasOfflineSeed: hasOfflineSessionSeed(),
+      offlineProductMode,
+      storedActiveBusinessId: get().activeBusiness?.id ?? null,
+    });
+    if (!token && offlineProductMode) {
+      try {
+        const offlineSession = await restoreOfflineSessionSafely(preferredBusinessId, 2500);
+        if (offlineSession) {
+          console.info('[startup][businessStore] fetchAuthBootstrap:offline-product-resolved', {
+            businessesCount: offlineSession.businesses.length,
+            activeBusinessId: offlineSession.activeBusiness?.id ?? null,
+          });
+          pushBootTrace('businessStore.fetchAuthBootstrap.offlineResolved', {
+            businessesCount: offlineSession.businesses.length,
+            activeBusinessId: offlineSession.activeBusiness?.id ?? null,
+          });
+          await get().hydrateBootstrap(offlineSession.businesses, offlineSession.activeBusiness);
+          return;
+        }
+      } catch (error) {
+        console.error('[startup][businessStore] fetchAuthBootstrap:offline-product-error', {
+          runtime: getRuntimeModeSnapshot(),
+          error,
+        });
+        pushBootTrace('businessStore.fetchAuthBootstrap.offlineError', {
+          message: error instanceof Error ? error.message : String(error),
+        });
+      }
+
+      console.info('[startup][businessStore] fetchAuthBootstrap:offline-product-empty', {
+        runtime: getRuntimeModeSnapshot(),
+      });
+      persistActiveBusiness(null);
+      set({ businesses: [], activeBusiness: null, isLoading: false, error: null });
+      return;
+    }
+
     if (!token) {
+      if (hasOfflineSessionSeed()) {
+        const offlineSession = await restoreOfflineSession(preferredBusinessId);
+        if (offlineSession) {
+          console.info('[startup][businessStore] fetchAuthBootstrap:offline-session', {
+            businessesCount: offlineSession.businesses.length,
+            activeBusinessId: offlineSession.activeBusiness?.id ?? null,
+          });
+          pushBootTrace('businessStore.fetchAuthBootstrap.seedResolved', {
+            businessesCount: offlineSession.businesses.length,
+            activeBusinessId: offlineSession.activeBusiness?.id ?? null,
+          });
+          await get().hydrateBootstrap(offlineSession.businesses, offlineSession.activeBusiness);
+          return;
+        }
+      }
+      console.info('[startup][businessStore] fetchAuthBootstrap:empty-offline-session', {
+        runtime: getRuntimeModeSnapshot(),
+      });
       persistActiveBusiness(null);
       set({ businesses: [], activeBusiness: null, isLoading: false });
       return;
@@ -99,8 +251,16 @@ export const useBusinessStore = create<BusinessState>((set, get) => ({
         const fetchedBusinesses = response.data.businesses || [];
         const fetchedActiveBusiness = response.data.active_business || null;
         useAccountAccessStore.getState().setAccess(response.data.account_access || null);
+        pushBootTrace('businessStore.fetchAuthBootstrap.remoteResolved', {
+          businessesCount: fetchedBusinesses.length,
+          activeBusinessId: fetchedActiveBusiness?.id ?? null,
+        });
         await get().hydrateBootstrap(fetchedBusinesses, fetchedActiveBusiness);
       } catch (error: any) {
+        pushBootTrace('businessStore.fetchAuthBootstrap.error', {
+          message: error?.message || 'unknown-error',
+          status: error?.response?.status ?? null,
+        });
         if (error?.response?.status === 401) {
           persistActiveBusiness(null);
           set({ businesses: [], activeBusiness: null, isLoading: false });
@@ -125,7 +285,63 @@ export const useBusinessStore = create<BusinessState>((set, get) => ({
   fetchBusinesses: async (preferredBusinessId) => {
     // Avoid fetching if no token is present to prevent 401s
     const token = localStorage.getItem('token');
+    pushBootTrace('businessStore.fetchBusinesses.start', {
+      preferredBusinessId: preferredBusinessId ?? null,
+      hasToken: Boolean(token),
+      offlineProductMode: isOfflineProductMode(),
+      currentActiveBusinessId: get().activeBusiness?.id ?? null,
+      currentBusinessesCount: get().businesses.length,
+    });
+    if (!token && isOfflineProductMode()) {
+      try {
+        const offlineSession = await restoreOfflineSessionSafely(preferredBusinessId, 2500);
+        if (offlineSession) {
+          persistActiveBusiness(offlineSession.activeBusiness);
+          set({
+            businesses: offlineSession.businesses,
+            activeBusiness: offlineSession.activeBusiness,
+            isLoading: false,
+            error: null,
+          });
+          pushBootTrace('businessStore.fetchBusinesses.offlineResolved', {
+            businessesCount: offlineSession.businesses.length,
+            activeBusinessId: offlineSession.activeBusiness?.id ?? null,
+          });
+          return;
+        }
+      } catch (error) {
+        console.error('[startup][businessStore] fetchBusinesses:offline-product-error', {
+          runtime: getRuntimeModeSnapshot(),
+          error,
+        });
+        pushBootTrace('businessStore.fetchBusinesses.offlineError', {
+          message: error instanceof Error ? error.message : String(error),
+        });
+      }
+
+      persistActiveBusiness(null);
+      set({ businesses: [], activeBusiness: null, isLoading: false, error: null });
+      return;
+    }
+
     if (!token) {
+      if (hasOfflineSessionSeed()) {
+        const offlineSession = await restoreOfflineSession(preferredBusinessId);
+        if (offlineSession) {
+          persistActiveBusiness(offlineSession.activeBusiness);
+          set({
+            businesses: offlineSession.businesses,
+            activeBusiness: offlineSession.activeBusiness,
+            isLoading: false,
+            error: null,
+          });
+          pushBootTrace('businessStore.fetchBusinesses.seedResolved', {
+            businessesCount: offlineSession.businesses.length,
+            activeBusinessId: offlineSession.activeBusiness?.id ?? null,
+          });
+          return;
+        }
+      }
       persistActiveBusiness(null);
       set({ businesses: [], activeBusiness: null, isLoading: false });
       return;
@@ -155,7 +371,15 @@ export const useBusinessStore = create<BusinessState>((set, get) => ({
       }
       
       persistActiveBusiness(newActiveBusiness);
+      persistOfflineSessionSnapshot({
+        businesses: fetchedBusinesses,
+        activeBusiness: newActiveBusiness,
+      });
       set({ businesses: fetchedBusinesses, activeBusiness: newActiveBusiness, isLoading: false });
+      pushBootTrace('businessStore.fetchBusinesses.remoteResolved', {
+        businessesCount: fetchedBusinesses.length,
+        activeBusinessId: newActiveBusiness?.id ?? null,
+      });
     } catch (error: any) {
       if (error?.isOfflineRequestError || !error?.response) {
         const localBusinesses = await offlineSyncService.getBusinessesFromLocal();
@@ -169,7 +393,15 @@ export const useBusinessStore = create<BusinessState>((set, get) => ({
         const newActiveBusiness = resolvedPreferredBusiness ?? resolvedStoredBusiness ?? localBusinesses[0] ?? null;
 
         persistActiveBusiness(newActiveBusiness);
+        persistOfflineSessionSnapshot({
+          businesses: localBusinesses,
+          activeBusiness: newActiveBusiness,
+        });
         set({ businesses: localBusinesses, activeBusiness: newActiveBusiness, isLoading: false, error: null });
+        pushBootTrace('businessStore.fetchBusinesses.localFallbackResolved', {
+          businessesCount: localBusinesses.length,
+          activeBusinessId: newActiveBusiness?.id ?? null,
+        });
         return;
       }
 
@@ -179,10 +411,20 @@ export const useBusinessStore = create<BusinessState>((set, get) => ({
          set({ businesses: [], activeBusiness: null, isLoading: false });
          return;
       }
+      pushBootTrace('businessStore.fetchBusinesses.error', {
+        message: error?.message || 'Failed to fetch businesses',
+        status: error?.response?.status ?? null,
+      });
       set({ error: error.message || 'Failed to fetch businesses', isLoading: false });
     }
   },
   fetchBusinessModules: async (businessId: number) => {
+    const token = localStorage.getItem('token');
+    if (!token && isOfflineProductMode()) {
+      const business = get().businesses.find((candidate) => candidate.id === businessId) ?? get().activeBusiness;
+      return business?.modules || buildDefaultModules();
+    }
+
     const response = await api.get(`/businesses/${businessId}/modules`);
     const modules: BusinessModuleState[] = response.data.modules || [];
 
@@ -190,6 +432,19 @@ export const useBusinessStore = create<BusinessState>((set, get) => ({
     return modules;
   },
   updateBusinessModules: async (businessId: number, modules) => {
+    const token = localStorage.getItem('token');
+    if (!token && isOfflineProductMode()) {
+      const updatedModules: BusinessModuleState[] = BUSINESS_MODULE_ORDER.map((moduleKey) => ({
+        module_key: moduleKey,
+        enabled: Boolean(modules[moduleKey]),
+        config: null,
+        updated_at: new Date().toISOString(),
+      }));
+
+      get().setBusinessModules(businessId, updatedModules);
+      return updatedModules;
+    }
+
     const response = await api.put(`/businesses/${businessId}/modules`, { modules });
     const updatedModules: BusinessModuleState[] = response.data.modules || [];
 
@@ -201,11 +456,22 @@ export const useBusinessStore = create<BusinessState>((set, get) => ({
       const nextState = replaceBusinessInState(state, businessId, (business) => ({
         ...business,
         modules,
+        sync_status: 'pending',
+        is_offline_record: true,
       }));
 
       if (nextState.activeBusiness?.id === businessId) {
         persistActiveBusiness(nextState.activeBusiness);
       }
+
+       void offlineSyncService.cacheBusinesses(nextState.businesses);
+       if (nextState.activeBusiness) {
+         void offlineSyncService.cacheBusiness(nextState.activeBusiness);
+       }
+       persistOfflineSessionSnapshot({
+         businesses: nextState.businesses,
+         activeBusiness: nextState.activeBusiness,
+       });
 
       return nextState;
     });
@@ -213,19 +479,69 @@ export const useBusinessStore = create<BusinessState>((set, get) => ({
   setActiveBusiness: (business: Business) => {
     set({ activeBusiness: business, error: null });
     persistActiveBusiness(business);
+    persistOfflineSessionSnapshot({
+      businesses: get().businesses,
+      activeBusiness: business,
+    });
   },
   addBusiness: async (data) => {
     set({ isLoading: true, error: null });
     try {
+      const token = localStorage.getItem('token');
+      if (!token && isOfflineProductMode()) {
+        const owner = buildDesktopOfflineUser();
+        const newBusiness: Business = {
+          id: Date.now(),
+          user_id: owner.id,
+          name: String(data.name || '').trim(),
+          currency: String(data.currency || 'COP'),
+          created_at: new Date().toISOString(),
+          settings: data.settings || null,
+          role: 'owner',
+          permissions: [],
+          permissions_canonical: [],
+          plan: 'business',
+          modules: buildDefaultModules(),
+          sync_status: 'pending',
+          is_offline_record: true,
+          client_operation_id: `business_${Date.now()}`,
+        };
+
+        const nextBusinesses = [...get().businesses, newBusiness];
+        persistActiveBusiness(newBusiness);
+        persistOfflineSessionSnapshot({ businesses: nextBusinesses, activeBusiness: newBusiness });
+        await offlineSyncService.cacheBusinesses(nextBusinesses);
+        await offlineSyncService.cacheBusiness(newBusiness);
+        console.info('[startup][businessStore] addBusiness:offline', {
+          runtime: getRuntimeModeSnapshot(),
+          newBusinessId: newBusiness.id,
+          businessesCount: nextBusinesses.length,
+        });
+
+        set({
+          businesses: nextBusinesses,
+          activeBusiness: newBusiness,
+          isLoading: false,
+          error: null,
+        });
+
+        return newBusiness;
+      }
+
       const response = await api.post('/businesses', data);
       const newBusiness = response.data.business;
       
-      set((state) => ({
-        businesses: [...state.businesses, newBusiness],
-        activeBusiness: newBusiness, // Automatically set as active
-      }));
+      const nextBusinesses = [...get().businesses, newBusiness];
+      set({
+        businesses: nextBusinesses,
+        activeBusiness: newBusiness,
+      });
       
       persistActiveBusiness(newBusiness);
+      persistOfflineSessionSnapshot({
+        businesses: nextBusinesses,
+        activeBusiness: newBusiness,
+      });
       await offlineSyncService.cacheBusiness(newBusiness);
       return newBusiness;
     } catch (error: any) {
@@ -238,18 +554,62 @@ export const useBusinessStore = create<BusinessState>((set, get) => ({
   updateBusiness: async (id: number, data: Partial<Business>) => {
     set({ isLoading: true, error: null });
     try {
+      const token = localStorage.getItem('token');
+      if (!token && isOfflineProductMode()) {
+        const currentBusiness = get().businesses.find((business) => business.id === id);
+        if (!currentBusiness) {
+          throw new Error('No se encontro el negocio local para actualizar');
+        }
+
+        const updatedBusiness: Business = {
+          ...currentBusiness,
+          ...data,
+          settings: data.settings === undefined ? currentBusiness.settings : data.settings,
+          sync_status: 'pending',
+          is_offline_record: true,
+        };
+
+        const nextBusinesses = get().businesses.map((business) => (business.id === id ? updatedBusiness : business));
+        const nextActiveBusiness = get().activeBusiness?.id === id ? updatedBusiness : get().activeBusiness;
+
+        await offlineSyncService.cacheBusinesses(nextBusinesses);
+        await offlineSyncService.cacheBusiness(updatedBusiness);
+        persistOfflineSessionSnapshot({
+          businesses: nextBusinesses,
+          activeBusiness: nextActiveBusiness,
+        });
+
+        set({
+          businesses: nextBusinesses,
+          activeBusiness: nextActiveBusiness,
+          isLoading: false,
+          error: null,
+        });
+
+        if (nextActiveBusiness?.id === id) {
+          persistActiveBusiness(updatedBusiness);
+        }
+        return;
+      }
+
       const response = await api.put(`/businesses/${id}`, data);
       const updatedBusiness = response.data.business;
       await offlineSyncService.cacheBusiness(updatedBusiness);
+      const nextBusinesses = get().businesses.map((business) => (business.id === id ? updatedBusiness : business));
+      const nextActiveBusiness = get().activeBusiness?.id === id ? updatedBusiness : get().activeBusiness;
       
-      set((state) => ({
-        businesses: state.businesses.map((b) => (b.id === id ? updatedBusiness : b)),
-        activeBusiness: state.activeBusiness?.id === id ? updatedBusiness : state.activeBusiness,
-      }));
+      set({
+        businesses: nextBusinesses,
+        activeBusiness: nextActiveBusiness,
+      });
       
-      if (get().activeBusiness?.id === id) {
+      if (nextActiveBusiness?.id === id) {
         persistActiveBusiness(updatedBusiness);
       }
+      persistOfflineSessionSnapshot({
+        businesses: nextBusinesses,
+        activeBusiness: nextActiveBusiness,
+      });
     } catch (error: any) {
       set({ error: error.message || 'Failed to update business' });
       throw error;

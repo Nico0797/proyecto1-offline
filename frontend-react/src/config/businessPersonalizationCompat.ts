@@ -3,6 +3,7 @@
 
 import {
   BUSINESS_PRESETS,
+  BUSINESS_PRESET_UI_ORDER,
   type BusinessTypeKey as PresetBusinessTypeKey,
   getBusinessPreset,
   resolveBusinessPresetFromSettings,
@@ -17,6 +18,7 @@ import {
   resolveBusinessType as resolvePresetBusinessType,
 } from './businessPresets';
 import { Business, BusinessModuleKey } from '../types';
+import type { BusinessType } from '../types';
 import type { BusinessOperationalModel } from './businessOperationalProfile';
 
 // Re-exportar tipos base
@@ -126,6 +128,7 @@ export interface BusinessNavigationDefaults {
 
 export interface BusinessPersonalizationSettings {
   business_type?: BusinessTypeKey | null;
+  simple_business_type?: BusinessType | null;
   visibility_mode?: 'basic' | 'advanced' | null;
   navigation_defaults?: BusinessNavigationDefaults | null;
   commercial_sections: BusinessCommercialSectionsState;
@@ -187,6 +190,7 @@ export const DEFAULT_PERSONALIZATION_ANSWERS: BusinessPersonalizationAnswers = {
 
 // Re-exportar presets con alias para compatibilidad
 export { BUSINESS_PRESETS };
+export { BUSINESS_PRESET_UI_ORDER };
 export { getBusinessPreset as getBusinessTypePreset };
 export { resolveBusinessPresetFromSettings };
 export { buildOperationalProfileFromPreset };
@@ -226,9 +230,9 @@ export const getBusinessTypePresetDefinition = (businessType: BusinessTypeKey): 
 export const getEnabledBusinessModules = (business?: Business | null): BusinessModuleKey[] => {
   if (!business?.modules) return [];
   
-  return Object.entries(business.modules)
-    .filter(([_, enabled]) => enabled)
-    .map(([moduleKey, _]) => moduleKey as BusinessModuleKey);
+  return business.modules
+    .filter((moduleState) => moduleState?.enabled)
+    .map((moduleState) => moduleState.module_key);
 };
 
 export const getBusinessPersonalizationSettings = (business?: Business | null): BusinessPersonalizationSettings => {
@@ -245,8 +249,9 @@ export const getBusinessPersonalizationSettings = (business?: Business | null): 
   
   const settings = business.settings;
   return {
-    business_type: settings.personalization?.business_type || null,
-    visibility_mode: settings.personalization?.visibility_mode || null,
+      business_type: settings.personalization?.business_type || null,
+      simple_business_type: settings.personalization?.simple_business_type || null,
+      visibility_mode: settings.personalization?.visibility_mode || null,
     navigation_defaults: settings.personalization?.navigation_defaults || null,
     commercial_sections: {
       ...DEFAULT_BUSINESS_COMMERCIAL_SECTIONS,

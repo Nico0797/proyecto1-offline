@@ -1,12 +1,15 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { Customer, CustomerCommercialSummary, CustomerHistoryEntry } from '../../types';
+import type { Appointment } from '../../types';
 import { useNavigate } from 'react-router-dom';
 import { formatCOP } from './helpers';
 import { Button } from '../ui/Button';
-import { Phone, Mail, MapPin, Calendar, DollarSign, Edit2, MessageCircle, Plus, ArrowLeft, Activity, ReceiptText, ShoppingCart, Wallet, Clock3 } from 'lucide-react';
+import { Phone, Mail, MapPin, Calendar, CalendarDays, DollarSign, Edit2, MessageCircle, Plus, ArrowLeft, Activity, ReceiptText, ShoppingCart, Wallet, Clock3 } from 'lucide-react';
 import { WhatsAppPreviewModal } from './WhatsAppPreviewModal';
 import { useBusinessStore } from '../../store/businessStore';
 import { customerDetailService } from '../../services/customerDetailService';
+import { offlineAppointmentsLocal } from '../../services/offlineAgendaLocal';
+import { shouldShowAgendaForBusiness } from '../../config/businessOnboardingPresets';
 
 const formatDate = (value?: string | null) => {
   if (!value) return 'Sin fecha';
@@ -81,7 +84,7 @@ export const ClientDetailPanel: React.FC<ClientDetailPanelProps> = ({
   showReceivables = true,
   onCustomerHydrated,
 }) => {
-  const [activeTab, setActiveTab] = useState<'summary' | 'debts' | 'history'>('summary');
+  const [activeTab, setActiveTab] = useState<'summary' | 'debts' | 'history' | 'appointments'>('summary');
   const [isWhatsAppOpen, setIsWhatsAppOpen] = useState(false);
   const [detailCustomer, setDetailCustomer] = useState<Customer | null>(customer);
   const [historyEntries, setHistoryEntries] = useState<CustomerHistoryEntry[]>([]);
@@ -95,6 +98,46 @@ export const ClientDetailPanel: React.FC<ClientDetailPanelProps> = ({
   const [historyReloadToken, setHistoryReloadToken] = useState(0);
   const navigate = useNavigate();
   const { activeBusiness } = useBusinessStore();
+
+  const showAppointments = shouldShowAgendaForBusiness(activeBusiness);
+
+  const customerAppointments = useMemo<Appointment[]>(() => {
+    if (!showAppointments || !activeBusiness?.id || !customer?.id) return [];
+    try {
+      return offlineAppointmentsLocal.list(activeBusiness.id).filter((a) => a.customer_id === customer.id);
+    } catch {
+      return [];
+    }
+  }, [showAppointments, activeBusiness?.id, customer?.id]);
+
+  const upcomingAppts = useMemo(() => {
+    const now = new Date();
+    return customerAppointments
+      .filter((a) => a.status === 'scheduled' && new Date(a.starts_at) >= now)
+      .sort((a, b) => new Date(a.starts_at).getTime() - new Date(b.starts_at).getTime());
+  }, [customerAppointments]);
+
+  const pastAppts = useMemo(() => {
+    return customerAppointments
+      .filter((a) => a.status === 'completed' || a.status === 'cancelled' || a.status === 'no_show')
+      .sort((a, b) => new Date(b.starts_at).getTime() - new Date(a.starts_at).getTime())
+      .slice(0, 20);
+  }, [customerAppointments]);
+
+  const lastServiceDate = useMemo(() => {
+    const last = customerAppointments.find((a) => a.status === 'completed');
+    return last ? new Date(last.completed_at || last.starts_at).toLocaleDateString() : null;
+  }, [customerAppointments]);
+
+  const servicesPendingBalance = useMemo(() => {
+    return customerAppointments
+      .filter((a) => a.status === 'completed')
+      .reduce((sum, a) => {
+        const payments = offlineAppointmentsLocal.getPayments(activeBusiness?.id || 0, a.id);
+        const balanceDue = payments.reduce((s, p) => s + (p.balance_due || 0), 0);
+        return sum + balanceDue;
+      }, 0);
+  }, [customerAppointments, activeBusiness?.id]);
 
   const effectiveCustomer = detailCustomer || customer;
   const customerSummary = useMemo(() => {
@@ -192,7 +235,7 @@ export const ClientDetailPanel: React.FC<ClientDetailPanelProps> = ({
   }
 
   return (
-    <div className="h-full flex flex-col bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm overflow-hidden absolute inset-0 lg:relative z-20">
+    <div className="flex min-h-0 flex-1 flex-col bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm overflow-hidden lg:relative z-20">
       {/* Header */}
       <div className="p-4 md:p-6 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900/50">
         <div className="flex justify-between items-start mb-4 md:mb-0">
@@ -234,7 +277,7 @@ export const ClientDetailPanel: React.FC<ClientDetailPanelProps> = ({
         </div>
         
         {/* Quick Stats Strip */}
-        <div className={`grid gap-2 md:gap-4 mt-4 md:mt-6 ${showReceivables ? 'grid-cols-2 xl:grid-cols-4' : 'grid-cols-3'}`}>
+        <div className={`grid gap-2 md:gap-4 mt-4 md:mt-6 ${showReceivables ? 'grid-cols-2 xl:grid-cols-4' : 'grid-cols-2 sm:grid-cols-3'}`}>
             {showReceivables && (
               <div className="bg-white dark:bg-gray-800 p-2 md:p-3 rounded-lg border border-gray-200 dark:border-gray-700 text-center">
                   <p className="text-[10px] md:text-xs text-gray-500 uppercase tracking-wider mb-1">Deuda Total</p>
@@ -291,6 +334,14 @@ export const ClientDetailPanel: React.FC<ClientDetailPanelProps> = ({
           >
             Historial
           </button>
+          {showAppointments && (
+            <button
+              className={`py-3 md:py-4 px-3 md:px-4 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${activeTab === 'appointments' ? 'border-blue-500 text-blue-600 dark:text-blue-400' : 'border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400'}`}
+              onClick={() => setActiveTab('appointments')}
+            >
+              Citas
+            </button>
+          )}
       </div>
 
       {/* Tab Content */}
@@ -506,6 +557,73 @@ export const ClientDetailPanel: React.FC<ClientDetailPanelProps> = ({
                       </Button>
                     </div>
                   ) : null}
+              </div>
+          )}
+
+          {activeTab === 'appointments' && showAppointments && (
+              <div className="space-y-5">
+                {lastServiceDate && (
+                  <div className="rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900/40 p-4">
+                    <div className="flex items-center gap-2 text-xs uppercase tracking-wide text-gray-500 mb-2"><CalendarDays className="h-4 w-4" /> Última atención</div>
+                    <p className="text-sm font-semibold text-gray-900 dark:text-white">{lastServiceDate}</p>
+                    {servicesPendingBalance > 0 && (
+                      <p className="mt-1 text-xs text-red-600 dark:text-red-400">Saldo pendiente por servicios: {formatCOP(servicesPendingBalance)}</p>
+                    )}
+                  </div>
+                )}
+
+                <div>
+                  <h3 className="font-bold text-gray-900 dark:text-white border-b border-gray-100 dark:border-gray-700 pb-2 mb-3">Próximas citas ({upcomingAppts.length})</h3>
+                  {upcomingAppts.length === 0 ? (
+                    <p className="text-sm text-gray-500 dark:text-gray-400">No hay citas próximas agendadas.</p>
+                  ) : (
+                    <div className="space-y-2">
+                      {upcomingAppts.map((a) => (
+                        <div key={a.id} className="rounded-xl border border-blue-200 bg-blue-50/50 p-3 dark:border-blue-900/30 dark:bg-blue-900/10">
+                          <div className="flex items-center justify-between">
+                            <span className="text-sm font-semibold text-gray-900 dark:text-white">{a.service_name_snapshot}</span>
+                            <span className="text-xs font-medium text-blue-700 dark:text-blue-300">{formatCOP(a.price_snapshot)}</span>
+                          </div>
+                          <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                            {new Date(a.starts_at).toLocaleDateString()} {new Date(a.starts_at).toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit', hour12: true })}
+                            {a.employee_name_snapshot ? ` · ${a.employee_name_snapshot}` : ''}
+                          </p>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                <div>
+                  <h3 className="font-bold text-gray-900 dark:text-white border-b border-gray-100 dark:border-gray-700 pb-2 mb-3">Historial de citas ({pastAppts.length})</h3>
+                  {pastAppts.length === 0 ? (
+                    <p className="text-sm text-gray-500 dark:text-gray-400">Aún no hay citas pasadas.</p>
+                  ) : (
+                    <div className="space-y-2">
+                      {pastAppts.map((a) => {
+                        const statusColor = a.status === 'completed'
+                          ? 'border-green-200 bg-green-50/50 dark:border-green-900/30 dark:bg-green-900/10'
+                          : a.status === 'cancelled'
+                          ? 'border-red-200 bg-red-50/50 dark:border-red-900/30 dark:bg-red-900/10'
+                          : 'border-gray-200 bg-gray-50/50 dark:border-gray-700 dark:bg-gray-900/40';
+                        const statusLabel = a.status === 'completed' ? 'Completada' : a.status === 'cancelled' ? 'Cancelada' : 'No asistió';
+                        return (
+                          <div key={a.id} className={`rounded-xl border p-3 ${statusColor}`}>
+                            <div className="flex items-center justify-between">
+                              <span className="text-sm font-semibold text-gray-900 dark:text-white">{a.service_name_snapshot}</span>
+                              <span className="text-[10px] font-medium text-gray-600 dark:text-gray-400 uppercase">{statusLabel}</span>
+                            </div>
+                            <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                              {new Date(a.starts_at).toLocaleDateString()}
+                              {a.employee_name_snapshot ? ` · ${a.employee_name_snapshot}` : ''}
+                              {a.linked_sale_id ? ` · Venta #${a.linked_sale_id}` : ''}
+                            </p>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
               </div>
           )}
       </div>

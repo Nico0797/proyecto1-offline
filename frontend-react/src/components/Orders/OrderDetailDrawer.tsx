@@ -4,6 +4,7 @@ import { Button } from '../ui/Button';
 import { X, MessageCircle, Printer, Calendar, User, Copy } from 'lucide-react';
 import { formatCOP, buildWhatsAppOrderMessage, getOrderStatusColor, getOrderStatusLabel } from './helpers';
 import { useBusinessStore } from '../../store/businessStore';
+import { MobileDataCard, MobileDataRow } from '../ui/MobileDataCard';
 
 interface OrderDetailDrawerProps {
   order: Order | null;
@@ -76,7 +77,26 @@ export const OrderDetailDrawer: React.FC<OrderDetailDrawerProps> = ({ order, onC
           {/* Items List */}
           <div>
              <h3 className="text-sm font-bold text-gray-900 dark:text-white uppercase tracking-wider mb-3">Productos</h3>
-             <div className="border border-gray-200 dark:border-gray-700 rounded-xl overflow-hidden">
+             <div className="space-y-3 md:hidden">
+                {order.items.map((item, index) => (
+                  <MobileDataCard key={`${item.product_id || item.name}-${index}`}>
+                    <div className="mb-3 break-words text-base font-semibold text-gray-900 dark:text-white">
+                      {item.name || 'Producto'}
+                    </div>
+                    <div className="space-y-2.5">
+                      <MobileDataRow label="Cantidad" value={item.quantity} align="end" />
+                      <MobileDataRow
+                        label="Total"
+                        value={formatCOP(item.total)}
+                        align="end"
+                        valueClassName="text-base font-semibold"
+                        className="border-t border-gray-100 pt-2.5 dark:border-gray-700"
+                      />
+                    </div>
+                  </MobileDataCard>
+                ))}
+             </div>
+             <div className="hidden overflow-hidden rounded-xl border border-gray-200 dark:border-gray-700 md:block">
                 <table className="w-full text-sm">
                    <thead className="bg-gray-50 dark:bg-gray-900/50 text-gray-500 dark:text-gray-400 font-medium">
                       <tr>

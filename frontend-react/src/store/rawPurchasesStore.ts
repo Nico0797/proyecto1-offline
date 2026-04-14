@@ -21,6 +21,10 @@ interface RawPurchasesState {
   setSelectedPurchase: (purchase: RawPurchase | null) => void;
 }
 
+const resolvePurchaseError = (error: any) => {
+  return error?.response?.data?.error || error?.message || 'No pudimos preparar las compras en este momento.';
+};
+
 const upsertPurchase = (purchases: RawPurchase[], purchase: RawPurchase) => {
   const exists = purchases.some((item) => item.id === purchase.id);
   if (!exists) return [purchase, ...purchases];
@@ -40,7 +44,7 @@ export const useRawPurchasesStore = create<RawPurchasesState>((set) => ({
       const purchases = await rawPurchasesService.list(businessId, filters);
       set({ purchases });
     } catch (error: any) {
-      set({ error: error.response?.data?.error || error.message });
+      set({ error: resolvePurchaseError(error) });
     } finally {
       set({ loading: false });
     }
@@ -56,7 +60,7 @@ export const useRawPurchasesStore = create<RawPurchasesState>((set) => ({
       }));
       return purchase;
     } catch (error: any) {
-      set({ error: error.response?.data?.error || error.message });
+      set({ error: resolvePurchaseError(error) });
       return null;
     } finally {
       set({ loading: false });
@@ -73,7 +77,7 @@ export const useRawPurchasesStore = create<RawPurchasesState>((set) => ({
       }));
       return purchase;
     } catch (error: any) {
-      set({ error: error.response?.data?.error || error.message });
+      set({ error: resolvePurchaseError(error) });
       throw error;
     } finally {
       set({ saving: false });
@@ -90,7 +94,7 @@ export const useRawPurchasesStore = create<RawPurchasesState>((set) => ({
       }));
       return purchase;
     } catch (error: any) {
-      set({ error: error.response?.data?.error || error.message });
+      set({ error: resolvePurchaseError(error) });
       throw error;
     } finally {
       set({ saving: false });
@@ -107,7 +111,7 @@ export const useRawPurchasesStore = create<RawPurchasesState>((set) => ({
       }));
       return purchase;
     } catch (error: any) {
-      set({ error: error.response?.data?.error || error.message });
+      set({ error: resolvePurchaseError(error) });
       throw error;
     } finally {
       set({ saving: false });
@@ -124,7 +128,7 @@ export const useRawPurchasesStore = create<RawPurchasesState>((set) => ({
       }));
       return purchase;
     } catch (error: any) {
-      set({ error: error.response?.data?.error || error.message });
+      set({ error: resolvePurchaseError(error) });
       throw error;
     } finally {
       set({ saving: false });

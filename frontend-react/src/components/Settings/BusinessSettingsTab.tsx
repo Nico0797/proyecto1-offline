@@ -150,7 +150,6 @@ export const BusinessSettingsTab = () => {
              placeholder="Ej: FE-"
           />
         </div>
-
         <div className="rounded-xl border border-gray-200 bg-gray-50/80 p-4 dark:border-gray-800 dark:bg-gray-950/40">
           <div className="flex items-start justify-between gap-4">
             <div>

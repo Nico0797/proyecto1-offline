@@ -250,7 +250,7 @@ export const SyncCenterPanel = ({ embedded = false }: SyncCenterPanelProps) => {
             <div className="min-w-0 flex-1">
               <div className="flex flex-wrap items-center gap-2">
                 <h3 className="text-base font-semibold tracking-tight app-text sm:text-lg">
-                  {embedded ? 'Centro de sincronizacion' : 'Sincronizacion y respaldo'}
+                  {embedded ? 'Estado local' : 'Estado local y respaldo'}
                 </h3>
                 <AppStatusBadge
                   tone={
@@ -282,7 +282,7 @@ export const SyncCenterPanel = ({ embedded = false }: SyncCenterPanelProps) => {
               disabled={!activeBusiness || isSyncing || !isOnline}
             >
               <RefreshCw className={`h-4 w-4 ${isSyncing ? 'animate-spin' : ''}`} />
-              {isSyncing ? 'Sincronizando...' : 'Sincronizar ahora'}
+              {isSyncing ? 'Actualizando...' : 'Actualizar ahora'}
             </Button>
             {retryableOperationIds.length > 0 ? (
               <Button variant="outline" onClick={handleRetryAll} disabled={!activeBusiness}>
@@ -320,10 +320,10 @@ export const SyncCenterPanel = ({ embedded = false }: SyncCenterPanelProps) => {
         <div className="flex items-start gap-3">
           <IconContainer icon={ShieldAlert} tone={presentation.tone === 'danger' ? 'alerts' : 'sync'} size="md" />
           <div>
-            <div className="text-sm font-semibold app-text">Reglas del nuevo flujo de sync</div>
+            <div className="text-sm font-semibold app-text">Reglas del flujo local</div>
             <p className="mt-1 text-sm leading-6 app-text-muted">
-              El estado general se resume arriba y este centro concentra el detalle. Los conflictos no se aplican automaticamente
-              sobre el servidor: aqui puedes revisar el motivo, reintentar o descartar cambios locales de facturas cuando haga falta.
+              El estado general se resume arriba y este centro concentra el detalle. Aqui puedes revisar el motivo,
+              reintentar o descartar cambios locales de facturas cuando haga falta.
             </p>
           </div>
         </div>
@@ -334,7 +334,7 @@ export const SyncCenterPanel = ({ embedded = false }: SyncCenterPanelProps) => {
           <TeachingEmptyState
             icon={ShieldAlert}
             title="No hay operaciones pendientes"
-            description="Cuando registres cambios sin conexion, aqui veras la cola, los incidentes y el historial breve de sincronizacion."
+            description="Cuando registres cambios locales, aqui veras el detalle, los incidentes y el historial breve."
             primaryActionLabel="Ir a facturas"
             onPrimaryAction={() => window.location.assign('/invoices')}
           />

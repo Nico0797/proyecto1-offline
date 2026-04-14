@@ -28,25 +28,25 @@ export const Input: React.FC<InputProps> = ({
   return (
     <div className="flex flex-col gap-1.5">
       {label && (
-        <label htmlFor={id} className="text-[13px] font-semibold tracking-tight app-text-secondary">
+        <label htmlFor={id} className="px-0.5 text-[12px] font-semibold tracking-tight app-text-secondary sm:text-[13px]">
           {label}
         </label>
       )}
       <div className="relative">
         {Icon && (
           <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3.5">
-            <Icon className="h-5 w-5 app-text-muted" />
+            <Icon className="h-4.5 w-4.5 app-text-muted" />
           </div>
         )}
         {startAdornment && !Icon && (
-           <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3.5 app-text-muted">
-             {startAdornment}
-           </div>
+          <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3.5 app-text-muted">
+            {startAdornment}
+          </div>
         )}
         <input
           id={id}
           className={cn(
-            'app-field-surface min-h-11 w-full rounded-2xl px-3.5 py-3 text-[16px] shadow-sm transition sm:text-sm',
+            'app-field-surface min-h-10 w-full rounded-[18px] px-3.5 py-2.5 text-[15px] transition sm:min-h-11 sm:text-sm',
             'focus:outline-none',
             'disabled:opacity-50 disabled:cursor-not-allowed',
             error && 'border-[color:var(--app-danger)] focus:border-[color:var(--app-danger)]',

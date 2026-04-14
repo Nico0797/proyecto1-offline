@@ -35,6 +35,7 @@ import {
   MobileUtilityBar,
   useMobileFilterDraft,
 } from '../components/mobile/MobileContentFirst';
+import { isOfflineProductMode } from '../runtime/runtimeMode';
 import {
   getInvoiceEditability,
   getInvoiceSyncMeta,
@@ -271,6 +272,11 @@ export const Invoices = () => {
       <PageHeader
         title="Facturas digitales"
         description="Crea, comparte y sigue facturas profesionales con estados claros, PDF y experiencia responsive."
+        mobileFab={{
+          label: '+Factura',
+          icon: Plus,
+          onClick: () => navigate('/invoices/new'),
+        }}
         action={(
           <CompactActionGroup
             collapseLabel="Atajos"
@@ -292,11 +298,13 @@ export const Invoices = () => {
                   <FileSpreadsheet className="h-4 w-4" /> Cartera
                 </Button>
               </Link>,
-              <Link key="sync" to="/invoices/sync" className="block w-full sm:w-auto">
-                <Button variant="secondary" className="w-full sm:w-auto" data-tour="invoices.sync">
-                  <Settings2 className="h-4 w-4" /> Sync
-                </Button>
-              </Link>,
+              ...(!isOfflineProductMode()
+                ? [<Link key="sync" to="/invoices/sync" className="block w-full sm:w-auto">
+                    <Button variant="secondary" className="w-full sm:w-auto" data-tour="invoices.sync">
+                      <Settings2 className="h-4 w-4" /> Sync
+                    </Button>
+                  </Link>]
+                : []),
             ]}
           />
         )}
@@ -386,7 +394,7 @@ export const Invoices = () => {
                           <td className="px-4 py-3">
                             <div className="flex items-center gap-2">
                               <div className="font-semibold text-gray-900 dark:text-white">{invoice.invoice_number}</div>
-                              {getInvoiceSyncMeta(invoice) && (
+                              {!isOfflineProductMode() && getInvoiceSyncMeta(invoice) && (
                                 <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-semibold ${getInvoiceSyncMeta(invoice)?.className}`}>
                                   {getInvoiceSyncMeta(invoice)?.label}
                                 </span>
@@ -432,7 +440,7 @@ export const Invoices = () => {
                         <div>
                           <div className="flex flex-wrap items-center gap-2">
                             <div className="text-sm font-semibold text-gray-900 dark:text-white">{invoice.invoice_number}</div>
-                            {getInvoiceSyncMeta(invoice) && (
+                            {!isOfflineProductMode() && getInvoiceSyncMeta(invoice) && (
                               <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-semibold ${getInvoiceSyncMeta(invoice)?.className}`}>
                                 {getInvoiceSyncMeta(invoice)?.label}
                               </span>

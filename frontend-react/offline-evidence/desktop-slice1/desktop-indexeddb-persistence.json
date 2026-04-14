@@ -1,0 +1,23 @@
+{
+  "generatedAt": "2026-04-09T15:21:07.953Z",
+  "url": "/dashboard",
+  "indexedDb": {
+    "businesses": [
+      "Negocio Slice 1"
+    ],
+    "customers": [
+      "Cliente Slice 1 Editado"
+    ],
+    "products": [
+      "Producto Slice 1 Editado",
+      "Producto Temporal Slice 1"
+    ],
+    "sales": [
+      {
+        "id": -1775746770946268,
+        "customer_name": "Cliente Slice 1 Editado",
+        "note": "Venta local Tauri slice 1"
+      }
+    ]
+  }
+}

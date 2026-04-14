@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { offlineSyncService, OFFLINE_SYNC_EVENT } from '../services/offlineSyncService';
+import { isOfflineProductMode } from '../runtime/runtimeMode';
 
 const ACCOUNT_ACCESS_STORAGE_KEY = 'account_access_snapshot';
 
@@ -86,6 +87,22 @@ export const useOfflineSyncStore = create<OfflineSyncState>((set, get) => ({
     set({ trackedBusinessId: businessId ?? null });
   },
   initialize: async (businessId) => {
+    if (isOfflineProductMode()) {
+      set({
+        enabled: false,
+        trackedBusinessId: businessId ?? null,
+        isOnline: false,
+        isSyncing: false,
+        pendingCount: 0,
+        failedCount: 0,
+        conflictedCount: 0,
+        blockedCount: 0,
+        lastSyncAt: null,
+        lastError: null,
+        lastToastEvent: null,
+      });
+      return;
+    }
     bindGlobalListeners();
     if (isDemoPreviewActive()) {
       set({
@@ -107,6 +124,22 @@ export const useOfflineSyncStore = create<OfflineSyncState>((set, get) => ({
   },
   refresh: async (businessId) => {
     const targetBusinessId = businessId ?? get().trackedBusinessId;
+    if (isOfflineProductMode()) {
+      set({
+        enabled: false,
+        trackedBusinessId: targetBusinessId ?? null,
+        isOnline: false,
+        isSyncing: false,
+        pendingCount: 0,
+        failedCount: 0,
+        conflictedCount: 0,
+        blockedCount: 0,
+        lastSyncAt: null,
+        lastError: null,
+        lastToastEvent: null,
+      });
+      return;
+    }
     if (isDemoPreviewActive()) {
       set({
         enabled: false,
@@ -146,6 +179,22 @@ export const useOfflineSyncStore = create<OfflineSyncState>((set, get) => ({
   },
   syncNow: async (businessId, source = 'manual') => {
     const targetBusinessId = businessId ?? get().trackedBusinessId;
+    if (isOfflineProductMode()) {
+      set({
+        enabled: false,
+        trackedBusinessId: targetBusinessId ?? null,
+        isOnline: false,
+        isSyncing: false,
+        pendingCount: 0,
+        failedCount: 0,
+        conflictedCount: 0,
+        blockedCount: 0,
+        lastSyncAt: null,
+        lastError: null,
+        lastToastEvent: null,
+      });
+      return;
+    }
 
     if (isDemoPreviewActive()) {
       set({

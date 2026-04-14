@@ -1,12 +1,13 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
+import { normalizeNavigationPaths } from '../navigation/navigationPathAliases';
 
 export interface NavigationPreferences {
   hiddenPaths: string[];
   favoritePaths: string[];
 }
 
-const normalizePaths = (paths?: string[]) => Array.from(new Set((paths || []).filter(Boolean)));
+const normalizePaths = (paths?: string[]) => normalizeNavigationPaths(paths);
 
 export const buildDefaultNavigationPreferences = (favoritePaths?: string[]): NavigationPreferences => ({
   hiddenPaths: [],

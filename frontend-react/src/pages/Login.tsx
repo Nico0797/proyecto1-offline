@@ -1,15 +1,18 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useNavigate, Link, useLocation } from 'react-router-dom';
 import { useAuthStore } from '../store/authStore';
 import { useAccountAccessStore } from '../store/accountAccessStore';
 import { useBusinessStore } from '../store/businessStore';
 import api from '../services/api';
+import { isMobileNativeShell } from '../runtime/runtimeMode';
 import { Mail, Lock, Eye, EyeOff, ArrowRight, Loader2, Sparkles } from 'lucide-react';
 import logo from '../assets/logo.png';
 
 export const Login = () => {
   const navigate = useNavigate();
   const location = useLocation();
+  const { isAuthenticated, activeContext, accessibleContexts } = useAuthStore();
+  const activeBusiness = useBusinessStore((state) => state.activeBusiness);
   const login = useAuthStore((state) => state.login);
   const fetchAuthBootstrap = useBusinessStore((state) => state.fetchAuthBootstrap);
   const [email, setEmail] = useState('');
@@ -23,10 +26,22 @@ export const Login = () => {
   );
   const hasEnvBase = !!import.meta.env.VITE_API_BASE_URL;
   const isFileProtocol = typeof window !== 'undefined' && window.location.protocol === 'file:';
-  const canConfigureServer = isFileProtocol || !hasEnvBase;
+  const canConfigureServer = isFileProtocol || isMobileNativeShell() || !hasEnvBase;
 
   const params = new URLSearchParams(location.search);
   const redirect = params.get('redirect');
+
+  useEffect(() => {
+    if (!isAuthenticated) return;
+    if (activeContext?.business_id || activeBusiness?.id) {
+      const safeRedirect = redirect && redirect.startsWith('/') ? redirect : '/dashboard';
+      navigate(safeRedirect, { replace: true });
+      return;
+    }
+    if (accessibleContexts.length > 0) {
+      navigate('/select-context', { replace: true });
+    }
+  }, [activeBusiness?.id, activeContext?.business_id, accessibleContexts.length, isAuthenticated, navigate, redirect]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

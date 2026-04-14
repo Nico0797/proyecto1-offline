@@ -16,7 +16,7 @@ import { getStockStatus } from './helpers';
 import { useCategoryStore } from './categoryStore';
 import { SwipePager } from '../ui/SwipePager';
 import { usePermission } from '../../hooks/usePermission';
-import { PageHeader, PageLayout, PageNotice, PageStack, PageSummary, PageToolbarCard } from '../Layout/PageLayout';
+import { PageHeader, PageHeaderActionButton, PageLayout, PageNotice, PageStack, PageSummary, PageToolbarCard } from '../Layout/PageLayout';
 import {
   MobileFilterDrawer,
   MobileHelpDisclosure,
@@ -162,12 +162,19 @@ export const ProductCatalog: React.FC = () => {
       <PageHeader
         title="Productos y Servicios"
         description="Gestiona tu catálogo, inventario y precios."
+        mobileFab={canCreate ? {
+          label: 'Crear producto',
+          icon: Plus,
+          onClick: handleNewProduct,
+        } : undefined}
         action={canCreate ? (
-          <Button onClick={handleNewProduct} className="w-full sm:w-auto" data-tour="products.primaryAction">
-            <Plus className="w-4 h-4 mr-2" />
-            <span className="hidden sm:inline">Nuevo</span>
-            <span className="sm:hidden">Crear</span>
-          </Button>
+          <PageHeaderActionButton
+            onClick={handleNewProduct}
+            icon={Plus}
+            label="Nuevo producto"
+            mobileLabel="Crear"
+            data-tour="products.primaryAction"
+          />
         ) : undefined}
       />
 

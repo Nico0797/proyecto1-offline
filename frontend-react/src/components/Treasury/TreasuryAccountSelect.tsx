@@ -2,6 +2,7 @@ import React, { useEffect } from 'react';
 import { useTreasuryStore } from '../../store/treasuryStore';
 import { formatTreasuryAccountLabel, sortTreasuryAccounts } from '../../utils/treasury';
 import { isBackendCapabilitySupported } from '../../config/backendCapabilities';
+import { isOfflineProductMode } from '../../runtime/runtimeMode';
 
 interface TreasuryAccountSelectProps {
   businessId?: number | null;
@@ -27,7 +28,7 @@ export const TreasuryAccountSelect: React.FC<TreasuryAccountSelectProps> = ({
   showBalance = false,
 }) => {
   const { accounts, loadingAccounts, fetchAccounts, businessId: loadedBusinessId } = useTreasuryStore();
-  const supportsTreasury = isBackendCapabilitySupported('treasury');
+  const supportsTreasury = isOfflineProductMode() || isBackendCapabilitySupported('treasury');
 
   useEffect(() => {
     if (!supportsTreasury) return;
@@ -51,7 +52,7 @@ export const TreasuryAccountSelect: React.FC<TreasuryAccountSelectProps> = ({
         disabled={disabled || !businessId || loadingAccounts || !supportsTreasury}
         required={required}
       >
-        <option value="">{!supportsTreasury ? 'Tesorería no disponible' : loadingAccounts ? 'Cargando cuentas...' : placeholder}</option>
+        <option value="">{!supportsTreasury ? 'Tesoreria no disponible' : loadingAccounts ? 'Cargando cuentas...' : placeholder}</option>
         {sortTreasuryAccounts(accounts)
           .filter((account) => account.is_active)
           .map((account) => (
@@ -62,7 +63,7 @@ export const TreasuryAccountSelect: React.FC<TreasuryAccountSelectProps> = ({
       </select>
       {helperText || !supportsTreasury ? (
         <p className="text-xs text-gray-500 dark:text-gray-400">
-          {!supportsTreasury ? 'Este backend no expone cuentas de tesorería. El campo se desactiva para evitar errores 404.' : helperText}
+          {!supportsTreasury ? 'Las cuentas de tesoreria no estan disponibles en este momento.' : helperText}
         </p>
       ) : null}
     </div>

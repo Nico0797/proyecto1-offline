@@ -3,9 +3,9 @@ export type Trend = 'up' | 'down' | 'neutral';
 export interface KPI {
   id: string;
   label: string;
-  value: number;
+  value: number | string;
   previousValue?: number;
-  change: number;
+  change?: number;
   trend: Trend;
   format?: 'currency' | 'number' | 'percent';
   inverse?: boolean;
@@ -26,7 +26,8 @@ export interface Insight {
 
 export interface Forecast {
   projectedRevenue: number;
-  projectedProfit: number;
+  projectedResult: number;
+  resultLabel: string;
   confidence: { min: number; max: number; level?: number };
   trend: Trend;
   suggestions: string[];
@@ -41,6 +42,8 @@ export interface HealthScore {
     message: string;
   }>;
 }
+
+export type AnalyticsCostCoverage = 'complete' | 'partial' | 'missing';
 
 export interface SalesTrendPoint {
   date: string;

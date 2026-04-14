@@ -6,7 +6,7 @@ import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
 import { Target, Trophy, Calendar, CheckCircle, Archive, TrendingUp, AlertCircle, Clock, Plus, ArrowRight, User, Filter, Trash2 } from 'lucide-react';
 import { Modal } from '../components/ui/Modal';
-import { PageBody, PageHeader, PageLayout, PageNotice, PageStack, PageSummary, PageToolbarCard } from '../components/Layout/PageLayout';
+import { PageBody, PageHeader, PageHeaderActionButton, PageLayout, PageNotice, PageStack, PageSummary, PageToolbarCard } from '../components/Layout/PageLayout';
 import { SwipePager } from '../components/ui/SwipePager';
 import {
   MobileFilterDrawer,
@@ -20,6 +20,8 @@ import {
 import { Chart as ChartJS, ArcElement, Tooltip, Legend } from 'chart.js';
 import { Doughnut } from 'react-chartjs-2';
 import { TeamMember } from '../types';
+import { isOfflineProductMode } from '../runtime/runtimeMode';
+import { nextLocalNumericId, readLocalCollection, writeLocalCollection } from '../services/offlineLocalData';
 
 ChartJS.register(ArcElement, Tooltip, Legend);
 
@@ -36,9 +38,15 @@ interface SalesGoal {
   user_name?: string;
 }
 
+const SALES_GOALS_COLLECTION = 'sales_goals';
+
+const readLocalGoals = (businessId: number) => readLocalCollection<SalesGoal>(businessId, SALES_GOALS_COLLECTION);
+const writeLocalGoals = (businessId: number, goals: SalesGoal[]) => writeLocalCollection(businessId, SALES_GOALS_COLLECTION, goals);
+
 export const SalesGoals = () => {
   const { activeBusiness } = useBusinessStore();
   const { user } = useAuthStore();
+  const offlineProductMode = isOfflineProductMode();
   const [loading, setLoading] = useState(false);
   const [isProLocked, setIsProLocked] = useState(false);
   const [goals, setGoals] = useState<SalesGoal[]>([]);
@@ -60,14 +68,20 @@ export const SalesGoals = () => {
 
   const permissions = activeBusiness?.permissions || [];
   const isOwner = activeBusiness?.role === 'PROPIETARIO' || activeBusiness?.role === 'Propietario';
-  const canManage = isOwner || permissions.includes('sales.goals.manage') || permissions.includes('*');
-  const canViewAll = isOwner || permissions.includes('sales.goals.view_all') || permissions.includes('*');
+  const canManage = offlineProductMode || isOwner || permissions.includes('sales.goals.manage') || permissions.includes('*');
+  const canViewAll = offlineProductMode || isOwner || permissions.includes('sales.goals.view_all') || permissions.includes('*');
 
   const loadGoals = async () => {
     if (!activeBusiness) return;
     setLoading(true);
     setIsProLocked(false);
     try {
+      if (offlineProductMode) {
+        setGoals(readLocalGoals(activeBusiness.id));
+        setMembers([]);
+        return;
+      }
+
       const res = await api.get(`/businesses/${activeBusiness.id}/sales-goals`);
       setGoals(res.data.sales_goals || []);
       
@@ -95,7 +109,7 @@ export const SalesGoals = () => {
     if (activeBusiness) {
       loadGoals();
     }
-  }, [activeBusiness]);
+  }, [activeBusiness, offlineProductMode]);
 
   useEffect(() => {
     if (editingGoal) {
@@ -134,6 +148,47 @@ export const SalesGoals = () => {
 
     setLoading(true);
     try {
+      if (offlineProductMode) {
+        const currentGoals = readLocalGoals(activeBusiness.id);
+        const targetAmount = parseFloat(formData.target_amount) || 0;
+        const assignedUserId = Number(formData.assigned_user_id || user?.id || 0);
+        const nextGoals = editingGoal
+          ? currentGoals.map((goal) =>
+              goal.id === editingGoal.id
+                ? {
+                    ...goal,
+                    title: formData.title,
+                    target_amount: targetAmount,
+                    start_date: formData.start_date,
+                    end_date: formData.end_date,
+                    user_id: assignedUserId,
+                    user_name: user?.name || goal.user_name,
+                    progress_pct: targetAmount > 0 ? ((goal.current_amount || 0) / targetAmount) * 100 : 0,
+                  }
+                : goal,
+            )
+          : [
+              ...currentGoals,
+              {
+                id: nextLocalNumericId(currentGoals),
+                title: formData.title,
+                target_amount: targetAmount,
+                current_amount: 0,
+                start_date: formData.start_date,
+                end_date: formData.end_date,
+                status: 'active' as const,
+                progress_pct: 0,
+                user_id: assignedUserId,
+                user_name: user?.name || 'Responsable',
+              },
+            ];
+
+        writeLocalGoals(activeBusiness.id, nextGoals);
+        setGoals(nextGoals);
+        setIsModalOpen(false);
+        return;
+      }
+
       const payload = {
         title: formData.title,
         target_amount: parseFloat(formData.target_amount) || 0,
@@ -166,6 +221,12 @@ export const SalesGoals = () => {
     if (!activeBusiness) return;
     if (!confirm('¿Seguro que deseas archivar esta meta?')) return;
     try {
+      if (offlineProductMode) {
+        const nextGoals = goals.map((goal) => (goal.id === id ? { ...goal, status: 'archived' as const } : goal));
+        writeLocalGoals(activeBusiness.id, nextGoals);
+        setGoals(nextGoals);
+        return;
+      }
       await api.put(`/businesses/${activeBusiness.id}/sales-goals/${id}`, { status: 'archived' });
       setGoals(goals.map(g => g.id === id ? { ...g, status: 'archived' } : g));
     } catch (err) {
@@ -177,6 +238,12 @@ export const SalesGoals = () => {
     if (!activeBusiness) return;
     if (!confirm('¿Seguro que deseas ELIMINAR permanentemente esta meta? Esta acción no se puede deshacer.')) return;
     try {
+      if (offlineProductMode) {
+        const nextGoals = goals.filter((goal) => goal.id !== id);
+        writeLocalGoals(activeBusiness.id, nextGoals);
+        setGoals(nextGoals);
+        return;
+      }
       await api.delete(`/businesses/${activeBusiness.id}/sales-goals/${id}`);
       setGoals(goals.filter(g => g.id !== id));
     } catch (err: any) {
@@ -199,7 +266,7 @@ export const SalesGoals = () => {
     return remaining > 0 ? remaining / daysLeft : 0;
   };
 
-  if (isProLocked) {
+  if (isProLocked && !offlineProductMode) {
     return (
       <div className="app-canvas min-h-screen p-6 flex items-center justify-center">
         <div className="app-surface rounded-2xl p-8 text-center max-w-2xl w-full shadow-2xl relative overflow-hidden">
@@ -207,14 +274,14 @@ export const SalesGoals = () => {
           <div className="bg-yellow-500/10 p-6 rounded-full w-24 h-24 mx-auto mb-6 flex items-center justify-center animate-pulse">
             <Trophy className="w-12 h-12 text-yellow-500" />
           </div>
-          <h2 className="text-3xl font-bold text-gray-900 dark:text-white mb-4">Desbloquea Metas Pro</h2>
+          <h2 className="text-3xl font-bold text-gray-900 dark:text-white mb-4">No pudimos cargar las metas ahora mismo</h2>
           <p className="text-gray-600 dark:text-gray-400 mb-8 text-lg leading-relaxed">
             Define objetivos claros, monitorea tu progreso en tiempo real y celebra tus logros.
             <br />
             Las empresas que establecen metas crecen un <span className="text-yellow-400 font-bold">30% más rápido</span>.
           </p>
           <Button onClick={() => (window.location.href = '/settings')} className="bg-gradient-to-r from-yellow-500 to-orange-500 border-none px-8 py-4 text-lg font-bold shadow-lg hover:shadow-yellow-500/20 transform hover:scale-105 transition-all">
-            Actualizar a Pro ahora
+            Abrir configuracion
           </Button>
         </div>
       </div>
@@ -298,7 +365,7 @@ export const SalesGoals = () => {
       <div className="min-w-0 flex-1 text-sm text-gray-500 dark:text-gray-400">
         {filteredGoals.length} meta(s) en la vista actual
       </div>
-      {(canManage || canViewAll) && members.length > 0 && (
+      {!offlineProductMode && (canManage || canViewAll) && members.length > 0 && (
         <div className="flex items-center gap-2 w-full lg:w-auto">
           <Filter className="h-4 w-4 text-gray-400" />
           <MobileSelectField
@@ -323,7 +390,7 @@ export const SalesGoals = () => {
       <div className="min-w-0 text-sm text-gray-500 dark:text-gray-400">
         {filteredGoals.length} meta(s) en la vista actual
       </div>
-      {(canManage || canViewAll) && members.length > 0 ? (
+      {!offlineProductMode && (canManage || canViewAll) && members.length > 0 ? (
         <div className="flex items-center gap-2">
           <Filter className="h-4 w-4 text-gray-400" />
           <MobileSelectField
@@ -525,13 +592,12 @@ export const SalesGoals = () => {
         title="Metas de Ventas"
         description="Monitorea y alcanza tus objetivos financieros sin perder de vista las metas activas."
         action={canManage ? (
-          <Button
+          <PageHeaderActionButton
             onClick={() => { setEditingGoal(null); setIsModalOpen(true); }}
-            className="w-full sm:w-auto"
-          >
-            <Plus className="h-5 w-5" />
-            Nueva Meta
-          </Button>
+            icon={Plus}
+            label="Nueva meta"
+            mobileLabel="Meta"
+          />
         ) : undefined}
       />
 
@@ -623,7 +689,7 @@ export const SalesGoals = () => {
             className="dark:bg-gray-700 dark:border-gray-600 dark:text-white"
           />
           
-          {canManage && members.length > 0 && (
+          {!offlineProductMode && canManage && members.length > 0 && (
             <div className="space-y-4">
                 {/* Assignment */}
                 <div className="space-y-1">

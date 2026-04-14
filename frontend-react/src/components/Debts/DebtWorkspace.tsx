@@ -338,7 +338,7 @@ export const DebtWorkspace = ({ scope }: DebtWorkspaceProps) => {
                     title={filters.search || filters.status ? 'No hay obligaciones de proveedores con este filtro' : 'No hay compras a crédito pendientes'}
                     description={filters.search || filters.status
                       ? 'Prueba limpiando filtros para revisar compras a crédito u obligaciones históricas.'
-                      : 'Cuando el backend exponga más flujo operativo de compras, aquí seguirás viendo el saldo pendiente con proveedores.'}
+                      : 'Aqui veras el saldo pendiente con proveedores y su seguimiento operativo.'}
                   />
                 </div>
               ) : null}
@@ -460,7 +460,7 @@ export const DebtWorkspace = ({ scope }: DebtWorkspaceProps) => {
                 <Wallet className="w-4 h-4" /> Gestión operativa
               </div>
               <p className="text-sm text-gray-500 dark:text-gray-400">
-                El backend actual expone el listado consolidado de cuentas por pagar a proveedores, pero no el detalle operativo para registrar pagos desde esta vista.
+                Esta vista muestra el consolidado actual de cuentas por pagar a proveedores.
               </p>
               <div className="flex justify-end gap-3 border-t border-gray-200 dark:border-gray-700 pt-3">
                 <Button variant="secondary" onClick={closeSupplierDetails}>Cerrar</Button>

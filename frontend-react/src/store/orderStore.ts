@@ -1,6 +1,8 @@
 import { create } from 'zustand';
 import api from '../services/api';
 import { Order, OrderItem } from '../types';
+import { isPureOfflineRuntime } from '../services/offlineLocalData';
+import { offlineOrdersLocal } from '../services/offlineOrdersLocal';
 
 export type { Order, OrderItem };
 
@@ -18,11 +20,14 @@ export const useOrderStore = create<OrderState>((set) => ({
   orders: [],
   loading: false,
   error: null,
-  // helper to normalize orders from backend payloads
-  // ensure items have 'quantity', compute 'total' fallback, flatten customer name if present
   fetchOrders: async (businessId, opts) => {
     try {
       set({ loading: true, error: null });
+      if (isPureOfflineRuntime()) {
+        const orders = await offlineOrdersLocal.list(businessId, opts);
+        set({ orders });
+        return;
+      }
       const addOneDay = (d?: string) => {
         if (!d) return undefined;
         const parts = d.split('-').map(Number);
@@ -75,6 +80,11 @@ export const useOrderStore = create<OrderState>((set) => ({
   createOrder: async (businessId, orderData) => {
     try {
       set({ loading: true, error: null });
+      if (isPureOfflineRuntime()) {
+        const localOrder = await offlineOrdersLocal.create(businessId, orderData);
+        set((state) => ({ orders: [localOrder, ...state.orders.filter((entry) => entry.id !== localOrder.id)] }));
+        return;
+      }
       const response = await api.post(`/businesses/${businessId}/orders`, orderData);
       const apiOrder = response?.data?.order;
       const normalize = (o: any): Order => {
@@ -112,6 +122,13 @@ export const useOrderStore = create<OrderState>((set) => ({
   updateOrderStatus: async (businessId, id, status, saleDate, extraData) => {
     try {
       set({ loading: true, error: null });
+      if (isPureOfflineRuntime()) {
+        const updated = await offlineOrdersLocal.updateStatus(businessId, id, status, saleDate, extraData);
+        set((state) => ({
+          orders: state.orders.map((order) => (order.id === id ? updated : order)),
+        }));
+        return;
+      }
       const payload: any = { status, ...extraData };
       if (saleDate) {
         payload.sale_date = saleDate;
@@ -152,6 +169,13 @@ export const useOrderStore = create<OrderState>((set) => ({
   deleteOrder: async (businessId, id) => {
     try {
       set({ loading: true, error: null });
+      if (isPureOfflineRuntime()) {
+        await offlineOrdersLocal.remove(businessId, id);
+        set((state) => ({
+          orders: state.orders.filter((o) => o.id !== id),
+        }));
+        return;
+      }
       await api.delete(`/businesses/${businessId}/orders/${id}`);
       set((state) => ({
         orders: state.orders.filter((o) => o.id !== id),

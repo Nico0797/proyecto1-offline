@@ -3,7 +3,7 @@ import { createPortal } from 'react-dom';
 import { X } from 'lucide-react';
 import { cn } from '../../utils/cn';
 
-interface ModalProps {
+interface ModalProps extends React.HTMLAttributes<HTMLDivElement> {
   isOpen: boolean;
   onClose: () => void;
   title: string;
@@ -19,6 +19,7 @@ export const Modal: React.FC<ModalProps> = ({
   children,
   className,
   maxWidth = 'max-w-lg',
+  ...rest
 }) => {
   // Close modal on Escape key press
   useEffect(() => {
@@ -35,7 +36,7 @@ export const Modal: React.FC<ModalProps> = ({
   if (!isOpen) return null;
 
   const modalContent = (
-    <div className="fixed inset-0 z-[9999] flex items-end justify-center p-0 sm:items-center sm:p-6">
+    <div className="fixed inset-0 z-[9999] flex items-end justify-center p-0 pb-[env(safe-area-inset-bottom)] sm:items-center sm:p-6">
       <div 
         className="app-overlay-backdrop fixed inset-0 transition-opacity" 
         onClick={onClose}
@@ -51,6 +52,7 @@ export const Modal: React.FC<ModalProps> = ({
         role="dialog"
         aria-modal="true"
         aria-labelledby="modal-title"
+        {...rest}
       >
         <div className="app-page-header sticky top-0 z-10 flex items-center justify-between border-b app-divider px-4 py-3.5 backdrop-blur sm:px-6 sm:py-4">
           <h3 

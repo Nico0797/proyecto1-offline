@@ -1,3 +1,5 @@
+import { isMobileNativeShell } from '../runtime/runtimeMode';
+
 export const resolveApiBaseUrl = () => {
   const envBaseUrl = import.meta.env.VITE_API_BASE_URL || '/api';
 
@@ -8,8 +10,9 @@ export const resolveApiBaseUrl = () => {
   const storedBaseUrl = window.localStorage.getItem('API_BASE_URL')?.trim();
   const isFileProtocol = window.location.protocol === 'file:';
   const isEnvRelative = envBaseUrl.startsWith('/');
+  const mobileNativeShell = isMobileNativeShell();
 
-  if (storedBaseUrl && (isFileProtocol || !isEnvRelative)) {
+  if (storedBaseUrl && (isFileProtocol || mobileNativeShell || !isEnvRelative)) {
     return storedBaseUrl;
   }
 

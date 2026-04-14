@@ -104,8 +104,6 @@ def register_commercial_core_restore_routes(app, *, token_required, module_requi
         balance = _round(max(float(order.total or 0) - amount_paid, 0))
         if balance > 0.01 and not order.customer_id:
             raise ValueError("Las ventas a crédito o parciales requieren cliente")
-        if balance > 0.01 and not _module_enabled(business, "accounts_receivable"):
-            raise ValueError("El módulo accounts_receivable no está habilitado para este negocio")
         current_user = g.current_user
         note_tag = f"Desde pedido {order.order_number} (ID {order.id})"
         extra_note = _text(data.get("note"))

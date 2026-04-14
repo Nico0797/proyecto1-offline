@@ -42,6 +42,7 @@ import { useBusinessStore } from '../store/businessStore';
 import { useInvoiceStore } from '../store/invoiceStore';
 import { InvoiceSettings } from '../types';
 import { OFFLINE_SNAPSHOT_APPLIED_EVENT } from '../services/offlineSyncService';
+import { isOfflineProductMode } from '../runtime/runtimeMode';
 
 const openPrintableInvoice = async (businessId: number, invoiceId: number) => {
   const previewWindow = window.open('', '_blank');
@@ -146,7 +147,9 @@ export const InvoiceDetail = () => {
     try {
       const invoice = await updateInvoiceStatus(activeBusiness.id, selectedInvoice.id, status);
       toast.success(
-        invoice.sync_status === 'pending'
+        isOfflineProductMode()
+          ? 'Estado actualizado localmente'
+          : invoice.sync_status === 'pending'
           ? 'Estado actualizado offline. Se sincronizara al reconectar.'
           : 'Estado actualizado'
       );
@@ -183,7 +186,7 @@ export const InvoiceDetail = () => {
         setMessageModal({
           open: true,
           title: `Compartir ${selectedInvoice.invoice_number}`,
-          description: 'Mensaje local listo para compartir mientras recuperas conexion.',
+          description: 'Mensaje listo para compartir desde tu dispositivo.',
           contactName: selectedInvoice.customer_name,
           phone: selectedInvoice.customer_phone,
           message: buildInvoiceOfflineShareMessage(selectedInvoice),
@@ -211,7 +214,7 @@ export const InvoiceDetail = () => {
         setMessageModal({
           open: true,
           title: `Recordatorio ${selectedInvoice.invoice_number}`,
-          description: 'Mensaje local listo para seguimiento mientras vuelves a estar en linea.',
+          description: 'Mensaje listo para seguimiento desde tu dispositivo.',
           contactName: selectedInvoice.customer_name,
           phone: selectedInvoice.customer_phone,
           message: buildInvoiceOfflineReminderMessage({
@@ -260,7 +263,7 @@ export const InvoiceDetail = () => {
   const handleDownloadPdf = async () => {
     if (!activeBusiness || !selectedInvoice) return;
     if (typeof navigator !== 'undefined' && !navigator.onLine) {
-      toast.error('La descarga PDF necesita conexion para generar el archivo final.');
+      toast.error('La descarga PDF no esta disponible en este momento.');
       return;
     }
     const token = localStorage.getItem('token') || undefined;
@@ -274,7 +277,7 @@ export const InvoiceDetail = () => {
   const handlePrint = async () => {
     if (!activeBusiness || !selectedInvoice) return;
     if (typeof navigator !== 'undefined' && !navigator.onLine) {
-      toast.error('La vista imprimible necesita conexion para cargar la version del servidor.');
+      toast.error('La vista imprimible no esta disponible en este momento.');
       return;
     }
     try {
@@ -295,7 +298,9 @@ export const InvoiceDetail = () => {
         note: paymentNote || undefined,
       });
       toast.success(
-        invoice.sync_status === 'pending'
+        isOfflineProductMode()
+          ? (amount && amount < selectedInvoice.outstanding_balance ? 'Pago parcial registrado localmente' : 'Pago registrado localmente')
+          : invoice.sync_status === 'pending'
           ? 'Pago guardado offline. Se sincronizara al reconectar.'
           : amount && amount < selectedInvoice.outstanding_balance
             ? 'Pago parcial registrado'
@@ -353,7 +358,7 @@ export const InvoiceDetail = () => {
     } catch (error: any) {
       toast.error(
         error?.isOfflineRequestError || !error?.response
-          ? `El ${actionLabel} necesita conexion para quedar autoritativo en tesoreria y contabilidad.`
+          ? `El ${actionLabel} no esta disponible en este momento.`
           : error?.response?.data?.error || `No fue posible registrar el ${actionLabel}`
       );
     }
@@ -392,11 +397,15 @@ export const InvoiceDetail = () => {
           </Link>,
         ]
       : []),
-    <Link key="sync" to="/invoices/sync" className="block w-full sm:w-auto">
-      <Button variant="secondary" className="w-full sm:w-auto">
-        <ShieldAlert className="h-4 w-4" /> Sync
-      </Button>
-    </Link>,
+    ...(!isOfflineProductMode()
+      ? [
+          <Link key="sync" to="/invoices/sync" className="block w-full sm:w-auto">
+            <Button variant="secondary" className="w-full sm:w-auto">
+              <ShieldAlert className="h-4 w-4" /> Sync
+            </Button>
+          </Link>,
+        ]
+      : []),
   ];
 
   return (
@@ -438,7 +447,7 @@ export const InvoiceDetail = () => {
           </div>
         ) : (
           <div className="space-y-6">
-            {syncMeta && (
+            {!isOfflineProductMode() && syncMeta && (
               <div className={`rounded-[24px] border px-4 py-4 text-sm ${selectedInvoice.sync_status === 'failed' || selectedInvoice.sync_status === 'conflicted'
                 ? selectedInvoice.sync_status === 'conflicted'
                   ? 'border-fuchsia-200 bg-fuchsia-50 text-fuchsia-700 dark:border-fuchsia-900/40 dark:bg-fuchsia-900/10 dark:text-fuchsia-200'
@@ -458,7 +467,7 @@ export const InvoiceDetail = () => {
                 <div className={`mt-3 inline-flex items-center rounded-full px-3 py-1 text-sm font-semibold ${statusMeta?.className}`}>
                   {statusMeta?.label}
                 </div>
-                {syncMeta && (
+                {!isOfflineProductMode() && syncMeta && (
                   <div className={`mt-2 inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold ${syncMeta.className}`}>
                     {syncMeta.label}
                   </div>

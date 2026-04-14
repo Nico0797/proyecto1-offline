@@ -6,7 +6,6 @@ import { useExpenseStore } from '../store/expenseStore';
 import { useRecurringExpenseStore } from '../store/recurringExpenseStore';
 import { useDebtStore } from '../store/debtStore';
 import { supplierPayablesService } from '../services/supplierPayablesService';
-import { Button } from '../components/ui/Button';
 import { Plus, RefreshCw, ClipboardList, PieChart, Tags, CreditCard } from 'lucide-react';
 import { ExpensesKpis } from '../components/Expenses/ExpensesKpis';
 import { ExpensesToolbar } from '../components/Expenses/ExpensesToolbar';
@@ -22,7 +21,7 @@ import { ProGate } from '../components/ui/ProGate';
 import { FEATURES } from '../auth/plan';
 import { SwipePager } from '../components/ui/SwipePager';
 import { useAccess } from '../hooks/useAccess';
-import { ContentSection, PageHeader, PageLayout, PageNotice, PageStack, SectionStack, SummarySection } from '../components/Layout/PageLayout';
+import { ContentSection, PageHeader, PageHeaderActionButton, PageLayout, PageNotice, PageStack, SectionStack, SummarySection } from '../components/Layout/PageLayout';
 import {
   MobileFilterDrawer,
   MobileHelpDisclosure,
@@ -192,10 +191,10 @@ export const Expenses = () => {
   }, [activeTab]);
 
   const pageDescription = useMemo(() => {
-    if (activeTab === 'movements') return 'Registra lo que ya salió de caja y mantén claro en qué se fue el dinero.';
-    if (activeTab === 'recurring') return 'Deja listos pagos futuros sin mezclarlos con movimientos que todavía no ocurrieron.';
-    if (activeTab === 'payables') return 'Revisa lo que debes, lo que está por vencer y los pagos ya registrados.';
-    return 'Controla gastos, pagos y pendientes desde un mismo lugar.';
+    if (activeTab === 'movements') return 'Registra salidas reales y revisa en que se fue el dinero.';
+    if (activeTab === 'recurring') return 'Pagos futuros, separados del gasto real.';
+    if (activeTab === 'payables') return 'Lo pendiente por pagar, sin mezclarlo con egresos ya hechos.';
+    return 'Controla gastos, pagos y pendientes.';
   }, [activeTab]);
 
   const hasMovementFilters = searchTerm.trim().length > 0 || categoryFilter !== 'all';
@@ -364,10 +363,19 @@ export const Expenses = () => {
       <PageHeader
         title={pageTitle}
         description={pageDescription}
+        mobileFab={activeTab === 'movements' && canCreate ? {
+          label: '+Gasto',
+          icon: Plus,
+          onClick: handleNewExpense,
+        } : undefined}
         action={activeTab === 'movements' && canCreate ? (
-          <Button onClick={handleNewExpense} className="w-full sm:w-auto" data-tour="expenses.primaryAction">
-            <Plus className="w-4 h-4 mr-2" /> Registrar gasto
-          </Button>
+          <PageHeaderActionButton
+            onClick={handleNewExpense}
+            icon={Plus}
+            label="Registrar gasto"
+            mobileLabel="Gasto"
+            data-tour="expenses.primaryAction"
+          />
         ) : undefined}
       />
 

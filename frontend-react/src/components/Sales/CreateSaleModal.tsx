@@ -4,12 +4,12 @@ import { CurrencyInput } from '../ui/CurrencyInput';
 import { Button } from '../ui/Button';
 import { FormAlert } from '../ui/FormAlert';
 import { cn } from '../../utils/cn';
-import { Search, X, ShoppingCart, DollarSign, ArrowRight, Check, Clock, ScanLine, User } from 'lucide-react';
+import { Search, X, ShoppingCart, DollarSign, ArrowRight, Check, Clock, ScanLine } from 'lucide-react';
 import { Modal } from '../ui/Modal';
 import { useCustomerStore } from '../../store/customerStore';
 import { useProductStore } from '../../store/productStore';
 import { useSaleStore } from '../../store/saleStore';
-import { SaleItem, Product, isBusinessModuleEnabled } from '../../types';
+import { SaleItem, Product, Sale } from '../../types';
 import { useBusinessStore } from '../../store/businessStore';
 import { formatCOP } from './helpers';
 import { useCategoryStore } from '../Products/categoryStore';
@@ -18,12 +18,13 @@ import { toast } from 'react-hot-toast';
 import { TreasuryAccountSelect } from '../Treasury/TreasuryAccountSelect';
 import { TeachingEmptyState } from '../ui/TeachingEmptyState';
 import { SelectField } from '../ui/SelectField';
+import { SearchableSelect } from '../ui/SearchableSelect';
 
-export const CreateSaleModal = ({ isOpen, onClose, onSuccess }: { isOpen: boolean; onClose: () => void; onSuccess?: () => void }) => {
+export const CreateSaleModal = ({ isOpen, onClose, onSuccess, editingSale }: { isOpen: boolean; onClose: () => void; onSuccess?: () => void; editingSale?: Sale | null }) => {
   const { activeBusiness } = useBusinessStore();
   const { customers, fetchCustomers } = useCustomerStore();
   const { products, fetchProducts } = useProductStore();
-  const { createSale } = useSaleStore();
+  const { createSale, updateSale } = useSaleStore();
 
   const [step, setStep] = useState<1 | 2 | 3>(1); // 1: Items, 2: Customer, 3: Payment
   const [showScanner, setShowScanner] = useState(false);
@@ -31,7 +32,7 @@ export const CreateSaleModal = ({ isOpen, onClose, onSuccess }: { isOpen: boolea
   const [productLimit, setProductLimit] = useState(24);
   const [categoryFilter, setCategoryFilter] = useState<string>('');
   const [selectedCustomerId, setSelectedCustomerId] = useState<number | ''>('');
-  const [saleDate] = useState(() => {
+  const [saleDate, setSaleDate] = useState(() => {
     const d = new Date();
     const year = d.getFullYear();
     const month = String(d.getMonth() + 1).padStart(2, '0');
@@ -50,7 +51,6 @@ export const CreateSaleModal = ({ isOpen, onClose, onSuccess }: { isOpen: boolea
   const [discountValue, setDiscountValue] = useState<number>(0);
   const [showDiscountEditor, setShowDiscountEditor] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
-  const hasAccountsReceivable = isBusinessModuleEnabled(activeBusiness?.modules, 'accounts_receivable');
 
   const { categories, getCategory } = useCategoryStore();
 
@@ -59,19 +59,48 @@ export const CreateSaleModal = ({ isOpen, onClose, onSuccess }: { isOpen: boolea
       fetchCustomers(activeBusiness.id);
       fetchProducts(activeBusiness.id);
       setStep(1);
-      setSaleItems([]);
-      setSelectedCustomerId('');
-      setPaymentType('paid');
-      setPaymentMethod('cash');
-      setTreasuryAccountId(null);
-      setAmountPaid(0);
-      setNote('');
-      setDiscountType('amount');
-      setDiscountValue(0);
-      setShowDiscountEditor(false);
+      setProductSearch('');
+      setProductLimit(24);
+      setCategoryFilter('');
+      if (editingSale) {
+        const resolvedCollectedAmount = Number(editingSale.collected_amount || Math.max(Number(editingSale.total || 0) - Number(editingSale.balance || 0), 0));
+        setSaleItems(Array.isArray(editingSale.items) ? editingSale.items : []);
+        setSelectedCustomerId(editingSale.customer_id ?? '');
+        setPaymentType(
+          editingSale.paid
+            ? 'paid'
+            : resolvedCollectedAmount > 0.01
+              ? 'partial'
+              : 'credit'
+        );
+        setPaymentMethod(editingSale.payment_method || 'cash');
+        setTreasuryAccountId(editingSale.treasury_account_id ?? null);
+        setAmountPaid(resolvedCollectedAmount);
+        setNote(editingSale.note || '');
+        setDiscountType('amount');
+        setDiscountValue(Number(editingSale.discount || 0));
+        setShowDiscountEditor(Number(editingSale.discount || 0) > 0);
+        setSaleDate(editingSale.sale_date ? String(editingSale.sale_date).split('T')[0] : new Date().toISOString().split('T')[0]);
+      } else {
+        const d = new Date();
+        const year = d.getFullYear();
+        const month = String(d.getMonth() + 1).padStart(2, '0');
+        const day = String(d.getDate()).padStart(2, '0');
+        setSaleDate(`${year}-${month}-${day}`);
+        setSaleItems([]);
+        setSelectedCustomerId('');
+        setPaymentType('paid');
+        setPaymentMethod('cash');
+        setTreasuryAccountId(null);
+        setAmountPaid(0);
+        setNote('');
+        setDiscountType('amount');
+        setDiscountValue(0);
+        setShowDiscountEditor(false);
+      }
       setSubmitError(null);
     }
-  }, [isOpen, activeBusiness]);
+  }, [isOpen, activeBusiness, editingSale, fetchCustomers, fetchProducts]);
 
   const filteredProducts = products.filter(p => {
     if (!p.active) return false;
@@ -149,11 +178,6 @@ export const CreateSaleModal = ({ isOpen, onClose, onSuccess }: { isOpen: boolea
         setSubmitError('Para ventas fiadas o parciales debes seleccionar un cliente.');
         return;
     }
-    if (!hasAccountsReceivable && (paymentType === 'credit' || paymentType === 'partial')) {
-        setSubmitError('Las cuentas por cobrar están desactivadas para este negocio.');
-        return;
-    }
-
     setLoading(true);
     setSubmitError(null);
     try {
@@ -168,25 +192,36 @@ export const CreateSaleModal = ({ isOpen, onClose, onSuccess }: { isOpen: boolea
       // But we have split logic: isPaid boolean + method string.
       // Let's assume backend handles 'paid' boolean and 'payment_method' string.
       
-      await createSale(activeBusiness.id, {
+      const payload = {
         customer_id: selectedCustomerId || null,
         items: saleItems,
-        payment_method: paymentMethod, 
+        payment_method: paymentMethod,
         paid: isPaid,
-        amount_paid: finalPaid, // Backend should handle balance calculation: total - amount_paid
+        amount_paid: finalPaid,
         treasury_account_id: finalPaid > 0 ? treasuryAccountId : null,
-        note: note,
+        note,
         subtotal,
         discount,
         total,
-        sale_date: saleDate
-      });
+        sale_date: saleDate,
+      };
+
+      if (editingSale) {
+        await updateSale(activeBusiness.id, editingSale.id, {
+          ...payload,
+          customer_id: selectedCustomerId === '' ? undefined : selectedCustomerId,
+        });
+        toast.success('Venta actualizada');
+      } else {
+        await createSale(activeBusiness.id, payload);
+        toast.success('Venta registrada');
+      }
       
       if (onSuccess) onSuccess();
       onClose();
     } catch (error) {
       console.error(error);
-      const message = (error as any)?.response?.data?.error || 'Error al crear la venta';
+      const message = (error as any)?.response?.data?.error || (editingSale ? 'Error al actualizar la venta' : 'Error al crear la venta');
       setSubmitError(message);
     } finally {
       setLoading(false);
@@ -222,7 +257,7 @@ export const CreateSaleModal = ({ isOpen, onClose, onSuccess }: { isOpen: boolea
   };
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} title="Registrar venta" className="flex h-[92dvh] max-w-5xl flex-col">
+    <Modal isOpen={isOpen} onClose={onClose} title={editingSale ? `Editar venta #${editingSale.id}` : 'Registrar venta'} className="flex h-[92dvh] max-w-5xl flex-col">
       {/* Stepper Header */}
       <div className="app-stepper px-4 py-3 sm:px-8 sm:py-4">
         <div className="flex items-center justify-between">
@@ -534,20 +569,16 @@ export const CreateSaleModal = ({ isOpen, onClose, onSuccess }: { isOpen: boolea
 
                  <div className="space-y-4">
                      <div data-tour="sales.modal.clientSelect">
-                       <SelectField
+                       <SearchableSelect
                         label="Cliente"
                         helper="Puedes dejar la venta como mostrador o asignarla a un cliente para seguir saldo e historial."
-                        icon={User}
-                        className="text-base"
+                        sheetTitle="Seleccionar cliente"
+                        searchPlaceholder="Buscar cliente por nombre o teléfono..."
+                        placeholder="Cliente casual / venta de mostrador"
+                        options={customers.map(c => ({ value: c.id, label: c.name, secondary: c.phone || undefined }))}
                         value={selectedCustomerId}
-                        onChange={(e) => setSelectedCustomerId(e.target.value ? Number(e.target.value) : '')}
-                        autoFocus
-                       >
-                          <option value="">Cliente casual / venta de mostrador</option>
-                          {customers.map(c => (
-                              <option key={c.id} value={c.id}>{c.name} {c.phone ? `(${c.phone})` : ''}</option>
-                          ))}
-                       </SelectField>
+                        onChange={(v) => setSelectedCustomerId(v ? Number(v) : '')}
+                       />
                      </div>
                      
                      {selectedCustomerId && (
@@ -585,11 +616,6 @@ export const CreateSaleModal = ({ isOpen, onClose, onSuccess }: { isOpen: boolea
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
                     <div className="space-y-4">
                         <label className="block text-sm font-medium app-text-secondary">Cómo te van a pagar</label>
-                        {!hasAccountsReceivable && (
-                            <div className="app-inline-panel-warning rounded-xl px-4 py-3 text-sm">
-                                Las ventas a crédito y los abonos están desactivados para este negocio.
-                            </div>
-                        )}
                         <div className="flex flex-col gap-2" data-tour="sales.modal.paymentMethods">
                             <button  
                                 className={`rounded-[22px] border px-4 py-3.5 text-left transition-all ${paymentType === 'paid' ? 'border-[color:var(--app-success)] bg-[color:var(--app-success-soft)] ring-1 ring-[color:var(--app-success)]' : 'border-[color:var(--app-border)] bg-[color:var(--app-surface-elevated)] hover:bg-[color:var(--app-surface-soft)]'}`}
@@ -602,12 +628,8 @@ export const CreateSaleModal = ({ isOpen, onClose, onSuccess }: { isOpen: boolea
                             </button>
 
                             <button 
-                                className={`rounded-[22px] border px-4 py-3.5 text-left transition-all ${paymentType === 'credit' ? 'border-[color:var(--app-danger)] bg-[color:var(--app-danger-soft)] ring-1 ring-[color:var(--app-danger)]' : 'border-[color:var(--app-border)] bg-[color:var(--app-surface-elevated)] hover:bg-[color:var(--app-surface-soft)]'} ${!hasAccountsReceivable ? 'opacity-50 cursor-not-allowed' : ''}`}
+                                className={`rounded-[22px] border px-4 py-3.5 text-left transition-all ${paymentType === 'credit' ? 'border-[color:var(--app-danger)] bg-[color:var(--app-danger-soft)] ring-1 ring-[color:var(--app-danger)]' : 'border-[color:var(--app-border)] bg-[color:var(--app-surface-elevated)] hover:bg-[color:var(--app-surface-soft)]'}`}
                                 onClick={() => { 
-                                    if (!hasAccountsReceivable) {
-                                        setSubmitError('Las cuentas por cobrar están desactivadas para este negocio.');
-                                        return;
-                                    }
                                     if (!selectedCustomerId) {
                                         setSubmitError('Antes de dejar saldo pendiente debes seleccionar un cliente.');
                                         return;
@@ -624,12 +646,8 @@ export const CreateSaleModal = ({ isOpen, onClose, onSuccess }: { isOpen: boolea
                             </button>
                             
                             <button 
-                                className={`rounded-[22px] border px-4 py-3.5 text-left transition-all ${paymentType === 'partial' ? 'border-[color:var(--app-warning)] bg-[color:var(--app-warning-soft)] ring-1 ring-[color:var(--app-warning)]' : 'border-[color:var(--app-border)] bg-[color:var(--app-surface-elevated)] hover:bg-[color:var(--app-surface-soft)]'} ${!hasAccountsReceivable ? 'opacity-50 cursor-not-allowed' : ''}`}
+                                className={`rounded-[22px] border px-4 py-3.5 text-left transition-all ${paymentType === 'partial' ? 'border-[color:var(--app-warning)] bg-[color:var(--app-warning-soft)] ring-1 ring-[color:var(--app-warning)]' : 'border-[color:var(--app-border)] bg-[color:var(--app-surface-elevated)] hover:bg-[color:var(--app-surface-soft)]'}`}
                                 onClick={() => { 
-                                    if (!hasAccountsReceivable) {
-                                        setSubmitError('Las cuentas por cobrar están desactivadas para este negocio.');
-                                        return;
-                                    }
                                     if (!selectedCustomerId) {
                                         setSubmitError('Para recibir un abono primero debes seleccionar un cliente.');
                                         return;
@@ -648,6 +666,13 @@ export const CreateSaleModal = ({ isOpen, onClose, onSuccess }: { isOpen: boolea
                     </div>
 
                     <div className="space-y-4">
+                        <Input
+                          label="Fecha de la venta"
+                          type="date"
+                          value={saleDate}
+                          onChange={(e) => setSaleDate(e.target.value)}
+                        />
+
                         <label className="block text-sm font-medium app-text-secondary">Cómo entra el dinero</label>
                         <SelectField
                             value={paymentMethod}
@@ -705,7 +730,7 @@ export const CreateSaleModal = ({ isOpen, onClose, onSuccess }: { isOpen: boolea
                         isLoading={loading}
                         data-tour="sales.modal.confirm"
                     >
-                        Guardar venta
+                        {editingSale ? 'Guardar cambios' : 'Guardar venta'}
                     </Button>
                 </div>
             </div>

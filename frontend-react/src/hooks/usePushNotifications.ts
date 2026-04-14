@@ -5,12 +5,14 @@ import { localNotificationService } from '../services/localNotificationService';
 import { toast } from 'react-hot-toast';
 import { Capacitor } from '@capacitor/core';
 import { LocalNotifications } from '@capacitor/local-notifications';
+import { isOfflineProductMode } from '../runtime/runtimeMode';
 
 export const usePushNotifications = () => {
   const navigate = useNavigate();
   const initialized = useRef(false);
 
   useEffect(() => {
+    if (isOfflineProductMode()) return;
     if (initialized.current) return;
     initialized.current = true;
 

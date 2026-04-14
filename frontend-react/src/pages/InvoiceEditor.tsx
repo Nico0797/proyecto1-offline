@@ -15,6 +15,7 @@ import { Button } from '../components/ui/Button';
 import { CurrencyInput } from '../components/ui/CurrencyInput';
 import { Input } from '../components/ui/Input';
 import { SelectField } from '../components/ui/SelectField';
+import { SearchableSelect } from '../components/ui/SearchableSelect';
 import { useBusinessStore } from '../store/businessStore';
 import { useCustomerStore } from '../store/customerStore';
 import { useInvoiceStore } from '../store/invoiceStore';
@@ -22,6 +23,7 @@ import { useProductStore } from '../store/productStore';
 import { invoicesService } from '../services/invoicesService';
 import { InvoiceItem, InvoiceSettings, InvoiceStatus } from '../types';
 import { useBreakpoint } from '../tour/useBreakpoint';
+import { isOfflineProductMode } from '../runtime/runtimeMode';
 
 type EditableInvoiceItem = InvoiceItem & { localId: string };
 type MobileStep = 'basics' | 'items' | 'preview';
@@ -294,7 +296,9 @@ export const InvoiceEditor = () => {
         : await createInvoice(activeBusiness.id, payload);
 
       toast.success(
-        invoice.sync_status === 'pending'
+        isOfflineProductMode()
+          ? (isEditing ? 'Factura actualizada localmente' : 'Factura guardada localmente')
+          : invoice.sync_status === 'pending'
           ? (isEditing ? 'Factura actualizada offline. Se sincronizara al reconectar.' : 'Factura guardada offline. Se sincronizara al reconectar.')
           : (isEditing ? 'Factura actualizada correctamente' : 'Factura creada correctamente')
       );
@@ -328,19 +332,16 @@ export const InvoiceEditor = () => {
 
       <div className="grid gap-4 sm:grid-cols-2">
         <div className="sm:col-span-2">
-          <SelectField
+          <SearchableSelect
             label="Cliente"
             helper="Puedes facturar a un cliente registrado o dejar el documento como cliente ocasional."
+            sheetTitle="Seleccionar cliente"
+            searchPlaceholder="Buscar cliente..."
+            placeholder="Cliente ocasional"
+            options={customers.map((customer) => ({ value: customer.id, label: customer.name }))}
             value={customerId}
-            onChange={(event) => setCustomerId(event.target.value ? Number(event.target.value) : '')}
-          >
-            <option value="">Cliente ocasional</option>
-            {customers.map((customer) => (
-              <option key={customer.id} value={customer.id}>
-                {customer.name}
-              </option>
-            ))}
-          </SelectField>
+            onChange={(v) => setCustomerId(v ? Number(v) : '')}
+          />
         </div>
         <Input label="Fecha de emision" type="date" value={issueDate} onChange={(event) => setIssueDate(event.target.value)} />
         <Input label="Fecha de vencimiento" type="date" value={dueDate} onChange={(event) => setDueDate(event.target.value)} />
@@ -546,7 +547,7 @@ export const InvoiceEditor = () => {
 
       <PageBody className="app-canvas">
         <div className="space-y-5">
-          {getInvoiceSyncMeta(selectedInvoice) && (
+          {!isOfflineProductMode() && getInvoiceSyncMeta(selectedInvoice) && (
             <div className={`rounded-[24px] border px-4 py-4 text-sm ${selectedInvoice?.sync_status === 'failed' || selectedInvoice?.sync_status === 'conflicted'
               ? selectedInvoice?.sync_status === 'conflicted'
                 ? 'app-inline-panel-conflict'

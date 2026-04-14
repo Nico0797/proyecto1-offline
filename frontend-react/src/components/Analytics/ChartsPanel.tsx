@@ -34,6 +34,9 @@ interface ChartsPanelProps {
 }
 
 export const ChartsPanel: React.FC<ChartsPanelProps> = ({ salesTrend, expensesByCategory, topProducts }) => {
+  const safeSalesTrend = Array.isArray(salesTrend) ? salesTrend : [];
+  const safeExpensesByCategory = Array.isArray(expensesByCategory) ? expensesByCategory : [];
+  const safeTopProducts = Array.isArray(topProducts) ? topProducts : [];
   
   // Configuración común
   const commonOptions = {
@@ -73,11 +76,11 @@ export const ChartsPanel: React.FC<ChartsPanelProps> = ({ salesTrend, expensesBy
 
   // Datos de Tendencia (Ingresos)
   const lineChartData = {
-    labels: salesTrend?.map((d: any) => d.date) || [],
+    labels: safeSalesTrend.map((d: any) => d.date),
     datasets: [
       {
         label: 'Ingresos',
-        data: salesTrend?.map((d: any) => d.amount ?? d.total ?? 0) || [],
+        data: safeSalesTrend.map((d: any) => d.amount ?? d.total ?? 0),
         borderColor: '#3B82F6',
         backgroundColor: 'rgba(59, 130, 246, 0.1)',
         fill: true,
@@ -90,10 +93,10 @@ export const ChartsPanel: React.FC<ChartsPanelProps> = ({ salesTrend, expensesBy
 
   // Datos de Gastos por Categoría
   const doughnutData = {
-    labels: expensesByCategory.map(e => e.category),
+    labels: safeExpensesByCategory.map(e => e.category),
     datasets: [
       {
-        data: expensesByCategory.map(e => e.total),
+        data: safeExpensesByCategory.map(e => e.total),
         backgroundColor: [
           '#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6', '#EC4899', '#6366F1'
         ],
@@ -105,11 +108,11 @@ export const ChartsPanel: React.FC<ChartsPanelProps> = ({ salesTrend, expensesBy
 
   // Datos de Top Productos
   const barChartData = {
-    labels: topProducts.slice(0, 5).map((p: any) => p.name),
+    labels: safeTopProducts.slice(0, 5).map((p: any) => p.name),
     datasets: [
       {
         label: 'Ventas ($)',
-        data: topProducts.slice(0, 5).map((p: any) => p.total ?? p.total_sales ?? 0),
+        data: safeTopProducts.slice(0, 5).map((p: any) => p.total ?? p.total_sales ?? 0),
         backgroundColor: '#10B981',
         borderRadius: 4,
       }
