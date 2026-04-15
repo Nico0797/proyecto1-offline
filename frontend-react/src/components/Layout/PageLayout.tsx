@@ -49,13 +49,22 @@ export const PageHeader: React.FC<{
 }> = ({ title, description, action, className, mobileFab }) => {
   const location = useLocation();
   const sentinelRef = useRef<HTMLDivElement | null>(null);
+  const onClickRef = useRef<(() => void) | undefined>(mobileFab?.onClick);
   const registerAction = useContextualFloatingActionStore((state) => state.registerAction);
   const unregisterAction = useContextualFloatingActionStore((state) => state.unregisterAction);
   const setHeaderVisible = useContextualFloatingActionStore((state) => state.setHeaderVisible);
   const ownerKey = `${location.pathname}${location.search}`;
+  const hasMobileFab = Boolean(mobileFab);
+  const mobileFabLabel = mobileFab?.label;
+  const mobileFabIcon = mobileFab?.icon;
+  const mobileFabOnClick = mobileFab?.onClick;
 
   useEffect(() => {
-    if (!mobileFab) {
+    onClickRef.current = mobileFabOnClick;
+  }, [mobileFabOnClick]);
+
+  useEffect(() => {
+    if (!hasMobileFab || !mobileFabLabel) {
       unregisterAction(ownerKey);
       return;
     }
@@ -63,16 +72,22 @@ export const PageHeader: React.FC<{
     registerAction({
       ownerKey,
       title,
-      label: mobileFab.label,
-      icon: mobileFab.icon,
-      onClick: mobileFab.onClick,
+      label: mobileFabLabel,
+      icon: mobileFabIcon,
+      onClick: () => onClickRef.current?.(),
     });
-
-    return () => unregisterAction(ownerKey);
-  }, [mobileFab, ownerKey, registerAction, title, unregisterAction]);
+  }, [hasMobileFab, mobileFabIcon, mobileFabLabel, ownerKey, registerAction, title, unregisterAction]);
 
   useEffect(() => {
-    if (!mobileFab || !sentinelRef.current || typeof window === 'undefined') {
+    if (!hasMobileFab) {
+      return undefined;
+    }
+
+    return () => unregisterAction(ownerKey);
+  }, [hasMobileFab, ownerKey, unregisterAction]);
+
+  useEffect(() => {
+    if (!hasMobileFab || !sentinelRef.current || typeof window === 'undefined') {
       return undefined;
     }
 
@@ -93,11 +108,11 @@ export const PageHeader: React.FC<{
       observer.disconnect();
       setHeaderVisible(ownerKey, true);
     };
-  }, [mobileFab, ownerKey, setHeaderVisible]);
+  }, [hasMobileFab, ownerKey, setHeaderVisible]);
 
   return (
     <>
-      {mobileFab ? <div ref={sentinelRef} aria-hidden="true" className="pointer-events-none h-px w-full shrink-0" /> : null}
+      {hasMobileFab ? <div ref={sentinelRef} aria-hidden="true" className="pointer-events-none h-px w-full shrink-0" /> : null}
       <div
         className={cn(
           'app-page-header app-mobile-page-header app-shell-gutter relative shrink-0 py-2 sm:py-2.5 lg:py-3.5 xl:py-4',
