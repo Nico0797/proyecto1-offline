@@ -649,7 +649,7 @@ export const InvoiceEditor = () => {
       </PageBody>
 
       {isMobile && (
-        <div className="app-page-header app-divider sticky bottom-0 z-30 border-t px-4 py-3 backdrop-blur">
+        <div className="app-page-header app-divider relative border-t px-4 py-3 backdrop-blur">
           <Button className="w-full" onClick={handleSubmit} isLoading={saving} disabled={isEditing && !editability.canEdit}>
             <Save className="h-4 w-4" /> Guardar factura
           </Button>

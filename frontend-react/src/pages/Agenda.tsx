@@ -83,7 +83,7 @@ export const Agenda = () => {
     if (monthValue && monthValue !== calendarMonth) {
       setCalendarMonth(monthValue);
     }
-  }, [calendarMonth, dateFilter]);
+  }, [dateFilter]);
 
   const filteredAppointments = useMemo(() => {
     let list = appointments;

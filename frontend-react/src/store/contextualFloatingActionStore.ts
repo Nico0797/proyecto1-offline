@@ -3,6 +3,7 @@ import type { ElementType } from 'react';
 
 export interface ContextualFloatingActionConfig {
   ownerKey: string;
+  title: string;
   label: string;
   icon?: ElementType;
   onClick: () => void;

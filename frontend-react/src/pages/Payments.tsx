@@ -269,6 +269,11 @@ export const Payments = () => {
       <PageHeader 
         title="Cobros y saldos" 
         description="Revisa quién te debe, registra abonos y sigue los saldos pendientes."
+        mobileFab={canCreatePayment ? {
+          label: '+Cobro',
+          icon: Plus,
+          onClick: () => { setQuickPayClient(undefined); setIsRegisterModalOpen(true); },
+        } : undefined}
         action={(canCreatePayment || (canConfigureTerms && currentTab === 'clients')) ? (
           <CompactActionGroup
             collapseLabel="Mas"

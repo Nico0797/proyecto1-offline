@@ -424,6 +424,11 @@ export const Quotes = () => {
       <PageHeader
         title="Cotizaciones"
         description="Gestiona cotizaciones separadas de ventas y conviértelas explícitamente cuando corresponda."
+        mobileFab={canCreate ? {
+          label: '+Cotizacion',
+          icon: Plus,
+          onClick: openCreate,
+        } : undefined}
         action={canCreate ? (
           <PageHeaderActionButton
             onClick={openCreate}

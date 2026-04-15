@@ -1,4 +1,5 @@
 import React from 'react';
+import { createPortal } from 'react-dom';
 import { Plus } from 'lucide-react';
 import { cn } from '../../utils/cn';
 import { useContextualFloatingActionStore } from '../../store/contextualFloatingActionStore';
@@ -12,10 +13,10 @@ export const ContextualFloatingAction: React.FC = () => {
   const Icon = action.icon || Plus;
   const isVisible = !headerVisible;
 
-  return (
+  const content = (
     <div
       className={cn(
-        'pointer-events-none fixed inset-x-0 z-[45] px-[max(0.9rem,env(safe-area-inset-left))] pr-[max(0.9rem,env(safe-area-inset-right))] lg:hidden',
+        'pointer-events-none fixed inset-x-0 z-[55] px-[max(0.9rem,env(safe-area-inset-left))] pr-[max(0.9rem,env(safe-area-inset-right))] lg:hidden',
         'bottom-[calc(var(--app-mobile-bottom-nav-height)+var(--app-mobile-bottom-nav-overhang)+0.9rem+var(--app-safe-area-bottom))]',
       )}
     >
@@ -38,4 +39,10 @@ export const ContextualFloatingAction: React.FC = () => {
       </div>
     </div>
   );
+
+  if (typeof document === 'undefined') {
+    return content;
+  }
+
+  return createPortal(content, document.body);
 };

@@ -1,4 +1,5 @@
 import React, { useMemo } from 'react';
+import { createPortal } from 'react-dom';
 import { NavLink } from 'react-router-dom';
 import { Menu, X } from 'lucide-react';
 import { cn } from '../../utils/cn';
@@ -73,8 +74,8 @@ export const MobileBottomNav: React.FC<MobileBottomNavProps> = ({ isSidebarOpen,
     </NavLink>
   );
 
-  return (
-    <div className="fixed bottom-0 left-0 right-0 z-40 px-[max(0.5rem,env(safe-area-inset-left))] pr-[max(0.5rem,env(safe-area-inset-right))] pb-[max(0.45rem,env(safe-area-inset-bottom))] lg:hidden">
+  const content = (
+    <div className="fixed bottom-0 left-0 right-0 z-[50] px-[max(0.5rem,env(safe-area-inset-left))] pr-[max(0.5rem,env(safe-area-inset-right))] pb-[max(0.45rem,env(safe-area-inset-bottom))] lg:hidden">
       <div className="relative mx-auto w-full max-w-xl">
         <div className="relative pt-[calc(var(--app-mobile-bottom-nav-overhang)+0.08rem)]">
           <div
@@ -91,7 +92,7 @@ export const MobileBottomNav: React.FC<MobileBottomNavProps> = ({ isSidebarOpen,
                   to={centerItem.path}
                   className={({ isActive }) =>
                     cn(
-                      'absolute -top-[calc(var(--app-mobile-bottom-nav-overhang)+0.34rem)] z-10 flex h-[3.7rem] w-[3.7rem] aspect-square items-center justify-center rounded-full bg-gradient-to-b from-blue-500 via-blue-600 to-blue-700 text-white ring-4 ring-[color:var(--app-canvas)] shadow-[0_16px_26px_-16px_rgba(29,78,216,0.38)] transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 focus-visible:ring-offset-[color:var(--app-canvas)] active:scale-[0.98]',
+                      'absolute -top-[calc(var(--app-mobile-bottom-nav-overhang)+0.34rem)] z-20 flex h-[3.7rem] w-[3.7rem] aspect-square items-center justify-center rounded-full bg-gradient-to-b from-blue-500 via-blue-600 to-blue-700 text-white ring-4 ring-[color:var(--app-canvas)] shadow-[0_16px_26px_-16px_rgba(29,78,216,0.38)] transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 focus-visible:ring-offset-[color:var(--app-canvas)] active:scale-[0.98]',
                       isActive ? 'ring-2 ring-blue-200/70 dark:ring-blue-300/30' : 'hover:-translate-y-0.5',
                     )
                   }
@@ -128,4 +129,10 @@ export const MobileBottomNav: React.FC<MobileBottomNavProps> = ({ isSidebarOpen,
       </div>
     </div>
   );
+
+  if (typeof document === 'undefined') {
+    return content;
+  }
+
+  return createPortal(content, document.body);
 };

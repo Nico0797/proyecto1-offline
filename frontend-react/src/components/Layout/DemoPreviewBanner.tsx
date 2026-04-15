@@ -16,7 +16,7 @@ export const DemoPreviewBanner = () => {
   }
 
   return (
-    <div className="sticky top-0 z-40 border-b border-sky-400/15 bg-[linear-gradient(180deg,rgba(8,15,32,0.94),rgba(12,22,42,0.9))] px-3 py-2.5 shadow-[0_18px_40px_-28px_rgba(2,6,23,0.9)] backdrop-blur-xl lg:px-5">
+    <div className="relative z-40 border-b border-sky-400/15 bg-[linear-gradient(180deg,rgba(8,15,32,0.94),rgba(12,22,42,0.9))] px-3 py-2.5 shadow-[0_18px_40px_-28px_rgba(2,6,23,0.9)] backdrop-blur-xl lg:px-5">
       <div className="mx-auto max-w-[1600px]">
         <div className="relative overflow-hidden rounded-2xl border border-sky-400/16 bg-[linear-gradient(135deg,rgba(14,23,43,0.92),rgba(17,24,39,0.84))] px-3.5 py-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.04)] sm:px-4 lg:px-4.5">
           <div className="pointer-events-none absolute inset-y-0 left-0 w-1 bg-[linear-gradient(180deg,rgba(56,189,248,0.95),rgba(168,85,247,0.8))]" />

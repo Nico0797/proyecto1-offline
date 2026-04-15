@@ -256,6 +256,26 @@ export const Dashboard = () => {
     return (operational.length > 0 ? operational : dashboardQuickActions).slice(0, 2);
   }, [dashboardQuickActions]);
 
+  const dashboardMobileFab = useMemo(() => {
+    if (canQuickCreateSale) {
+      return {
+        label: '+Venta',
+        icon: Save,
+        onClick: () => setIsSaleModalOpen(true),
+      };
+    }
+
+    if (canQuickCreateExpense) {
+      return {
+        label: '+Gasto',
+        icon: Wallet,
+        onClick: () => setIsExpenseModalOpen(true),
+      };
+    }
+
+    return undefined;
+  }, [canQuickCreateExpense, canQuickCreateSale]);
+
   const loadDashboardData = async (businessId?: number | null) => {
     if (!activeBusiness || !businessId) return;
 
@@ -1550,6 +1570,7 @@ export const Dashboard = () => {
         description={activeBusiness?.name
           ? `Tu dia en ${activeBusiness.name}, en un vistazo.`
           : 'Tu dia, ventas y alertas en un vistazo.'}
+        mobileFab={dashboardMobileFab}
       />
 
       <SwipePager 

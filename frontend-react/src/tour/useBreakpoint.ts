@@ -9,7 +9,7 @@ export const useBreakpoint = () => {
     };
 
     // Debounce slightly if needed, but for now simple listener
-    let timeoutId: NodeJS.Timeout;
+    let timeoutId: ReturnType<typeof setTimeout>;
     const debouncedResize = () => {
       clearTimeout(timeoutId);
       timeoutId = setTimeout(handleResize, 100);

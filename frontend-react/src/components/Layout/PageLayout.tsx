@@ -48,7 +48,7 @@ export const PageHeader: React.FC<{
   };
 }> = ({ title, description, action, className, mobileFab }) => {
   const location = useLocation();
-  const headerRef = useRef<HTMLDivElement | null>(null);
+  const sentinelRef = useRef<HTMLDivElement | null>(null);
   const registerAction = useContextualFloatingActionStore((state) => state.registerAction);
   const unregisterAction = useContextualFloatingActionStore((state) => state.unregisterAction);
   const setHeaderVisible = useContextualFloatingActionStore((state) => state.setHeaderVisible);
@@ -62,34 +62,47 @@ export const PageHeader: React.FC<{
 
     registerAction({
       ownerKey,
+      title,
       label: mobileFab.label,
       icon: mobileFab.icon,
       onClick: mobileFab.onClick,
     });
+    setHeaderVisible(ownerKey, true);
 
     return () => unregisterAction(ownerKey);
-  }, [mobileFab, ownerKey, registerAction, unregisterAction]);
+  }, [mobileFab, ownerKey, registerAction, setHeaderVisible, title, unregisterAction]);
 
   useEffect(() => {
-    if (!mobileFab || !headerRef.current || typeof window === 'undefined') return undefined;
+    if (!mobileFab || !sentinelRef.current || typeof window === 'undefined') {
+      return undefined;
+    }
 
     const root = document.getElementById('app-main-scroll');
     const observer = new IntersectionObserver(
       ([entry]) => {
-        setHeaderVisible(ownerKey, entry.isIntersecting && entry.intersectionRatio > 0.15);
+        setHeaderVisible(ownerKey, entry.isIntersecting);
       },
       {
         root,
-        threshold: [0, 0.15, 0.5, 1],
+        threshold: 0,
       },
     );
 
-    observer.observe(headerRef.current);
-    return () => observer.disconnect();
+    observer.observe(sentinelRef.current);
+
+    return () => {
+      observer.disconnect();
+      setHeaderVisible(ownerKey, true);
+    };
   }, [mobileFab, ownerKey, setHeaderVisible]);
 
   return (
-    <div ref={headerRef} className={cn('app-page-header app-mobile-page-header app-shell-gutter relative shrink-0 py-2 sm:py-2.5 lg:py-3.5 xl:py-4', className)}>
+    <div
+      className={cn(
+        'app-page-header app-mobile-page-header app-shell-gutter relative shrink-0 py-2 sm:py-2.5 lg:py-3.5 xl:py-4',
+        className,
+      )}
+    >
       <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between lg:gap-4">
         <div className="min-w-0 flex-1">
           <h1 className="text-[15px] font-semibold tracking-tight app-text sm:text-[1.05rem] lg:text-[1.32rem] xl:text-[1.45rem]">{title}</h1>
@@ -101,6 +114,7 @@ export const PageHeader: React.FC<{
         </div>
         {action ? <div className="flex min-w-0 max-w-full flex-wrap items-start justify-start pt-0.5 lg:ml-6 lg:w-auto lg:flex-none lg:justify-end lg:pt-0">{action}</div> : null}
       </div>
+      {mobileFab ? <div ref={sentinelRef} aria-hidden="true" className="pointer-events-none h-px w-full" /> : null}
     </div>
   );
 };

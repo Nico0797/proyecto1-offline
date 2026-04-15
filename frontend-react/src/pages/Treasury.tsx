@@ -414,6 +414,11 @@ export const Treasury = () => {
       <PageHeader
         title="Tesoreria"
         description="Administra tus cajas, bancos y billeteras sin perder el rastro historico de ingresos, gastos, cobros y transferencias."
+        mobileFab={canCreate ? {
+          label: '+Cuenta',
+          icon: Plus,
+          onClick: openCreateModal,
+        } : undefined}
         action={(
           <CompactActionGroup
             collapseLabel="Mas"

@@ -131,6 +131,15 @@ export const Reports = () => {
       <PageHeader
         title="Report Studio"
         description="Descarga reportes detallados y metricas sin perder el foco en el periodo y el tipo de analisis."
+        mobileFab={{
+          label: activeTab === 'native' ? 'BI' : 'Reportes',
+          icon: PieChart,
+          onClick: () => {
+            const nextTab = activeTab === 'native' ? 'bi' : 'native';
+            setActiveTab(nextTab);
+            updateReportsParams({ tab: nextTab });
+          },
+        }}
         action={(
           <div data-tour="reports.filters">
             <CompactActionGroup
