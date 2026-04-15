@@ -455,9 +455,9 @@
 
   .app-filter-strip {
     border-bottom: 1px solid var(--app-divider);
-    background-color: color-mix(in srgb, var(--app-page-header) 96%, transparent);
-    backdrop-filter: blur(8px);
-    -webkit-backdrop-filter: blur(8px);
+    background-color: color-mix(in srgb, var(--app-page-header) 88%, transparent);
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
   }
 
   .app-canvas {
@@ -584,10 +584,10 @@
 
   .app-page-header {
     border-bottom: 1px solid var(--app-divider);
-    background-color: var(--app-page-header);
-    backdrop-filter: blur(10px);
-    -webkit-backdrop-filter: blur(10px);
-    box-shadow: 0 1px 0 rgba(15, 23, 42, 0.03), 0 10px 20px -34px rgba(15, 23, 42, 0.08);
+    background-color: color-mix(in srgb, var(--app-page-header) 90%, transparent);
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
+    box-shadow: 0 1px 0 rgba(15, 23, 42, 0.02), 0 8px 18px -34px rgba(15, 23, 42, 0.05);
   }
 
   .app-mobile-page-header {
@@ -649,10 +649,10 @@
 
   .app-mobile-topbar {
     border-bottom: 1px solid color-mix(in srgb, var(--app-divider) 88%, white 12%);
-    background: linear-gradient(180deg, color-mix(in srgb, var(--app-page-header) 97%, white 3%), color-mix(in srgb, var(--app-page-header) 92%, transparent));
-    backdrop-filter: blur(14px);
-    -webkit-backdrop-filter: blur(14px);
-    box-shadow: 0 1px 0 rgba(15, 23, 42, 0.03), 0 12px 22px -32px rgba(15, 23, 42, 0.1);
+    background: linear-gradient(180deg, color-mix(in srgb, var(--app-page-header) 94%, white 6%), color-mix(in srgb, var(--app-page-header) 82%, transparent));
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    box-shadow: 0 1px 0 rgba(15, 23, 42, 0.02), 0 10px 18px -30px rgba(15, 23, 42, 0.06);
     padding-top: 0;
     padding-bottom: 0.15rem;
     min-height: var(--app-mobile-topbar-min-height);
@@ -1039,7 +1039,7 @@
 
   @media (max-width: 1023px) {
     .app-page-header {
-      background: linear-gradient(180deg, color-mix(in srgb, var(--app-page-header) 97%, white 3%), color-mix(in srgb, var(--app-page-header) 92%, transparent));
+      background: linear-gradient(180deg, color-mix(in srgb, var(--app-page-header) 93%, white 7%), color-mix(in srgb, var(--app-page-header) 82%, transparent));
     }
 
     .app-page-content {
@@ -1058,7 +1058,7 @@
     }
 
     .app-mobile-topbar {
-      box-shadow: 0 1px 0 rgba(15, 23, 42, 0.02), 0 10px 16px -30px rgba(15, 23, 42, 0.08);
+      box-shadow: 0 1px 0 rgba(15, 23, 42, 0.02), 0 8px 14px -28px rgba(15, 23, 42, 0.05);
     }
 
     .app-mobile-page-header {

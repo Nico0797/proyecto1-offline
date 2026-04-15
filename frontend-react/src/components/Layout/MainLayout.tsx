@@ -9,7 +9,7 @@ import { BootTracePanel } from '../../debug/BootTracePanel';
 import { Sidebar } from './Sidebar';
 import { MobileBottomNav } from './MobileBottomNav';
 import { MobileTopBar } from './MobileTopBar';
-import { CompactFloatingContextBar } from './CompactFloatingContextBar';
+import { ContextualFloatingFab } from './ContextualFloatingFab';
 import { getRuntimeModeSnapshot, isDesktopOfflineMode, isOfflineProductMode } from '../../runtime/runtimeMode';
 
 export const MainLayout = () => {
@@ -288,7 +288,7 @@ export const MainLayout = () => {
           <Outlet />
         </main>
 
-        <CompactFloatingContextBar />
+        <ContextualFloatingFab />
 
         {/* Mobile Bottom Nav */}
         <div className="lg:hidden">

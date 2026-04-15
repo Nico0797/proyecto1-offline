@@ -20,7 +20,11 @@ interface ContextualFloatingActionState {
 export const useContextualFloatingActionStore = create<ContextualFloatingActionState>((set, get) => ({
   action: null,
   headerVisible: true,
-  registerAction: (action) => set({ action, headerVisible: true }),
+  registerAction: (action) =>
+    set((state) => ({
+      action,
+      headerVisible: state.action?.ownerKey === action.ownerKey ? state.headerVisible : true,
+    })),
   unregisterAction: (ownerKey) =>
     set((state) => (state.action?.ownerKey === ownerKey ? { action: null, headerVisible: true } : state)),
   setHeaderVisible: (ownerKey, isVisible) => {
