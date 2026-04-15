@@ -11,6 +11,7 @@ import { MobileBottomNav } from './MobileBottomNav';
 import { MobileTopBar } from './MobileTopBar';
 import { ContextualFloatingFab } from './ContextualFloatingFab';
 import { getRuntimeModeSnapshot, isDesktopOfflineMode, isOfflineProductMode } from '../../runtime/runtimeMode';
+import { buildInfo } from '../../generated/buildInfo';
 
 export const MainLayout = () => {
   const location = useLocation();
@@ -289,6 +290,11 @@ export const MainLayout = () => {
         </main>
 
         <ContextualFloatingFab />
+
+        <div className="pointer-events-none fixed bottom-[calc(var(--app-mobile-bottom-nav-height)+var(--app-mobile-bottom-nav-overhang)+1rem+var(--app-safe-area-bottom))] left-[max(0.75rem,env(safe-area-inset-left))] z-[54] rounded-full border border-black/8 bg-black/72 px-3 py-1.5 text-[10px] font-medium tracking-[0.02em] text-white shadow-[0_12px_24px_-18px_rgba(15,23,42,0.55)] backdrop-blur-sm lg:bottom-4 lg:left-4 lg:text-[11px]">
+          <span className="block whitespace-nowrap">{buildInfo.gitCommitShort}</span>
+          <span className="block whitespace-nowrap text-white/80">{buildInfo.builtAtDisplay}</span>
+        </div>
 
         {/* Mobile Bottom Nav */}
         <div className="lg:hidden">

@@ -67,10 +67,9 @@ export const PageHeader: React.FC<{
       icon: mobileFab.icon,
       onClick: mobileFab.onClick,
     });
-    setHeaderVisible(ownerKey, true);
 
     return () => unregisterAction(ownerKey);
-  }, [mobileFab, ownerKey, registerAction, setHeaderVisible, title, unregisterAction]);
+  }, [mobileFab, ownerKey, registerAction, title, unregisterAction]);
 
   useEffect(() => {
     if (!mobileFab || !sentinelRef.current || typeof window === 'undefined') {
