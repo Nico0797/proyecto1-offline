@@ -48,7 +48,7 @@ export const PageHeader: React.FC<{
   };
 }> = ({ title, description, action, className, mobileFab }) => {
   const location = useLocation();
-  const sentinelRef = useRef<HTMLDivElement | null>(null);
+  const headerRef = useRef<HTMLDivElement | null>(null);
   const onClickRef = useRef<(() => void) | undefined>(mobileFab?.onClick);
   const registerAction = useContextualFloatingActionStore((state) => state.registerAction);
   const unregisterAction = useContextualFloatingActionStore((state) => state.unregisterAction);
@@ -87,51 +87,65 @@ export const PageHeader: React.FC<{
   }, [hasMobileFab, ownerKey, unregisterAction]);
 
   useEffect(() => {
-    if (!hasMobileFab || !sentinelRef.current || typeof window === 'undefined') {
+    if (!hasMobileFab || typeof window === 'undefined') {
       return undefined;
     }
 
     const root = document.getElementById('app-main-scroll');
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        setHeaderVisible(ownerKey, entry.isIntersecting);
-      },
-      {
-        root,
-        threshold: 0,
-      },
-    );
+    if (!root) {
+      return undefined;
+    }
 
-    observer.observe(sentinelRef.current);
+    let frameId: number | null = null;
+
+    const updateVisibility = () => {
+      const measuredHeight = headerRef.current?.offsetHeight ?? 0;
+      const threshold = measuredHeight > 0
+        ? Math.max(56, Math.min(measuredHeight - 8, 96))
+        : 72;
+      setHeaderVisible(ownerKey, root.scrollTop <= threshold);
+    };
+
+    const handleScroll = () => {
+      if (frameId !== null) return;
+      frameId = window.requestAnimationFrame(() => {
+        frameId = null;
+        updateVisibility();
+      });
+    };
+
+    updateVisibility();
+    root.addEventListener('scroll', handleScroll, { passive: true });
 
     return () => {
-      observer.disconnect();
+      root.removeEventListener('scroll', handleScroll);
+      if (frameId !== null) {
+        window.cancelAnimationFrame(frameId);
+      }
       setHeaderVisible(ownerKey, true);
     };
   }, [hasMobileFab, ownerKey, setHeaderVisible]);
 
   return (
-    <>
-      {hasMobileFab ? <div ref={sentinelRef} aria-hidden="true" className="pointer-events-none h-px w-full shrink-0" /> : null}
-      <div
-        className={cn(
-          'app-page-header app-mobile-page-header app-shell-gutter relative shrink-0 py-2 sm:py-2.5 lg:py-3.5 xl:py-4',
-          className,
-        )}
-      >
-        <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between lg:gap-4">
-          <div className="min-w-0 flex-1">
-            <h1 className="text-[15px] font-semibold tracking-tight app-text sm:text-[1.05rem] lg:text-[1.32rem] xl:text-[1.45rem]">{title}</h1>
-            {description ? (
-              <p className="mt-1 line-clamp-2 max-w-[34rem] text-[11px] leading-4 app-text-muted sm:text-[12px] sm:leading-4.5 lg:mt-1 lg:max-w-4xl lg:text-sm">
-                {description}
-              </p>
-            ) : null}
-          </div>
-          {action ? <div className="flex min-w-0 max-w-full flex-wrap items-start justify-start pt-0.5 lg:ml-6 lg:w-auto lg:flex-none lg:justify-end lg:pt-0">{action}</div> : null}
+    <div
+      ref={headerRef}
+      className={cn(
+        'app-page-header app-mobile-page-header app-shell-gutter relative shrink-0 py-2 sm:py-2.5 lg:py-3.5 xl:py-4',
+        className,
+      )}
+    >
+      <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between lg:gap-4">
+        <div className="min-w-0 flex-1">
+          <h1 className="text-[15px] font-semibold tracking-tight app-text sm:text-[1.05rem] lg:text-[1.32rem] xl:text-[1.45rem]">{title}</h1>
+          {description ? (
+            <p className="mt-1 line-clamp-2 max-w-[34rem] text-[11px] leading-4 app-text-muted sm:text-[12px] sm:leading-4.5 lg:mt-1 lg:max-w-4xl lg:text-sm">
+              {description}
+            </p>
+          ) : null}
         </div>
+        {action ? <div className="flex min-w-0 max-w-full flex-wrap items-start justify-start pt-0.5 lg:ml-6 lg:w-auto lg:flex-none lg:justify-end lg:pt-0">{action}</div> : null}
       </div>
-    </>
+    </div>
   );
 };
 
@@ -404,16 +418,18 @@ export const PageFilters: React.FC<React.HTMLAttributes<HTMLDivElement> & { chil
 
   return (
     <div className={cn('app-filter-strip shrink-0 z-20 transition-all duration-300', className)} {...props}>
-      <div
-        className="app-shell-gutter flex cursor-pointer items-center justify-between py-2 lg:hidden"
+      <button
+        type="button"
+        className="app-shell-gutter flex w-full items-center justify-between py-2 text-left lg:hidden"
         onClick={() => setIsExpanded((current) => !current)}
+        aria-expanded={isExpanded}
       >
         <div className="flex items-center gap-2 text-xs font-medium app-text-secondary sm:text-sm">
           <Filter className="h-4 w-4" />
           <span>Filtros y busqueda</span>
         </div>
         {isExpanded ? <ChevronUp className="h-4 w-4 app-text-muted" /> : <ChevronDown className="h-4 w-4 app-text-muted" />}
-      </div>
+      </button>
 
       <div
         className={cn(
