@@ -13,7 +13,6 @@ import { ContextualFloatingFab } from './ContextualFloatingFab';
 import { MobileShellDebugOverlay } from './MobileShellDebugOverlay';
 import { CreateBusinessModal } from '../Business/CreateBusinessModal';
 import { getRuntimeModeSnapshot, isDesktopOfflineMode, isOfflineProductMode } from '../../runtime/runtimeMode';
-import { useContextualFloatingActionStore } from '../../store/contextualFloatingActionStore';
 import { offlineSyncService } from '../../services/offlineSyncService';
 import { downloadLocalBackupSnapshot, importLocalBackupSnapshot } from '../../services/localBackup';
 
@@ -38,8 +37,6 @@ export const MainLayout = () => {
   const [isRecoveryBusy, setIsRecoveryBusy] = useState(false);
   const [hasAttemptedLocalRecovery, setHasAttemptedLocalRecovery] = useState(false);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
-  const action = useContextualFloatingActionStore((state) => state.action);
-  const setHeaderVisible = useContextualFloatingActionStore((state) => state.setHeaderVisible);
   const desktopOfflineMode = isDesktopOfflineMode();
   const offlineProductMode = isOfflineProductMode();
   const isDemoPreview = Boolean(access?.demo_preview_active);
@@ -177,6 +174,8 @@ export const MainLayout = () => {
     };
   }, [offlineProductMode, activeBusiness?.id]);
 
+  // Solo tracking de scrollTop para debug overlay
+  // La visibilidad del FAB ahora la maneja IntersectionObserver en PageHeader
   useEffect(() => {
     if (typeof window === 'undefined') return undefined;
 
@@ -185,17 +184,8 @@ export const MainLayout = () => {
 
     let frameId: number | null = null;
 
-    const THRESHOLD = THRESHOLD_DEBUG; // Usar constante compartida
-
     const updateScrollState = () => {
-      const nextScrollTop = root.scrollTop;
-      setScrollTop(nextScrollTop);
-
-      if (action?.ownerKey) {
-        // FAB visible cuando scrollTop <= THRESHOLD (header visible)
-        // FAB oculto cuando scrollTop > THRESHOLD (scrolled down)
-        setHeaderVisible(action.ownerKey, nextScrollTop <= THRESHOLD);
-      }
+      setScrollTop(root.scrollTop);
     };
 
     const handleScroll = () => {
@@ -206,7 +196,6 @@ export const MainLayout = () => {
       });
     };
 
-    // Ejecutar inmediatamente al montar/cambiar acción
     updateScrollState();
     root.addEventListener('scroll', handleScroll, { passive: true });
 
@@ -215,11 +204,8 @@ export const MainLayout = () => {
       if (frameId !== null) {
         window.cancelAnimationFrame(frameId);
       }
-      if (action?.ownerKey) {
-        setHeaderVisible(action.ownerKey, true);
-      }
     };
-  }, [action?.ownerKey, action?.label, setHeaderVisible]);
+  }, []);
 
   useEffect(() => {
     if (!offlineProductMode || isHydrating || activeBusiness || hasAttemptedLocalRecovery || localBusinessesCount <= 0) {

@@ -48,9 +48,11 @@ export const PageHeader: React.FC<{
   };
 }> = ({ title, description, action, className, mobileFab }) => {
   const location = useLocation();
+  const headerRef = useRef<HTMLDivElement>(null);
   const onClickRef = useRef<(() => void) | undefined>(mobileFab?.onClick);
   const registerAction = useContextualFloatingActionStore((state) => state.registerAction);
   const unregisterAction = useContextualFloatingActionStore((state) => state.unregisterAction);
+  const setHeaderVisible = useContextualFloatingActionStore((state) => state.setHeaderVisible);
   const ownerKey = `${location.pathname}${location.search}`;
   const hasMobileFab = Boolean(mobileFab);
   const mobileFabLabel = mobileFab?.label;
@@ -84,8 +86,41 @@ export const PageHeader: React.FC<{
     return () => unregisterAction(ownerKey);
   }, [hasMobileFab, ownerKey, unregisterAction]);
 
+  // IntersectionObserver para detectar cuando el header realmente sale del viewport
+  useEffect(() => {
+    if (!hasMobileFab || !headerRef.current) return undefined;
+
+    const header = headerRef.current;
+    // Root es el contenedor de scroll principal
+    const root = document.getElementById('app-main-scroll');
+    if (!root) return undefined;
+
+    // Observar cuando el header ya no es visible en el viewport del root
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          // entry.isIntersecting = true cuando el header es visible
+          // Queremos que FAB aparezca cuando header NO es visible (isIntersecting = false)
+          setHeaderVisible(ownerKey, entry.isIntersecting);
+        });
+      },
+      {
+        root, // El contenedor #app-main-scroll
+        rootMargin: '0px 0px 0px 0px',
+        threshold: 0, // Disparar cuando cualquier parte del header entra/sale
+      }
+    );
+
+    observer.observe(header);
+
+    return () => {
+      observer.disconnect();
+    };
+  }, [hasMobileFab, ownerKey, setHeaderVisible]);
+
   return (
     <div
+      ref={headerRef}
       className={cn(
         'app-page-header app-mobile-page-header app-shell-gutter relative shrink-0 py-2 sm:py-2.5 lg:py-3.5 xl:py-4 pointer-events-none',
         className,
