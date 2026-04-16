@@ -1,7 +1,7 @@
 export const buildInfo = {
-  builtAtIso: "2026-04-16T13:57:56.431Z",
-  builtAtDisplay: "2026-04-16 13:57 UTC",
-  gitCommitShort: "19b0c3d",
+  builtAtIso: "2026-04-16T14:55:20.183Z",
+  builtAtDisplay: "2026-04-16 14:55 UTC",
+  gitCommitShort: "1569e9e",
   apiBaseUrl: "/api",
   nodeEnv: "production",
 } as const;

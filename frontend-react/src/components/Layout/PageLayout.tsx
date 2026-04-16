@@ -5,6 +5,7 @@ import { Button } from '../ui/Button';
 import { useLocation } from 'react-router-dom';
 import { useContextualFloatingActionStore } from '../../store/contextualFloatingActionStore';
 import { usePageChrome } from './PageChromeContext';
+import { useContentAnchor, useTriggerRemeasure } from './ContentAnchorContext';
 
 type LayoutProps = React.HTMLAttributes<HTMLDivElement> & {
   children: React.ReactNode;
@@ -111,29 +112,88 @@ export const PageHeader: React.FC<{
   // No usamos IntersectionObserver aquí para mantener consistencia
 
   return (
-    <>
-      {/* FAB ANCHOR: Punto donde comienza el contenido real, usado para medir visibilidad del FAB */}
-      <div data-mobile-content-start className="shrink-0" />
+    <div
+      ref={headerRef}
+      className={cn(
+        'app-page-header app-shell-gutter relative shrink-0 py-1 lg:py-3',
+        className,
+      )}
+    >
+      <div className="flex items-center justify-between gap-3">
+        <div className="min-w-0 flex-1">
+          <h1 className="text-[14px] font-semibold tracking-tight app-text lg:text-lg">{title}</h1>
+          {description ? (
+            <p className="mt-0.5 line-clamp-1 text-[11px] app-text-muted lg:mt-1 lg:text-sm">
+              {description}
+            </p>
+          ) : null}
+        </div>
+        {action ? <div className="flex shrink-0 items-center">{action}</div> : null}
+      </div>
+    </div>
+  );
+};
+
+/**
+ * ContentAnchor - Marca el inicio REAL del contenido scrollable.
+ * Colocar DESPUÉS de todos los elementos fijos (header, filtros, tabs).
+ * Usa ref explícito en lugar de querySelector global.
+ */
+export const ContentAnchor: React.FC = () => {
+  const { setAnchorRef } = useContentAnchor();
+  const localRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    setAnchorRef(localRef);
+  }, [setAnchorRef]);
+
+  return (
+    <div
+      ref={localRef}
+      data-content-anchor
+      className="shrink-0"
+      aria-hidden="true"
+    />
+  );
+};
+
+export const PageFilters: React.FC<React.HTMLAttributes<HTMLDivElement> & { children: React.ReactNode }> = ({ children, className, ...props }) => {
+  const [isExpanded, setIsExpanded] = useState(false);
+  const triggerRemeasure = useTriggerRemeasure();
+
+  // Re-medir cuando cambia el estado de expansión
+  useEffect(() => {
+    const timeout = setTimeout(() => triggerRemeasure(), 350); // Después de la transición CSS
+    return () => clearTimeout(timeout);
+  }, [isExpanded, triggerRemeasure]);
+
+  return (
+    <div className={cn('app-filter-strip shrink-0 z-20 transition-all duration-300', className)} {...props}>
+      {/* FASE 1B: Solo mostrar botón de filtros, sin área expandida inline */}
+      <div className="app-shell-gutter py-0.5 lg:hidden">
+        <button
+          type="button"
+          className="inline-flex items-center gap-1 rounded-full border border-[color:var(--app-border)] bg-[color:var(--app-surface-elevated)]/60 px-1.5 py-0.5 text-left text-[10px] font-medium app-text-secondary"
+          onClick={() => setIsExpanded((current) => !current)}
+          aria-expanded={isExpanded}
+        >
+          <Filter className="h-3 w-3" />
+          <span>Filtros</span>
+          {isExpanded ? <ChevronUp className="h-3 w-3 app-text-muted" /> : <ChevronDown className="h-3 w-3 app-text-muted" />}
+        </button>
+      </div>
+
+      {/* Área de filtros: solo visible cuando está expandido, o siempre visible en desktop */}
       <div
-        ref={headerRef}
         className={cn(
-          'app-page-header app-shell-gutter relative shrink-0 py-1 lg:py-3',
-          className,
+          'app-shell-gutter flex flex-col gap-2 transition-all duration-300 ease-in-out lg:flex-row lg:flex-wrap lg:items-center lg:gap-4 xl:gap-5',
+          isExpanded ? 'visible max-h-[28rem] overflow-visible py-1.5 opacity-100' : 'invisible max-h-0 overflow-hidden opacity-0 lg:visible lg:max-h-none lg:overflow-visible',
+          'lg:h-auto lg:py-2 lg:opacity-100'
         )}
       >
-        <div className="flex items-center justify-between gap-3">
-          <div className="min-w-0 flex-1">
-            <h1 className="text-[14px] font-semibold tracking-tight app-text lg:text-lg">{title}</h1>
-            {description ? (
-              <p className="mt-0.5 line-clamp-1 text-[11px] app-text-muted lg:mt-1 lg:text-sm">
-                {description}
-              </p>
-            ) : null}
-          </div>
-          {action ? <div className="flex shrink-0 items-center">{action}</div> : null}
-        </div>
+        {children}
       </div>
-    </>
+    </div>
   );
 };
 
@@ -396,39 +456,6 @@ export const CompactActionGroup: React.FC<{
           </div>
         ))}
         {primary ? <div className="min-w-0">{primary}</div> : null}
-      </div>
-    </div>
-  );
-};
-
-export const PageFilters: React.FC<React.HTMLAttributes<HTMLDivElement> & { children: React.ReactNode }> = ({ children, className, ...props }) => {
-  const [isExpanded, setIsExpanded] = useState(false);
-
-  return (
-    <div className={cn('app-filter-strip shrink-0 z-20 transition-all duration-300', className)} {...props}>
-      {/* FASE 1B: Solo mostrar botón de filtros, sin área expandida inline */}
-      <div className="app-shell-gutter py-0.5 lg:hidden">
-        <button
-          type="button"
-          className="inline-flex items-center gap-1 rounded-full border border-[color:var(--app-border)] bg-[color:var(--app-surface-elevated)]/60 px-1.5 py-0.5 text-left text-[10px] font-medium app-text-secondary"
-          onClick={() => setIsExpanded((current) => !current)}
-          aria-expanded={isExpanded}
-        >
-          <Filter className="h-3 w-3" />
-          <span>Filtros</span>
-          {isExpanded ? <ChevronUp className="h-3 w-3 app-text-muted" /> : <ChevronDown className="h-3 w-3 app-text-muted" />}
-        </button>
-      </div>
-
-      {/* Área de filtros: solo visible cuando está expandido, o siempre visible en desktop */}
-      <div
-        className={cn(
-          'app-shell-gutter flex flex-col gap-2 transition-all duration-300 ease-in-out lg:flex-row lg:flex-wrap lg:items-center lg:gap-4 xl:gap-5',
-          isExpanded ? 'visible max-h-[28rem] overflow-visible py-1.5 opacity-100' : 'invisible max-h-0 overflow-hidden opacity-0 lg:visible lg:max-h-none lg:overflow-visible',
-          'lg:h-auto lg:py-2 lg:opacity-100'
-        )}
-      >
-        {children}
       </div>
     </div>
   );

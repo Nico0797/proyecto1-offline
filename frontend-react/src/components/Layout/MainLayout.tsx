@@ -11,6 +11,7 @@ import { MobileBottomNav } from './MobileBottomNav';
 import { MobileTopBar } from './MobileTopBar';
 import { MobileShellDebugOverlay } from './MobileShellDebugOverlay';
 import { PageChromeProvider, usePageChrome } from './PageChromeContext';
+import { ContentAnchorProvider, useContentAnchor } from './ContentAnchorContext';
 import { ContextualFloatingFab } from './ContextualFloatingFab';
 import { CreateBusinessModal } from '../Business/CreateBusinessModal';
 import { getRuntimeModeSnapshot, isDesktopOfflineMode, isOfflineProductMode } from '../../runtime/runtimeMode';
@@ -36,7 +37,6 @@ export const MainLayout = () => {
   const [recoveryError, setRecoveryError] = useState<string | null>(null);
   const [isRecoveryBusy, setIsRecoveryBusy] = useState(false);
   const [hasAttemptedLocalRecovery, setHasAttemptedLocalRecovery] = useState(false);
-  const [contentStart, setContentStart] = useState(0);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const desktopOfflineMode = isDesktopOfflineMode();
   const offlineProductMode = isOfflineProductMode();
@@ -183,36 +183,8 @@ export const MainLayout = () => {
     }
   }, [location.pathname, location.search]);
 
-  // FAB: Medir posición del anchor de contenido para visibilidad dinámica
-  useEffect(() => {
-    const measureContentStart = () => {
-      const root = document.getElementById('app-main-scroll');
-      const anchor = document.querySelector('[data-mobile-content-start]');
-
-      if (root && anchor) {
-        const rootRect = root.getBoundingClientRect();
-        const anchorRect = anchor.getBoundingClientRect();
-
-        // Offset del anchor respecto al contenedor scrollable
-        const offset = anchorRect.top - rootRect.top + root.scrollTop;
-        setContentStart(offset);
-      }
-    };
-
-    measureContentStart();
-    // Remedir en resize y después de un breve delay para asegurar layout estable
-    const handleResize = () => measureContentStart();
-    window.addEventListener('resize', handleResize);
-    const timeoutId = window.setTimeout(measureContentStart, 100);
-
-    return () => {
-      window.removeEventListener('resize', handleResize);
-      window.clearTimeout(timeoutId);
-    };
-  }, [location.pathname, location.search]);
-
-  // FAB: Visible solo cuando se ha scrolleado más allá del inicio del contenido
-  const isFabVisible = scrollTop > contentStart;
+  // Nota: La medición del anchor y visibilidad del FAB ahora se maneja dentro de MainContentArea
+  // para tener acceso al ContentAnchorContext
 
   // FASE 1 LIMPIEZA: Solo trackear scroll para debug, NO controlar FAB
   useEffect(() => {
@@ -558,39 +530,135 @@ export const MainLayout = () => {
       {/* Status bar scrim – covers the system bar area on mobile with a gradient overlay */}
       <div className="app-status-bar-scrim lg:hidden" aria-hidden="true" />
 
-      {/* Main Content Wrapper */}
+      {/* Main Content Wrapper - Context providers envuelven todo el contenido móvil */}
       <PageChromeProvider>
-        <div className="app-mobile-safe-frame flex min-h-[100dvh] w-full flex-1 flex-col overflow-hidden transition-all duration-300 lg:min-h-full lg:pl-64 lg:pt-0">
-          {/* REESTRUCTURA: Chrome superior COMPLETO fuera del scroll */}
-          <AppTopChrome sidebarOpen={isSidebarOpen} setSidebarOpen={setIsSidebarOpen} />
-
-          {/* Main Content Area - SOLO contenido scrolleable, NADA de chrome aquí */}
-          <main id="app-main-scroll" className="app-page custom-scrollbar relative flex-1 min-h-0 overflow-y-auto overflow-x-hidden pb-[calc(var(--app-mobile-bottom-nav-height)+var(--app-mobile-bottom-nav-overhang)+var(--app-safe-area-bottom))] lg:pb-0">
-            <Outlet />
-          </main>
-
-          {/* FAB: Contextual con visibilidad dinámica basada en anchor de contenido */}
-          {isFabVisible && <ContextualFloatingFab />}
-
-          <MobileShellDebugOverlay
+        <ContentAnchorProvider>
+          <MainContentArea
+            isSidebarOpen={isSidebarOpen}
+            setIsSidebarOpen={setIsSidebarOpen}
             scrollTop={scrollTop}
             localBusinessesCount={localBusinessesCount}
-            offlineMode={offlineProductMode}
-            onExportBackup={downloadLocalBackupSnapshot}
-            onImportBackup={handleRecoveryImport}
-            contentStart={contentStart}
-            isFabVisible={isFabVisible}
-          />
-
-          {/* Mobile Bottom Nav */}
-          <div className="lg:hidden">
-              <MobileBottomNav
-                isSidebarOpen={isSidebarOpen}
-                onMenuToggle={() => setIsSidebarOpen((current) => !current)}
-              />
-          </div>
-        </div>
+            offlineProductMode={offlineProductMode}
+            handleRecoveryImport={handleRecoveryImport}
+          >
+            <Outlet />
+          </MainContentArea>
+        </ContentAnchorProvider>
       </PageChromeProvider>
+    </div>
+  );
+};
+
+/**
+ * MainContentArea - Contiene todo el layout móvil y la lógica de medición del FAB
+ * Se separa en componente propio para tener acceso a ContentAnchorContext
+ */
+const MainContentArea: React.FC<{
+  isSidebarOpen: boolean;
+  setIsSidebarOpen: (open: boolean) => void;
+  scrollTop: number;
+  localBusinessesCount: number;
+  offlineProductMode: boolean;
+  handleRecoveryImport: (file: File) => Promise<void>;
+  children: React.ReactNode;
+}> = ({ isSidebarOpen, setIsSidebarOpen, scrollTop, localBusinessesCount, offlineProductMode, handleRecoveryImport, children }) => {
+  const { anchorRef, setTriggerRemeasure } = useContentAnchor();
+  const [contentStart, setContentStart] = useState(0);
+  const mainRef = useRef<HTMLElement>(null);
+
+  // Función de medición reutilizable
+  const measureContentStart = useCallback(() => {
+    const root = mainRef.current;
+    const anchor = anchorRef.current;
+
+    if (root && anchor) {
+      const rootRect = root.getBoundingClientRect();
+      const anchorRect = anchor.getBoundingClientRect();
+
+      // Offset del anchor respecto al contenedor scrollable
+      const offset = anchorRect.top - rootRect.top + root.scrollTop;
+      setContentStart(Math.round(offset));
+    }
+  }, [anchorRef]);
+
+  // Registramos la función de trigger en el contexto para que las páginas hijas puedan llamarla
+  useEffect(() => {
+    setTriggerRemeasure(measureContentStart);
+  }, [measureContentStart, setTriggerRemeasure]);
+
+  // Medición inicial y en cambios de ruta
+  useEffect(() => {
+    measureContentStart();
+
+    // Delay adicional para asegurar layout estable después de navegación
+    const timeoutId = setTimeout(measureContentStart, 100);
+    return () => clearTimeout(timeoutId);
+  }, [measureContentStart]);
+
+  // ResizeObserver para detectar cambios de layout (resize, orientation, expansión de filtros, etc.)
+  useEffect(() => {
+    const root = mainRef.current;
+    if (!root) return;
+
+    let resizeObserver: ResizeObserver | null = null;
+
+    if (typeof ResizeObserver !== 'undefined') {
+      resizeObserver = new ResizeObserver(() => {
+        // Usar requestAnimationFrame para evitar mediciones durante layout thrashing
+        requestAnimationFrame(measureContentStart);
+      });
+      resizeObserver.observe(root);
+    } else {
+      // Fallback a window resize para navegadores sin ResizeObserver
+      const handleResize = () => measureContentStart();
+      window.addEventListener('resize', handleResize);
+      return () => window.removeEventListener('resize', handleResize);
+    }
+
+    return () => {
+      if (resizeObserver) {
+        resizeObserver.disconnect();
+      }
+    };
+  }, [measureContentStart]);
+
+  // FAB: Visible solo cuando se ha scrolleado más allá del inicio del contenido
+  const isFabVisible = scrollTop > contentStart;
+
+  return (
+    <div className="app-mobile-safe-frame flex min-h-[100dvh] w-full flex-1 flex-col overflow-hidden transition-all duration-300 lg:min-h-full lg:pl-64 lg:pt-0">
+      {/* REESTRUCTURA: Chrome superior COMPLETO fuera del scroll */}
+      <AppTopChrome setIsSidebarOpen={setIsSidebarOpen} />
+
+      {/* Main Content Area - SOLO contenido scrolleable, NADA de chrome aquí */}
+      <main
+        ref={mainRef}
+        id="app-main-scroll"
+        className="app-page custom-scrollbar relative flex-1 min-h-0 overflow-y-auto overflow-x-hidden pb-[calc(var(--app-mobile-bottom-nav-height)+var(--app-mobile-bottom-nav-overhang)+var(--app-safe-area-bottom))] lg:pb-0"
+      >
+        {children}
+      </main>
+
+      {/* FAB: Contextual con visibilidad dinámica basada en anchor de contenido */}
+      {isFabVisible && <ContextualFloatingFab />}
+
+      <MobileShellDebugOverlay
+        scrollTop={scrollTop}
+        localBusinessesCount={localBusinessesCount}
+        offlineMode={offlineProductMode}
+        onExportBackup={downloadLocalBackupSnapshot}
+        onImportBackup={handleRecoveryImport}
+        contentStart={contentStart}
+        isFabVisible={isFabVisible}
+      />
+
+      {/* Mobile Bottom Nav */}
+      <div className="lg:hidden">
+        <MobileBottomNav
+          isSidebarOpen={isSidebarOpen}
+          onMenuToggle={() => setIsSidebarOpen((current: boolean) => !current)}
+        />
+      </div>
     </div>
   );
 };
@@ -598,14 +666,13 @@ export const MainLayout = () => {
 // REESTRUCTURA: Chrome superior completamente fuera del scroll
 // Renderiza MobileTopBar + PageHeader dinámico desde el contexto
 const AppTopChrome: React.FC<{
-  sidebarOpen: boolean;
-  setSidebarOpen: (open: boolean) => void;
-}> = ({ sidebarOpen, setSidebarOpen }) => {
+  setIsSidebarOpen: (open: boolean) => void;
+}> = ({ setIsSidebarOpen }) => {
   const { header } = usePageChrome();
 
   return (
     <div className="app-top-chrome shrink-0 lg:hidden">
-      <MobileTopBar onMenuClick={() => setSidebarOpen(true)} />
+      <MobileTopBar onMenuClick={() => setIsSidebarOpen(true)} />
       {header && (
         <div className="app-page-header app-shell-gutter relative py-1">
           <div className="flex items-center justify-between gap-3">

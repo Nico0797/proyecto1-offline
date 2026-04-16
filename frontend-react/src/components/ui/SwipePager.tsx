@@ -1,6 +1,7 @@
 import React, { useEffect, useState, ReactNode, useMemo } from 'react';
 import { cn } from '../../utils/cn';
 import { MobileInlineTabs, MobileViewSwitcher } from '../mobile/MobileContentFirst';
+import { useTriggerRemeasure } from '../Layout/ContentAnchorContext';
 
 type PageErrorBoundaryProps = {
   pageId: string;
@@ -144,7 +145,9 @@ export const SwipePager: React.FC<SwipePagerProps> = ({
 }) => {
   const [isMobile, setIsMobile] = useState(() => typeof window !== 'undefined' ? window.innerWidth < mobileBreakpoint : false);
 
-  // Handle Resize / Breakpoint
+  const triggerRemeasure = useTriggerRemeasure();
+
+  // Handle Resize / Breakpoint + re-medición al cambiar tabs
   useEffect(() => {
     const checkMobile = () => {
       setIsMobile(window.innerWidth < mobileBreakpoint);
@@ -155,6 +158,12 @@ export const SwipePager: React.FC<SwipePagerProps> = ({
     window.addEventListener('resize', checkMobile);
     return () => window.removeEventListener('resize', checkMobile);
   }, [mobileBreakpoint]);
+
+  // Re-medir cuando cambia de página (el contenido cambia de altura)
+  useEffect(() => {
+    const timeout = setTimeout(() => triggerRemeasure(), 100);
+    return () => clearTimeout(timeout);
+  }, [activePageId, triggerRemeasure]);
 
   return (
     <div className={cn("flex min-h-0 w-full flex-col", className)}>
