@@ -9,11 +9,9 @@ import { BootTracePanel } from '../../debug/BootTracePanel';
 import { Sidebar } from './Sidebar';
 import { MobileBottomNav } from './MobileBottomNav';
 import { MobileTopBar } from './MobileTopBar';
-import { ContextualFloatingFab } from './ContextualFloatingFab';
 import { MobileShellDebugOverlay } from './MobileShellDebugOverlay';
 import { CreateBusinessModal } from '../Business/CreateBusinessModal';
 import { getRuntimeModeSnapshot, isDesktopOfflineMode, isOfflineProductMode } from '../../runtime/runtimeMode';
-import { useContextualFloatingActionStore } from '../../store/contextualFloatingActionStore';
 import { offlineSyncService } from '../../services/offlineSyncService';
 import { downloadLocalBackupSnapshot, importLocalBackupSnapshot } from '../../services/localBackup';
 
@@ -31,16 +29,12 @@ export const MainLayout = () => {
   } = useAccountAccessStore();
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [scrollTop, setScrollTop] = useState(0);
-  const [contentAnchorOffset, setContentAnchorOffset] = useState(120); // Offset donde empieza el contenido real
-  const contentAnchorRef = useRef<HTMLDivElement>(null);
   const [localBusinessesCount, setLocalBusinessesCount] = useState(0);
   const [isCreateBusinessModalOpen, setIsCreateBusinessModalOpen] = useState(false);
   const [recoveryError, setRecoveryError] = useState<string | null>(null);
   const [isRecoveryBusy, setIsRecoveryBusy] = useState(false);
   const [hasAttemptedLocalRecovery, setHasAttemptedLocalRecovery] = useState(false);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
-  const action = useContextualFloatingActionStore((state) => state.action);
-  const setHeaderVisible = useContextualFloatingActionStore((state) => state.setHeaderVisible);
   const desktopOfflineMode = isDesktopOfflineMode();
   const offlineProductMode = isOfflineProductMode();
   const isDemoPreview = Boolean(access?.demo_preview_active);
@@ -542,7 +536,6 @@ export const MainLayout = () => {
         {/* <ContextualFloatingFab /> */}
         <MobileShellDebugOverlay
           scrollTop={scrollTop}
-          threshold={contentAnchorOffset}
           localBusinessesCount={localBusinessesCount}
           offlineMode={offlineProductMode}
           onExportBackup={downloadLocalBackupSnapshot}
