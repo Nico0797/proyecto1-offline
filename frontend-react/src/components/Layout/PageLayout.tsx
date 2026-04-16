@@ -4,6 +4,7 @@ import { cn } from '../../utils/cn';
 import { Button } from '../ui/Button';
 import { useLocation } from 'react-router-dom';
 import { useContextualFloatingActionStore } from '../../store/contextualFloatingActionStore';
+import { usePageChrome } from './PageChromeContext';
 
 type LayoutProps = React.HTMLAttributes<HTMLDivElement> & {
   children: React.ReactNode;
@@ -46,7 +47,12 @@ export const PageHeader: React.FC<{
     icon?: React.ElementType;
     onClick: () => void;
   };
-}> = ({ title, description, action, className, mobileFab }) => {
+  /**
+   * REESTRUCTURA: Si true, renderiza el header en el chrome superior fijo (fuera del scroll)
+   * en lugar de dentro del contenido scrolleable. Esto mejora la respuesta del scroll en móvil.
+   */
+  renderInChrome?: boolean;
+}> = ({ title, description, action, className, mobileFab, renderInChrome = false }) => {
   const location = useLocation();
   const headerRef = useRef<HTMLDivElement>(null);
   const onClickRef = useRef<(() => void) | undefined>(mobileFab?.onClick);
@@ -59,9 +65,19 @@ export const PageHeader: React.FC<{
   const mobileFabIcon = mobileFab?.icon;
   const mobileFabOnClick = mobileFab?.onClick;
 
+  // REESTRUCTURA: Registro en chrome superior si renderInChrome está activado
+  const { setHeader } = usePageChrome();
+
   useEffect(() => {
     onClickRef.current = mobileFabOnClick;
   }, [mobileFabOnClick]);
+
+  useEffect(() => {
+    if (renderInChrome) {
+      setHeader({ title, description, action });
+      return () => setHeader(null);
+    }
+  }, [renderInChrome, title, description, action, setHeader]);
 
   useEffect(() => {
     if (!hasMobileFab || !mobileFabLabel) {
@@ -85,6 +101,12 @@ export const PageHeader: React.FC<{
 
     return () => unregisterAction(ownerKey);
   }, [hasMobileFab, ownerKey, unregisterAction]);
+
+  // REESTRUCTURA: Si renderInChrome está activado, no renderizamos nada aquí
+  // El header se renderizará en el chrome superior fijo via contexto
+  if (renderInChrome) {
+    return null;
+  }
 
   // Nota: La visibilidad del FAB se controla por scrollTop en MainLayout
   // No usamos IntersectionObserver aquí para mantener consistencia

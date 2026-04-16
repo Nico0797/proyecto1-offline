@@ -10,6 +10,7 @@ import { Sidebar } from './Sidebar';
 import { MobileBottomNav } from './MobileBottomNav';
 import { MobileTopBar } from './MobileTopBar';
 import { MobileShellDebugOverlay } from './MobileShellDebugOverlay';
+import { PageChromeProvider, usePageChrome } from './PageChromeContext';
 import { CreateBusinessModal } from '../Business/CreateBusinessModal';
 import { getRuntimeModeSnapshot, isDesktopOfflineMode, isOfflineProductMode } from '../../runtime/runtimeMode';
 import { offlineSyncService } from '../../services/offlineSyncService';
@@ -525,31 +526,62 @@ export const MainLayout = () => {
       <div className="app-status-bar-scrim lg:hidden" aria-hidden="true" />
 
       {/* Main Content Wrapper */}
-      <div className="app-mobile-safe-frame flex min-h-[100dvh] w-full flex-1 flex-col overflow-hidden transition-all duration-300 lg:min-h-full lg:pl-64 lg:pt-0">
-        {/* Main Content Area */}
-        <main id="app-main-scroll" className="app-page custom-scrollbar relative flex-1 min-h-0 overflow-y-auto overflow-x-hidden pb-[calc(var(--app-mobile-bottom-nav-height)+var(--app-mobile-bottom-nav-overhang)+var(--app-safe-area-bottom))] lg:pb-0">
-          <MobileTopBar onMenuClick={() => setIsSidebarOpen(true)} />
-          <Outlet />
-        </main>
+      <PageChromeProvider>
+        <div className="app-mobile-safe-frame flex min-h-[100dvh] w-full flex-1 flex-col overflow-hidden transition-all duration-300 lg:min-h-full lg:pl-64 lg:pt-0">
+          {/* REESTRUCTURA: Chrome superior COMPLETO fuera del scroll */}
+          <AppTopChrome sidebarOpen={isSidebarOpen} setSidebarOpen={setIsSidebarOpen} />
 
-        {/* FASE 1 LIMPIEZA: FAB contextual desactivado temporalmente */}
-        {/* <ContextualFloatingFab /> */}
-        <MobileShellDebugOverlay
-          scrollTop={scrollTop}
-          localBusinessesCount={localBusinessesCount}
-          offlineMode={offlineProductMode}
-          onExportBackup={downloadLocalBackupSnapshot}
-          onImportBackup={handleRecoveryImport}
-        />
+          {/* Main Content Area - SOLO contenido scrolleable, NADA de chrome aquí */}
+          <main id="app-main-scroll" className="app-page custom-scrollbar relative flex-1 min-h-0 overflow-y-auto overflow-x-hidden pb-[calc(var(--app-mobile-bottom-nav-height)+var(--app-mobile-bottom-nav-overhang)+var(--app-safe-area-bottom))] lg:pb-0">
+            <Outlet />
+          </main>
 
-        {/* Mobile Bottom Nav */}
-        <div className="lg:hidden">
-            <MobileBottomNav
-              isSidebarOpen={isSidebarOpen}
-              onMenuToggle={() => setIsSidebarOpen((current) => !current)}
-            />
+          {/* REESTRUCTURA: FAB desactivado - debug solo */}
+          <MobileShellDebugOverlay
+            scrollTop={scrollTop}
+            localBusinessesCount={localBusinessesCount}
+            offlineMode={offlineProductMode}
+            onExportBackup={downloadLocalBackupSnapshot}
+            onImportBackup={handleRecoveryImport}
+          />
+
+          {/* Mobile Bottom Nav */}
+          <div className="lg:hidden">
+              <MobileBottomNav
+                isSidebarOpen={isSidebarOpen}
+                onMenuToggle={() => setIsSidebarOpen((current) => !current)}
+              />
+          </div>
         </div>
-      </div>
+      </PageChromeProvider>
+    </div>
+  );
+};
+
+// REESTRUCTURA: Chrome superior completamente fuera del scroll
+// Renderiza MobileTopBar + PageHeader dinámico desde el contexto
+const AppTopChrome: React.FC<{
+  sidebarOpen: boolean;
+  setSidebarOpen: (open: boolean) => void;
+}> = ({ sidebarOpen, setSidebarOpen }) => {
+  const { header } = usePageChrome();
+
+  return (
+    <div className="app-top-chrome shrink-0 lg:hidden">
+      <MobileTopBar onMenuClick={() => setSidebarOpen(true)} />
+      {header && (
+        <div className="app-page-header app-shell-gutter relative py-1">
+          <div className="flex items-center justify-between gap-3">
+            <div className="min-w-0 flex-1">
+              <h1 className="text-[14px] font-semibold tracking-tight app-text">{header.title}</h1>
+              {header.description ? (
+                <p className="mt-0.5 line-clamp-1 text-[11px] app-text-muted">{header.description}</p>
+              ) : null}
+            </div>
+            {header.action ? <div className="flex shrink-0 items-center">{header.action}</div> : null}
+          </div>
+        </div>
+      )}
     </div>
   );
 };
