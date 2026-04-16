@@ -566,36 +566,50 @@ const MainContentArea: React.FC<{
   const [contentStart, setContentStart] = useState(0);
   const mainRef = useRef<HTMLElement>(null);
 
-  // Función de medición reutilizable
+  // Función de medición robusta usando offsetTop acumulado
+  // Calcula la posición del anchor dentro del contenido del scroll container
   const measureContentStart = useCallback(() => {
     const root = mainRef.current;
     const anchor = anchorRef.current;
 
-    if (root && anchor) {
+    if (!root || !anchor) return;
+
+    // Calcular offset acumulado desde el anchor hasta el root (sin usar rects del viewport)
+    let offset = 0;
+    let el: HTMLElement | null = anchor;
+    while (el && el !== root) {
+      offset += el.offsetTop;
+      el = el.offsetParent as HTMLElement | null;
+    }
+
+    // Si el anchor no está anidado en el root, fallback a getBoundingClientRect
+    if (el !== root) {
       const rootRect = root.getBoundingClientRect();
       const anchorRect = anchor.getBoundingClientRect();
-
-      // Offset del anchor respecto al contenedor scrollable
-      const offset = anchorRect.top - rootRect.top + root.scrollTop;
-      setContentStart(Math.round(offset));
+      offset = anchorRect.top - rootRect.top + root.scrollTop;
     }
+
+    setContentStart(Math.round(offset));
   }, [anchorRef]);
 
-  // Registramos la función de trigger en el contexto para que las páginas hijas puedan llamarla
+  // Registramos la función de trigger en el contexto
   useEffect(() => {
     setTriggerRemeasure(measureContentStart);
   }, [measureContentStart, setTriggerRemeasure]);
 
   // Medición inicial y en cambios de ruta
   useEffect(() => {
-    measureContentStart();
-
-    // Delay adicional para asegurar layout estable después de navegación
-    const timeoutId = setTimeout(measureContentStart, 100);
-    return () => clearTimeout(timeoutId);
+    // Usar requestAnimationFrame para asegurar que el DOM está listo
+    const rafId = requestAnimationFrame(() => {
+      measureContentStart();
+      // Segunda medición después de layout estable
+      const timeoutId = setTimeout(measureContentStart, 50);
+      return () => clearTimeout(timeoutId);
+    });
+    return () => cancelAnimationFrame(rafId);
   }, [measureContentStart]);
 
-  // ResizeObserver para detectar cambios de layout (resize, orientation, expansión de filtros, etc.)
+  // ResizeObserver para recalcular (sin forzar layout)
   useEffect(() => {
     const root = mainRef.current;
     if (!root) return;
@@ -603,13 +617,12 @@ const MainContentArea: React.FC<{
     let resizeObserver: ResizeObserver | null = null;
 
     if (typeof ResizeObserver !== 'undefined') {
-      resizeObserver = new ResizeObserver(() => {
-        // Usar requestAnimationFrame para evitar mediciones durante layout thrashing
+      resizeObserver = new ResizeObserver((entries) => {
+        // Solo recalcular, no mutar DOM
         requestAnimationFrame(measureContentStart);
       });
       resizeObserver.observe(root);
     } else {
-      // Fallback a window resize para navegadores sin ResizeObserver
       const handleResize = () => measureContentStart();
       window.addEventListener('resize', handleResize);
       return () => window.removeEventListener('resize', handleResize);
@@ -622,8 +635,9 @@ const MainContentArea: React.FC<{
     };
   }, [measureContentStart]);
 
-  // FAB: Visible solo cuando se ha scrolleado más allá del inicio del contenido
-  const isFabVisible = scrollTop > contentStart;
+  // FAB: Visible cuando el scroll supera el inicio del contenido (con margen de 16px)
+  const REVEAL_OFFSET = 16; // px antes de mostrar el FAB
+  const isFabVisible = scrollTop >= contentStart - REVEAL_OFFSET;
 
   return (
     <div className="app-mobile-safe-frame flex min-h-[100dvh] w-full flex-1 flex-col overflow-hidden transition-all duration-300 lg:min-h-full lg:pl-64 lg:pt-0">

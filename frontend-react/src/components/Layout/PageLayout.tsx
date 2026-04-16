@@ -137,22 +137,35 @@ export const PageHeader: React.FC<{
 /**
  * ContentAnchor - Marca el inicio REAL del contenido scrollable.
  * Colocar DESPUÉS de todos los elementos fijos (header, filtros, tabs).
- * Usa ref explícito en lugar de querySelector global.
+ * 
+ * REGLAS:
+ * - Debe ser un nodo NEUTRO: sin sticky, sin height, sin márgenes, sin transform
+ * - Usa span en línea para no afectar el layout
+ * - El cálculo de posición se hace via offsetTop en el padre scrollable
  */
 export const ContentAnchor: React.FC = () => {
   const { setAnchorRef } = useContentAnchor();
-  const localRef = useRef<HTMLDivElement>(null);
+  const localRef = useRef<HTMLSpanElement>(null);
 
   useEffect(() => {
     setAnchorRef(localRef);
   }, [setAnchorRef]);
 
   return (
-    <div
+    <span
       ref={localRef}
       data-content-anchor
-      className="shrink-0"
       aria-hidden="true"
+      style={{
+        display: 'inline',
+        position: 'static',
+        height: 0,
+        width: 0,
+        margin: 0,
+        padding: 0,
+        border: 0,
+        visibility: 'hidden',
+      }}
     />
   );
 };
@@ -160,15 +173,29 @@ export const ContentAnchor: React.FC = () => {
 export const PageFilters: React.FC<React.HTMLAttributes<HTMLDivElement> & { children: React.ReactNode }> = ({ children, className, ...props }) => {
   const [isExpanded, setIsExpanded] = useState(false);
   const triggerRemeasure = useTriggerRemeasure();
+  const filtersRef = useRef<HTMLDivElement>(null);
 
-  // Re-medir cuando cambia el estado de expansión
+  // Re-medir usando transitionend para precisión real (no timeout arbitrario)
   useEffect(() => {
-    const timeout = setTimeout(() => triggerRemeasure(), 350); // Después de la transición CSS
-    return () => clearTimeout(timeout);
+    const el = filtersRef.current;
+    if (!el) return;
+
+    const handleTransitionEnd = () => {
+      triggerRemeasure();
+    };
+
+    el.addEventListener('transitionend', handleTransitionEnd);
+    // Fallback por si no hay transición o ya terminó
+    const fallbackId = setTimeout(handleTransitionEnd, 400);
+
+    return () => {
+      el.removeEventListener('transitionend', handleTransitionEnd);
+      clearTimeout(fallbackId);
+    };
   }, [isExpanded, triggerRemeasure]);
 
   return (
-    <div className={cn('app-filter-strip shrink-0 z-20 transition-all duration-300', className)} {...props}>
+    <div ref={filtersRef} className={cn('app-filter-strip shrink-0 z-20 transition-all duration-300', className)} {...props}>
       {/* FASE 1B: Solo mostrar botón de filtros, sin área expandida inline */}
       <div className="app-shell-gutter py-0.5 lg:hidden">
         <button
