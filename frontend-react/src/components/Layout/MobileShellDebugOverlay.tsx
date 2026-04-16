@@ -10,6 +10,8 @@ type MobileShellDebugOverlayProps = {
   offlineMode: boolean;
   onExportBackup: () => Promise<void>;
   onImportBackup: (file: File) => Promise<void>;
+  contentStart: number;
+  isFabVisible: boolean;
 };
 
 export const MobileShellDebugOverlay: React.FC<MobileShellDebugOverlayProps> = ({
@@ -18,6 +20,8 @@ export const MobileShellDebugOverlay: React.FC<MobileShellDebugOverlayProps> = (
   offlineMode,
   onExportBackup,
   onImportBackup,
+  contentStart,
+  isFabVisible,
 }) => {
   const location = useLocation();
   const { activeBusiness, businesses } = useBusinessStore();
@@ -28,8 +32,9 @@ export const MobileShellDebugOverlay: React.FC<MobileShellDebugOverlayProps> = (
   const [topChromeHeights, setTopChromeHeights] = useState<string[]>([]);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
-  // FASE 1B: FAB contextual completamente desactivado
-  const fabStatus = 'DESACTIVADO (FASE 1)';
+  // FAB: Estado real basado en visibilidad dinámica
+  const fabStatus = isFabVisible ? 'VISIBLE' : 'OCULTO';
+  const fabDiff = scrollTop - contentStart;
 
   // Detectar contenedores con scroll + medir alturas del top chrome
   useEffect(() => {
@@ -139,7 +144,10 @@ export const MobileShellDebugOverlay: React.FC<MobileShellDebugOverlayProps> = (
           <div className="rounded-2xl border border-black/8 bg-black/82 p-3 text-[11px] leading-4 text-white shadow-[0_18px_30px_-22px_rgba(15,23,42,0.66)] backdrop-blur-md">
             <div>ruta: {location.pathname}{location.search}</div>
             <div>scrollTop root: {Math.round(scrollTop)}</div>
-            <div className="text-amber-300">FAB: {fabStatus}</div>
+            <div>contentStart: {Math.round(contentStart)}</div>
+            <div className={`${isFabVisible ? 'text-green-400' : 'text-amber-300'}`}>
+              FAB: {fabStatus} ({fabDiff > 0 ? '+' : ''}{Math.round(fabDiff)}px)
+            </div>
             <div>offline: {offlineMode ? 'si' : 'no'}</div>
             <div>activeBusiness: {activeBusiness?.id ?? 'none'}</div>
             <div>businesses store/local: {businesses.length} / {localBusinessesCount}</div>

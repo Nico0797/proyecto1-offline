@@ -11,6 +11,7 @@ import { MobileBottomNav } from './MobileBottomNav';
 import { MobileTopBar } from './MobileTopBar';
 import { MobileShellDebugOverlay } from './MobileShellDebugOverlay';
 import { PageChromeProvider, usePageChrome } from './PageChromeContext';
+import { ContextualFloatingFab } from './ContextualFloatingFab';
 import { CreateBusinessModal } from '../Business/CreateBusinessModal';
 import { getRuntimeModeSnapshot, isDesktopOfflineMode, isOfflineProductMode } from '../../runtime/runtimeMode';
 import { offlineSyncService } from '../../services/offlineSyncService';
@@ -35,6 +36,7 @@ export const MainLayout = () => {
   const [recoveryError, setRecoveryError] = useState<string | null>(null);
   const [isRecoveryBusy, setIsRecoveryBusy] = useState(false);
   const [hasAttemptedLocalRecovery, setHasAttemptedLocalRecovery] = useState(false);
+  const [contentStart, setContentStart] = useState(0);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const desktopOfflineMode = isDesktopOfflineMode();
   const offlineProductMode = isOfflineProductMode();
@@ -180,6 +182,37 @@ export const MainLayout = () => {
       root.scrollTop = 0;
     }
   }, [location.pathname, location.search]);
+
+  // FAB: Medir posición del anchor de contenido para visibilidad dinámica
+  useEffect(() => {
+    const measureContentStart = () => {
+      const root = document.getElementById('app-main-scroll');
+      const anchor = document.querySelector('[data-mobile-content-start]');
+
+      if (root && anchor) {
+        const rootRect = root.getBoundingClientRect();
+        const anchorRect = anchor.getBoundingClientRect();
+
+        // Offset del anchor respecto al contenedor scrollable
+        const offset = anchorRect.top - rootRect.top + root.scrollTop;
+        setContentStart(offset);
+      }
+    };
+
+    measureContentStart();
+    // Remedir en resize y después de un breve delay para asegurar layout estable
+    const handleResize = () => measureContentStart();
+    window.addEventListener('resize', handleResize);
+    const timeoutId = window.setTimeout(measureContentStart, 100);
+
+    return () => {
+      window.removeEventListener('resize', handleResize);
+      window.clearTimeout(timeoutId);
+    };
+  }, [location.pathname, location.search]);
+
+  // FAB: Visible solo cuando se ha scrolleado más allá del inicio del contenido
+  const isFabVisible = scrollTop > contentStart;
 
   // FASE 1 LIMPIEZA: Solo trackear scroll para debug, NO controlar FAB
   useEffect(() => {
@@ -536,13 +569,17 @@ export const MainLayout = () => {
             <Outlet />
           </main>
 
-          {/* REESTRUCTURA: FAB desactivado - debug solo */}
+          {/* FAB: Contextual con visibilidad dinámica basada en anchor de contenido */}
+          {isFabVisible && <ContextualFloatingFab />}
+
           <MobileShellDebugOverlay
             scrollTop={scrollTop}
             localBusinessesCount={localBusinessesCount}
             offlineMode={offlineProductMode}
             onExportBackup={downloadLocalBackupSnapshot}
             onImportBackup={handleRecoveryImport}
+            contentStart={contentStart}
+            isFabVisible={isFabVisible}
           />
 
           {/* Mobile Bottom Nav */}

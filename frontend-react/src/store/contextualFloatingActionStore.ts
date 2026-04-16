@@ -11,33 +11,13 @@ export interface ContextualFloatingActionConfig {
 
 interface ContextualFloatingActionState {
   action: ContextualFloatingActionConfig | null;
-  headerVisible: boolean;
-  debugForceVisible: boolean;
   registerAction: (action: ContextualFloatingActionConfig) => void;
   unregisterAction: (ownerKey: string) => void;
-  setHeaderVisible: (ownerKey: string, isVisible: boolean) => void;
-  setDebugForceVisible: (forceVisible: boolean) => void;
 }
 
-export const useContextualFloatingActionStore = create<ContextualFloatingActionState>((set, get) => ({
+export const useContextualFloatingActionStore = create<ContextualFloatingActionState>((set) => ({
   action: null,
-  headerVisible: true,
-  debugForceVisible: false,
-  registerAction: (action) =>
-    set((state) => {
-      const isSameOwner = state.action?.ownerKey === action.ownerKey;
-      return {
-        action,
-        // Siempre resetear headerVisible a true cuando cambia la página (nuevo ownerKey)
-        // para asegurar que el FAB empiece en estado visible y luego se oculte al hacer scroll
-        headerVisible: isSameOwner ? state.headerVisible : true,
-      };
-    }),
+  registerAction: (action) => set({ action }),
   unregisterAction: (ownerKey) =>
-    set((state) => (state.action?.ownerKey === ownerKey ? { action: null, headerVisible: true } : state)),
-  setHeaderVisible: (ownerKey, isVisible) => {
-    if (get().action?.ownerKey !== ownerKey) return;
-    set({ headerVisible: isVisible });
-  },
-  setDebugForceVisible: (forceVisible) => set({ debugForceVisible: forceVisible }),
+    set((state) => (state.action?.ownerKey === ownerKey ? { action: null } : state)),
 }));

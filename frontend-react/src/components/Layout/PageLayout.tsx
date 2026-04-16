@@ -58,7 +58,6 @@ export const PageHeader: React.FC<{
   const onClickRef = useRef<(() => void) | undefined>(mobileFab?.onClick);
   const registerAction = useContextualFloatingActionStore((state) => state.registerAction);
   const unregisterAction = useContextualFloatingActionStore((state) => state.unregisterAction);
-  const setHeaderVisible = useContextualFloatingActionStore((state) => state.setHeaderVisible);
   const ownerKey = `${location.pathname}${location.search}`;
   const hasMobileFab = Boolean(mobileFab);
   const mobileFabLabel = mobileFab?.label;
@@ -112,25 +111,29 @@ export const PageHeader: React.FC<{
   // No usamos IntersectionObserver aquí para mantener consistencia
 
   return (
-    <div
-      ref={headerRef}
-      className={cn(
-        'app-page-header app-shell-gutter relative shrink-0 py-1 lg:py-3',
-        className,
-      )}
-    >
-      <div className="flex items-center justify-between gap-3">
-        <div className="min-w-0 flex-1">
-          <h1 className="text-[14px] font-semibold tracking-tight app-text lg:text-lg">{title}</h1>
-          {description ? (
-            <p className="mt-0.5 line-clamp-1 text-[11px] app-text-muted lg:mt-1 lg:text-sm">
-              {description}
-            </p>
-          ) : null}
+    <>
+      {/* FAB ANCHOR: Punto donde comienza el contenido real, usado para medir visibilidad del FAB */}
+      <div data-mobile-content-start className="shrink-0" />
+      <div
+        ref={headerRef}
+        className={cn(
+          'app-page-header app-shell-gutter relative shrink-0 py-1 lg:py-3',
+          className,
+        )}
+      >
+        <div className="flex items-center justify-between gap-3">
+          <div className="min-w-0 flex-1">
+            <h1 className="text-[14px] font-semibold tracking-tight app-text lg:text-lg">{title}</h1>
+            {description ? (
+              <p className="mt-0.5 line-clamp-1 text-[11px] app-text-muted lg:mt-1 lg:text-sm">
+                {description}
+              </p>
+            ) : null}
+          </div>
+          {action ? <div className="flex shrink-0 items-center">{action}</div> : null}
         </div>
-        {action ? <div className="flex shrink-0 items-center">{action}</div> : null}
       </div>
-    </div>
+    </>
   );
 };
 
