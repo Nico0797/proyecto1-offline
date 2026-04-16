@@ -178,58 +178,15 @@ export const MainLayout = () => {
     };
   }, [offlineProductMode, activeBusiness?.id]);
 
-  // Medir posición real del content anchor (donde empieza el contenido)
-  // Esto incluye: MobileTopBar + PageHeader + MobileInternalNav + PageFilters + etc
+  // FASE 1 LIMPIEZA: Reset explícito de scroll al cambiar de ruta
   useEffect(() => {
-    if (typeof window === 'undefined') return undefined;
-
-    const measureContentAnchor = () => {
-      const root = document.getElementById('app-main-scroll');
-      const anchor = document.querySelector('[data-mobile-content-anchor]') as HTMLElement;
-      if (root && anchor) {
-        // Calcular offset del anchor relativo al scroll root
-        const rootRect = root.getBoundingClientRect();
-        const anchorRect = anchor.getBoundingClientRect();
-        const offset = anchorRect.top - rootRect.top + root.scrollTop;
-        setContentAnchorOffset(Math.max(80, Math.round(offset)));
-      } else if (root) {
-        // Fallback: usar altura de todos los elementos data-mobile-top-chrome
-        const chromeElements = document.querySelectorAll('[data-mobile-top-chrome]');
-        let totalHeight = 0;
-        chromeElements.forEach((el) => {
-          const rect = el.getBoundingClientRect();
-          totalHeight += rect.height;
-        });
-        if (totalHeight > 0) {
-          setContentAnchorOffset(Math.round(totalHeight));
-        }
-      }
-    };
-
-    // Medir inicialmente con delay para que el DOM esté listo
-    const timer = setTimeout(measureContentAnchor, 100);
-
-    // Usar MutationObserver para detectar cambios en el DOM
-    const mutationObserver = new MutationObserver(() => {
-      measureContentAnchor();
-    });
-
     const root = document.getElementById('app-main-scroll');
     if (root) {
-      mutationObserver.observe(root, { childList: true, subtree: true });
+      root.scrollTop = 0;
     }
+  }, [location.pathname]);
 
-    // También medir en resize y scroll
-    window.addEventListener('resize', measureContentAnchor);
-
-    return () => {
-      clearTimeout(timer);
-      mutationObserver.disconnect();
-      window.removeEventListener('resize', measureContentAnchor);
-    };
-  }, [location.pathname]); // Re-medir cuando cambia la ruta
-
-  // Lógica FAB por scrollTop con threshold dinámico basado en altura real del top chrome
+  // FASE 1 LIMPIEZA: Solo trackear scroll para debug, NO controlar FAB
   useEffect(() => {
     if (typeof window === 'undefined') return undefined;
 
@@ -239,14 +196,7 @@ export const MainLayout = () => {
     let frameId: number | null = null;
 
     const updateScrollState = () => {
-      const nextScrollTop = root.scrollTop;
-      setScrollTop(nextScrollTop);
-
-      if (action?.ownerKey) {
-        // FAB visible cuando scrollTop <= contentAnchorOffset (chrome superior visible)
-        // FAB oculto cuando scrollTop > contentAnchorOffset (usuario ya scrolleó pasado el chrome)
-        setHeaderVisible(action.ownerKey, nextScrollTop <= contentAnchorOffset);
-      }
+      setScrollTop(root.scrollTop);
     };
 
     const handleScroll = () => {
@@ -265,11 +215,8 @@ export const MainLayout = () => {
       if (frameId !== null) {
         window.cancelAnimationFrame(frameId);
       }
-      if (action?.ownerKey) {
-        setHeaderVisible(action.ownerKey, true);
-      }
     };
-  }, [action?.ownerKey, action?.label, setHeaderVisible]);
+  }, []);
 
   useEffect(() => {
     if (!offlineProductMode || isHydrating || activeBusiness || hasAttemptedLocalRecovery || localBusinessesCount <= 0) {
@@ -591,7 +538,8 @@ export const MainLayout = () => {
           <Outlet />
         </main>
 
-        <ContextualFloatingFab />
+        {/* FASE 1 LIMPIEZA: FAB contextual desactivado temporalmente */}
+        {/* <ContextualFloatingFab /> */}
         <MobileShellDebugOverlay
           scrollTop={scrollTop}
           threshold={contentAnchorOffset}
