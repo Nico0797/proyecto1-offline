@@ -7,6 +7,7 @@ import { buildInfo } from '../../generated/buildInfo';
 
 type MobileShellDebugOverlayProps = {
   scrollTop: number;
+  threshold?: number;
   localBusinessesCount: number;
   offlineMode: boolean;
   onExportBackup: () => Promise<void>;
@@ -15,6 +16,7 @@ type MobileShellDebugOverlayProps = {
 
 export const MobileShellDebugOverlay: React.FC<MobileShellDebugOverlayProps> = ({
   scrollTop,
+  threshold = 24,
   localBusinessesCount,
   offlineMode,
   onExportBackup,
@@ -32,32 +34,50 @@ export const MobileShellDebugOverlay: React.FC<MobileShellDebugOverlayProps> = (
   const [scrollContainers, setScrollContainers] = useState<string[]>([]);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
-  const fabVisible = Boolean(action) && (debugForceVisible || !headerVisible);
+  const fabShouldShow = Boolean(action) && (debugForceVisible || scrollTop > threshold);
+  const fabVisible = fabShouldShow;
 
-  // Detectar contenedores con scroll vertical
+  // Detectar contenedores con scroll vertical (mejorado con más detalle)
   useEffect(() => {
     const detectScrollContainers = () => {
-      const containers: string[] = [];
+      const containers: Array<{
+        name: string;
+        overflowY: string;
+        scrollTop: number;
+        clientHeight: number;
+        scrollHeight: number;
+      }> = [];
       const allElements = document.querySelectorAll('*');
       allElements.forEach((el, index) => {
-        if (index > 200) return; // Limitar para performance
+        if (index > 300) return; // Limitar para performance
         const style = window.getComputedStyle(el);
         const overflowY = style.overflowY;
         if (overflowY === 'auto' || overflowY === 'scroll') {
-          const id = el.id || '';
-          const className = el.className?.toString().split(' ')[0] || '';
-          const tag = el.tagName.toLowerCase();
-          const scrollTop = (el as HTMLElement).scrollTop;
-          containers.push(`${tag}${id ? '#' + id : ''}${className ? '.' + className : ''}(${Math.round(scrollTop)}px)`);
+          const htmlEl = el as HTMLElement;
+          const id = htmlEl.id || '';
+          const className = htmlEl.className?.toString().split(' ')[0] || '';
+          const tag = htmlEl.tagName.toLowerCase();
+          const name = `${tag}${id ? '#' + id : ''}${className ? '.' + className : ''}`;
+          containers.push({
+            name,
+            overflowY,
+            scrollTop: htmlEl.scrollTop,
+            clientHeight: htmlEl.clientHeight,
+            scrollHeight: htmlEl.scrollHeight,
+          });
         }
       });
-      setScrollContainers(containers.slice(0, 5));
+      // Ordenar por scrollTop descendente para ver cuál está activo
+      containers.sort((a, b) => b.scrollTop - a.scrollTop);
+      setScrollContainers(containers.slice(0, 5).map(c =>
+        `${c.name} | ${c.overflowY} | scrollTop:${Math.round(c.scrollTop)} | h:${c.clientHeight}/${c.scrollHeight}`
+      ));
     };
 
     detectScrollContainers();
-    const interval = setInterval(detectScrollContainers, 2000);
+    const interval = setInterval(detectScrollContainers, 1500);
     return () => clearInterval(interval);
-  }, [location.pathname]);
+  }, [location.pathname, scrollTop]);
 
   const handleExport = async () => {
     setIsBusy(true);
@@ -104,6 +124,8 @@ export const MobileShellDebugOverlay: React.FC<MobileShellDebugOverlayProps> = (
           <div className="rounded-2xl border border-black/8 bg-black/82 p-3 text-[11px] leading-4 text-white shadow-[0_18px_30px_-22px_rgba(15,23,42,0.66)] backdrop-blur-md">
             <div>ruta: {location.pathname}{location.search}</div>
             <div>scrollTop root: {Math.round(scrollTop)}</div>
+            <div>threshold: {threshold}</div>
+            <div>fab should show: {fabShouldShow ? 'SI' : 'NO'}</div>
             <div>offline: {offlineMode ? 'si' : 'no'}</div>
             <div>activeBusiness: {activeBusiness?.id ?? 'none'}</div>
             <div>businesses store/local: {businesses.length} / {localBusinessesCount}</div>
@@ -115,7 +137,7 @@ export const MobileShellDebugOverlay: React.FC<MobileShellDebugOverlayProps> = (
             <div>build: {buildInfo.gitCommitShort} · {buildInfo.builtAtDisplay}</div>
             {scrollContainers.length > 0 && (
               <div className="mt-1 border-t border-white/10 pt-1">
-                <div className="text-[10px] text-white/60">scroll containers:</div>
+                <div className="text-[10px] text-white/60">scroll containers (overflowY | scrollTop | h:visible/total):</div>
                 {scrollContainers.map((c, i) => (
                   <div key={i} className="truncate text-[10px] text-white/80">{c}</div>
                 ))}

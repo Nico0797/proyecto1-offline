@@ -31,6 +31,7 @@ export const MainLayout = () => {
   } = useAccountAccessStore();
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [scrollTop, setScrollTop] = useState(0);
+  const THRESHOLD_DEBUG = 24; // Umbral bajo para prueba diagnóstica (sync con useEffect)
   const [localBusinessesCount, setLocalBusinessesCount] = useState(0);
   const [isCreateBusinessModalOpen, setIsCreateBusinessModalOpen] = useState(false);
   const [recoveryError, setRecoveryError] = useState<string | null>(null);
@@ -184,14 +185,16 @@ export const MainLayout = () => {
 
     let frameId: number | null = null;
 
+    const THRESHOLD = THRESHOLD_DEBUG; // Usar constante compartida
+
     const updateScrollState = () => {
       const nextScrollTop = root.scrollTop;
       setScrollTop(nextScrollTop);
 
       if (action?.ownerKey) {
-        // FAB visible cuando scrollTop <= 72 (header visible)
-        // FAB oculto cuando scrollTop > 72 (scrolled down)
-        setHeaderVisible(action.ownerKey, nextScrollTop <= 72);
+        // FAB visible cuando scrollTop <= THRESHOLD (header visible)
+        // FAB oculto cuando scrollTop > THRESHOLD (scrolled down)
+        setHeaderVisible(action.ownerKey, nextScrollTop <= THRESHOLD);
       }
     };
 
@@ -541,6 +544,7 @@ export const MainLayout = () => {
         <ContextualFloatingFab />
         <MobileShellDebugOverlay
           scrollTop={scrollTop}
+          threshold={THRESHOLD_DEBUG}
           localBusinessesCount={localBusinessesCount}
           offlineMode={offlineProductMode}
           onExportBackup={downloadLocalBackupSnapshot}
