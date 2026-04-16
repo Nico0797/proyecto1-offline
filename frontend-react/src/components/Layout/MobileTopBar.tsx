@@ -14,12 +14,12 @@ export const MobileTopBar = ({ onMenuClick }: MobileTopBarProps) => {
   const offlineProductMode = isOfflineProductMode();
 
   return (
-    <header className="app-mobile-topbar app-shell-gutter z-30 shrink-0 lg:hidden">
+    <header className="app-mobile-topbar app-shell-gutter pointer-events-none z-30 shrink-0 lg:hidden">
       <div className="flex min-h-10 min-w-0 items-center justify-between gap-2">
         <button
           type="button"
           onClick={onMenuClick}
-          className="app-icon-button inline-flex h-9 w-9 items-center justify-center rounded-xl transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 focus-visible:ring-offset-[color:var(--app-surface-elevated)]"
+          className="app-icon-button pointer-events-auto inline-flex h-9 w-9 items-center justify-center rounded-xl transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 focus-visible:ring-offset-[color:var(--app-surface-elevated)]"
           aria-label="Abrir menu"
         >
           <Menu className="h-[18px] w-[18px]" />
@@ -38,7 +38,7 @@ export const MobileTopBar = ({ onMenuClick }: MobileTopBarProps) => {
           </div>
         </div>
 
-        <div className="shrink-0">
+        <div className="pointer-events-auto shrink-0">
           <MobileUtilityChips />
         </div>
       </div>

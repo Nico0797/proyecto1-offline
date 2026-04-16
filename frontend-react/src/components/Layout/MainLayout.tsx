@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { Outlet, Navigate, useLocation } from 'react-router-dom';
 import { useAuthStore } from '../../store/authStore';
 import { useBusinessStore } from '../../store/businessStore';
@@ -10,8 +10,12 @@ import { Sidebar } from './Sidebar';
 import { MobileBottomNav } from './MobileBottomNav';
 import { MobileTopBar } from './MobileTopBar';
 import { ContextualFloatingFab } from './ContextualFloatingFab';
+import { MobileShellDebugOverlay } from './MobileShellDebugOverlay';
+import { CreateBusinessModal } from '../Business/CreateBusinessModal';
 import { getRuntimeModeSnapshot, isDesktopOfflineMode, isOfflineProductMode } from '../../runtime/runtimeMode';
-import { buildInfo } from '../../generated/buildInfo';
+import { useContextualFloatingActionStore } from '../../store/contextualFloatingActionStore';
+import { offlineSyncService } from '../../services/offlineSyncService';
+import { downloadLocalBackupSnapshot, importLocalBackupSnapshot } from '../../services/localBackup';
 
 export const MainLayout = () => {
   const location = useLocation();
@@ -26,6 +30,15 @@ export const MainLayout = () => {
     clear: clearAccountAccess,
   } = useAccountAccessStore();
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [scrollTop, setScrollTop] = useState(0);
+  const [localBusinessesCount, setLocalBusinessesCount] = useState(0);
+  const [isCreateBusinessModalOpen, setIsCreateBusinessModalOpen] = useState(false);
+  const [recoveryError, setRecoveryError] = useState<string | null>(null);
+  const [isRecoveryBusy, setIsRecoveryBusy] = useState(false);
+  const [hasAttemptedLocalRecovery, setHasAttemptedLocalRecovery] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const action = useContextualFloatingActionStore((state) => state.action);
+  const setHeaderVisible = useContextualFloatingActionStore((state) => state.setHeaderVisible);
   const desktopOfflineMode = isDesktopOfflineMode();
   const offlineProductMode = isOfflineProductMode();
   const isDemoPreview = Boolean(access?.demo_preview_active);
@@ -134,6 +147,120 @@ export const MainLayout = () => {
     }
   }, [activeBusiness?.id, offlineProductMode, setTrackedBusiness]);
 
+  useEffect(() => {
+    if (!offlineProductMode) {
+      setLocalBusinessesCount(0);
+      setHasAttemptedLocalRecovery(false);
+      return;
+    }
+
+    let cancelled = false;
+
+    const loadLocalBusinesses = async () => {
+      try {
+        const localBusinesses = await offlineSyncService.getBusinessesFromLocal();
+        if (!cancelled) {
+          setLocalBusinessesCount(localBusinesses.length);
+        }
+      } catch {
+        if (!cancelled) {
+          setLocalBusinessesCount(0);
+        }
+      }
+    };
+
+    void loadLocalBusinesses();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [offlineProductMode, activeBusiness?.id]);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return undefined;
+
+    const root = document.getElementById('app-main-scroll');
+    if (!root) return undefined;
+
+    let frameId: number | null = null;
+
+    const updateScrollState = () => {
+      const nextScrollTop = root.scrollTop;
+      setScrollTop(nextScrollTop);
+
+      if (action?.ownerKey) {
+        setHeaderVisible(action.ownerKey, nextScrollTop <= 72);
+      }
+    };
+
+    const handleScroll = () => {
+      if (frameId !== null) return;
+      frameId = window.requestAnimationFrame(() => {
+        frameId = null;
+        updateScrollState();
+      });
+    };
+
+    updateScrollState();
+    root.addEventListener('scroll', handleScroll, { passive: true });
+
+    return () => {
+      root.removeEventListener('scroll', handleScroll);
+      if (frameId !== null) {
+        window.cancelAnimationFrame(frameId);
+      }
+      if (action?.ownerKey) {
+        setHeaderVisible(action.ownerKey, true);
+      }
+    };
+  }, [action?.ownerKey, setHeaderVisible]);
+
+  useEffect(() => {
+    if (!offlineProductMode || isHydrating || activeBusiness || hasAttemptedLocalRecovery || localBusinessesCount <= 0) {
+      return;
+    }
+
+    setHasAttemptedLocalRecovery(true);
+    void fetchAuthBootstrap(null);
+  }, [activeBusiness, fetchAuthBootstrap, hasAttemptedLocalRecovery, isHydrating, localBusinessesCount, offlineProductMode]);
+
+  const refreshLocalBusinessCount = useCallback(async () => {
+    const localBusinesses = await offlineSyncService.getBusinessesFromLocal();
+    setLocalBusinessesCount(localBusinesses.length);
+    return localBusinesses;
+  }, []);
+
+  const handleRecoveryImport = useCallback(async (file: File) => {
+    setRecoveryError(null);
+    setIsRecoveryBusy(true);
+    try {
+      const restored = await importLocalBackupSnapshot(file);
+      const nextBusinesses = await refreshLocalBusinessCount();
+      setHasAttemptedLocalRecovery(false);
+      await fetchUser();
+      await fetchAuthBootstrap(restored.activeBusiness?.id ?? nextBusinesses[0]?.id ?? null);
+    } catch (error) {
+      setRecoveryError(error instanceof Error ? error.message : 'No fue posible restaurar el respaldo local.');
+      throw error;
+    } finally {
+      setIsRecoveryBusy(false);
+    }
+  }, [fetchAuthBootstrap, fetchUser, refreshLocalBusinessCount]);
+
+  const handleRecoveryRetry = useCallback(async () => {
+    setRecoveryError(null);
+    setIsRecoveryBusy(true);
+    try {
+      const localBusinesses = await refreshLocalBusinessCount();
+      await fetchUser();
+      await fetchAuthBootstrap(activeContext?.business_id ?? activeBusiness?.id ?? localBusinesses[0]?.id ?? null);
+    } catch (error) {
+      setRecoveryError(error instanceof Error ? error.message : 'No fue posible reintentar la carga local.');
+    } finally {
+      setIsRecoveryBusy(false);
+    }
+  }, [activeBusiness?.id, activeContext?.business_id, fetchAuthBootstrap, fetchUser, refreshLocalBusinessCount]);
+
   const finalComponent = isHydrating
     ? (offlineProductMode && offlineBootstrapTimedOut ? 'MainLayoutOfflineTimeoutShell' : 'MainLayoutHydrating')
     : !isAuthenticated && !allowsOfflineBootstrap
@@ -178,8 +305,7 @@ export const MainLayout = () => {
       activeContextBusinessId: activeContext?.business_id ?? null,
     });
     setOfflineBootstrapTimedOut(false);
-    void fetchUser();
-    void fetchAuthBootstrap(activeContext?.business_id ?? activeBusiness?.id ?? null);
+    void handleRecoveryRetry();
   };
 
   if (isHydrating) {
@@ -209,6 +335,43 @@ export const MainLayout = () => {
             >
               Reintentar arranque local
             </button>
+            <div className="mt-3 flex flex-col gap-3">
+              <button
+                type="button"
+                onClick={() => setIsCreateBusinessModalOpen(true)}
+                className="inline-flex h-11 items-center justify-center rounded-2xl border border-[color:var(--app-border)] bg-[color:var(--app-surface-elevated)] px-4 text-sm font-semibold app-text transition hover:bg-[color:var(--app-surface-soft)]"
+              >
+                Crear negocio local
+              </button>
+              <button
+                type="button"
+                onClick={() => fileInputRef.current?.click()}
+                className="inline-flex h-11 items-center justify-center rounded-2xl border border-[color:var(--app-border)] bg-[color:var(--app-surface-elevated)] px-4 text-sm font-semibold app-text transition hover:bg-[color:var(--app-surface-soft)]"
+              >
+                Restaurar respaldo local
+              </button>
+            </div>
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="application/json"
+              className="hidden"
+              onChange={(event) => {
+                const file = event.target.files?.[0];
+                if (file) {
+                  void handleRecoveryImport(file);
+                }
+              }}
+            />
+            <CreateBusinessModal
+              isOpen={isCreateBusinessModalOpen}
+              onClose={() => setIsCreateBusinessModalOpen(false)}
+              onSuccess={() => {
+                setRecoveryError(null);
+                setIsCreateBusinessModalOpen(false);
+                void refreshLocalBusinessCount();
+              }}
+            />
           </div>
         </div>
       );
@@ -260,14 +423,57 @@ export const MainLayout = () => {
             <div>hydrating=no</div>
             <div>isAuthenticated={isAuthenticated ? 'yes' : 'no'}</div>
             <div>accessibleContexts={accessibleContexts?.length ?? 0}</div>
+            <div>localBusinesses={localBusinessesCount}</div>
           </div>
-          <button
-            type="button"
-            onClick={retryOfflineBootstrap}
-            className="mt-4 inline-flex h-11 items-center justify-center rounded-2xl bg-blue-600 px-4 text-sm font-semibold text-white transition hover:bg-blue-700"
-          >
-            Reintentar carga local
-          </button>
+          <div className="mt-4 flex flex-col gap-3">
+            <button
+              type="button"
+              onClick={() => setIsCreateBusinessModalOpen(true)}
+              className="inline-flex h-11 items-center justify-center rounded-2xl bg-blue-600 px-4 text-sm font-semibold text-white transition hover:bg-blue-700"
+            >
+              Crear negocio local
+            </button>
+            <button
+              type="button"
+              onClick={() => fileInputRef.current?.click()}
+              disabled={isRecoveryBusy}
+              className="inline-flex h-11 items-center justify-center rounded-2xl border border-[color:var(--app-border)] bg-[color:var(--app-surface-elevated)] px-4 text-sm font-semibold app-text transition hover:bg-[color:var(--app-surface-soft)] disabled:opacity-60"
+            >
+              Restaurar respaldo local
+            </button>
+            {localBusinessesCount > 0 ? (
+              <button
+                type="button"
+                onClick={retryOfflineBootstrap}
+                disabled={isRecoveryBusy}
+                className="inline-flex h-11 items-center justify-center rounded-2xl border border-[color:var(--app-border)] bg-[color:var(--app-surface-elevated)] px-4 text-sm font-semibold app-text transition hover:bg-[color:var(--app-surface-soft)] disabled:opacity-60"
+              >
+                Abrir negocio local encontrado
+              </button>
+            ) : null}
+          </div>
+          {recoveryError ? <div className="mt-3 text-sm text-amber-700 dark:text-amber-300">{recoveryError}</div> : null}
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="application/json"
+            className="hidden"
+            onChange={(event) => {
+              const file = event.target.files?.[0];
+              if (file) {
+                void handleRecoveryImport(file);
+              }
+            }}
+          />
+          <CreateBusinessModal
+            isOpen={isCreateBusinessModalOpen}
+            onClose={() => setIsCreateBusinessModalOpen(false)}
+            onSuccess={() => {
+              setRecoveryError(null);
+              setIsCreateBusinessModalOpen(false);
+              void refreshLocalBusinessCount();
+            }}
+          />
         </div>
       </div>
     );
@@ -290,11 +496,13 @@ export const MainLayout = () => {
         </main>
 
         <ContextualFloatingFab />
-
-        <div className="pointer-events-none fixed bottom-[calc(var(--app-mobile-bottom-nav-height)+var(--app-mobile-bottom-nav-overhang)+1rem+var(--app-safe-area-bottom))] left-[max(0.75rem,env(safe-area-inset-left))] z-[54] rounded-full border border-black/8 bg-black/72 px-3 py-1.5 text-[10px] font-medium tracking-[0.02em] text-white shadow-[0_12px_24px_-18px_rgba(15,23,42,0.55)] backdrop-blur-sm lg:bottom-4 lg:left-4 lg:text-[11px]">
-          <span className="block whitespace-nowrap">{buildInfo.gitCommitShort}</span>
-          <span className="block whitespace-nowrap text-white/80">{buildInfo.builtAtDisplay}</span>
-        </div>
+        <MobileShellDebugOverlay
+          scrollTop={scrollTop}
+          localBusinessesCount={localBusinessesCount}
+          offlineMode={offlineProductMode}
+          onExportBackup={downloadLocalBackupSnapshot}
+          onImportBackup={handleRecoveryImport}
+        />
 
         {/* Mobile Bottom Nav */}
         <div className="lg:hidden">

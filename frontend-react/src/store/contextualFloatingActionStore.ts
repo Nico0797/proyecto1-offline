@@ -12,14 +12,17 @@ export interface ContextualFloatingActionConfig {
 interface ContextualFloatingActionState {
   action: ContextualFloatingActionConfig | null;
   headerVisible: boolean;
+  debugForceVisible: boolean;
   registerAction: (action: ContextualFloatingActionConfig) => void;
   unregisterAction: (ownerKey: string) => void;
   setHeaderVisible: (ownerKey: string, isVisible: boolean) => void;
+  setDebugForceVisible: (forceVisible: boolean) => void;
 }
 
 export const useContextualFloatingActionStore = create<ContextualFloatingActionState>((set, get) => ({
   action: null,
   headerVisible: true,
+  debugForceVisible: false,
   registerAction: (action) =>
     set((state) => ({
       action,
@@ -31,4 +34,5 @@ export const useContextualFloatingActionStore = create<ContextualFloatingActionS
     if (get().action?.ownerKey !== ownerKey) return;
     set({ headerVisible: isVisible });
   },
+  setDebugForceVisible: (forceVisible) => set({ debugForceVisible: forceVisible }),
 }));

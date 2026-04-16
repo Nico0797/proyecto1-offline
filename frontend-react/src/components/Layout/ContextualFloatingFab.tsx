@@ -7,11 +7,12 @@ import { useContextualFloatingActionStore } from '../../store/contextualFloating
 export const ContextualFloatingFab: React.FC = () => {
   const action = useContextualFloatingActionStore((state) => state.action);
   const headerVisible = useContextualFloatingActionStore((state) => state.headerVisible);
+  const debugForceVisible = useContextualFloatingActionStore((state) => state.debugForceVisible);
 
   if (!action) return null;
 
   const Icon = action.icon || Plus;
-  const isVisible = !headerVisible;
+  const isVisible = debugForceVisible || !headerVisible;
 
   const content = (
     <div

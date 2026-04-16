@@ -48,11 +48,9 @@ export const PageHeader: React.FC<{
   };
 }> = ({ title, description, action, className, mobileFab }) => {
   const location = useLocation();
-  const headerRef = useRef<HTMLDivElement | null>(null);
   const onClickRef = useRef<(() => void) | undefined>(mobileFab?.onClick);
   const registerAction = useContextualFloatingActionStore((state) => state.registerAction);
   const unregisterAction = useContextualFloatingActionStore((state) => state.unregisterAction);
-  const setHeaderVisible = useContextualFloatingActionStore((state) => state.setHeaderVisible);
   const ownerKey = `${location.pathname}${location.search}`;
   const hasMobileFab = Boolean(mobileFab);
   const mobileFabLabel = mobileFab?.label;
@@ -86,51 +84,10 @@ export const PageHeader: React.FC<{
     return () => unregisterAction(ownerKey);
   }, [hasMobileFab, ownerKey, unregisterAction]);
 
-  useEffect(() => {
-    if (!hasMobileFab || typeof window === 'undefined') {
-      return undefined;
-    }
-
-    const root = document.getElementById('app-main-scroll');
-    if (!root) {
-      return undefined;
-    }
-
-    let frameId: number | null = null;
-
-    const updateVisibility = () => {
-      const measuredHeight = headerRef.current?.offsetHeight ?? 0;
-      const threshold = measuredHeight > 0
-        ? Math.max(56, Math.min(measuredHeight - 8, 96))
-        : 72;
-      setHeaderVisible(ownerKey, root.scrollTop <= threshold);
-    };
-
-    const handleScroll = () => {
-      if (frameId !== null) return;
-      frameId = window.requestAnimationFrame(() => {
-        frameId = null;
-        updateVisibility();
-      });
-    };
-
-    updateVisibility();
-    root.addEventListener('scroll', handleScroll, { passive: true });
-
-    return () => {
-      root.removeEventListener('scroll', handleScroll);
-      if (frameId !== null) {
-        window.cancelAnimationFrame(frameId);
-      }
-      setHeaderVisible(ownerKey, true);
-    };
-  }, [hasMobileFab, ownerKey, setHeaderVisible]);
-
   return (
     <div
-      ref={headerRef}
       className={cn(
-        'app-page-header app-mobile-page-header app-shell-gutter relative shrink-0 py-2 sm:py-2.5 lg:py-3.5 xl:py-4',
+        'app-page-header app-mobile-page-header app-shell-gutter relative shrink-0 py-2 sm:py-2.5 lg:py-3.5 xl:py-4 pointer-events-none',
         className,
       )}
     >
@@ -143,7 +100,7 @@ export const PageHeader: React.FC<{
             </p>
           ) : null}
         </div>
-        {action ? <div className="flex min-w-0 max-w-full flex-wrap items-start justify-start pt-0.5 lg:ml-6 lg:w-auto lg:flex-none lg:justify-end lg:pt-0">{action}</div> : null}
+        {action ? <div className="pointer-events-auto flex min-w-0 max-w-full flex-wrap items-start justify-start pt-0.5 lg:ml-6 lg:w-auto lg:flex-none lg:justify-end lg:pt-0">{action}</div> : null}
       </div>
     </div>
   );
@@ -417,23 +374,23 @@ export const PageFilters: React.FC<React.HTMLAttributes<HTMLDivElement> & { chil
   const [isExpanded, setIsExpanded] = useState(false);
 
   return (
-    <div className={cn('app-filter-strip shrink-0 z-20 transition-all duration-300', className)} {...props}>
-      <button
-        type="button"
-        className="app-shell-gutter flex w-full items-center justify-between py-2 text-left lg:hidden"
-        onClick={() => setIsExpanded((current) => !current)}
-        aria-expanded={isExpanded}
-      >
-        <div className="flex items-center gap-2 text-xs font-medium app-text-secondary sm:text-sm">
+    <div className={cn('app-filter-strip shrink-0 z-20 transition-all duration-300 pointer-events-none', className)} {...props}>
+      <div className="app-shell-gutter py-1.5 lg:hidden">
+        <button
+          type="button"
+          className="pointer-events-auto inline-flex items-center gap-2 rounded-full border border-[color:var(--app-border)] bg-[color:var(--app-surface-elevated)]/92 px-3 py-2 text-left text-xs font-medium app-text-secondary shadow-[0_10px_24px_-24px_rgba(15,23,42,0.24)] sm:text-sm"
+          onClick={() => setIsExpanded((current) => !current)}
+          aria-expanded={isExpanded}
+        >
           <Filter className="h-4 w-4" />
           <span>Filtros y busqueda</span>
-        </div>
-        {isExpanded ? <ChevronUp className="h-4 w-4 app-text-muted" /> : <ChevronDown className="h-4 w-4 app-text-muted" />}
-      </button>
+          {isExpanded ? <ChevronUp className="h-4 w-4 app-text-muted" /> : <ChevronDown className="h-4 w-4 app-text-muted" />}
+        </button>
+      </div>
 
       <div
         className={cn(
-          'app-shell-gutter flex flex-col gap-2.5 transition-all duration-300 ease-in-out lg:flex-row lg:flex-wrap lg:items-center lg:gap-4 xl:gap-5',
+          'app-shell-gutter pointer-events-auto flex flex-col gap-2.5 transition-all duration-300 ease-in-out lg:flex-row lg:flex-wrap lg:items-center lg:gap-4 xl:gap-5',
           isExpanded ? 'visible max-h-[28rem] overflow-visible py-2 opacity-100' : 'invisible max-h-0 overflow-hidden opacity-0 lg:visible lg:max-h-none lg:overflow-visible',
           'lg:h-auto lg:py-3 lg:opacity-100'
         )}
