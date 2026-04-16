@@ -24,6 +24,7 @@ const safeExec = (command, args, cwd) => {
 const buildAtIso = new Date().toISOString();
 const buildAtDisplay = buildAtIso.replace('T', ' ').replace(/:\d{2}\.\d{3}Z$/, ' UTC');
 const gitCommitShort = safeExec('git', ['rev-parse', '--short', 'HEAD'], projectRoot) || 'unknown';
+const gitBranch = safeExec('git', ['branch', '--show-current'], projectRoot) || 'unknown';
 const apiBaseUrl = process.env.VITE_API_BASE_URL || '/api';
 const nodeEnv = process.env.NODE_ENV || 'production';
 
@@ -31,6 +32,7 @@ const source = `export const buildInfo = {
   builtAtIso: ${JSON.stringify(buildAtIso)},
   builtAtDisplay: ${JSON.stringify(buildAtDisplay)},
   gitCommitShort: ${JSON.stringify(gitCommitShort)},
+  gitBranch: ${JSON.stringify(gitBranch)},
   apiBaseUrl: ${JSON.stringify(apiBaseUrl)},
   nodeEnv: ${JSON.stringify(nodeEnv)},
 } as const;
@@ -38,4 +40,4 @@ const source = `export const buildInfo = {
 
 await fs.mkdir(outputDir, { recursive: true });
 await fs.writeFile(outputFile, source, 'utf8');
-console.log(`[build-info] wrote ${path.relative(frontendRoot, outputFile)} @ ${buildAtIso} (${gitCommitShort})`);
+console.log(`[build-info] wrote ${path.relative(frontendRoot, outputFile)} @ ${buildAtIso} (${gitBranch}/${gitCommitShort})`);

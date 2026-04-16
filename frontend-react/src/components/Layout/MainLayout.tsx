@@ -21,6 +21,8 @@ import { offlineSyncService } from '../../services/offlineSyncService';
 import { importLocalBackupSnapshot } from '../../services/localBackup';
 import { BUSINESS_NAVIGATION_ITEMS } from '../../navigation/businessNavigation';
 import { normalizeNavigationPath } from '../../navigation/navigationPathAliases';
+import { useContextualFloatingActionStore } from '../../store/contextualFloatingActionStore';
+import { buildInfo } from '../../generated/buildInfo';
 
 const MAIN_SCREEN_PATHS = Array.from(new Set(BUSINESS_NAVIGATION_ITEMS.map((item) => item.path)))
   .sort((a, b) => b.length - a.length);
@@ -533,82 +535,75 @@ const MainContentArea: React.FC<{
   mainScreenKey: string;
   children: React.ReactNode;
 }> = ({ isSidebarOpen, setIsSidebarOpen, mainScreenKey, children }) => {
-  const { anchorRef, setTriggerRemeasure } = useContentAnchor();
+  const { setTriggerRemeasure } = useContentAnchor();
   const { header } = usePageChrome();
+  const clearFloatingAction = useContextualFloatingActionStore((state) => state.clearAction);
   const [scrollTop, setScrollTop] = useState(0);
-  const [contentStart, setContentStart] = useState<number | null>(null);
-  const [fabTriggerOffset, setFabTriggerOffset] = useState(96);
+  const [topChromeHeight, setTopChromeHeight] = useState(96);
+  const [isChromeSentinelVisible, setIsChromeSentinelVisible] = useState(true);
   const mainRef = useRef<HTMLElement>(null);
   const topChromeRef = useRef<HTMLDivElement>(null);
+  const chromeSentinelRef = useRef<HTMLDivElement>(null);
 
-  // Función de medición robusta usando offsetTop acumulado
-  // Calcula la posición del anchor dentro del contenido del scroll container
-  const measureFabTrigger = useCallback(() => {
+  // Medicion visual directa: el FAB espera a que la zona del header movil
+  // salga del viewport del scroll root real.
+  const syncFabVisibility = useCallback(() => {
     const root = mainRef.current;
     const topChrome = topChromeRef.current;
-    const measuredChromeHeight = topChrome ? Math.ceil(topChrome.getBoundingClientRect().height) : 0;
-    let measuredContentStart: number | null = null;
+    const sentinel = chromeSentinelRef.current;
 
     if (!root) return;
 
-    const anchor = anchorRef.current;
-    if (!anchor || !root.contains(anchor)) {
-      const nextTriggerOffset = Math.max(24, measuredChromeHeight);
-      setContentStart((current) => (current === null ? current : null));
-      setFabTriggerOffset((current) => (current === nextTriggerOffset ? current : nextTriggerOffset));
+    const measuredChromeHeight = topChrome
+      ? Math.max(1, Math.ceil(topChrome.getBoundingClientRect().height))
+      : 96;
+
+    setTopChromeHeight((current) => (
+      current === measuredChromeHeight ? current : measuredChromeHeight
+    ));
+
+    const nextScrollTop = Math.max(0, root.scrollTop);
+    setScrollTop((current) => (current === nextScrollTop ? current : nextScrollTop));
+
+    if (!sentinel || !root.contains(sentinel)) {
+      setIsChromeSentinelVisible(true);
       return;
     }
 
-    // Calcular offset acumulado desde el anchor hasta el root (sin usar rects del viewport)
-    let offset = 0;
-    let el: HTMLElement | null = anchor;
-    while (el && el !== root) {
-      offset += el.offsetTop;
-      el = el.offsetParent as HTMLElement | null;
-    }
+    const rootRect = root.getBoundingClientRect();
+    const sentinelRect = sentinel.getBoundingClientRect();
+    const stillVisible = sentinelRect.bottom > rootRect.top + 1;
 
-    // Si el anchor no está anidado en el root, fallback a getBoundingClientRect
-    if (el !== root) {
-      const rootRect = root.getBoundingClientRect();
-      const anchorRect = anchor.getBoundingClientRect();
-      offset = anchorRect.top - rootRect.top + root.scrollTop;
-    }
-
-    measuredContentStart = Math.max(0, Math.round(offset));
-
-    const nextTriggerOffset = Math.max(
-      24,
-      measuredChromeHeight,
-      measuredContentStart
-    );
-
-    setContentStart((current) => (current === measuredContentStart ? current : measuredContentStart));
-    setFabTriggerOffset((current) => (current === nextTriggerOffset ? current : nextTriggerOffset));
-  }, [anchorRef]);
+    setIsChromeSentinelVisible((current) => (
+      current === stillVisible ? current : stillVisible
+    ));
+  }, []);
 
   // Registramos la función de trigger en el contexto
   useEffect(() => {
-    setTriggerRemeasure(measureFabTrigger);
-  }, [measureFabTrigger, setTriggerRemeasure]);
+    setTriggerRemeasure(syncFabVisibility);
+  }, [syncFabVisibility, setTriggerRemeasure]);
 
   // Reset del scroll root al cambiar de pantalla principal.
   useLayoutEffect(() => {
+    clearFloatingAction();
+    setIsChromeSentinelVisible(true);
     const root = mainRef.current;
     if (!root) return undefined;
 
     root.scrollTop = 0;
     setScrollTop(0);
-    measureFabTrigger();
-    const frameId = window.requestAnimationFrame(measureFabTrigger);
+    syncFabVisibility();
+    const frameId = window.requestAnimationFrame(syncFabVisibility);
     
     return () => window.cancelAnimationFrame(frameId);
-  }, [mainScreenKey, measureFabTrigger]);
+  }, [clearFloatingAction, mainScreenKey, syncFabVisibility]);
 
   useLayoutEffect(() => {
-    measureFabTrigger();
-    const frameId = window.requestAnimationFrame(measureFabTrigger);
+    syncFabVisibility();
+    const frameId = window.requestAnimationFrame(syncFabVisibility);
     return () => window.cancelAnimationFrame(frameId);
-  }, [header?.title, header?.description, header?.action, measureFabTrigger]);
+  }, [header?.title, header?.description, header?.action, syncFabVisibility]);
 
   useEffect(() => {
     const root = mainRef.current;
@@ -616,22 +611,15 @@ const MainContentArea: React.FC<{
 
     let frameId: number | null = null;
 
-    const updateScrollState = () => {
-      setScrollTop((current) => {
-        const nextScrollTop = root.scrollTop;
-        return current === nextScrollTop ? current : nextScrollTop;
-      });
-    };
-
     const handleScroll = () => {
       if (frameId !== null) return;
       frameId = window.requestAnimationFrame(() => {
         frameId = null;
-        updateScrollState();
+        syncFabVisibility();
       });
     };
 
-    updateScrollState();
+    syncFabVisibility();
     root.addEventListener('scroll', handleScroll, { passive: true });
 
     return () => {
@@ -640,11 +628,12 @@ const MainContentArea: React.FC<{
         window.cancelAnimationFrame(frameId);
       }
     };
-  }, []);
+  }, [mainScreenKey, syncFabVisibility]);
 
   // ResizeObserver para recalcular (sin forzar layout)
   useEffect(() => {
     const root = mainRef.current;
+    const topChrome = topChromeRef.current;
     if (!root) return;
 
     let resizeObserver: ResizeObserver | null = null;
@@ -652,11 +641,14 @@ const MainContentArea: React.FC<{
     if (typeof ResizeObserver !== 'undefined') {
       resizeObserver = new ResizeObserver(() => {
         // Solo recalcular, no mutar DOM
-        requestAnimationFrame(measureFabTrigger);
+        requestAnimationFrame(syncFabVisibility);
       });
       resizeObserver.observe(root);
+      if (topChrome) {
+        resizeObserver.observe(topChrome);
+      }
     } else {
-      const handleResize = () => measureFabTrigger();
+      const handleResize = () => syncFabVisibility();
       window.addEventListener('resize', handleResize);
       return () => window.removeEventListener('resize', handleResize);
     }
@@ -666,26 +658,34 @@ const MainContentArea: React.FC<{
         resizeObserver.disconnect();
       }
     };
-  }, [measureFabTrigger]);
-  // El FAB inicia oculto y aparece despues de superar el trigger medido.
-  const isFabVisible = scrollTop > fabTriggerOffset;
+  }, [syncFabVisibility]);
+  // El FAB inicia oculto y aparece cuando el header movil real ya salio del scroll root.
+  const isFabVisible = scrollTop > 0 && !isChromeSentinelVisible;
 
   return (
     <div
       className="app-mobile-safe-frame flex min-h-[100dvh] w-full flex-1 flex-col overflow-hidden transition-all duration-300 lg:min-h-full lg:pl-64 lg:pt-0"
       data-main-screen={mainScreenKey}
-      data-content-start={contentStart ?? undefined}
-      data-fab-trigger-offset={fabTriggerOffset}
+      data-mobile-chrome-visible={isChromeSentinelVisible}
+      data-mobile-chrome-height={topChromeHeight}
     >
       {/* REESTRUCTURA: Chrome superior COMPLETO fuera del scroll */}
       <AppTopChrome ref={topChromeRef} setIsSidebarOpen={setIsSidebarOpen} />
 
       {/* Main Content Area - SOLO contenido scrolleable, NADA de chrome aquí */}
       <main
+        key={mainScreenKey}
         ref={mainRef}
         id="app-main-scroll"
         className="app-page custom-scrollbar relative flex-1 min-h-0 overflow-y-auto overflow-x-hidden pt-3 pb-[calc(var(--app-mobile-bottom-nav-height)+var(--app-mobile-bottom-nav-overhang)+var(--app-safe-area-bottom))] lg:pt-0 lg:pb-0"
       >
+        <div
+          ref={chromeSentinelRef}
+          aria-hidden="true"
+          data-app-top-chrome-sentinel
+          className="pointer-events-none absolute left-0 top-0 w-px"
+          style={{ height: topChromeHeight }}
+        />
         {children}
       </main>
 
@@ -702,9 +702,17 @@ const MainContentArea: React.FC<{
           onMenuToggle={() => setIsSidebarOpen(!isSidebarOpen)}
         />
       </div>
+
+      <MobileBuildStamp />
     </div>
   );
 };
+
+const MobileBuildStamp: React.FC = () => (
+  <div className="pointer-events-none fixed left-[max(0.55rem,env(safe-area-inset-left))] top-[calc(env(safe-area-inset-top)+0.2rem)] z-[70] max-w-[78vw] truncate rounded-full border border-black/10 bg-white/85 px-2 py-0.5 text-[9px] font-semibold leading-none text-slate-700 shadow-sm backdrop-blur lg:hidden dark:border-white/10 dark:bg-slate-950/75 dark:text-slate-200">
+    {buildInfo.gitBranch} / {buildInfo.gitCommitShort} / {buildInfo.builtAtDisplay}
+  </div>
+);
 
 // HEADER MÓVIL UNIFICADO: Una sola superficie visual premium y continua
 // Sin divisiones, sin bordes internos, un solo flujo visual compacto

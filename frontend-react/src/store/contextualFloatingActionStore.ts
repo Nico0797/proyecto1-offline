@@ -13,6 +13,7 @@ interface ContextualFloatingActionState {
   action: ContextualFloatingActionConfig | null;
   registerAction: (action: ContextualFloatingActionConfig) => void;
   unregisterAction: (ownerKey: string) => void;
+  clearAction: () => void;
 }
 
 export const useContextualFloatingActionStore = create<ContextualFloatingActionState>((set) => ({
@@ -20,4 +21,5 @@ export const useContextualFloatingActionStore = create<ContextualFloatingActionS
   registerAction: (action) => set({ action }),
   unregisterAction: (ownerKey) =>
     set((state) => (state.action?.ownerKey === ownerKey ? { action: null } : state)),
+  clearAction: () => set({ action: null }),
 }));
