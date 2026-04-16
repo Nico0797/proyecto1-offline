@@ -122,7 +122,7 @@ export const PageHeader: React.FC<{
     <div
       ref={headerRef}
       className={cn(
-        'app-page-header app-mobile-page-header app-shell-gutter relative shrink-0 py-2 sm:py-2.5 lg:py-3.5 xl:py-4 pointer-events-none',
+        'app-page-header app-mobile-page-header app-shell-gutter relative shrink-0 py-2 sm:py-2.5 lg:py-3.5 xl:py-4',
         className,
       )}
     >
@@ -135,7 +135,7 @@ export const PageHeader: React.FC<{
             </p>
           ) : null}
         </div>
-        {action ? <div className="pointer-events-auto flex min-w-0 max-w-full flex-wrap items-start justify-start pt-0.5 lg:ml-6 lg:w-auto lg:flex-none lg:justify-end lg:pt-0">{action}</div> : null}
+        {action ? <div className="flex min-w-0 max-w-full flex-wrap items-start justify-start pt-0.5 lg:ml-6 lg:w-auto lg:flex-none lg:justify-end lg:pt-0">{action}</div> : null}
       </div>
     </div>
   );
@@ -409,11 +409,11 @@ export const PageFilters: React.FC<React.HTMLAttributes<HTMLDivElement> & { chil
   const [isExpanded, setIsExpanded] = useState(false);
 
   return (
-    <div className={cn('app-filter-strip shrink-0 z-20 transition-all duration-300 pointer-events-none', className)} {...props}>
+    <div className={cn('app-filter-strip shrink-0 z-20 transition-all duration-300', className)} {...props}>
       <div className="app-shell-gutter py-1.5 lg:hidden">
         <button
           type="button"
-          className="pointer-events-auto inline-flex items-center gap-2 rounded-full border border-[color:var(--app-border)] bg-[color:var(--app-surface-elevated)]/92 px-3 py-2 text-left text-xs font-medium app-text-secondary shadow-[0_10px_24px_-24px_rgba(15,23,42,0.24)] sm:text-sm"
+          className="inline-flex items-center gap-2 rounded-full border border-[color:var(--app-border)] bg-[color:var(--app-surface-elevated)]/92 px-3 py-2 text-left text-xs font-medium app-text-secondary shadow-[0_10px_24px_-24px_rgba(15,23,42,0.24)] sm:text-sm"
           onClick={() => setIsExpanded((current) => !current)}
           aria-expanded={isExpanded}
         >
@@ -425,7 +425,7 @@ export const PageFilters: React.FC<React.HTMLAttributes<HTMLDivElement> & { chil
 
       <div
         className={cn(
-          'app-shell-gutter pointer-events-auto flex flex-col gap-2.5 transition-all duration-300 ease-in-out lg:flex-row lg:flex-wrap lg:items-center lg:gap-4 xl:gap-5',
+          'app-shell-gutter flex flex-col gap-2.5 transition-all duration-300 ease-in-out lg:flex-row lg:flex-wrap lg:items-center lg:gap-4 xl:gap-5',
           isExpanded ? 'visible max-h-[28rem] overflow-visible py-2 opacity-100' : 'invisible max-h-0 overflow-hidden opacity-0 lg:visible lg:max-h-none lg:overflow-visible',
           'lg:h-auto lg:py-3 lg:opacity-100'
         )}
