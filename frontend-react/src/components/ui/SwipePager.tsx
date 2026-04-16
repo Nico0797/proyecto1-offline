@@ -112,7 +112,7 @@ export const MobileInternalNav: React.FC<MobileInternalNavProps> = ({
   if (!activePage) return null;
 
   return (
-    <div className="app-shell-gutter shrink-0 z-20 py-0.5 lg:py-2">
+    <div data-swipe-nav className="app-shell-gutter shrink-0 z-20 py-0 lg:py-2">
       {options.length <= 3 ? (
         <MobileInlineTabs options={options} activeId={activePageId} onChange={onPageChange} className="w-full" compact />
       ) : (

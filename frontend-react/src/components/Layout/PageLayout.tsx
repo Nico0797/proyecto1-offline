@@ -381,24 +381,26 @@ export const PageFilters: React.FC<React.HTMLAttributes<HTMLDivElement> & { chil
 
   return (
     <div className={cn('app-filter-strip shrink-0 z-20 transition-all duration-300', className)} {...props}>
+      {/* FASE 1B: Solo mostrar botón de filtros, sin área expandida inline */}
       <div className="app-shell-gutter py-0.5 lg:hidden">
         <button
           type="button"
-          className="inline-flex items-center gap-1.5 rounded-full border border-[color:var(--app-border)] bg-[color:var(--app-surface-elevated)]/80 px-2 py-1 text-left text-[11px] font-medium app-text-secondary"
+          className="inline-flex items-center gap-1 rounded-full border border-[color:var(--app-border)] bg-[color:var(--app-surface-elevated)]/60 px-1.5 py-0.5 text-left text-[10px] font-medium app-text-secondary"
           onClick={() => setIsExpanded((current) => !current)}
           aria-expanded={isExpanded}
         >
-          <Filter className="h-3.5 w-3.5" />
+          <Filter className="h-3 w-3" />
           <span>Filtros</span>
-          {isExpanded ? <ChevronUp className="h-3.5 w-3.5 app-text-muted" /> : <ChevronDown className="h-3.5 w-3.5 app-text-muted" />}
+          {isExpanded ? <ChevronUp className="h-3 w-3 app-text-muted" /> : <ChevronDown className="h-3 w-3 app-text-muted" />}
         </button>
       </div>
 
+      {/* Área de filtros: solo visible cuando está expandido, o siempre visible en desktop */}
       <div
         className={cn(
-          'app-shell-gutter flex flex-col gap-2.5 transition-all duration-300 ease-in-out lg:flex-row lg:flex-wrap lg:items-center lg:gap-4 xl:gap-5',
-          isExpanded ? 'visible max-h-[28rem] overflow-visible py-2 opacity-100' : 'invisible max-h-0 overflow-hidden opacity-0 lg:visible lg:max-h-none lg:overflow-visible',
-          'lg:h-auto lg:py-3 lg:opacity-100'
+          'app-shell-gutter flex flex-col gap-2 transition-all duration-300 ease-in-out lg:flex-row lg:flex-wrap lg:items-center lg:gap-4 xl:gap-5',
+          isExpanded ? 'visible max-h-[28rem] overflow-visible py-1.5 opacity-100' : 'invisible max-h-0 overflow-hidden opacity-0 lg:visible lg:max-h-none lg:overflow-visible',
+          'lg:h-auto lg:py-2 lg:opacity-100'
         )}
       >
         {children}

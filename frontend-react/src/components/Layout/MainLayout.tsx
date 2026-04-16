@@ -172,13 +172,13 @@ export const MainLayout = () => {
     };
   }, [offlineProductMode, activeBusiness?.id]);
 
-  // FASE 1 LIMPIEZA: Reset explícito de scroll al cambiar de ruta
+  // FASE 1B: Reset explícito de scroll al cambiar de ruta (pathname + search)
   useEffect(() => {
     const root = document.getElementById('app-main-scroll');
     if (root) {
       root.scrollTop = 0;
     }
-  }, [location.pathname]);
+  }, [location.pathname, location.search]);
 
   // FASE 1 LIMPIEZA: Solo trackear scroll para debug, NO controlar FAB
   useEffect(() => {
