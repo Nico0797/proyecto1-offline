@@ -383,6 +383,18 @@
     min-height: 100dvh;
     min-height: 100svh;
     padding-top: env(safe-area-inset-top);
+    /* NO agregar overflow-y aquí - el scroll debe ser solo en #app-main-scroll */
+    overflow: hidden;
+  }
+
+  /* Garantizar que #app-main-scroll sea el único contenedor de scroll vertical en móvil */
+  #app-main-scroll {
+    /* Forzar scroll suave y momentum en iOS/Android */
+    -webkit-overflow-scrolling: touch;
+    /* Optimizar para scroll táctil */
+    touch-action: pan-y;
+    /* Evitar overscroll bounce en Android */
+    overscroll-behavior-y: contain;
   }
 
   .app-status-bar-scrim {
@@ -456,8 +468,11 @@
   .app-filter-strip {
     border-bottom: 1px solid var(--app-divider);
     background-color: color-mix(in srgb, var(--app-page-header) 60%, transparent);
+    /*backdrop-filter eliminado para mejorar scroll táctil en móvil*/
     backdrop-filter: none;
     -webkit-backdrop-filter: none;
+    /* Permitir scroll vertical nativo, evitar captura de gestos */
+    touch-action: pan-y;
   }
 
   .app-canvas {
@@ -649,13 +664,18 @@
 
   .app-mobile-topbar {
     border-bottom: 1px solid color-mix(in srgb, var(--app-divider) 88%, white 12%);
-    background: linear-gradient(180deg, color-mix(in srgb, var(--app-page-header) 74%, white 8%), color-mix(in srgb, var(--app-page-header) 46%, transparent));
+    background: color-mix(in srgb, var(--app-page-header) 96%, transparent);
+    /*backdrop-filter eliminado intencionalmente para mejorar scroll táctil en Android*/
     backdrop-filter: none;
     -webkit-backdrop-filter: none;
-    box-shadow: 0 1px 0 rgba(15, 23, 42, 0.02);
+    padding-top: var(--app-mobile-shell-top-gap);
+    /* box-shadow reducido para evitar repaints durante scroll */
+    box-shadow: none;
     padding-top: 0;
     padding-bottom: 0.15rem;
     min-height: var(--app-mobile-topbar-min-height);
+    /* Mejorar área táctil - no capturar gestos fuera de botones */
+    touch-action: pan-y;
   }
 
   .app-segmented-control__item {

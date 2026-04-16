@@ -1,4 +1,4 @@
-import React, { useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { Bug, ChevronDown, ChevronUp, Download, Upload } from 'lucide-react';
 import { useLocation } from 'react-router-dom';
 import { useBusinessStore } from '../../store/businessStore';
@@ -29,9 +29,35 @@ export const MobileShellDebugOverlay: React.FC<MobileShellDebugOverlayProps> = (
   const [isExpanded, setIsExpanded] = useState(false);
   const [isBusy, setIsBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [scrollContainers, setScrollContainers] = useState<string[]>([]);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   const fabVisible = Boolean(action) && (debugForceVisible || !headerVisible);
+
+  // Detectar contenedores con scroll vertical
+  useEffect(() => {
+    const detectScrollContainers = () => {
+      const containers: string[] = [];
+      const allElements = document.querySelectorAll('*');
+      allElements.forEach((el, index) => {
+        if (index > 200) return; // Limitar para performance
+        const style = window.getComputedStyle(el);
+        const overflowY = style.overflowY;
+        if (overflowY === 'auto' || overflowY === 'scroll') {
+          const id = el.id || '';
+          const className = el.className?.toString().split(' ')[0] || '';
+          const tag = el.tagName.toLowerCase();
+          const scrollTop = (el as HTMLElement).scrollTop;
+          containers.push(`${tag}${id ? '#' + id : ''}${className ? '.' + className : ''}(${Math.round(scrollTop)}px)`);
+        }
+      });
+      setScrollContainers(containers.slice(0, 5));
+    };
+
+    detectScrollContainers();
+    const interval = setInterval(detectScrollContainers, 2000);
+    return () => clearInterval(interval);
+  }, [location.pathname]);
 
   const handleExport = async () => {
     setIsBusy(true);
@@ -77,7 +103,7 @@ export const MobileShellDebugOverlay: React.FC<MobileShellDebugOverlayProps> = (
         {isExpanded ? (
           <div className="rounded-2xl border border-black/8 bg-black/82 p-3 text-[11px] leading-4 text-white shadow-[0_18px_30px_-22px_rgba(15,23,42,0.66)] backdrop-blur-md">
             <div>ruta: {location.pathname}{location.search}</div>
-            <div>scrollTop: {Math.round(scrollTop)}</div>
+            <div>scrollTop root: {Math.round(scrollTop)}</div>
             <div>offline: {offlineMode ? 'si' : 'no'}</div>
             <div>activeBusiness: {activeBusiness?.id ?? 'none'}</div>
             <div>businesses store/local: {businesses.length} / {localBusinessesCount}</div>
@@ -87,6 +113,14 @@ export const MobileShellDebugOverlay: React.FC<MobileShellDebugOverlayProps> = (
             <div>headerVisible: {headerVisible ? 'si' : 'no'}</div>
             <div>forceFab: {debugForceVisible ? 'si' : 'no'}</div>
             <div>build: {buildInfo.gitCommitShort} · {buildInfo.builtAtDisplay}</div>
+            {scrollContainers.length > 0 && (
+              <div className="mt-1 border-t border-white/10 pt-1">
+                <div className="text-[10px] text-white/60">scroll containers:</div>
+                {scrollContainers.map((c, i) => (
+                  <div key={i} className="truncate text-[10px] text-white/80">{c}</div>
+                ))}
+              </div>
+            )}
 
             <div className="mt-3 flex flex-wrap gap-2">
               <button

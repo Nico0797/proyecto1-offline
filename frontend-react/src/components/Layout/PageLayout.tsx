@@ -402,8 +402,10 @@ export const PageFilters: React.FC<React.HTMLAttributes<HTMLDivElement> & { chil
 };
 
 export const PageBody: React.FC<React.HTMLAttributes<HTMLDivElement> & { children: React.ReactNode }> = ({ children, className, ...props }) => {
+  // NOTA: Eliminado lg:overflow-y-auto para evitar nested scroll.
+  // Solo #app-main-scroll en MainLayout debe tener scroll vertical.
   return (
-    <div className="custom-scrollbar relative min-h-0 overflow-visible overflow-x-hidden scroll-smooth lg:flex-1 lg:overflow-y-auto" {...props}>
+    <div className="relative min-h-0 w-full overflow-x-hidden scroll-smooth" {...props}>
       <div className={cn('app-page-content app-page w-full max-w-full pb-24 lg:pb-10 xl:pb-12', className)}>{children}</div>
     </div>
   );

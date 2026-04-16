@@ -189,6 +189,8 @@ export const MainLayout = () => {
       setScrollTop(nextScrollTop);
 
       if (action?.ownerKey) {
+        // FAB visible cuando scrollTop <= 72 (header visible)
+        // FAB oculto cuando scrollTop > 72 (scrolled down)
         setHeaderVisible(action.ownerKey, nextScrollTop <= 72);
       }
     };
@@ -201,6 +203,7 @@ export const MainLayout = () => {
       });
     };
 
+    // Ejecutar inmediatamente al montar/cambiar acción
     updateScrollState();
     root.addEventListener('scroll', handleScroll, { passive: true });
 
@@ -213,7 +216,7 @@ export const MainLayout = () => {
         setHeaderVisible(action.ownerKey, true);
       }
     };
-  }, [action?.ownerKey, setHeaderVisible]);
+  }, [action?.ownerKey, action?.label, setHeaderVisible]);
 
   useEffect(() => {
     if (!offlineProductMode || isHydrating || activeBusiness || hasAttemptedLocalRecovery || localBusinessesCount <= 0) {
@@ -416,16 +419,32 @@ export const MainLayout = () => {
         <div className="app-surface w-full max-w-md rounded-3xl p-6 text-center shadow-sm">
           <div className="text-lg font-semibold">No hay un negocio local activo</div>
           <div className="mt-2 text-sm app-text-muted">
-            La app cargó, pero no encontró un negocio para abrir. En lugar de dejar la pantalla vacía, te mostramos este estado de recuperación.
+            La app cargó en modo offline, pero no encontró un negocio para abrir. Elige una opción para continuar.
           </div>
-          <div className="mt-3 rounded-2xl border border-blue-200 bg-blue-50 px-3 py-2 text-left text-xs text-blue-900 dark:border-blue-900/30 dark:bg-blue-900/10 dark:text-blue-100">
-            <div>path={location.pathname}{location.search}</div>
-            <div>hydrating=no</div>
-            <div>isAuthenticated={isAuthenticated ? 'yes' : 'no'}</div>
-            <div>accessibleContexts={accessibleContexts?.length ?? 0}</div>
-            <div>localBusinesses={localBusinessesCount}</div>
+
+          {/* Diagnóstico visible */}
+          <div className="mt-3 rounded-2xl border border-blue-200 bg-blue-50 px-3 py-2 text-left text-xs text-blue-900 dark:border-blue-900/30 dark:bg-blue-900/10 dark:text-blue-100 space-y-0.5">
+            <div>path: {location.pathname}{location.search}</div>
+            <div>hydrating: {isHydrating ? 'yes' : 'no'}</div>
+            <div>authenticated: {isAuthenticated ? 'yes' : 'no'}</div>
+            <div>accessibleContexts: {accessibleContexts?.length ?? 0}</div>
+            <div>localBusinessesCount: {localBusinessesCount}</div>
+            <div>offlineBootstrapTimedOut: {offlineBootstrapTimedOut ? 'yes' : 'no'}</div>
           </div>
+
+          {/* Mensaje condicional */}
+          {localBusinessesCount === 0 ? (
+            <div className="mt-3 text-xs text-amber-700 dark:text-amber-300">
+              No se detectaron negocios locales. Crea uno nuevo o restaura un respaldo.
+            </div>
+          ) : (
+            <div className="mt-3 text-xs text-emerald-700 dark:text-emerald-300">
+              Se encontraron {localBusinessesCount} negocio(s) local(es). Puedes abrirlo(s) directamente.
+            </div>
+          )}
+
           <div className="mt-4 flex flex-col gap-3">
+            {/* Opción 1: Crear negocio (siempre disponible) */}
             <button
               type="button"
               onClick={() => setIsCreateBusinessModalOpen(true)}
@@ -433,26 +452,50 @@ export const MainLayout = () => {
             >
               Crear negocio local
             </button>
+
+            {/* Opción 2: Restaurar backup (siempre disponible) */}
             <button
               type="button"
               onClick={() => fileInputRef.current?.click()}
               disabled={isRecoveryBusy}
               className="inline-flex h-11 items-center justify-center rounded-2xl border border-[color:var(--app-border)] bg-[color:var(--app-surface-elevated)] px-4 text-sm font-semibold app-text transition hover:bg-[color:var(--app-surface-soft)] disabled:opacity-60"
             >
-              Restaurar respaldo local
+              Restaurar respaldo local (JSON)
             </button>
+
+            {/* Opción 3: Abrir negocio existente (solo si hay) */}
             {localBusinessesCount > 0 ? (
               <button
                 type="button"
                 onClick={retryOfflineBootstrap}
                 disabled={isRecoveryBusy}
-                className="inline-flex h-11 items-center justify-center rounded-2xl border border-[color:var(--app-border)] bg-[color:var(--app-surface-elevated)] px-4 text-sm font-semibold app-text transition hover:bg-[color:var(--app-surface-soft)] disabled:opacity-60"
+                className="inline-flex h-11 items-center justify-center rounded-2xl border border-[color:var(--app-border)] bg-[color:var(--app-surface-soft)] px-4 text-sm font-semibold app-text transition hover:bg-[color:var(--app-surface-muted)] disabled:opacity-60"
               >
-                Abrir negocio local encontrado
+                {isRecoveryBusy ? 'Abriendo...' : `Abrir negocio local (${localBusinessesCount})`}
               </button>
             ) : null}
+
+            {/* Opción 4: Forzar bypass (emergencia) */}
+            <button
+              type="button"
+              onClick={() => {
+                // Bypass de emergencia: intenta crear sesión offline mínima
+                pushBootTrace('MainLayout.emergencyOfflineBypass', { localBusinessesCount });
+                void handleRecoveryRetry();
+              }}
+              disabled={isRecoveryBusy}
+              className="inline-flex h-11 items-center justify-center rounded-2xl border border-dashed border-[color:var(--app-border)] bg-transparent px-4 text-xs font-medium app-text-muted transition hover:bg-[color:var(--app-surface-soft)] disabled:opacity-60"
+            >
+              {isRecoveryBusy ? 'Reintentando...' : 'Reintentar arranque automático'}
+            </button>
           </div>
-          {recoveryError ? <div className="mt-3 text-sm text-amber-700 dark:text-amber-300">{recoveryError}</div> : null}
+
+          {recoveryError ? (
+            <div className="mt-3 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-800 dark:border-amber-900/30 dark:bg-amber-900/10 dark:text-amber-200">
+              {recoveryError}
+            </div>
+          ) : null}
+
           <input
             ref={fileInputRef}
             type="file"
