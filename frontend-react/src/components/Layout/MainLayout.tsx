@@ -10,7 +10,8 @@ import { BootTracePanel } from '../../debug/BootTracePanel';
 import { Sidebar } from './Sidebar';
 import { MobileBottomNav } from './MobileBottomNav';
 import { MobileUtilityChips } from './MobileUtilityChips';
-import { MobileShellDebugOverlay } from './MobileShellDebugOverlay';
+// Debug overlay importado pero no usado en producción
+// import { MobileShellDebugOverlay } from './MobileShellDebugOverlay';
 import { PageChromeProvider, usePageChrome } from './PageChromeContext';
 import { ContentAnchorProvider, useContentAnchor } from './ContentAnchorContext';
 import { ContextualFloatingFab } from './ContextualFloatingFab';
@@ -538,9 +539,6 @@ export const MainLayout = () => {
             isSidebarOpen={isSidebarOpen}
             setIsSidebarOpen={setIsSidebarOpen}
             scrollTop={scrollTop}
-            localBusinessesCount={localBusinessesCount}
-            offlineProductMode={offlineProductMode}
-            handleRecoveryImport={handleRecoveryImport}
           >
             <Outlet />
           </MainContentArea>
@@ -558,11 +556,8 @@ const MainContentArea: React.FC<{
   isSidebarOpen: boolean;
   setIsSidebarOpen: (open: boolean) => void;
   scrollTop: number;
-  localBusinessesCount: number;
-  offlineProductMode: boolean;
-  handleRecoveryImport: (file: File) => Promise<void>;
   children: React.ReactNode;
-}> = ({ isSidebarOpen, setIsSidebarOpen, scrollTop, localBusinessesCount, offlineProductMode, handleRecoveryImport, children }) => {
+}> = ({ isSidebarOpen, setIsSidebarOpen, scrollTop, children }) => {
   const { anchorRef, setTriggerRemeasure } = useContentAnchor();
   const [contentStart, setContentStart] = useState(0);
   const mainRef = useRef<HTMLElement>(null);
