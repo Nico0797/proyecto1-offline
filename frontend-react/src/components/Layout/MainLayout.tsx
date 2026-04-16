@@ -539,6 +539,7 @@ export const MainLayout = () => {
             isSidebarOpen={isSidebarOpen}
             setIsSidebarOpen={setIsSidebarOpen}
             scrollTop={scrollTop}
+            routeKey={location.pathname + location.search}
           >
             <Outlet />
           </MainContentArea>
@@ -556,8 +557,9 @@ const MainContentArea: React.FC<{
   isSidebarOpen: boolean;
   setIsSidebarOpen: (open: boolean) => void;
   scrollTop: number;
+  routeKey: string;
   children: React.ReactNode;
-}> = ({ isSidebarOpen, setIsSidebarOpen, scrollTop, children }) => {
+}> = ({ isSidebarOpen, setIsSidebarOpen, scrollTop, routeKey, children }) => {
   const { anchorRef, setTriggerRemeasure } = useContentAnchor();
   const [contentStart, setContentStart] = useState(0);
   const mainRef = useRef<HTMLElement>(null);
@@ -593,17 +595,25 @@ const MainContentArea: React.FC<{
     setTriggerRemeasure(measureContentStart);
   }, [measureContentStart, setTriggerRemeasure]);
 
-  // Medición inicial y en cambios de ruta
+  // Scroll reset y medición al cambiar de ruta
   useEffect(() => {
-    // Usar requestAnimationFrame para asegurar que el DOM está listo
-    const rafId = requestAnimationFrame(() => {
+    // Reset scroll al cambiar de pantalla (cross-screen scroll restoration)
+    const root = mainRef.current;
+    if (root) {
+      root.scrollTop = 0;
+    }
+    
+    // Medición después del reset - DOM debe estar listo
+    // Usamos timeout para asegurar que el nuevo contenido renderizó
+    const timeoutId = setTimeout(() => {
       measureContentStart();
-      // Segunda medición después de layout estable
-      const timeoutId = setTimeout(measureContentStart, 50);
-      return () => clearTimeout(timeoutId);
-    });
-    return () => cancelAnimationFrame(rafId);
-  }, [measureContentStart]);
+      // Doble verificación después de layout estable
+      const secondCheck = setTimeout(measureContentStart, 100);
+      return () => clearTimeout(secondCheck);
+    }, 50);
+    
+    return () => clearTimeout(timeoutId);
+  }, [routeKey, measureContentStart]);
 
   // ResizeObserver para recalcular (sin forzar layout)
   useEffect(() => {
@@ -632,10 +642,10 @@ const MainContentArea: React.FC<{
   }, [measureContentStart]);
 
   // FAB: Visible solo cuando el header ya no está visible (después de scrollear)
-  // El header móvil unificado tiene ~100-120px de altura, esperamos a que el usuario
-  // haya scrolleado lo suficiente como para no ver el header
-  const HEADER_VISIBILITY_THRESHOLD = 120; // px que debe scrollear antes de mostrar FAB
-  const isFabVisible = scrollTop > contentStart + HEADER_VISIBILITY_THRESHOLD;
+  // El header móvil unificado tiene ~100-120px de altura
+  // Usamos threshold fijo, no dependiente de contentStart (que puede fallar si no hay anchor)
+  const HEADER_VISIBILITY_THRESHOLD = 100; // px que debe scrollear antes de mostrar FAB
+  const isFabVisible = scrollTop > HEADER_VISIBILITY_THRESHOLD;
 
   return (
     <div className="app-mobile-safe-frame flex min-h-[100dvh] w-full flex-1 flex-col overflow-hidden transition-all duration-300 lg:min-h-full lg:pl-64 lg:pt-0">
