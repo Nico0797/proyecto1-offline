@@ -14,7 +14,7 @@ export const MobileTopBar = ({ onMenuClick }: MobileTopBarProps) => {
   const offlineProductMode = isOfflineProductMode();
 
   return (
-    <header className="app-mobile-topbar app-shell-gutter z-30 shrink-0 lg:hidden">
+    <header data-mobile-top-chrome className="app-mobile-topbar app-shell-gutter z-30 shrink-0 lg:hidden">
       <div className="flex min-h-10 min-w-0 items-center justify-between gap-2">
         <button
           type="button"

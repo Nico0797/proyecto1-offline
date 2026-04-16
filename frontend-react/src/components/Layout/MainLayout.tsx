@@ -31,8 +31,8 @@ export const MainLayout = () => {
   } = useAccountAccessStore();
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [scrollTop, setScrollTop] = useState(0);
-  const [topChromeHeight, setTopChromeHeight] = useState(120); // Altura inicial estimada, se mide dinámicamente
-  const topChromeRef = useRef<HTMLDivElement>(null);
+  const [contentAnchorOffset, setContentAnchorOffset] = useState(120); // Offset donde empieza el contenido real
+  const contentAnchorRef = useRef<HTMLDivElement>(null);
   const [localBusinessesCount, setLocalBusinessesCount] = useState(0);
   const [isCreateBusinessModalOpen, setIsCreateBusinessModalOpen] = useState(false);
   const [recoveryError, setRecoveryError] = useState<string | null>(null);
@@ -178,41 +178,56 @@ export const MainLayout = () => {
     };
   }, [offlineProductMode, activeBusiness?.id]);
 
-  // Medir altura real del top chrome (topbar + header + nav + etc)
+  // Medir posición real del content anchor (donde empieza el contenido)
+  // Esto incluye: MobileTopBar + PageHeader + MobileInternalNav + PageFilters + etc
   useEffect(() => {
     if (typeof window === 'undefined') return undefined;
 
-    const measureTopChrome = () => {
-      if (topChromeRef.current) {
-        const height = topChromeRef.current.getBoundingClientRect().height;
-        setTopChromeHeight(height);
+    const measureContentAnchor = () => {
+      const root = document.getElementById('app-main-scroll');
+      const anchor = document.querySelector('[data-mobile-content-anchor]') as HTMLElement;
+      if (root && anchor) {
+        // Calcular offset del anchor relativo al scroll root
+        const rootRect = root.getBoundingClientRect();
+        const anchorRect = anchor.getBoundingClientRect();
+        const offset = anchorRect.top - rootRect.top + root.scrollTop;
+        setContentAnchorOffset(Math.max(80, Math.round(offset)));
+      } else if (root) {
+        // Fallback: usar altura de todos los elementos data-mobile-top-chrome
+        const chromeElements = document.querySelectorAll('[data-mobile-top-chrome]');
+        let totalHeight = 0;
+        chromeElements.forEach((el) => {
+          const rect = el.getBoundingClientRect();
+          totalHeight += rect.height;
+        });
+        if (totalHeight > 0) {
+          setContentAnchorOffset(Math.round(totalHeight));
+        }
       }
     };
 
-    // Medir inicialmente
-    measureTopChrome();
+    // Medir inicialmente con delay para que el DOM esté listo
+    const timer = setTimeout(measureContentAnchor, 100);
 
-    // Usar ResizeObserver para medir cambios dinámicos
-    let resizeObserver: ResizeObserver | null = null;
-    if (topChromeRef.current && 'ResizeObserver' in window) {
-      resizeObserver = new ResizeObserver((entries) => {
-        for (const entry of entries) {
-          setTopChromeHeight(entry.contentRect.height);
-        }
-      });
-      resizeObserver.observe(topChromeRef.current);
+    // Usar MutationObserver para detectar cambios en el DOM
+    const mutationObserver = new MutationObserver(() => {
+      measureContentAnchor();
+    });
+
+    const root = document.getElementById('app-main-scroll');
+    if (root) {
+      mutationObserver.observe(root, { childList: true, subtree: true });
     }
 
-    // También medir en resize de ventana
-    window.addEventListener('resize', measureTopChrome);
+    // También medir en resize y scroll
+    window.addEventListener('resize', measureContentAnchor);
 
     return () => {
-      window.removeEventListener('resize', measureTopChrome);
-      if (resizeObserver && topChromeRef.current) {
-        resizeObserver.unobserve(topChromeRef.current);
-      }
+      clearTimeout(timer);
+      mutationObserver.disconnect();
+      window.removeEventListener('resize', measureContentAnchor);
     };
-  }, []);
+  }, [location.pathname]); // Re-medir cuando cambia la ruta
 
   // Lógica FAB por scrollTop con threshold dinámico basado en altura real del top chrome
   useEffect(() => {
@@ -228,9 +243,9 @@ export const MainLayout = () => {
       setScrollTop(nextScrollTop);
 
       if (action?.ownerKey) {
-        // FAB visible cuando scrollTop <= topChromeHeight (chrome superior visible)
-        // FAB oculto cuando scrollTop > topChromeHeight (usuario ya scrolleó pasado el chrome)
-        setHeaderVisible(action.ownerKey, nextScrollTop <= topChromeHeight);
+        // FAB visible cuando scrollTop <= contentAnchorOffset (chrome superior visible)
+        // FAB oculto cuando scrollTop > contentAnchorOffset (usuario ya scrolleó pasado el chrome)
+        setHeaderVisible(action.ownerKey, nextScrollTop <= contentAnchorOffset);
       }
     };
 
@@ -572,17 +587,14 @@ export const MainLayout = () => {
       <div className="app-mobile-safe-frame flex min-h-[100dvh] w-full flex-1 flex-col overflow-hidden transition-all duration-300 lg:min-h-full lg:pl-64 lg:pt-0">
         {/* Main Content Area */}
         <main id="app-main-scroll" className="app-page custom-scrollbar relative flex-1 min-h-0 overflow-y-auto overflow-x-hidden pb-[calc(var(--app-mobile-bottom-nav-height)+var(--app-mobile-bottom-nav-overhang)+var(--app-safe-area-bottom))] lg:pb-0">
-          {/* Top Chrome - contenedor medible para FAB threshold dinámico */}
-          <div ref={topChromeRef} className="contents">
-            <MobileTopBar onMenuClick={() => setIsSidebarOpen(true)} />
-          </div>
+          <MobileTopBar onMenuClick={() => setIsSidebarOpen(true)} />
           <Outlet />
         </main>
 
         <ContextualFloatingFab />
         <MobileShellDebugOverlay
           scrollTop={scrollTop}
-          threshold={topChromeHeight}
+          threshold={contentAnchorOffset}
           localBusinessesCount={localBusinessesCount}
           offlineMode={offlineProductMode}
           onExportBackup={downloadLocalBackupSnapshot}

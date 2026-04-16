@@ -92,6 +92,7 @@ export const PageHeader: React.FC<{
   return (
     <div
       ref={headerRef}
+      data-mobile-top-chrome
       className={cn(
         'app-page-header app-mobile-page-header app-shell-gutter relative shrink-0 py-2 sm:py-2.5 lg:py-3.5 xl:py-4',
         className,
@@ -380,7 +381,7 @@ export const PageFilters: React.FC<React.HTMLAttributes<HTMLDivElement> & { chil
   const [isExpanded, setIsExpanded] = useState(false);
 
   return (
-    <div className={cn('app-filter-strip shrink-0 z-20 transition-all duration-300', className)} {...props}>
+    <div data-mobile-top-chrome className={cn('app-filter-strip shrink-0 z-20 transition-all duration-300', className)} {...props}>
       <div className="app-shell-gutter py-1.5 lg:hidden">
         <button
           type="button"
