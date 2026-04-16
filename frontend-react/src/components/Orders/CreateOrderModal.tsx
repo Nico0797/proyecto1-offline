@@ -7,11 +7,12 @@ import { Modal } from '../ui/Modal';
 import { Button } from '../ui/Button';
 import { Input } from '../ui/Input';
 import { CurrencyInput } from '../ui/CurrencyInput';
-import { Search, ShoppingCart, ArrowRight, X, ScanLine } from 'lucide-react';
+import { Search, ShoppingCart, ArrowRight, X, ScanLine, User } from 'lucide-react';
 import { Product } from '../../types';
 import { formatCOP } from './helpers';
 import { useCategoryStore } from '../Products/categoryStore';
 import { BarcodeScanner } from '../ui/BarcodeScanner';
+import { SearchableSelect } from '../ui/SearchableSelect';
 import { toast } from 'react-hot-toast';
 
 interface CreateOrderModalProps {
@@ -398,21 +399,26 @@ export const CreateOrderModal: React.FC<CreateOrderModalProps> = ({
 
                  <div className="space-y-4 bg-white dark:bg-gray-800 p-6 rounded-xl border border-gray-200 dark:border-gray-700">
                      <div data-tour="orders.modal.client">
-                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                            Cliente *
-                        </label>
-                        <select
-                            className="w-full px-4 py-3 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 text-lg"
+                        <SearchableSelect
+                            label="Cliente *"
+                            placeholder="Seleccionar cliente..."
+                            searchPlaceholder="Buscar cliente..."
+                            emptyMessage="No se encontraron clientes"
+                            sheetTitle="Seleccionar Cliente"
+                            icon={User}
+                            required
                             value={selectedCustomerId}
-                            onChange={(e) => setSelectedCustomerId(e.target.value ? Number(e.target.value) : '')}
-                            autoFocus
-                        >
-                            <option value="">-- Seleccionar Cliente --</option>
-                            {customers.map(c => (
-                                <option key={c.id} value={c.id}>{c.name} {c.phone ? `(${c.phone})` : ''}</option>
-                            ))}
-                        </select>
-                     </div>
+                            onChange={(value) => setSelectedCustomerId(value ? Number(value) : '')}
+                            options={customers
+                                .slice()
+                                .sort((a, b) => a.name.localeCompare(b.name, 'es', { sensitivity: 'base' }))
+                                .map(c => ({
+                                    value: c.id,
+                                    label: c.name,
+                                    secondary: c.phone || undefined
+                                }))}
+                        />
+                    </div>
 
                      <div className="grid grid-cols-2 gap-4">
                         <div>
