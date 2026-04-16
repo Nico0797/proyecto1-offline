@@ -112,9 +112,9 @@ export const MobileInternalNav: React.FC<MobileInternalNavProps> = ({
   if (!activePage) return null;
 
   return (
-    <div className="app-shell-gutter shrink-0 z-20 py-2">
+    <div className="app-shell-gutter shrink-0 z-20 py-1 lg:py-2">
       {options.length <= 3 ? (
-        <MobileInlineTabs options={options} activeId={activePageId} onChange={onPageChange} className="w-full" />
+        <MobileInlineTabs options={options} activeId={activePageId} onChange={onPageChange} className="w-full" compact />
       ) : (
         <MobileViewSwitcher
           options={options}
@@ -123,6 +123,7 @@ export const MobileInternalNav: React.FC<MobileInternalNavProps> = ({
           label={switcherLabel}
           title={switcherTitle}
           buttonClassName="w-full justify-between"
+          compact
         />
       )}
     </div>

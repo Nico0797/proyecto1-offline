@@ -350,7 +350,7 @@ export const MobileUtilityBar: React.FC<MobileUtilityBarProps> = ({ children, cl
 
   return (
     <div className={cn('app-shell-gutter lg:hidden', className)}>
-      <div className={cn('app-mobile-utility-bar flex items-center gap-2 py-1.5', compact && 'app-mobile-utility-bar-compact', bare && 'app-mobile-utility-bar-bare')}>
+      <div className={cn('app-mobile-utility-bar flex items-center gap-2 py-0.5', compact && 'app-mobile-utility-bar-compact py-0', bare && 'app-mobile-utility-bar-bare py-0')}>
         {inlineItems.map((child, index) => (
           <div key={index} className="min-w-0 max-w-full flex-1">
             {child}

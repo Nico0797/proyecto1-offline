@@ -8,6 +8,7 @@ import { buildInfo } from '../../generated/buildInfo';
 type MobileShellDebugOverlayProps = {
   scrollTop: number;
   threshold?: number;
+  topChromeHeight?: number;
   localBusinessesCount: number;
   offlineMode: boolean;
   onExportBackup: () => Promise<void>;
@@ -16,7 +17,8 @@ type MobileShellDebugOverlayProps = {
 
 export const MobileShellDebugOverlay: React.FC<MobileShellDebugOverlayProps> = ({
   scrollTop,
-  threshold = 24,
+  threshold = 120,
+  topChromeHeight,
   localBusinessesCount,
   offlineMode,
   onExportBackup,
@@ -34,7 +36,8 @@ export const MobileShellDebugOverlay: React.FC<MobileShellDebugOverlayProps> = (
   const [scrollContainers, setScrollContainers] = useState<string[]>([]);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
-  const fabShouldShow = Boolean(action) && (debugForceVisible || scrollTop > threshold);
+  const effectiveThreshold = topChromeHeight ?? threshold;
+  const fabShouldShow = Boolean(action) && (debugForceVisible || scrollTop > effectiveThreshold);
   const fabVisible = fabShouldShow;
 
   // Detectar contenedores con scroll vertical (mejorado con más detalle)

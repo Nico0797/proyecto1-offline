@@ -31,7 +31,8 @@ export const MainLayout = () => {
   } = useAccountAccessStore();
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [scrollTop, setScrollTop] = useState(0);
-  const FAB_SCROLL_THRESHOLD = 24; // Umbral unificado para FAB (debug y lógica real)
+  const [topChromeHeight, setTopChromeHeight] = useState(120); // Altura inicial estimada, se mide dinámicamente
+  const topChromeRef = useRef<HTMLDivElement>(null);
   const [localBusinessesCount, setLocalBusinessesCount] = useState(0);
   const [isCreateBusinessModalOpen, setIsCreateBusinessModalOpen] = useState(false);
   const [recoveryError, setRecoveryError] = useState<string | null>(null);
@@ -177,7 +178,43 @@ export const MainLayout = () => {
     };
   }, [offlineProductMode, activeBusiness?.id]);
 
-  // Lógica FAB por scrollTop con threshold unificado
+  // Medir altura real del top chrome (topbar + header + nav + etc)
+  useEffect(() => {
+    if (typeof window === 'undefined') return undefined;
+
+    const measureTopChrome = () => {
+      if (topChromeRef.current) {
+        const height = topChromeRef.current.getBoundingClientRect().height;
+        setTopChromeHeight(height);
+      }
+    };
+
+    // Medir inicialmente
+    measureTopChrome();
+
+    // Usar ResizeObserver para medir cambios dinámicos
+    let resizeObserver: ResizeObserver | null = null;
+    if (topChromeRef.current && 'ResizeObserver' in window) {
+      resizeObserver = new ResizeObserver((entries) => {
+        for (const entry of entries) {
+          setTopChromeHeight(entry.contentRect.height);
+        }
+      });
+      resizeObserver.observe(topChromeRef.current);
+    }
+
+    // También medir en resize de ventana
+    window.addEventListener('resize', measureTopChrome);
+
+    return () => {
+      window.removeEventListener('resize', measureTopChrome);
+      if (resizeObserver && topChromeRef.current) {
+        resizeObserver.unobserve(topChromeRef.current);
+      }
+    };
+  }, []);
+
+  // Lógica FAB por scrollTop con threshold dinámico basado en altura real del top chrome
   useEffect(() => {
     if (typeof window === 'undefined') return undefined;
 
@@ -191,9 +228,9 @@ export const MainLayout = () => {
       setScrollTop(nextScrollTop);
 
       if (action?.ownerKey) {
-        // FAB visible cuando scrollTop <= threshold (header visible)
-        // FAB oculto cuando scrollTop > threshold (scrolled down)
-        setHeaderVisible(action.ownerKey, nextScrollTop <= FAB_SCROLL_THRESHOLD);
+        // FAB visible cuando scrollTop <= topChromeHeight (chrome superior visible)
+        // FAB oculto cuando scrollTop > topChromeHeight (usuario ya scrolleó pasado el chrome)
+        setHeaderVisible(action.ownerKey, nextScrollTop <= topChromeHeight);
       }
     };
 
@@ -535,14 +572,17 @@ export const MainLayout = () => {
       <div className="app-mobile-safe-frame flex min-h-[100dvh] w-full flex-1 flex-col overflow-hidden transition-all duration-300 lg:min-h-full lg:pl-64 lg:pt-0">
         {/* Main Content Area */}
         <main id="app-main-scroll" className="app-page custom-scrollbar relative flex-1 min-h-0 overflow-y-auto overflow-x-hidden pb-[calc(var(--app-mobile-bottom-nav-height)+var(--app-mobile-bottom-nav-overhang)+var(--app-safe-area-bottom))] lg:pb-0">
-          <MobileTopBar onMenuClick={() => setIsSidebarOpen(true)} />
+          {/* Top Chrome - contenedor medible para FAB threshold dinámico */}
+          <div ref={topChromeRef} className="contents">
+            <MobileTopBar onMenuClick={() => setIsSidebarOpen(true)} />
+          </div>
           <Outlet />
         </main>
 
         <ContextualFloatingFab />
         <MobileShellDebugOverlay
           scrollTop={scrollTop}
-          threshold={FAB_SCROLL_THRESHOLD}
+          threshold={topChromeHeight}
           localBusinessesCount={localBusinessesCount}
           offlineMode={offlineProductMode}
           onExportBackup={downloadLocalBackupSnapshot}
