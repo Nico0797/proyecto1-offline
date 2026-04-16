@@ -54,7 +54,7 @@ export const PageHeader: React.FC<{
    * Siempre registra en PageChromeContext para que AppTopChrome lo muestre en móvil.
    */
   renderInChrome?: boolean;
-}> = ({ title, description, action, className, mobileFab, renderInChrome = false }) => {
+}> = ({ title, description, action, className, mobileFab }) => {
   const location = useLocation();
   const headerRef = useRef<HTMLDivElement>(null);
   const onClickRef = useRef<(() => void) | undefined>(mobileFab?.onClick);
@@ -135,12 +135,14 @@ export const PageHeader: React.FC<{
  * - El cálculo de posición se hace via offsetTop en el padre scrollable
  */
 export const ContentAnchor: React.FC = () => {
-  const { setAnchorRef } = useContentAnchor();
+  const { clearAnchorRef, setAnchorRef } = useContentAnchor();
   const localRef = useRef<HTMLSpanElement>(null);
 
   useEffect(() => {
+    const node = localRef.current;
     setAnchorRef(localRef);
-  }, [setAnchorRef]);
+    return () => clearAnchorRef(node);
+  }, [clearAnchorRef, setAnchorRef]);
 
   return (
     <span

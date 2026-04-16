@@ -161,8 +161,8 @@ export const SwipePager: React.FC<SwipePagerProps> = ({
 
   // Re-medir cuando cambia de página (el contenido cambia de altura)
   useEffect(() => {
-    const timeout = setTimeout(() => triggerRemeasure(), 100);
-    return () => clearTimeout(timeout);
+    const frameId = window.requestAnimationFrame(triggerRemeasure);
+    return () => window.cancelAnimationFrame(frameId);
   }, [activePageId, triggerRemeasure]);
 
   return (

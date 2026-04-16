@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { forwardRef, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { Outlet, Navigate, useLocation } from 'react-router-dom';
 import { Menu } from 'lucide-react';
 import { useAuthStore } from '../../store/authStore';
@@ -19,6 +19,24 @@ import { CreateBusinessModal } from '../Business/CreateBusinessModal';
 import { getRuntimeModeSnapshot, isDesktopOfflineMode, isOfflineProductMode } from '../../runtime/runtimeMode';
 import { offlineSyncService } from '../../services/offlineSyncService';
 import { importLocalBackupSnapshot } from '../../services/localBackup';
+import { BUSINESS_NAVIGATION_ITEMS } from '../../navigation/businessNavigation';
+import { normalizeNavigationPath } from '../../navigation/navigationPathAliases';
+
+const MAIN_SCREEN_PATHS = Array.from(new Set(BUSINESS_NAVIGATION_ITEMS.map((item) => item.path)))
+  .sort((a, b) => b.length - a.length);
+
+const resolveMainScreenKey = (pathname: string) => {
+  const normalizedPath = normalizeNavigationPath(pathname) || '/';
+  const matchedPath = MAIN_SCREEN_PATHS.find(
+    (path) => normalizedPath === path || normalizedPath.startsWith(`${path}/`)
+  );
+
+  if (matchedPath) return matchedPath;
+  if (normalizedPath === '/') return '/';
+
+  const firstSegment = normalizedPath.split('/').filter(Boolean)[0];
+  return firstSegment ? `/${firstSegment}` : normalizedPath;
+};
 
 export const MainLayout = () => {
   const location = useLocation();
@@ -33,7 +51,6 @@ export const MainLayout = () => {
     clear: clearAccountAccess,
   } = useAccountAccessStore();
   const [isSidebarOpen, setIsSidebarOpen] = useState<boolean>(false);
-  const [scrollTop, setScrollTop] = useState(0);
   const [localBusinessesCount, setLocalBusinessesCount] = useState(0);
   const [isCreateBusinessModalOpen, setIsCreateBusinessModalOpen] = useState(false);
   const [recoveryError, setRecoveryError] = useState<string | null>(null);
@@ -45,6 +62,7 @@ export const MainLayout = () => {
   const isDemoPreview = Boolean(access?.demo_preview_active);
   const allowsOfflineBootstrap = desktopOfflineMode || offlineProductMode;
   const [offlineBootstrapTimedOut, setOfflineBootstrapTimedOut] = useState(false);
+  const mainScreenKey = useMemo(() => resolveMainScreenKey(location.pathname), [location.pathname]);
   const shouldResolveAccountAccess =
     !offlineProductMode
     && isAuthenticated
@@ -176,49 +194,6 @@ export const MainLayout = () => {
       cancelled = true;
     };
   }, [offlineProductMode, activeBusiness?.id]);
-
-  // FASE 1B: Reset explícito de scroll al cambiar de ruta (pathname + search)
-  useEffect(() => {
-    const root = document.getElementById('app-main-scroll');
-    if (root) {
-      root.scrollTop = 0;
-    }
-  }, [location.pathname, location.search]);
-
-  // Nota: La medición del anchor y visibilidad del FAB ahora se maneja dentro de MainContentArea
-  // para tener acceso al ContentAnchorContext
-
-  // FASE 1 LIMPIEZA: Solo trackear scroll para debug, NO controlar FAB
-  useEffect(() => {
-    if (typeof window === 'undefined') return undefined;
-
-    const root = document.getElementById('app-main-scroll');
-    if (!root) return undefined;
-
-    let frameId: number | null = null;
-
-    const updateScrollState = () => {
-      setScrollTop(root.scrollTop);
-    };
-
-    const handleScroll = () => {
-      if (frameId !== null) return;
-      frameId = window.requestAnimationFrame(() => {
-        frameId = null;
-        updateScrollState();
-      });
-    };
-
-    updateScrollState();
-    root.addEventListener('scroll', handleScroll, { passive: true });
-
-    return () => {
-      root.removeEventListener('scroll', handleScroll);
-      if (frameId !== null) {
-        window.cancelAnimationFrame(frameId);
-      }
-    };
-  }, []);
 
   useEffect(() => {
     if (!offlineProductMode || isHydrating || activeBusiness || hasAttemptedLocalRecovery || localBusinessesCount <= 0) {
@@ -538,8 +513,7 @@ export const MainLayout = () => {
           <MainContentArea
             isSidebarOpen={isSidebarOpen}
             setIsSidebarOpen={setIsSidebarOpen}
-            scrollTop={scrollTop}
-            routeKey={location.pathname + location.search}
+            mainScreenKey={mainScreenKey}
           >
             <Outlet />
           </MainContentArea>
@@ -556,21 +530,34 @@ export const MainLayout = () => {
 const MainContentArea: React.FC<{
   isSidebarOpen: boolean;
   setIsSidebarOpen: (open: boolean) => void;
-  scrollTop: number;
-  routeKey: string;
+  mainScreenKey: string;
   children: React.ReactNode;
-}> = ({ isSidebarOpen, setIsSidebarOpen, scrollTop, routeKey, children }) => {
+}> = ({ isSidebarOpen, setIsSidebarOpen, mainScreenKey, children }) => {
   const { anchorRef, setTriggerRemeasure } = useContentAnchor();
-  const [contentStart, setContentStart] = useState(0);
+  const { header } = usePageChrome();
+  const [scrollTop, setScrollTop] = useState(0);
+  const [contentStart, setContentStart] = useState<number | null>(null);
+  const [fabTriggerOffset, setFabTriggerOffset] = useState(96);
   const mainRef = useRef<HTMLElement>(null);
+  const topChromeRef = useRef<HTMLDivElement>(null);
 
   // Función de medición robusta usando offsetTop acumulado
   // Calcula la posición del anchor dentro del contenido del scroll container
-  const measureContentStart = useCallback(() => {
+  const measureFabTrigger = useCallback(() => {
     const root = mainRef.current;
-    const anchor = anchorRef.current;
+    const topChrome = topChromeRef.current;
+    const measuredChromeHeight = topChrome ? Math.ceil(topChrome.getBoundingClientRect().height) : 0;
+    let measuredContentStart: number | null = null;
 
-    if (!root || !anchor) return;
+    if (!root) return;
+
+    const anchor = anchorRef.current;
+    if (!anchor || !root.contains(anchor)) {
+      const nextTriggerOffset = Math.max(24, measuredChromeHeight);
+      setContentStart((current) => (current === null ? current : null));
+      setFabTriggerOffset((current) => (current === nextTriggerOffset ? current : nextTriggerOffset));
+      return;
+    }
 
     // Calcular offset acumulado desde el anchor hasta el root (sin usar rects del viewport)
     let offset = 0;
@@ -587,33 +574,73 @@ const MainContentArea: React.FC<{
       offset = anchorRect.top - rootRect.top + root.scrollTop;
     }
 
-    setContentStart(Math.round(offset));
+    measuredContentStart = Math.max(0, Math.round(offset));
+
+    const nextTriggerOffset = Math.max(
+      24,
+      measuredChromeHeight,
+      measuredContentStart
+    );
+
+    setContentStart((current) => (current === measuredContentStart ? current : measuredContentStart));
+    setFabTriggerOffset((current) => (current === nextTriggerOffset ? current : nextTriggerOffset));
   }, [anchorRef]);
 
   // Registramos la función de trigger en el contexto
   useEffect(() => {
-    setTriggerRemeasure(measureContentStart);
-  }, [measureContentStart, setTriggerRemeasure]);
+    setTriggerRemeasure(measureFabTrigger);
+  }, [measureFabTrigger, setTriggerRemeasure]);
 
-  // Scroll reset y medición al cambiar de ruta
-  useEffect(() => {
-    // Reset scroll al cambiar de pantalla (cross-screen scroll restoration)
+  // Reset del scroll root al cambiar de pantalla principal.
+  useLayoutEffect(() => {
     const root = mainRef.current;
-    if (root) {
-      root.scrollTop = 0;
-    }
+    if (!root) return undefined;
+
+    root.scrollTop = 0;
+    setScrollTop(0);
+    measureFabTrigger();
+    const frameId = window.requestAnimationFrame(measureFabTrigger);
     
-    // Medición después del reset - DOM debe estar listo
-    // Usamos timeout para asegurar que el nuevo contenido renderizó
-    const timeoutId = setTimeout(() => {
-      measureContentStart();
-      // Doble verificación después de layout estable
-      const secondCheck = setTimeout(measureContentStart, 100);
-      return () => clearTimeout(secondCheck);
-    }, 50);
-    
-    return () => clearTimeout(timeoutId);
-  }, [routeKey, measureContentStart]);
+    return () => window.cancelAnimationFrame(frameId);
+  }, [mainScreenKey, measureFabTrigger]);
+
+  useLayoutEffect(() => {
+    measureFabTrigger();
+    const frameId = window.requestAnimationFrame(measureFabTrigger);
+    return () => window.cancelAnimationFrame(frameId);
+  }, [header?.title, header?.description, header?.action, measureFabTrigger]);
+
+  useEffect(() => {
+    const root = mainRef.current;
+    if (!root) return undefined;
+
+    let frameId: number | null = null;
+
+    const updateScrollState = () => {
+      setScrollTop((current) => {
+        const nextScrollTop = root.scrollTop;
+        return current === nextScrollTop ? current : nextScrollTop;
+      });
+    };
+
+    const handleScroll = () => {
+      if (frameId !== null) return;
+      frameId = window.requestAnimationFrame(() => {
+        frameId = null;
+        updateScrollState();
+      });
+    };
+
+    updateScrollState();
+    root.addEventListener('scroll', handleScroll, { passive: true });
+
+    return () => {
+      root.removeEventListener('scroll', handleScroll);
+      if (frameId !== null) {
+        window.cancelAnimationFrame(frameId);
+      }
+    };
+  }, []);
 
   // ResizeObserver para recalcular (sin forzar layout)
   useEffect(() => {
@@ -625,11 +652,11 @@ const MainContentArea: React.FC<{
     if (typeof ResizeObserver !== 'undefined') {
       resizeObserver = new ResizeObserver(() => {
         // Solo recalcular, no mutar DOM
-        requestAnimationFrame(measureContentStart);
+        requestAnimationFrame(measureFabTrigger);
       });
       resizeObserver.observe(root);
     } else {
-      const handleResize = () => measureContentStart();
+      const handleResize = () => measureFabTrigger();
       window.addEventListener('resize', handleResize);
       return () => window.removeEventListener('resize', handleResize);
     }
@@ -639,18 +666,19 @@ const MainContentArea: React.FC<{
         resizeObserver.disconnect();
       }
     };
-  }, [measureContentStart]);
-
-  // FAB: Visible solo cuando el header ya no está visible (después de scrollear)
-  // El header móvil unificado tiene ~100-120px de altura
-  // Usamos threshold fijo, no dependiente de contentStart (que puede fallar si no hay anchor)
-  const HEADER_VISIBILITY_THRESHOLD = 100; // px que debe scrollear antes de mostrar FAB
-  const isFabVisible = scrollTop > HEADER_VISIBILITY_THRESHOLD;
+  }, [measureFabTrigger]);
+  // El FAB inicia oculto y aparece despues de superar el trigger medido.
+  const isFabVisible = scrollTop > fabTriggerOffset;
 
   return (
-    <div className="app-mobile-safe-frame flex min-h-[100dvh] w-full flex-1 flex-col overflow-hidden transition-all duration-300 lg:min-h-full lg:pl-64 lg:pt-0">
+    <div
+      className="app-mobile-safe-frame flex min-h-[100dvh] w-full flex-1 flex-col overflow-hidden transition-all duration-300 lg:min-h-full lg:pl-64 lg:pt-0"
+      data-main-screen={mainScreenKey}
+      data-content-start={contentStart ?? undefined}
+      data-fab-trigger-offset={fabTriggerOffset}
+    >
       {/* REESTRUCTURA: Chrome superior COMPLETO fuera del scroll */}
-      <AppTopChrome setIsSidebarOpen={setIsSidebarOpen} />
+      <AppTopChrome ref={topChromeRef} setIsSidebarOpen={setIsSidebarOpen} />
 
       {/* Main Content Area - SOLO contenido scrolleable, NADA de chrome aquí */}
       <main
@@ -680,9 +708,9 @@ const MainContentArea: React.FC<{
 
 // HEADER MÓVIL UNIFICADO: Una sola superficie visual premium y continua
 // Sin divisiones, sin bordes internos, un solo flujo visual compacto
-const AppTopChrome: React.FC<{
+const AppTopChrome = forwardRef<HTMLDivElement, {
   setIsSidebarOpen: (open: boolean) => void;
-}> = ({ setIsSidebarOpen }) => {
+}>(({ setIsSidebarOpen }, ref) => {
   const { header } = usePageChrome();
   const activeBusiness = useBusinessStore((state) => state.activeBusiness);
 
@@ -690,7 +718,7 @@ const AppTopChrome: React.FC<{
   const hasDescription = Boolean(header?.description);
 
   return (
-    <div className="app-top-chrome shrink-0 border-b border-[color:var(--app-border)] bg-[color:var(--app-surface)] lg:hidden">
+    <div ref={ref} className="app-top-chrome shrink-0 border-b border-[color:var(--app-border)] bg-[color:var(--app-surface)] lg:hidden">
       <div className="app-shell-gutter py-2.5">
         {/* SECCIÓN ÚNICA: Todo integrado en un flujo continuo */}
         <div className="flex flex-col gap-2">
@@ -743,4 +771,6 @@ const AppTopChrome: React.FC<{
       </div>
     </div>
   );
-};
+});
+
+AppTopChrome.displayName = 'AppTopChrome';

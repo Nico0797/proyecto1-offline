@@ -7,6 +7,7 @@ type ContentAnchorContextType = {
   anchorRef: React.RefObject<HTMLElement | null>;
   /** Registra el ref del anchor desde la página activa */
   setAnchorRef: (ref: React.RefObject<HTMLElement | null>) => void;
+  clearAnchorRef: (node: HTMLElement | null) => void;
   /** Fuerza re-medición del contentStart (para usar desde páginas hijas) */
   triggerRemeasure: RemeasureTrigger | null;
   /** Registra la función de trigger desde MainLayout */
@@ -23,6 +24,12 @@ export const ContentAnchorProvider: React.FC<{ children: React.ReactNode }> = ({
     anchorRef.current = ref.current;
   }, []);
 
+  const clearAnchorRef = useCallback((node: HTMLElement | null) => {
+    if (!node || anchorRef.current === node) {
+      anchorRef.current = null;
+    }
+  }, []);
+
   const setTriggerRemeasure = useCallback((fn: RemeasureTrigger) => {
     setTriggerRemeasureState(() => fn);
   }, []);
@@ -32,6 +39,7 @@ export const ContentAnchorProvider: React.FC<{ children: React.ReactNode }> = ({
       value={{
         anchorRef,
         setAnchorRef,
+        clearAnchorRef,
         triggerRemeasure,
         setTriggerRemeasure,
       }}

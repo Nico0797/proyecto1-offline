@@ -1,8 +1,6 @@
 import { Menu } from 'lucide-react';
 import { useBusinessStore } from '../../store/businessStore';
-import { useDemoPreview } from '../../hooks/useDemoPreview';
 import { MobileUtilityChips } from './MobileUtilityChips';
-import { isOfflineProductMode } from '../../runtime/runtimeMode';
 
 type MobileTopBarProps = {
   onMenuClick: () => void;
@@ -10,8 +8,6 @@ type MobileTopBarProps = {
 
 export const MobileTopBar = ({ onMenuClick }: MobileTopBarProps) => {
   const activeBusiness = useBusinessStore((state) => state.activeBusiness);
-  const { isDemoPreview } = useDemoPreview();
-  const offlineProductMode = isOfflineProductMode();
 
   return (
     <header className="app-mobile-topbar app-shell-gutter z-30 shrink-0 py-1 lg:hidden">
