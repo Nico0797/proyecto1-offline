@@ -30,7 +30,7 @@ export const MainLayout = () => {
     fetchStatus: fetchAccountAccessStatus,
     clear: clearAccountAccess,
   } = useAccountAccessStore();
-  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [isSidebarOpen, setIsSidebarOpen] = useState<boolean>(false);
   const [scrollTop, setScrollTop] = useState(0);
   const [localBusinessesCount, setLocalBusinessesCount] = useState(0);
   const [isCreateBusinessModalOpen, setIsCreateBusinessModalOpen] = useState(false);
@@ -656,7 +656,7 @@ const MainContentArea: React.FC<{
       <div className="lg:hidden">
         <MobileBottomNav
           isSidebarOpen={isSidebarOpen}
-          onMenuToggle={() => setIsSidebarOpen((current: boolean) => !current)}
+          onMenuToggle={() => setIsSidebarOpen(!isSidebarOpen)}
         />
       </div>
     </div>
