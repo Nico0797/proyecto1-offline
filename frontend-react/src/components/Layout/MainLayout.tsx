@@ -636,9 +636,11 @@ const MainContentArea: React.FC<{
     };
   }, [measureContentStart]);
 
-  // FAB: Visible cuando el scroll supera el inicio del contenido (con margen de 16px)
-  const REVEAL_OFFSET = 16; // px antes de mostrar el FAB
-  const isFabVisible = scrollTop >= contentStart - REVEAL_OFFSET;
+  // FAB: Visible solo cuando el header ya no está visible (después de scrollear)
+  // El header móvil unificado tiene ~100-120px de altura, esperamos a que el usuario
+  // haya scrolleado lo suficiente como para no ver el header
+  const HEADER_VISIBILITY_THRESHOLD = 120; // px que debe scrollear antes de mostrar FAB
+  const isFabVisible = scrollTop > contentStart + HEADER_VISIBILITY_THRESHOLD;
 
   return (
     <div className="app-mobile-safe-frame flex min-h-[100dvh] w-full flex-1 flex-col overflow-hidden transition-all duration-300 lg:min-h-full lg:pl-64 lg:pt-0">
@@ -649,23 +651,16 @@ const MainContentArea: React.FC<{
       <main
         ref={mainRef}
         id="app-main-scroll"
-        className="app-page custom-scrollbar relative flex-1 min-h-0 overflow-y-auto overflow-x-hidden pb-[calc(var(--app-mobile-bottom-nav-height)+var(--app-mobile-bottom-nav-overhang)+var(--app-safe-area-bottom))] lg:pb-0"
+        className="app-page custom-scrollbar relative flex-1 min-h-0 overflow-y-auto overflow-x-hidden pt-3 pb-[calc(var(--app-mobile-bottom-nav-height)+var(--app-mobile-bottom-nav-overhang)+var(--app-safe-area-bottom))] lg:pt-0 lg:pb-0"
       >
         {children}
       </main>
 
-      {/* FAB: Contextual con visibilidad dinámica basada en anchor de contenido */}
+      {/* FAB: Contextual con visibilidad dinámica basada en scroll */}
       {isFabVisible && <ContextualFloatingFab />}
 
-      <MobileShellDebugOverlay
-        scrollTop={scrollTop}
-        localBusinessesCount={localBusinessesCount}
-        offlineMode={offlineProductMode}
-        onExportBackup={downloadLocalBackupSnapshot}
-        onImportBackup={handleRecoveryImport}
-        contentStart={contentStart}
-        isFabVisible={isFabVisible}
-      />
+      {/* Debug overlay - desactivado en producción/normal use */}
+      {/* <MobileShellDebugOverlay ... /> */}
 
       {/* Mobile Bottom Nav */}
       <div className="lg:hidden">
@@ -700,12 +695,12 @@ const AppTopChrome: React.FC<{
               <button
                 type="button"
                 onClick={() => setIsSidebarOpen(true)}
-                className="app-icon-button inline-flex h-7 w-7 items-center justify-center rounded-md transition"
+                className="app-icon-button inline-flex h-10 w-10 items-center justify-center rounded-lg transition active:scale-95"
                 aria-label="Abrir menu"
               >
-                <Menu className="h-4 w-4" />
+                <Menu className="h-5 w-5" />
               </button>
-              <span className="min-w-0 truncate text-[12px] font-medium tracking-tight app-text">
+              <span className="min-w-0 truncate text-[13px] font-medium tracking-tight app-text">
                 {activeBusiness?.name || 'Tu negocio'}
               </span>
             </div>
