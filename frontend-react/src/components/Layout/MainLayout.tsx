@@ -502,7 +502,7 @@ export const MainLayout = () => {
   }
 
   return (
-    <div className="app-canvas app-text flex min-h-[100dvh] w-full overflow-hidden transition-colors duration-300 lg:min-h-full">
+    <div className="app-canvas app-text flex h-[100dvh] min-h-0 w-full overflow-hidden transition-colors duration-300 lg:h-full">
       <Sidebar isOpen={isSidebarOpen} setIsOpen={setIsSidebarOpen} />
       <BootTracePanel />
 
@@ -541,6 +541,15 @@ const MainContentArea: React.FC<{
   const [scrollTop, setScrollTop] = useState(0);
   const [topChromeHeight, setTopChromeHeight] = useState(96);
   const [isChromeSentinelVisible, setIsChromeSentinelVisible] = useState(true);
+  const [scrollDebug, setScrollDebug] = useState({
+    windowY: 0,
+    documentElementTop: 0,
+    bodyTop: 0,
+    mainTop: 0,
+    activeSource: 'main',
+    mainClientHeight: 0,
+    mainScrollHeight: 0,
+  });
   const mainRef = useRef<HTMLElement>(null);
   const topChromeRef = useRef<HTMLDivElement>(null);
   const chromeSentinelRef = useRef<HTMLDivElement>(null);
@@ -562,7 +571,36 @@ const MainContentArea: React.FC<{
       current === measuredChromeHeight ? current : measuredChromeHeight
     ));
 
-    const nextScrollTop = Math.max(0, root.scrollTop);
+    const windowY = Math.max(0, window.scrollY || window.pageYOffset || 0);
+    const documentElementTop = Math.max(0, document.documentElement.scrollTop || 0);
+    const bodyTop = Math.max(0, document.body.scrollTop || 0);
+    const mainTop = Math.max(0, root.scrollTop);
+    const documentTop = Math.max(windowY, documentElementTop, bodyTop);
+    const activeSource = mainTop >= documentTop ? 'main' : 'document';
+    const nextScrollTop = Math.max(mainTop, documentTop);
+
+    setScrollDebug((current) => {
+      const next = {
+        windowY,
+        documentElementTop,
+        bodyTop,
+        mainTop,
+        activeSource,
+        mainClientHeight: root.clientHeight,
+        mainScrollHeight: root.scrollHeight,
+      };
+
+      return current.windowY === next.windowY
+        && current.documentElementTop === next.documentElementTop
+        && current.bodyTop === next.bodyTop
+        && current.mainTop === next.mainTop
+        && current.activeSource === next.activeSource
+        && current.mainClientHeight === next.mainClientHeight
+        && current.mainScrollHeight === next.mainScrollHeight
+        ? current
+        : next;
+    });
+
     setScrollTop((current) => (current === nextScrollTop ? current : nextScrollTop));
 
     if (!sentinel || !root.contains(sentinel)) {
@@ -572,7 +610,8 @@ const MainContentArea: React.FC<{
 
     const rootRect = root.getBoundingClientRect();
     const sentinelRect = sentinel.getBoundingClientRect();
-    const stillVisible = sentinelRect.bottom > rootRect.top + 1;
+    const scrollViewportTop = activeSource === 'document' ? 0 : rootRect.top;
+    const stillVisible = sentinelRect.bottom > scrollViewportTop + 1;
 
     setIsChromeSentinelVisible((current) => (
       current === stillVisible ? current : stillVisible
@@ -592,6 +631,9 @@ const MainContentArea: React.FC<{
     if (!root) return undefined;
 
     root.scrollTop = 0;
+    document.documentElement.scrollTop = 0;
+    document.body.scrollTop = 0;
+    window.scrollTo(0, 0);
     setScrollTop(0);
     syncFabVisibility();
     const frameId = window.requestAnimationFrame(syncFabVisibility);
@@ -621,9 +663,13 @@ const MainContentArea: React.FC<{
 
     syncFabVisibility();
     root.addEventListener('scroll', handleScroll, { passive: true });
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    document.addEventListener('scroll', handleScroll, { passive: true });
 
     return () => {
       root.removeEventListener('scroll', handleScroll);
+      window.removeEventListener('scroll', handleScroll);
+      document.removeEventListener('scroll', handleScroll);
       if (frameId !== null) {
         window.cancelAnimationFrame(frameId);
       }
@@ -664,7 +710,7 @@ const MainContentArea: React.FC<{
 
   return (
     <div
-      className="app-mobile-safe-frame flex min-h-[100dvh] w-full flex-1 flex-col overflow-hidden transition-all duration-300 lg:min-h-full lg:pl-64 lg:pt-0"
+      className="app-mobile-safe-frame flex min-h-0 w-full flex-1 flex-col overflow-hidden transition-all duration-300 lg:h-full lg:pl-64 lg:pt-0"
       data-main-screen={mainScreenKey}
       data-mobile-chrome-visible={isChromeSentinelVisible}
       data-mobile-chrome-height={topChromeHeight}
@@ -704,6 +750,12 @@ const MainContentArea: React.FC<{
       </div>
 
       <MobileBuildStamp />
+      <MobileScrollRuntimeProbe
+        mainScreenKey={mainScreenKey}
+        isFabVisible={isFabVisible}
+        isChromeSentinelVisible={isChromeSentinelVisible}
+        scrollDebug={scrollDebug}
+      />
     </div>
   );
 };
@@ -711,6 +763,29 @@ const MainContentArea: React.FC<{
 const MobileBuildStamp: React.FC = () => (
   <div className="pointer-events-none fixed left-[max(0.55rem,env(safe-area-inset-left))] top-[calc(env(safe-area-inset-top)+0.2rem)] z-[70] max-w-[78vw] truncate rounded-full border border-black/10 bg-white/85 px-2 py-0.5 text-[9px] font-semibold leading-none text-slate-700 shadow-sm backdrop-blur lg:hidden dark:border-white/10 dark:bg-slate-950/75 dark:text-slate-200">
     {buildInfo.gitBranch} / {buildInfo.gitCommitShort} / {buildInfo.builtAtDisplay}
+  </div>
+);
+
+const MobileScrollRuntimeProbe: React.FC<{
+  mainScreenKey: string;
+  isFabVisible: boolean;
+  isChromeSentinelVisible: boolean;
+  scrollDebug: {
+    windowY: number;
+    documentElementTop: number;
+    bodyTop: number;
+    mainTop: number;
+    activeSource: string;
+    mainClientHeight: number;
+    mainScrollHeight: number;
+  };
+}> = ({ mainScreenKey, isFabVisible, isChromeSentinelVisible, scrollDebug }) => (
+  <div className="pointer-events-none fixed right-[max(0.5rem,env(safe-area-inset-right))] top-[calc(env(safe-area-inset-top)+1.65rem)] z-[70] max-w-[62vw] rounded-md border border-amber-400/40 bg-slate-950/82 px-2 py-1 font-mono text-[9px] leading-tight text-amber-100 shadow-lg backdrop-blur lg:hidden">
+    <div>screen: {mainScreenKey}</div>
+    <div>src: {scrollDebug.activeSource}</div>
+    <div>w: {Math.round(scrollDebug.windowY)} de: {Math.round(scrollDebug.documentElementTop)} b: {Math.round(scrollDebug.bodyTop)}</div>
+    <div>main: {Math.round(scrollDebug.mainTop)} {scrollDebug.mainClientHeight}/{scrollDebug.mainScrollHeight}</div>
+    <div>fab: {isFabVisible ? 'on' : 'off'} chrome: {isChromeSentinelVisible ? 'in' : 'out'}</div>
   </div>
 );
 
