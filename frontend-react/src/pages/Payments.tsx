@@ -17,7 +17,7 @@ import { computeClientReceivables, ClientReceivable } from '../utils/receivables
 import { CreditSettingsModal } from '../components/Customers/CreditSettingsModal';
 import { settingsService } from '../services/settingsService';
 import { DateRange, getPeriodPreference } from '../utils/dateRange.utils';
-import { CompactActionGroup, PageHeader, PageHeaderActionButton, PageLayout, PageNotice, PageStack, PageSummary, PageToolbarCard } from '../components/Layout/PageLayout';
+import { CompactActionGroup, ContentAnchor, PageHeader, PageHeaderActionButton, PageLayout, PageNotice, PageStack, PageSummary, PageToolbarCard } from '../components/Layout/PageLayout';
 import { SwipePager } from '../components/ui/SwipePager';
 import { Payment } from '../store/paymentStore';
 import { PaymentFormModal } from '../components/Payments/PaymentFormModal';
@@ -297,6 +297,8 @@ export const Payments = () => {
           />
         ) : undefined}
       />
+
+      <ContentAnchor />
 
       <SwipePager
         activePageId={currentTab}

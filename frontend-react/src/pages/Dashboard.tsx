@@ -20,7 +20,7 @@ import { ProGate } from '../components/ui/ProGate';
 import { FEATURES } from '../auth/plan';
 import { SwipePager } from '../components/ui/SwipePager';
 import { TeachingEmptyState } from '../components/ui/TeachingEmptyState';
-import { PageHeader, PageLayout } from '../components/Layout/PageLayout';
+import { ContentAnchor, PageHeader, PageLayout } from '../components/Layout/PageLayout';
 import {
   MobileSummaryDrawer,
   MobileUnifiedPageShell,
@@ -1572,6 +1572,8 @@ export const Dashboard = () => {
           : 'Tu dia, ventas y alertas en un vistazo.'}
         mobileFab={dashboardMobileFab}
       />
+
+      <ContentAnchor />
 
       <SwipePager 
         activePageId={activeTab}

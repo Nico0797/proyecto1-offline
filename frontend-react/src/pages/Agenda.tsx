@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { CalendarDays, ChevronLeft, Plus, Settings, Users } from 'lucide-react';
 import {
   CompactActionGroup,
+  ContentAnchor,
   ContentSection,
   PageHeader,
   PageHeaderActionButton,
@@ -468,6 +469,8 @@ export const Agenda = () => {
           />
         }
       />
+
+      <ContentAnchor />
 
       <SwipePager
         activePageId={activeTab}

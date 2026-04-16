@@ -16,7 +16,7 @@ import { Alert, AlertCategory } from '../services/alerts.service';
 import { PeriodFilter } from '../components/ui/PeriodFilter';
 import { DateRange, getPeriodPreference } from '../utils/dateRange.utils';
 import { TeachingEmptyState } from '../components/ui/TeachingEmptyState';
-import { PageBody, PageHeader, PageLayout, PageStack, PageToolbarCard } from '../components/Layout/PageLayout';
+import { ContentAnchor, PageBody, PageHeader, PageLayout, PageStack, PageToolbarCard } from '../components/Layout/PageLayout';
 import { SwipePager } from '../components/ui/SwipePager';
 import {
   MobileCenteredModal,
@@ -628,6 +628,8 @@ export const Alerts = () => {
           </div>
         }
       />
+
+      <ContentAnchor />
 
       <PageBody>
         <PageStack>

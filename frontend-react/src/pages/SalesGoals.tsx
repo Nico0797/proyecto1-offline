@@ -6,7 +6,7 @@ import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
 import { Target, Trophy, Calendar, CheckCircle, Archive, TrendingUp, AlertCircle, Clock, Plus, ArrowRight, User, Filter, Trash2 } from 'lucide-react';
 import { Modal } from '../components/ui/Modal';
-import { PageBody, PageHeader, PageHeaderActionButton, PageLayout, PageNotice, PageStack, PageSummary, PageToolbarCard } from '../components/Layout/PageLayout';
+import { ContentAnchor, PageBody, PageHeader, PageHeaderActionButton, PageLayout, PageNotice, PageStack, PageSummary, PageToolbarCard } from '../components/Layout/PageLayout';
 import { SwipePager } from '../components/ui/SwipePager';
 import {
   MobileFilterDrawer,
@@ -600,6 +600,8 @@ export const SalesGoals = () => {
           />
         ) : undefined}
       />
+
+      <ContentAnchor />
 
       <PageBody>
         <PageStack>

@@ -21,7 +21,7 @@ import { ProGate } from '../components/ui/ProGate';
 import { FEATURES } from '../auth/plan';
 import { SwipePager } from '../components/ui/SwipePager';
 import { useAccess } from '../hooks/useAccess';
-import { ContentSection, PageHeader, PageHeaderActionButton, PageLayout, PageNotice, PageStack, SectionStack, SummarySection } from '../components/Layout/PageLayout';
+import { ContentAnchor, ContentSection, PageHeader, PageHeaderActionButton, PageLayout, PageNotice, PageStack, SectionStack, SummarySection } from '../components/Layout/PageLayout';
 import {
   MobileFilterDrawer,
   MobileHelpDisclosure,
@@ -378,6 +378,8 @@ export const Expenses = () => {
           />
         ) : undefined}
       />
+
+      <ContentAnchor />
 
       <SwipePager 
         activePageId={activeTab}

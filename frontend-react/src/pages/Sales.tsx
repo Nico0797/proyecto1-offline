@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Plus, ShoppingCart, Wallet } from 'lucide-react';
 import {
+  ContentAnchor,
   ContentSection,
   PageHeader,
   PageHeaderActionButton,
@@ -146,6 +147,8 @@ export const Sales = () => {
           </div>
         }
       />
+
+      <ContentAnchor />
 
       <SwipePager
         activePageId={activeTab}

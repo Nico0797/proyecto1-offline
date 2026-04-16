@@ -16,7 +16,7 @@ import { CompleteOrderModal } from '../components/Orders/CompleteOrderModal';
 import { DateRange, getPeriodPreference } from '../utils/dateRange.utils';
 import { SwipePager } from '../components/ui/SwipePager';
 import { useBreakpoint } from '../tour/useBreakpoint';
-import { CompactActionGroup, ContentSection, PageHeader, PageHeaderActionButton, PageLayout, PageNotice, PageStack, SectionStack, ToolbarSection } from '../components/Layout/PageLayout';
+import { CompactActionGroup, ContentAnchor, ContentSection, PageHeader, PageHeaderActionButton, PageLayout, PageNotice, PageStack, SectionStack, ToolbarSection } from '../components/Layout/PageLayout';
 import {
   MobileFilterDrawer,
   MobileUnifiedPageShell,
@@ -274,6 +274,8 @@ export const Orders = () => {
           />
         )}
       />
+
+      <ContentAnchor />
 
       <div className="app-shell-gutter flex-1 min-h-0 py-4">
         <SwipePager

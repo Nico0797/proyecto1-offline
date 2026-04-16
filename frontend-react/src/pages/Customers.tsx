@@ -14,7 +14,7 @@ import { Button } from '../components/ui/Button';
 import { UserPlus, Users, User, AlertCircle, Trophy } from 'lucide-react';
 import { SwipePager } from '../components/ui/SwipePager';
 import { TopCustomersCard } from '../components/Customers/TopCustomersCard';
-import { PageLayout, PageHeader, PageHeaderActionButton, PageBody, PageNotice, PageStack, PageSummary, PageToolbarCard } from '../components/Layout/PageLayout';
+import { ContentAnchor, PageLayout, PageHeader, PageHeaderActionButton, PageBody, PageNotice, PageStack, PageSummary, PageToolbarCard } from '../components/Layout/PageLayout';
 import {
   MobileFilterDrawer,
   MobileFilterSection,
@@ -302,6 +302,8 @@ export const Customers = () => {
           />
         }
       />
+
+      <ContentAnchor />
 
       <SwipePager 
         activePageId={activeTab}

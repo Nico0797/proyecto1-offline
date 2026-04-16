@@ -16,7 +16,7 @@ import { getStockStatus } from './helpers';
 import { useCategoryStore } from './categoryStore';
 import { SwipePager } from '../ui/SwipePager';
 import { usePermission } from '../../hooks/usePermission';
-import { PageHeader, PageHeaderActionButton, PageLayout, PageNotice, PageStack, PageSummary, PageToolbarCard } from '../Layout/PageLayout';
+import { ContentAnchor, PageHeader, PageHeaderActionButton, PageLayout, PageNotice, PageStack, PageSummary, PageToolbarCard } from '../Layout/PageLayout';
 import {
   MobileFilterDrawer,
   MobileHelpDisclosure,
@@ -177,6 +177,8 @@ export const ProductCatalog: React.FC = () => {
           />
         ) : undefined}
       />
+
+      <ContentAnchor />
 
       <SwipePager
         activePageId={activeTab}
