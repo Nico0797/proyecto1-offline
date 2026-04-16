@@ -49,8 +49,9 @@ export const PageHeader: React.FC<{
     onClick: () => void;
   };
   /**
-   * REESTRUCTURA: Si true, renderiza el header en el chrome superior fijo (fuera del scroll)
-   * en lugar de dentro del contenido scrolleable. Esto mejora la respuesta del scroll en móvil.
+   * OPCIÓN A: En móvil, el header visual está en AppTopChrome (fuera del scroll).
+   * Este componente solo es visible en desktop (lg+).
+   * Siempre registra en PageChromeContext para que AppTopChrome lo muestre en móvil.
    */
   renderInChrome?: boolean;
 }> = ({ title, description, action, className, mobileFab, renderInChrome = false }) => {
@@ -65,7 +66,7 @@ export const PageHeader: React.FC<{
   const mobileFabIcon = mobileFab?.icon;
   const mobileFabOnClick = mobileFab?.onClick;
 
-  // REESTRUCTURA: Registro en chrome superior si renderInChrome está activado
+  // SIEMPRE registrar en PageChromeContext para que AppTopChrome muestre el header en móvil
   const { setHeader } = usePageChrome();
 
   useEffect(() => {
@@ -73,11 +74,9 @@ export const PageHeader: React.FC<{
   }, [mobileFabOnClick]);
 
   useEffect(() => {
-    if (renderInChrome) {
-      setHeader({ title, description, action });
-      return () => setHeader(null);
-    }
-  }, [renderInChrome, title, description, action, setHeader]);
+    setHeader({ title, description, action });
+    return () => setHeader(null);
+  }, [title, description, action, setHeader]);
 
   useEffect(() => {
     if (!hasMobileFab || !mobileFabLabel) {
@@ -102,20 +101,12 @@ export const PageHeader: React.FC<{
     return () => unregisterAction(ownerKey);
   }, [hasMobileFab, ownerKey, unregisterAction]);
 
-  // REESTRUCTURA: Si renderInChrome está activado, no renderizamos nada aquí
-  // El header se renderizará en el chrome superior fijo via contexto
-  if (renderInChrome) {
-    return null;
-  }
-
-  // Nota: La visibilidad del FAB se controla por scrollTop en MainLayout
-  // No usamos IntersectionObserver aquí para mantener consistencia
-
+  // OPCIÓN A: Solo visible en desktop. En móvil, AppTopChrome muestra el header via contexto.
   return (
     <div
       ref={headerRef}
       className={cn(
-        'app-page-header app-shell-gutter relative shrink-0 py-1 lg:py-3',
+        'app-page-header app-shell-gutter relative shrink-0 hidden py-1 lg:block lg:py-3',
         className,
       )}
     >
