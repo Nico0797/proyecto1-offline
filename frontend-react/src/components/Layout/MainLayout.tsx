@@ -618,7 +618,7 @@ const MainContentArea: React.FC<{
     let resizeObserver: ResizeObserver | null = null;
 
     if (typeof ResizeObserver !== 'undefined') {
-      resizeObserver = new ResizeObserver((entries) => {
+      resizeObserver = new ResizeObserver(() => {
         // Solo recalcular, no mutar DOM
         requestAnimationFrame(measureContentStart);
       });
