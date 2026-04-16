@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Outlet, Navigate, useLocation } from 'react-router-dom';
+import { Menu } from 'lucide-react';
 import { useAuthStore } from '../../store/authStore';
 import { useBusinessStore } from '../../store/businessStore';
 import { useOfflineSyncStore } from '../../store/offlineSyncStore';
@@ -8,7 +9,7 @@ import { pushBootTrace } from '../../debug/bootTrace';
 import { BootTracePanel } from '../../debug/BootTracePanel';
 import { Sidebar } from './Sidebar';
 import { MobileBottomNav } from './MobileBottomNav';
-import { MobileTopBar } from './MobileTopBar';
+import { MobileUtilityChips } from './MobileUtilityChips';
 import { MobileShellDebugOverlay } from './MobileShellDebugOverlay';
 import { PageChromeProvider, usePageChrome } from './PageChromeContext';
 import { ContentAnchorProvider, useContentAnchor } from './ContentAnchorContext';
@@ -678,28 +679,55 @@ const MainContentArea: React.FC<{
 };
 
 // REESTRUCTURA: Chrome superior completamente fuera del scroll
-// Renderiza MobileTopBar + PageHeader dinámico desde el contexto
+// HEADER UNIFICADO: Una sola superficie visual que combina topbar + page header
 const AppTopChrome: React.FC<{
   setIsSidebarOpen: (open: boolean) => void;
 }> = ({ setIsSidebarOpen }) => {
   const { header } = usePageChrome();
+  const activeBusiness = useBusinessStore((state) => state.activeBusiness);
 
   return (
-    <div className="app-top-chrome shrink-0 lg:hidden">
-      <MobileTopBar onMenuClick={() => setIsSidebarOpen(true)} />
-      {header && (
-        <div className="app-page-header app-shell-gutter relative py-1">
-          <div className="flex items-center justify-between gap-3">
-            <div className="min-w-0 flex-1">
-              <h1 className="text-[14px] font-semibold tracking-tight app-text">{header.title}</h1>
-              {header.description ? (
-                <p className="mt-0.5 line-clamp-1 text-[11px] app-text-muted">{header.description}</p>
-              ) : null}
+    <div className="app-top-chrome shrink-0 border-b border-[color:var(--app-border)] bg-[color:var(--app-surface)] lg:hidden">
+      <div className="app-shell-gutter">
+        {/* FILA SUPERIOR: Utilitaria - sidebar + negocio + chips */}
+        <div className="flex min-h-10 items-center justify-between gap-2 py-1.5">
+          <button
+            type="button"
+            onClick={() => setIsSidebarOpen(true)}
+            className="app-icon-button inline-flex h-8 w-8 items-center justify-center rounded-lg transition"
+            aria-label="Abrir menu"
+          >
+            <Menu className="h-[18px] w-[18px]" />
+          </button>
+
+          <div className="min-w-0 flex flex-1 items-center gap-2 overflow-hidden">
+            <div className="min-w-0 truncate text-[13px] font-medium tracking-tight app-text">
+              {activeBusiness?.name || 'Tu negocio'}
             </div>
-            {header.action ? <div className="flex shrink-0 items-center">{header.action}</div> : null}
+          </div>
+
+          <div className="shrink-0">
+            <MobileUtilityChips />
           </div>
         </div>
-      )}
+
+        {/* FILA INFERIOR: Contextual - título + descripción + acción */}
+        {header && (
+          <div className="flex items-start justify-between gap-3 pb-3">
+            <div className="min-w-0 flex-1">
+              <h1 className="text-[16px] font-semibold leading-tight tracking-tight app-text">
+                {header.title}
+              </h1>
+              {header.description ? (
+                <p className="mt-1 line-clamp-1 text-[12px] app-text-muted">{header.description}</p>
+              ) : null}
+            </div>
+            {header.action ? (
+              <div className="flex shrink-0 items-center pt-0.5">{header.action}</div>
+            ) : null}
+          </div>
+        )}
+      </div>
     </div>
   );
 };
