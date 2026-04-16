@@ -86,37 +86,8 @@ export const PageHeader: React.FC<{
     return () => unregisterAction(ownerKey);
   }, [hasMobileFab, ownerKey, unregisterAction]);
 
-  // IntersectionObserver para detectar cuando el header realmente sale del viewport
-  useEffect(() => {
-    if (!hasMobileFab || !headerRef.current) return undefined;
-
-    const header = headerRef.current;
-    // Root es el contenedor de scroll principal
-    const root = document.getElementById('app-main-scroll');
-    if (!root) return undefined;
-
-    // Observar cuando el header ya no es visible en el viewport del root
-    const observer = new IntersectionObserver(
-      (entries) => {
-        entries.forEach((entry) => {
-          // entry.isIntersecting = true cuando el header es visible
-          // Queremos que FAB aparezca cuando header NO es visible (isIntersecting = false)
-          setHeaderVisible(ownerKey, entry.isIntersecting);
-        });
-      },
-      {
-        root, // El contenedor #app-main-scroll
-        rootMargin: '0px 0px 0px 0px',
-        threshold: 0, // Disparar cuando cualquier parte del header entra/sale
-      }
-    );
-
-    observer.observe(header);
-
-    return () => {
-      observer.disconnect();
-    };
-  }, [hasMobileFab, ownerKey, setHeaderVisible]);
+  // Nota: La visibilidad del FAB se controla por scrollTop en MainLayout
+  // No usamos IntersectionObserver aquí para mantener consistencia
 
   return (
     <div

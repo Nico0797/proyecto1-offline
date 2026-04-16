@@ -13,6 +13,7 @@ import { ContextualFloatingFab } from './ContextualFloatingFab';
 import { MobileShellDebugOverlay } from './MobileShellDebugOverlay';
 import { CreateBusinessModal } from '../Business/CreateBusinessModal';
 import { getRuntimeModeSnapshot, isDesktopOfflineMode, isOfflineProductMode } from '../../runtime/runtimeMode';
+import { useContextualFloatingActionStore } from '../../store/contextualFloatingActionStore';
 import { offlineSyncService } from '../../services/offlineSyncService';
 import { downloadLocalBackupSnapshot, importLocalBackupSnapshot } from '../../services/localBackup';
 
@@ -30,13 +31,15 @@ export const MainLayout = () => {
   } = useAccountAccessStore();
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [scrollTop, setScrollTop] = useState(0);
-  const THRESHOLD_DEBUG = 24; // Umbral bajo para prueba diagnóstica (sync con useEffect)
+  const FAB_SCROLL_THRESHOLD = 24; // Umbral unificado para FAB (debug y lógica real)
   const [localBusinessesCount, setLocalBusinessesCount] = useState(0);
   const [isCreateBusinessModalOpen, setIsCreateBusinessModalOpen] = useState(false);
   const [recoveryError, setRecoveryError] = useState<string | null>(null);
   const [isRecoveryBusy, setIsRecoveryBusy] = useState(false);
   const [hasAttemptedLocalRecovery, setHasAttemptedLocalRecovery] = useState(false);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const action = useContextualFloatingActionStore((state) => state.action);
+  const setHeaderVisible = useContextualFloatingActionStore((state) => state.setHeaderVisible);
   const desktopOfflineMode = isDesktopOfflineMode();
   const offlineProductMode = isOfflineProductMode();
   const isDemoPreview = Boolean(access?.demo_preview_active);
@@ -174,8 +177,7 @@ export const MainLayout = () => {
     };
   }, [offlineProductMode, activeBusiness?.id]);
 
-  // Solo tracking de scrollTop para debug overlay
-  // La visibilidad del FAB ahora la maneja IntersectionObserver en PageHeader
+  // Lógica FAB por scrollTop con threshold unificado
   useEffect(() => {
     if (typeof window === 'undefined') return undefined;
 
@@ -185,7 +187,14 @@ export const MainLayout = () => {
     let frameId: number | null = null;
 
     const updateScrollState = () => {
-      setScrollTop(root.scrollTop);
+      const nextScrollTop = root.scrollTop;
+      setScrollTop(nextScrollTop);
+
+      if (action?.ownerKey) {
+        // FAB visible cuando scrollTop <= threshold (header visible)
+        // FAB oculto cuando scrollTop > threshold (scrolled down)
+        setHeaderVisible(action.ownerKey, nextScrollTop <= FAB_SCROLL_THRESHOLD);
+      }
     };
 
     const handleScroll = () => {
@@ -204,8 +213,11 @@ export const MainLayout = () => {
       if (frameId !== null) {
         window.cancelAnimationFrame(frameId);
       }
+      if (action?.ownerKey) {
+        setHeaderVisible(action.ownerKey, true);
+      }
     };
-  }, []);
+  }, [action?.ownerKey, action?.label, setHeaderVisible]);
 
   useEffect(() => {
     if (!offlineProductMode || isHydrating || activeBusiness || hasAttemptedLocalRecovery || localBusinessesCount <= 0) {
@@ -530,7 +542,7 @@ export const MainLayout = () => {
         <ContextualFloatingFab />
         <MobileShellDebugOverlay
           scrollTop={scrollTop}
-          threshold={THRESHOLD_DEBUG}
+          threshold={FAB_SCROLL_THRESHOLD}
           localBusinessesCount={localBusinessesCount}
           offlineMode={offlineProductMode}
           onExportBackup={downloadLocalBackupSnapshot}
