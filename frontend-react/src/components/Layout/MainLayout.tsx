@@ -18,7 +18,7 @@ import { ContextualFloatingFab } from './ContextualFloatingFab';
 import { CreateBusinessModal } from '../Business/CreateBusinessModal';
 import { getRuntimeModeSnapshot, isDesktopOfflineMode, isOfflineProductMode } from '../../runtime/runtimeMode';
 import { offlineSyncService } from '../../services/offlineSyncService';
-import { downloadLocalBackupSnapshot, importLocalBackupSnapshot } from '../../services/localBackup';
+import { importLocalBackupSnapshot } from '../../services/localBackup';
 
 export const MainLayout = () => {
   const location = useLocation();
