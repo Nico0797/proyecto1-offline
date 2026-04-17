@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom';
 import { Check, ChevronDown, Ellipsis, Filter, HelpCircle, LayoutList, Rows3, Search, X } from 'lucide-react';
 import { cn } from '../../utils/cn';
 import { Button } from '../ui/Button';
+import { SelectField } from '../ui/SelectField';
 
 export interface MobileViewOption {
   id: string;
@@ -28,27 +29,6 @@ interface MobileInlineTabsProps {
   className?: string;
   compact?: boolean;
 }
-
-const useIsDesktopViewport = () => {
-  const [isDesktop, setIsDesktop] = useState(() => {
-    if (typeof window === 'undefined') return false;
-    return window.matchMedia('(min-width: 1024px)').matches;
-  });
-
-  useEffect(() => {
-    if (typeof window === 'undefined') return undefined;
-
-    const mediaQuery = window.matchMedia('(min-width: 1024px)');
-    const update = () => setIsDesktop(mediaQuery.matches);
-
-    update();
-    mediaQuery.addEventListener('change', update);
-
-    return () => mediaQuery.removeEventListener('change', update);
-  }, []);
-
-  return isDesktop;
-};
 
 const useOverlayDismiss = (isOpen: boolean, onClose: () => void) => {
   useEffect(() => {
@@ -678,82 +658,26 @@ export const MobileSelectField: React.FC<MobileSelectFieldProps> = ({
   sheetTitle,
   disabled = false,
 }) => {
-  const isDesktop = useIsDesktopViewport();
-  const [isOpen, setIsOpen] = useState(false);
   const selectedOption = options.find((option) => option.value === value);
 
-  if (isDesktop) {
-    return (
-      <div className={cn('flex flex-col gap-1.5', className)}>
-        {label ? <label className="px-0.5 text-[12px] font-semibold tracking-tight app-text-secondary sm:text-[13px]">{label}</label> : null}
-        <select className={cn('app-select w-full', selectClassName)} value={value} onChange={(event) => onChange(event.target.value)} disabled={disabled}>
-          {!selectedOption && placeholder ? <option value="">{placeholder}</option> : null}
-          {options.map((option) => (
-            <option key={option.value} value={option.value} disabled={option.disabled}>
-              {option.label}
-            </option>
-          ))}
-        </select>
-      </div>
-    );
-  }
-
   return (
-    <>
-      <div className={cn('flex flex-col gap-1.5', className)}>
-        {label ? <label className="px-0.5 text-[12px] font-semibold tracking-tight app-text-secondary sm:text-[13px]">{label}</label> : null}
-        <button
-          type="button"
-          onClick={() => setIsOpen(true)}
-          disabled={disabled}
-          className={cn(
-            'app-field-surface flex min-h-10 w-full items-center justify-between gap-3 rounded-[18px] px-3.5 py-2.5 text-left text-[15px] transition sm:min-h-11 sm:text-sm',
-            'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/20 focus-visible:border-blue-500 dark:focus-visible:border-blue-400 dark:focus-visible:ring-blue-400/20',
-            'disabled:cursor-not-allowed disabled:opacity-50',
-            selectClassName,
-          )}
-        >
-          <span className={cn('min-w-0 truncate', selectedOption ? 'text-[color:var(--app-text)]' : 'text-[color:var(--app-text-secondary)]')}>
-            {selectedOption?.label || placeholder}
-          </span>
-          <ChevronDown className="h-4 w-4 shrink-0 text-[color:var(--app-text-secondary)]" />
-        </button>
-      </div>
-
-      <MobileBottomSheet isOpen={isOpen} onClose={() => setIsOpen(false)} title={sheetTitle || label || placeholder}>
-        <div className="space-y-2">
-          {options.map((option) => {
-            const isActive = option.value === value;
-
-            return (
-              <button
-                key={option.value}
-                type="button"
-                onClick={() => {
-                  if (option.disabled) return;
-                  onChange(option.value);
-                  setIsOpen(false);
-                }}
-                disabled={option.disabled}
-                className={cn(
-                  'flex w-full items-center justify-between gap-3 rounded-2xl border px-4 py-3 text-left transition-all',
-                  isActive
-                    ? 'border-blue-200 bg-blue-50 text-blue-700 dark:border-blue-900/40 dark:bg-blue-900/10 dark:text-blue-200'
-                    : 'border-[color:var(--app-border)] bg-[color:var(--app-surface-elevated)] text-[color:var(--app-text)] hover:bg-[color:var(--app-surface-soft)]',
-                  option.disabled && 'cursor-not-allowed opacity-50',
-                )}
-              >
-                <span className="min-w-0">
-                  <span className="block truncate text-sm font-medium">{option.label}</span>
-                  {option.description ? <span className="mt-0.5 block text-xs text-[color:var(--app-text-secondary)]">{option.description}</span> : null}
-                </span>
-                {isActive ? <Check className="h-4 w-4 shrink-0" /> : null}
-              </button>
-            );
-          })}
-        </div>
-      </MobileBottomSheet>
-    </>
+    <SelectField
+      label={label}
+      value={value}
+      onChange={(event) => onChange(event.target.value)}
+      disabled={disabled}
+      placeholder={placeholder}
+      sheetTitle={sheetTitle}
+      wrapperClassName={className}
+      className={cn('w-full', selectClassName)}
+    >
+      {!selectedOption && placeholder ? <option value="">{placeholder}</option> : null}
+      {options.map((option) => (
+        <option key={option.value} value={option.value} disabled={option.disabled}>
+          {option.description ? `${option.label} - ${option.description}` : option.label}
+        </option>
+      ))}
+    </SelectField>
   );
 };
 
