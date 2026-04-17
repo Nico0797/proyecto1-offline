@@ -68,6 +68,7 @@ import { BusinessModuleKey, isBusinessModuleEnabled } from './types';
 import { BusinessCommercialSectionKey, isBusinessCommercialSectionEnabled } from './config/businessPersonalization';
 import { ThemeProvider, useEffectiveTheme } from './components/providers/ThemeProvider';
 import { ConfirmProvider } from './components/ui/ConfirmDialog';
+import { GlobalSelectSheet } from './components/ui/GlobalSelectSheet';
 import { ScrollbarActivityController } from './components/ui/ScrollbarActivityController';
 import { UnsupportedBackendFeature } from './components/Layout/UnsupportedBackendFeature';
 import { BackendCapability, isBackendCapabilitySupported } from './config/backendCapabilities';
@@ -257,6 +258,7 @@ const AppContent = () => {
   return (
     <>
       <ScrollbarActivityController />
+      <GlobalSelectSheet />
       {isOfflineProductMode() ? null : <NotificationController />}
       <TourProvider>
         <Toaster
