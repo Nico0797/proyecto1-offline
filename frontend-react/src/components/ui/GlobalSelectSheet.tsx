@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { Check, X } from 'lucide-react';
 import { cn } from '../../utils/cn';
@@ -8,6 +8,8 @@ type SheetOption = {
   label: string;
   disabled: boolean;
 };
+
+const BACKDROP_OPEN_GUARD_MS = 300;
 
 const isMobileViewport = () => {
   if (typeof window === 'undefined') return false;
@@ -28,6 +30,7 @@ const getSelectOptions = (select: HTMLSelectElement): SheetOption[] =>
 
 export const GlobalSelectSheet: React.FC = () => {
   const [activeSelect, setActiveSelect] = useState<HTMLSelectElement | null>(null);
+  const openedAtRef = useRef(0);
 
   useEffect(() => {
     const shouldEnhance = (select: HTMLSelectElement) =>
@@ -45,6 +48,7 @@ export const GlobalSelectSheet: React.FC = () => {
       event.preventDefault();
       event.stopPropagation();
       select.focus({ preventScroll: true });
+      openedAtRef.current = performance.now();
       setActiveSelect(select);
     };
 
@@ -63,6 +67,7 @@ export const GlobalSelectSheet: React.FC = () => {
       if (!(select instanceof HTMLSelectElement) || !shouldEnhance(select)) return;
 
       event.preventDefault();
+      openedAtRef.current = performance.now();
       setActiveSelect(select);
     };
 
@@ -102,6 +107,10 @@ export const GlobalSelectSheet: React.FC = () => {
     setActiveSelect(null);
   };
 
+  const shouldIgnoreBackdropClose = () => (
+    performance.now() - openedAtRef.current < BACKDROP_OPEN_GUARD_MS
+  );
+
   if (!activeSelect) return null;
 
   return createPortal(
@@ -109,7 +118,14 @@ export const GlobalSelectSheet: React.FC = () => {
       <button
         type="button"
         className="app-overlay-backdrop fixed inset-0"
-        onClick={() => setActiveSelect(null)}
+        onClick={(event) => {
+          if (shouldIgnoreBackdropClose()) {
+            event.preventDefault();
+            event.stopPropagation();
+            return;
+          }
+          setActiveSelect(null);
+        }}
         aria-label="Cerrar selector"
       />
       <div className="app-surface relative flex w-full max-h-[calc(100dvh-0.5rem)] flex-col overflow-hidden rounded-t-[28px] shadow-[var(--app-shadow-strong)] sm:max-h-[70vh] sm:max-w-md sm:rounded-[28px]">

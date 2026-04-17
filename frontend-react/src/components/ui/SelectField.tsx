@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { Check, ChevronDown, X } from 'lucide-react';
 import { cn } from '../../utils/cn';
@@ -16,6 +16,8 @@ type SelectFieldOption = {
   label: string;
   disabled?: boolean;
 };
+
+const BACKDROP_OPEN_GUARD_MS = 300;
 
 const getNodeText = (node: React.ReactNode): string => {
   if (node == null || typeof node === 'boolean') return '';
@@ -64,6 +66,7 @@ export const SelectField: React.FC<SelectFieldProps> = ({
   const isDesktop = useIsDesktopViewport();
   const [isOpen, setIsOpen] = useState(false);
   const [internalValue, setInternalValue] = useState(defaultValue ?? '');
+  const openedAtRef = useRef(0);
 
   const options = useMemo(() => {
     const parsed: SelectFieldOption[] = [];
@@ -131,13 +134,29 @@ export const SelectField: React.FC<SelectFieldProps> = ({
     setIsOpen(false);
   };
 
+  const openMobilePanel = () => {
+    openedAtRef.current = performance.now();
+    setIsOpen(true);
+  };
+
+  const shouldIgnoreBackdropClose = () => (
+    performance.now() - openedAtRef.current < BACKDROP_OPEN_GUARD_MS
+  );
+
   const mobilePanel = !isDesktop && isOpen
     ? createPortal(
         <div className="fixed inset-0 z-[9999] flex items-end justify-center p-0 pb-[env(safe-area-inset-bottom)] sm:items-center sm:p-6">
           <button
             type="button"
             className="app-overlay-backdrop fixed inset-0"
-            onClick={() => setIsOpen(false)}
+            onClick={(event) => {
+              if (shouldIgnoreBackdropClose()) {
+                event.preventDefault();
+                event.stopPropagation();
+                return;
+              }
+              setIsOpen(false);
+            }}
             aria-label="Cerrar selector"
           />
           <div className="app-surface relative flex w-full max-h-[calc(100dvh-0.5rem)] flex-col overflow-hidden rounded-t-[28px] shadow-[var(--app-shadow-strong)] sm:max-h-[70vh] sm:max-w-md sm:rounded-[28px]">
@@ -217,7 +236,7 @@ export const SelectField: React.FC<SelectFieldProps> = ({
             id={id}
             className={cn(selectClassName, 'flex items-center text-left')}
             disabled={disabled}
-            onClick={() => setIsOpen(true)}
+            onClick={openMobilePanel}
             aria-haspopup="listbox"
             aria-expanded={isOpen}
           >
