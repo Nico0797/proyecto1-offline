@@ -14,6 +14,7 @@ import {
   type ReceivablesCustomerSummary,
   type ReceivablesOverview,
   type Sale,
+  type SaleItem,
   type TreasuryAccount,
 } from '../types';
 import { isOfflineSyncEnabled } from '../config/offline';
@@ -356,6 +357,77 @@ const sanitizeProductPayload = (payload: Record<string, any>) => {
 
 const sortSalesByDateAsc = (sales: Sale[]) =>
   [...sales].sort((a, b) => new Date(a.sale_date).getTime() - new Date(b.sale_date).getTime());
+
+const getSaleItemQuantity = (item: Record<string, any>) => {
+  const quantity = Number(item.qty ?? item.quantity ?? 0);
+  return Number.isFinite(quantity) && quantity > 0 ? quantity : 0;
+};
+
+const shouldDecrementProductStockForSaleItem = (product: Product | null | undefined, item?: Record<string, any>) => {
+  if (!product || product.offline_deleted || product.type === 'service') return false;
+
+  const itemMode = item && 'fulfillment_mode' in item
+    ? normalizeProductFulfillmentMode(item.fulfillment_mode, product.type)
+    : undefined;
+  const productMode = normalizeProductFulfillmentMode(product.fulfillment_mode, product.type);
+  const fulfillmentMode = itemMode || productMode;
+
+  if (fulfillmentMode === 'service' || fulfillmentMode === 'make_to_order') return false;
+  return true;
+};
+
+const getSaleStockDeltas = (sale: Sale | null | undefined, productsById: Map<number, Product>, direction: 1 | -1) => {
+  const deltas = new Map<number, number>();
+  if (!sale || sale.offline_deleted || sale.status === 'cancelled') return deltas;
+
+  for (const item of sale.items || []) {
+    const productId = item.product_id == null ? null : Number(item.product_id);
+    if (productId == null || !Number.isFinite(productId)) continue;
+
+    const quantity = getSaleItemQuantity(item);
+    if (quantity <= 0) continue;
+
+    const product = productsById.get(productId);
+    const wasMarkedAsDecremented = item.inventory_effects?.finished_goods_stock_decremented === true;
+    if (!wasMarkedAsDecremented && !shouldDecrementProductStockForSaleItem(product, item)) continue;
+
+    deltas.set(productId, Number(deltas.get(productId) || 0) + (direction * quantity));
+  }
+
+  return deltas;
+};
+
+const mergeStockDeltas = (target: Map<number, number>, source: Map<number, number>) => {
+  source.forEach((delta, productId) => {
+    target.set(productId, Number(target.get(productId) || 0) + delta);
+  });
+};
+
+const applyLocalSaleInventoryAdjustment = async (
+  businessId: number,
+  previousSale: Sale | null,
+  nextSale: Sale | null
+) => {
+  const products = await offlineDb.getEntities<Product>('products', businessId);
+  const productsById = new Map(products.map((product) => [Number(product.id), product]));
+  const deltas = new Map<number, number>();
+
+  mergeStockDeltas(deltas, getSaleStockDeltas(previousSale, productsById, 1));
+  mergeStockDeltas(deltas, getSaleStockDeltas(nextSale, productsById, -1));
+
+  const changedProducts = products
+    .map((product) => {
+      const delta = Number(deltas.get(Number(product.id)) || 0);
+      if (Math.abs(delta) <= 0.0001) return product;
+
+      return {
+        ...product,
+        stock: Number((Number(product.stock || 0) + delta).toFixed(4)),
+      };
+    });
+
+  await offlineDb.putEntities('products', businessId, changedProducts, (product) => product.id);
+};
 
 const toBusinessScope = () => {
   const userId = getCurrentUserId();
@@ -1056,7 +1128,30 @@ const buildLocalSaleRecord = async (
 ): Promise<Sale> => {
   const { customers, treasuryAccounts, products } = await getLocalReferenceMaps(businessId);
   const baseSale = options.baseSale || null;
-  const items = Array.isArray(payload.items) ? payload.items : (baseSale?.items || []);
+  const sourceItems: SaleItem[] = (Array.isArray(payload.items) ? payload.items : (baseSale?.items || [])) as SaleItem[];
+  const items: SaleItem[] = sourceItems.map((item) => {
+    const productId = item?.product_id != null ? Number(item.product_id) : null;
+    const product = productId != null ? products.get(productId) : null;
+    const quantity = getSaleItemQuantity(item);
+    const shouldDecrementStock = shouldDecrementProductStockForSaleItem(product, item);
+    const fulfillmentMode = normalizeProductFulfillmentMode(item?.fulfillment_mode, product?.type)
+      || normalizeProductFulfillmentMode(product?.fulfillment_mode, product?.type)
+      || item?.fulfillment_mode
+      || product?.fulfillment_mode
+      || null;
+
+    return {
+      ...item,
+      qty: Number(item?.qty ?? item?.quantity ?? quantity),
+      quantity: Number(item?.quantity ?? item?.qty ?? quantity),
+      fulfillment_mode: fulfillmentMode,
+      inventory_effects: {
+        ...(item?.inventory_effects || {}),
+        fulfillment_mode: fulfillmentMode,
+        finished_goods_stock_decremented: shouldDecrementStock,
+      },
+    };
+  });
   const subtotal = Number(payload.subtotal ?? items.reduce((sum: number, item: any) => sum + Number(item?.total || 0), 0));
   const discount = Number(payload.discount ?? baseSale?.discount ?? 0);
   const total = Number(payload.total ?? Math.max(subtotal - discount, 0));
@@ -1623,6 +1718,7 @@ export const offlineSyncService = {
     const sale = await buildLocalSaleRecord(businessId, payload, { saleId: tempId, clientOperationId });
 
     await offlineDb.upsertEntity('sales', businessId, tempId, sale);
+    await applyLocalSaleInventoryAdjustment(businessId, null, sale);
     await rebuildLocalSalePaymentState(businessId);
 
     await queueOperation({
@@ -1990,6 +2086,7 @@ export const offlineSyncService = {
     }
 
     await offlineDb.upsertEntity('sales', businessId, saleId, nextSale);
+    await applyLocalSaleInventoryAdjustment(businessId, currentSale, nextSale);
     await rebuildLocalSalePaymentState(businessId);
     emitOfflineSyncEvent();
     return (await offlineDb.getEntity<Sale>('sales', businessId, saleId)) || nextSale;
@@ -2009,6 +2106,7 @@ export const offlineSyncService = {
     const pendingCreate = pendingOperations.find((operation) => operation.action === 'create');
     if (pendingCreate) {
       await removePendingOperations(pendingOperations);
+      await applyLocalSaleInventoryAdjustment(businessId, currentSale, null);
       await offlineDb.deleteEntity('sales', businessId, saleId);
       await rebuildLocalSalePaymentState(businessId);
       emitOfflineSyncEvent();
@@ -2036,6 +2134,7 @@ export const offlineSyncService = {
       });
     }
 
+    await applyLocalSaleInventoryAdjustment(businessId, currentSale, null);
     await offlineDb.upsertEntity('sales', businessId, saleId, {
       ...currentSale,
       offline_deleted: true,
