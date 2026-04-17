@@ -664,12 +664,14 @@ const MainContentArea: React.FC<{
       </main>
 
       {/* Mobile Bottom Nav */}
-      <div className="lg:hidden">
-        <MobileBottomNav
-          isSidebarOpen={isSidebarOpen}
-          onMenuToggle={() => setIsSidebarOpen(!isSidebarOpen)}
-        />
-      </div>
+      {!isSidebarOpen ? (
+        <div className="lg:hidden">
+          <MobileBottomNav
+            isSidebarOpen={isSidebarOpen}
+            onMenuToggle={() => setIsSidebarOpen(!isSidebarOpen)}
+          />
+        </div>
+      ) : null}
 
     </div>
   );
