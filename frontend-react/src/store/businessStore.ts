@@ -46,6 +46,7 @@ interface BusinessState {
   setActiveBusiness: (business: Business) => void;
   addBusiness: (data: Partial<Business>) => Promise<Business>;
   updateBusiness: (id: number, data: Partial<Business>) => Promise<void>;
+  deleteBusiness: (id: number) => Promise<{ businesses: Business[]; activeBusiness: Business | null }>;
 }
 
 const persistActiveBusiness = (business: Business | null) => {
@@ -612,6 +613,58 @@ export const useBusinessStore = create<BusinessState>((set, get) => ({
       });
     } catch (error: any) {
       set({ error: error.message || 'Failed to update business' });
+      throw error;
+    } finally {
+      set({ isLoading: false });
+    }
+  },
+  deleteBusiness: async (id: number) => {
+    set({ isLoading: true, error: null });
+    try {
+      const token = localStorage.getItem('token');
+      const activeBusiness = get().activeBusiness;
+      const currentBusinesses =
+        activeBusiness && !get().businesses.some((business) => business.id === activeBusiness.id)
+          ? [...get().businesses, activeBusiness]
+          : get().businesses;
+      const businessToDelete = currentBusinesses.find((business) => business.id === id);
+
+      if (!businessToDelete) {
+        throw new Error('No se encontro el negocio para eliminar');
+      }
+
+      if (token && !isOfflineProductMode()) {
+        await api.delete(`/businesses/${id}`);
+      }
+
+      const nextBusinesses = currentBusinesses.filter((business) => business.id !== id);
+      const nextActiveBusiness =
+        activeBusiness?.id === id
+          ? nextBusinesses[0] ?? null
+          : activeBusiness;
+
+      await offlineSyncService.deleteLocalBusiness(id);
+      await offlineSyncService.cacheBusinesses(nextBusinesses);
+      if (nextActiveBusiness) {
+        await offlineSyncService.cacheBusiness(nextActiveBusiness);
+      }
+
+      persistActiveBusiness(nextActiveBusiness);
+      persistOfflineSessionSnapshot({
+        businesses: nextBusinesses,
+        activeBusiness: nextActiveBusiness,
+      });
+
+      set({
+        businesses: nextBusinesses,
+        activeBusiness: nextActiveBusiness,
+        isLoading: false,
+        error: null,
+      });
+
+      return { businesses: nextBusinesses, activeBusiness: nextActiveBusiness };
+    } catch (error: any) {
+      set({ error: error.message || 'Failed to delete business' });
       throw error;
     } finally {
       set({ isLoading: false });

@@ -1201,6 +1201,22 @@ export const offlineSyncService = {
     await offlineDb.upsertEntity('businesses', scopeId, business.id, business);
   },
 
+  async deleteLocalBusiness(businessId: number) {
+    if (!this.isEnabled()) return;
+    const scopeId = toBusinessScope();
+    await Promise.all([
+      offlineDb.deleteEntity('businesses', scopeId, businessId),
+      offlineDb.deleteEntitiesByBusiness('customers', businessId),
+      offlineDb.deleteEntitiesByBusiness('products', businessId),
+      offlineDb.deleteEntitiesByBusiness('sales', businessId),
+      offlineDb.deleteEntitiesByBusiness('payments', businessId),
+      offlineDb.deleteEntitiesByBusiness('invoices', businessId),
+      offlineDb.deleteEntitiesByBusiness('treasury_accounts', businessId),
+      offlineDb.deleteSyncOperationsByBusiness(businessId),
+    ]);
+    emitOfflineSyncEvent();
+  },
+
   async cacheCustomers(businessId: number, customers: Customer[]) {
     if (!this.isEnabled()) return;
     const localCustomers = await offlineDb.getEntities<Customer>('customers', businessId);

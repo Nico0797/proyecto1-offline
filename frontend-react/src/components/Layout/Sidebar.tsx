@@ -10,6 +10,8 @@ import { useNavigationPreferences } from '../../store/navigationPreferences.stor
 import { CreateBusinessModal } from '../Business/CreateBusinessModal';
 import { cn } from '../../utils/cn';
 import { useAccess } from '../../hooks/useAccess';
+import { useConfirm } from '../ui/ConfirmDialog';
+import { buildOfflineAccessibleContexts, buildOfflineActiveContext, buildOfflineUser } from '../../services/offlineSession';
 import {
   NavigationItemDefinition,
 } from '../../navigation/businessNavigation';
@@ -23,10 +25,12 @@ import {
   Check,
   Loader2,
   Lock,
+  Trash2,
 } from 'lucide-react';
 import logo from '../../assets/logo.png';
 import { ActiveContext, Business } from '../../types';
 import { isOfflineProductMode } from '../../runtime/runtimeMode';
+import { toast } from 'react-hot-toast';
 
 interface SidebarProps {
   isOpen: boolean;
@@ -35,13 +39,14 @@ interface SidebarProps {
 
 export const Sidebar: React.FC<SidebarProps> = ({ isOpen, setIsOpen }) => {
   const { user, logout, accessibleContexts, login, selectContext, activeContext } = useAuthStore();
-  const { businesses, activeBusiness, fetchBusinesses, fetchAuthBootstrap, setActiveBusiness } = useBusinessStore();
+  const { businesses, activeBusiness, fetchBusinesses, fetchAuthBootstrap, setActiveBusiness, deleteBusiness } = useBusinessStore();
   const navigate = useNavigate();
   const location = useLocation();
   const prefs = useAlertsPreferences();
   const snooze = useAlertsSnoozeStore();
   const { alerts, fetchAlerts } = useAlertsStore();
   const offlineProductMode = isOfflineProductMode();
+  const confirm = useConfirm();
 
   // Use centralized access hook
   const {
@@ -55,6 +60,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, setIsOpen }) => {
   const [isCreateBusinessModalOpen, setIsCreateBusinessModalOpen] = useState(false);
   const [alertsCount, setAlertsCount] = useState(0);
   const [switchingBusinessId, setSwitchingBusinessId] = useState<number | null>(null);
+  const [deletingBusinessId, setDeletingBusinessId] = useState<number | null>(null);
 
   const [collapsedSections, setCollapsedSections] = useState<Record<string, boolean>>({});
 
@@ -240,6 +246,46 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, setIsOpen }) => {
     }
   };
 
+  const handleDeleteBusiness = async (business: Business) => {
+    if (deletingBusinessId !== null || switchingBusinessId !== null) return;
+
+    const accepted = await confirm({
+      title: 'Eliminar negocio',
+      message: `Vas a eliminar "${business.name}". Tambien se borraran sus datos locales guardados en este dispositivo. Esta accion no se puede deshacer.`,
+      confirmLabel: 'Eliminar negocio',
+      cancelLabel: 'Cancelar',
+      variant: 'destructive',
+    });
+
+    if (!accepted) return;
+
+    setDeletingBusinessId(business.id);
+    try {
+      const result = await deleteBusiness(business.id);
+
+      if (offlineProductMode) {
+        useAuthStore.setState({
+          user: buildOfflineUser(result.activeBusiness),
+          activeContext: buildOfflineActiveContext(result.activeBusiness),
+          accessibleContexts: buildOfflineAccessibleContexts(result.businesses),
+          isAuthenticated: true,
+          isHydrating: false,
+        });
+      }
+
+      toast.success('Negocio eliminado correctamente');
+      setIsBusinessDropdownOpen(false);
+      if (activeBusiness?.id === business.id) {
+        navigate('/dashboard', { replace: true });
+      }
+    } catch (error: any) {
+      console.error('Error deleting business:', error);
+      toast.error(error?.response?.data?.error || error?.message || 'No fue posible eliminar el negocio');
+    } finally {
+      setDeletingBusinessId(null);
+    }
+  };
+
   const toggleSection = (title: string) => {
     setCollapsedSections(prev => ({
       ...prev,
@@ -378,30 +424,52 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, setIsOpen }) => {
               <div className="app-surface absolute top-full left-0 right-0 z-50 mx-3 mt-2 max-w-full overflow-hidden rounded-2xl shadow-xl animate-in fade-in zoom-in-95 duration-200 lg:mx-4">
                 <div className="max-h-60 overflow-y-auto py-1 custom-scrollbar">
                   {switcherBusinesses.map((business) => (
-                    <button
+                    <div
                       key={business.id}
-                      disabled={switchingBusinessId !== null}
                       className={cn(
-                        "w-full flex items-center gap-3 px-3 py-2 text-left transition-colors hover:bg-[color:var(--app-surface-soft)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-inset active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-70",
+                        "flex items-center transition-colors hover:bg-[color:var(--app-surface-soft)]",
                         activeBusiness?.id === business.id && "bg-[color:var(--app-surface-soft)]"
                       )}
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        void handleSwitchBusiness(business);
-                      }}
                     >
-                      <div className="app-muted-panel flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border">
-                        <Store className="h-4 w-4 text-[color:var(--app-sidebar-icon)]" />
-                      </div>
-                      <span className="app-text-secondary flex-1 truncate text-sm font-medium">
-                        {business.name}
-                      </span>
-                      {switchingBusinessId === business.id ? (
-                        <Loader2 className="w-4 h-4 text-blue-500 flex-shrink-0 animate-spin" />
-                      ) : activeBusiness?.id === business.id && (
-                        <Check className="w-4 h-4 text-blue-500 flex-shrink-0" />
+                      <button
+                        disabled={switchingBusinessId !== null || deletingBusinessId !== null}
+                        className="flex min-w-0 flex-1 items-center gap-3 px-3 py-2 text-left transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-inset active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-70"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          void handleSwitchBusiness(business);
+                        }}
+                      >
+                        <div className="app-muted-panel flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border">
+                          <Store className="h-4 w-4 text-[color:var(--app-sidebar-icon)]" />
+                        </div>
+                        <span className="app-text-secondary flex-1 truncate text-sm font-medium">
+                          {business.name}
+                        </span>
+                        {switchingBusinessId === business.id ? (
+                          <Loader2 className="w-4 h-4 text-blue-500 flex-shrink-0 animate-spin" />
+                        ) : activeBusiness?.id === business.id && (
+                          <Check className="w-4 h-4 text-blue-500 flex-shrink-0" />
+                        )}
+                      </button>
+                      {offlineProductMode && (
+                        <button
+                          type="button"
+                          className="mr-2 inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-red-500 transition hover:bg-red-50 hover:text-red-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500 dark:hover:bg-red-500/10"
+                          aria-label={`Eliminar ${business.name}`}
+                          disabled={switchingBusinessId !== null || deletingBusinessId !== null}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            void handleDeleteBusiness(business);
+                          }}
+                        >
+                          {deletingBusinessId === business.id ? (
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                          ) : (
+                            <Trash2 className="h-4 w-4" />
+                          )}
+                        </button>
                       )}
-                    </button>
+                    </div>
                   ))}
                 </div>
 

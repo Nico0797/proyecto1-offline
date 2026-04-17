@@ -295,6 +295,13 @@ export const offlineDb = {
     await deleteByKey(storeName, makeEntityKey(businessId, entityId));
   },
 
+  async deleteEntitiesByBusiness(storeName: EntityStoreName, businessId: number) {
+    await transact(storeName, 'readwrite', async (store) => {
+      const rows = await requestToPromise<EntityRecord<unknown>[]>(store.index('businessId').getAll(businessId));
+      await Promise.all(rows.map((row) => requestToPromise(store.delete(row.key))));
+    });
+  },
+
   async putMetadata(key: string, value: any) {
     const payload: MetadataRecord = {
       key,
@@ -363,6 +370,13 @@ export const offlineDb = {
 
   async deleteSyncOperation(operationId: string) {
     await deleteByKey('sync_operations', operationId);
+  },
+
+  async deleteSyncOperationsByBusiness(businessId: number) {
+    await transact('sync_operations', 'readwrite', async (store) => {
+      const rows = await requestToPromise<PendingSyncOperation[]>(store.index('businessId').getAll(businessId));
+      await Promise.all(rows.map((row) => requestToPromise(store.delete(row.id))));
+    });
   },
 
   async countPendingSyncOperations(businessId?: number) {

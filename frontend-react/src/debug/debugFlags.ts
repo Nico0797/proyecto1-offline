@@ -20,6 +20,7 @@ const collectQueryTokens = (search: string) => {
 };
 
 export const isDebugFlagEnabled = (flag: string) => {
+  if (!import.meta.env.DEV) return false;
   if (typeof window === 'undefined') return false;
 
   const normalizedFlag = normalizeDebugToken(flag);
