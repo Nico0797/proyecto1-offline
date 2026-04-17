@@ -122,8 +122,8 @@
     --app-mobile-safe-top-offset: env(safe-area-inset-top);
     --app-mobile-shell-top-gap: 0rem;
     --app-mobile-topbar-min-height: 3.5rem;
-    --app-mobile-bottom-nav-height: 3.9rem;
-    --app-mobile-bottom-nav-overhang: 1.48rem;
+    --app-mobile-bottom-nav-height: 4.15rem;
+    --app-mobile-bottom-nav-overhang: 0rem;
     color-scheme: light;
   }
 
